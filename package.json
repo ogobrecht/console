@@ -1,0 +1,23 @@
+{
+  "name": "oracle-instrumentation-console",
+  "license": "MIT",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ogobrecht/oracle-instrumentation-console.git"
+  },
+  "scripts": {
+    "build": "node src/build.js && npm run create-readme && npm run install-console",
+    "watch": "chokidar src/* --initial -c \"npm run build\"",
+    "create-readme": "npx ploc --in src/CONSOLE.pks --out README.md",
+    "install-console": "echo exit | sqlplus -S /@playground @2_install_console.sql",
+    "test-all":"npm-run-all -s test-ccflags test-console",
+    "test-ccflags": "echo exit | sqlplus -S /@playground @test/ccflags.sql",
+    "test-console": "echo exit | sqlplus -S /@playground @test/console.sql"
+  },
+  "devDependencies": {
+    "chokidar-cli": "^2.1.0",
+    "npm-run-all": "^4.1.5",
+    "ploc": "^0.6.2"
+  }
+}
