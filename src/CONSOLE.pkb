@@ -32,37 +32,104 @@ $end
 -- MAIN CODE
 ------------------------------------------------------------------------------------------------------------------------
 
-procedure log_internal (p_level integer, p_message clob) is
+procedure log_internal (p_level integer, p_message clob, p_user_agent varchar2 default null) is
   pragma autonomous_transaction;
 begin
   dbms_output.put_line(p_message);
-  insert into console_logs (log_level, message) values (p_level, p_message);
+  insert into console_logs (
+    log_level,
+    message,
+    call_stack,
+    module,
+    action,
+    unique_session_id,
+    client_identifier,
+    ip_address,
+    host,
+    os_user,
+    os_user_agent,
+    instance,
+    instance_name,
+    service_name,
+    sid,
+    sessionid
+  ) values (
+    p_level,
+    p_message,
+    null, --FIXME: call_stack,
+    sys_context('USERENV', 'MODULE'),
+    sys_context('USERENV', 'ACTION'),
+    dbms_session.unique_session_id,
+    sys_context('USERENV', 'CLIENT_IDENTIFIER'),
+    sys_context('USERENV', 'IP_ADDRESS'),
+    sys_context('USERENV', 'HOST'),
+    sys_context('USERENV', 'OS_USER'),
+    substr(p_user_agent, 1, 200),
+    sys_context('USERENV', 'INSTANCE'),
+    sys_context('USERENV', 'INSTANCE_NAME'),
+    sys_context('USERENV', 'SERVICE_NAME'),
+    sys_context('USERENV', 'SID'),
+    sys_context('USERENV', 'SESSIONID')
+  );
   commit;
 end;
 
-procedure permanent (p_message clob) is
+function logging_enabled return boolean
+is
 begin
-  log_internal (c_level_permanent, p_message);
+  return false; --FIXME: implement
 end;
 
-procedure error (p_message clob) is
+procedure permanent (
+  p_message clob,
+  p_user_agent varchar2 default null) is
 begin
-  log_internal (c_level_error, p_message);
+  -- level permanent will always be logged
+  log_internal (c_level_permanent, p_message, p_user_agent);
 end;
 
-procedure warn (p_message clob) is
+procedure error (
+  p_message clob,
+  p_user_agent varchar2 default null) is
 begin
-  log_internal (c_level_warn, p_message);
+  -- level error will always be logged
+  log_internal (c_level_error, p_message, p_user_agent);
 end;
 
-procedure debug (p_message clob) is
+procedure warn (
+  p_message clob,
+  p_user_agent varchar2 default null) is
 begin
-  log_internal (c_level_debug, p_message);
+  if logging_enabled then
+    log_internal (c_level_warning  , p_message, p_user_agent);
+  end if;
 end;
 
-procedure log (p_message clob) is
+procedure info (
+  p_message clob,
+  p_user_agent varchar2 default null) is
 begin
-  log_internal (c_level_debug, p_message);
+  if logging_enabled then
+    log_internal (c_level_info, p_message, p_user_agent);
+  end if;
+end;
+
+procedure log (
+  p_message clob,
+  p_user_agent varchar2 default null) is
+begin
+  if logging_enabled then
+    log_internal (c_level_info, p_message, p_user_agent);
+  end if;
+end;
+
+procedure debug (
+  p_message clob,
+  p_user_agent varchar2 default null) is
+begin
+  if logging_enabled then
+    log_internal (c_level_verbose, p_message, p_user_agent);
+  end if;
 end;
 
 end console;

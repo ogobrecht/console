@@ -8,14 +8,15 @@ Oracle Instrumentation Console
 - [Procedure permanent](#permanent)
 - [Procedure error](#error)
 - [Procedure warn](#warn)
-- [Procedure debug](#debug)
+- [Procedure info](#info)
 - [Procedure log](#log)
+- [Procedure debug](#debug)
 
 
 <h2><a id="console"></a>Package console</h2>
 <!----------------------------------------->
 
-An instrumentation tool for Oracle developers. Save to install on production and mostly API compatible with the JavaScript console.
+An instrumentation tool for Oracle developers. Save to install on production and mostly API compatible with the [JavaScript console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
 DEPENDENCIES
 
@@ -29,8 +30,7 @@ INSTALLATION
 The installation itself is splitted into two mandatory and two optional steps:
 
 1. Create a context with a privileged user
-    - `1_install_context.sql`
-    - Copy into `1_install_context_local.sql` and align it to your needs (doing it this way you are upgrade save with your alignments)
+    - `1_create_context.sql`
     - Maybe your DBA needs to do that for you once
 2. Install the tool itself in your desired target schema
     - `2_install_console.sql`
@@ -38,10 +38,8 @@ The installation itself is splitted into two mandatory and two optional steps:
     - Do this step on every new release of the tool
 3. Optional: When installed in a central tools schema you may want to grant execute rights on the package and select rights on the views to public or other schemas
     - `3_grant_rights.sql`
-    - Copy into `3_grant_rights_local.sql` and align it to your needs (doing it this way you are upgrade save with your alignments)
 4. Optional: When you want to use it in another schema you may want to create synonyms there for easier access
     - `4_create_synonyms.sql`
-    - Copy into `4_create_synonyms_local.sql` and align it to your needs (doing it this way you are upgrade save with your alignments)
 
 UNINSTALLATION
 
@@ -53,12 +51,19 @@ SIGNATURE
 
 ```sql
 package console authid current_user is
+
 c_name        constant varchar2(30 char) := 'Oracle Instrumentation Console';
 c_version     constant varchar2(10 char) := '0.1.0';
-c_url         constant varchar2(60 char) := 'https://github.com/ogobrecht/oracle-instrumentation-console';
+c_url         constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
 c_license     constant varchar2(10 char) := 'MIT';
-c_license_url constant varchar2(80 char) := 'https://github.com/ogobrecht/oracle-instrumentation-console/blob/main/LICENSE';
+c_license_url constant varchar2(60 char) := 'https://github.com/ogobrecht/console/blob/main/LICENSE';
 c_author      constant varchar2(20 char) := 'Ottmar Gobrecht';
+
+c_level_permanent constant integer := 0;
+c_level_error     constant integer := 1;
+c_level_warning   constant integer := 2;
+c_level_info      constant integer := 3;
+c_level_verbose   constant integer := 4;
 ```
 
 
@@ -71,8 +76,8 @@ SIGNATURE
 
 ```sql
 procedure permanent (
-  p_message clob
-);
+  p_message    clob,
+  p_user_agent varchar2 default null);
 ```
 
 
@@ -85,50 +90,64 @@ SIGNATURE
 
 ```sql
 procedure error (
-  p_message clob
-);
+  p_message    clob,
+  p_user_agent varchar2 default null);
 ```
 
 
 <h2><a id="warn"></a>Procedure warn</h2>
 <!------------------------------------->
 
-Log a message with the level 2 (warn).
+Log a message with the level 2 (warning).
 
 SIGNATURE
 
 ```sql
 procedure warn (
-  p_message clob
-);
+  p_message    clob,
+  p_user_agent varchar2 default null);
 ```
 
 
-<h2><a id="debug"></a>Procedure debug</h2>
-<!--------------------------------------->
+<h2><a id="info"></a>Procedure info</h2>
+<!------------------------------------->
 
-Log a message with the level 3 (debug).
+Log a message with the level 3 (info). This is an alias for the debug method.
 
 SIGNATURE
 
 ```sql
-procedure debug (
-  p_message clob
-);
+procedure info(
+  p_message    clob,
+  p_user_agent varchar2 default null);
 ```
 
 
 <h2><a id="log"></a>Procedure log</h2>
 <!----------------------------------->
 
-Log a message with the level 3 (debug). This is an alias for the debug method.
+Log a message with the level 3 (info). This is an alias for the debug method.
 
 SIGNATURE
 
 ```sql
 procedure log(
-  p_message clob
-);
+  p_message    clob,
+  p_user_agent varchar2 default null);
+```
+
+
+<h2><a id="debug"></a>Procedure debug</h2>
+<!--------------------------------------->
+
+Log a message with the level 4 (verbose).
+
+SIGNATURE
+
+```sql
+procedure debug (
+  p_message    clob,
+  p_user_agent varchar2 default null);
 ```
 
 
