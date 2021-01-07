@@ -17,22 +17,24 @@ begin
         log_time           timestamp with local time zone  default systimestamp  not null  ,
         log_level          integer                                                         ,
         message            clob                                                            ,
-        call_stack         varchar2(1000)                                                  ,
-        module             varchar2(64)                                                    ,
-        action             varchar2(64)                                                    ,
-        unique_session_id  varchar2(12)                                                    ,
-        client_identifier  varchar2(64)                                                    ,
-        ip_address         varchar2(32)                                                    ,
-        host               varchar2(64)                                                    ,
-        os_user            varchar2(64)                                                    ,
-        os_user_agent      varchar2(200)                                                   ,
+        call_stack         varchar2(1000 char)                                             ,
+        module             varchar2(  64 char)                                             ,
+        action             varchar2(  64 char)                                             ,
+        client_info        varchar2(  64 char)                                             ,
+        session_user       varchar2(  32 char)                                             ,
+        unique_session_id  varchar2(  16 char)                                             ,
+        client_identifier  varchar2(  64 char)                                             ,
+        ip_address         varchar2(  32 char)                                             ,
+        host               varchar2(  64 char)                                             ,
+        os_user            varchar2(  64 char)                                             ,
+        os_user_agent      varchar2( 200 char)                                             ,
         instance           integer                                                         ,
-        instance_name      varchar2(32)                                                    ,
-        service_name       varchar2(64)                                                    ,
+        instance_name      varchar2(  32 char)                                             ,
+        service_name       varchar2(  64 char)                                             ,
         sid                integer                                                         ,
-        sessionid          varchar2(64)                                                    ,
+        sessionid          varchar2(  64 char)                                             ,
         --
-        constraint console_logs_check_level check (log_level in (0,1,2,3))
+        constraint console_logs_check_level check (log_level in (0,1,2,3,4))
       )
     }';
   end loop;
@@ -47,6 +49,8 @@ comment on column console_logs.message is 'The log message.';
 comment on column console_logs.call_stack is 'The call_stack will only be provided on log level 1 (call of console.error).';
 comment on column console_logs.module is 'The application name (module) set through the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.action is 'Identifies the position in the module (application name) and is set through the DBMS_APPLICATION_INFO package or OCI.';
+comment on column console_logs.client_info is 'Client information that can be stored by an application using the DBMS_APPLICATION_INFO package or OCI.';
+comment on column console_logs.session_user is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
 comment on column console_logs.unique_session_id is 'An identifier that is unique for all sessions currently connected to the database. Provided by DBMS_SESSION.UNIQUE_SESSION_ID. Is constructed by sid, serial# and inst_id from (g)v$session (undocumented, there is no official way to construct this ID by yourself, but we need to do this to identify a session).';
 comment on column console_logs.client_identifier is 'Returns an identifier that is set by the application through the DBMS_SESSION.SET_IDENTIFIER procedure, the OCI attribute OCI_ATTR_CLIENT_IDENTIFIER, or Oracle Dynamic Monitoring Service (DMS). This attribute is used by various database components to identify lightweight application users who authenticate as the same database user.';
 comment on column console_logs.ip_address is 'IP address of the machine from which the client is connected. If the client and server are on the same machine and the connection uses IPv6 addressing, then ::1 is returned.';

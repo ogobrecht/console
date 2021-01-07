@@ -10,12 +10,12 @@ prompt =========================================================================
 
 prompt Test different levels:
 begin
-  console.permanent('- test level permanent'                    );
-  console.error    ('- test level error'                        );
-  console.warn     ('- test level warning'                      );
-  console.info     ('- test level info', p_user_agent => 'dummy');
-  console.log      ('- test log(level info)'                    );
-  console.debug    ('- test level verbose'                      );
+  console.permanent ('permanent');
+  console.error     ('error');
+  console.warn      ('warn', p_trace => true);
+  console.info      ('info', p_user_agent => 'dummy');
+  console.log       ('log');
+  console.debug     ('debug');
 end;
 /
 

@@ -21,7 +21,7 @@ An instrumentation tool for Oracle developers. Save to install on production and
 
 DEPENDENCIES
 
-Oracle DB >= 18.x???
+Oracle DB >= 18.x??? will mainly depend on the call stack facilities of the release, we will see...
 
 INSTALLATION
 
@@ -51,46 +51,52 @@ FIXME: Create uninstall scripts
 **/
 
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- CONSTANTS, TYPES
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- MAIN METHODS
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 procedure permanent (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 /** Log a message with the level 0 (permanent). These messages will not be deleted on cleanup. **/
 
 procedure error (
   p_message    clob,
+  p_trace      boolean  default true,
   p_user_agent varchar2 default null);
 /** Log a message with the level 1 (error). **/
 
 procedure warn (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 /** Log a message with the level 2 (warning). **/
 
 procedure info(
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
-/** Log a message with the level 3 (info). This is an alias for the debug method. **/
+/** Log a message with the level 3 (info). **/
 
 procedure log(
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
-/** Log a message with the level 3 (info). This is an alias for the debug method. **/
+/** Log a message with the level 3 (info). **/
 
 procedure debug (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 /** Log a message with the level 4 (verbose). **/
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- UTILITIES (only compiled when public)
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 $if $$utils_public $then
 

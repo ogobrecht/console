@@ -48,22 +48,24 @@ begin
         log_time           timestamp with local time zone  default systimestamp  not null  ,
         log_level          integer                                                         ,
         message            clob                                                            ,
-        call_stack         varchar2(1000)                                                  ,
-        module             varchar2(64)                                                    ,
-        action             varchar2(64)                                                    ,
-        unique_session_id  varchar2(12)                                                    ,
-        client_identifier  varchar2(64)                                                    ,
-        ip_address         varchar2(32)                                                    ,
-        host               varchar2(64)                                                    ,
-        os_user            varchar2(64)                                                    ,
-        os_user_agent      varchar2(200)                                                   ,
+        call_stack         varchar2(1000 char)                                             ,
+        module             varchar2(  64 char)                                             ,
+        action             varchar2(  64 char)                                             ,
+        client_info        varchar2(  64 char)                                             ,
+        session_user       varchar2(  32 char)                                             ,
+        unique_session_id  varchar2(  16 char)                                             ,
+        client_identifier  varchar2(  64 char)                                             ,
+        ip_address         varchar2(  32 char)                                             ,
+        host               varchar2(  64 char)                                             ,
+        os_user            varchar2(  64 char)                                             ,
+        os_user_agent      varchar2( 200 char)                                             ,
         instance           integer                                                         ,
-        instance_name      varchar2(32)                                                    ,
-        service_name       varchar2(64)                                                    ,
+        instance_name      varchar2(  32 char)                                             ,
+        service_name       varchar2(  64 char)                                             ,
         sid                integer                                                         ,
-        sessionid          varchar2(64)                                                    ,
+        sessionid          varchar2(  64 char)                                             ,
         --
-        constraint console_logs_check_level check (log_level in (0,1,2,3))
+        constraint console_logs_check_level check (log_level in (0,1,2,3,4))
       )
     }';
   end loop;
@@ -78,6 +80,8 @@ comment on column console_logs.message is 'The log message.';
 comment on column console_logs.call_stack is 'The call_stack will only be provided on log level 1 (call of console.error).';
 comment on column console_logs.module is 'The application name (module) set through the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.action is 'Identifies the position in the module (application name) and is set through the DBMS_APPLICATION_INFO package or OCI.';
+comment on column console_logs.client_info is 'Client information that can be stored by an application using the DBMS_APPLICATION_INFO package or OCI.';
+comment on column console_logs.session_user is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
 comment on column console_logs.unique_session_id is 'An identifier that is unique for all sessions currently connected to the database. Provided by DBMS_SESSION.UNIQUE_SESSION_ID. Is constructed by sid, serial# and inst_id from (g)v$session (undocumented, there is no official way to construct this ID by yourself, but we need to do this to identify a session).';
 comment on column console_logs.client_identifier is 'Returns an identifier that is set by the application through the DBMS_SESSION.SET_IDENTIFIER procedure, the OCI attribute OCI_ATTR_CLIENT_IDENTIFIER, or Oracle Dynamic Monitoring Service (DMS). This attribute is used by various database components to identify lightweight application users who authenticate as the same database user.';
 comment on column console_logs.ip_address is 'IP address of the machine from which the client is connected. If the client and server are on the same machine and the connection uses IPv6 addressing, then ::1 is returned.';
@@ -124,7 +128,7 @@ An instrumentation tool for Oracle developers. Save to install on production and
 
 DEPENDENCIES
 
-Oracle DB >= 18.x???
+Oracle DB >= 18.x??? will mainly depend on the call stack facilities of the release, we will see...
 
 INSTALLATION
 
@@ -154,46 +158,52 @@ FIXME: Create uninstall scripts
 **/
 
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- CONSTANTS, TYPES
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- MAIN METHODS
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 procedure permanent (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 /** Log a message with the level 0 (permanent). These messages will not be deleted on cleanup. **/
 
 procedure error (
   p_message    clob,
+  p_trace      boolean  default true,
   p_user_agent varchar2 default null);
 /** Log a message with the level 1 (error). **/
 
 procedure warn (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 /** Log a message with the level 2 (warning). **/
 
 procedure info(
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
-/** Log a message with the level 3 (info). This is an alias for the debug method. **/
+/** Log a message with the level 3 (info). **/
 
 procedure log(
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
-/** Log a message with the level 3 (info). This is an alias for the debug method. **/
+/** Log a message with the level 3 (info). **/
 
 procedure debug (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 /** Log a message with the level 4 (verbose). **/
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- UTILITIES (only compiled when public)
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 $if $$utils_public $then
 
@@ -209,9 +219,9 @@ show errors
 prompt Compile package console (body)
 create or replace package body console is
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- CONSTANTS, TYPES, GLOBALS
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 c_tab          constant varchar2(1) := chr(9);
 c_cr           constant varchar2(1) := chr(13);
@@ -222,9 +232,9 @@ c_hash         constant varchar2(1) := '#';
 c_slash        constant varchar2(1) := '/';
 c_vc2_max_size constant pls_integer := 32767;
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- UTILITIES (forward declarations, only compiled when not public)
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
 $if not $$utils_public $then
 
@@ -233,113 +243,147 @@ $if not $$utils_public $then
 $end
 
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- UTILITIES
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
-------------------------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 -- MAIN CODE
-------------------------------------------------------------------------------------------------------------------------
-
-procedure log_internal (p_level integer, p_message clob, p_user_agent varchar2 default null) is
-  pragma autonomous_transaction;
-begin
-  dbms_output.put_line(p_message);
-  insert into console_logs (
-    log_level,
-    message,
-    call_stack,
-    module,
-    action,
-    unique_session_id,
-    client_identifier,
-    ip_address,
-    host,
-    os_user,
-    os_user_agent,
-    instance,
-    instance_name,
-    service_name,
-    sid,
-    sessionid
-  ) values (
-    p_level,
-    p_message,
-    null, --FIXME: call_stack,
-    sys_context('USERENV', 'MODULE'),
-    sys_context('USERENV', 'ACTION'),
-    dbms_session.unique_session_id,
-    sys_context('USERENV', 'CLIENT_IDENTIFIER'),
-    sys_context('USERENV', 'IP_ADDRESS'),
-    sys_context('USERENV', 'HOST'),
-    sys_context('USERENV', 'OS_USER'),
-    substr(p_user_agent, 1, 200),
-    sys_context('USERENV', 'INSTANCE'),
-    sys_context('USERENV', 'INSTANCE_NAME'),
-    sys_context('USERENV', 'SERVICE_NAME'),
-    sys_context('USERENV', 'SID'),
-    sys_context('USERENV', 'SESSIONID')
-  );
-  commit;
-end;
+--------------------------------------------------------------------------------
 
 function logging_enabled return boolean
 is
 begin
-  return false; --FIXME: implement
+  return true; --FIXME: implement
+end logging_enabled;
+
+--------------------------------------------------------------------------------
+
+function call_stack return varchar2
+is
+begin
+  return 'dummy'; --FIXME: implement
+end call_stack;
+
+--------------------------------------------------------------------------------
+
+procedure log_internal (
+  p_level      integer,
+  p_message    clob,
+  p_trace      boolean,
+  p_user_agent varchar2)
+is
+  pragma autonomous_transaction;
+  v_call_stack varchar2(1000 char);
+begin
+  if p_level <= c_level_error or logging_enabled then
+    if p_trace then
+      v_call_stack := substr(call_stack, 1, 1000);
+    end if;
+    dbms_output.put_line(p_message);
+    insert into console_logs (
+      log_level,
+      message,
+      call_stack,
+      module,
+      action,
+      client_info,
+      session_user,
+      unique_session_id,
+      client_identifier,
+      ip_address,
+      host,
+      os_user,
+      os_user_agent,
+      instance,
+      instance_name,
+      service_name,
+      sid,
+      sessionid)
+    values (
+      p_level,
+      p_message,
+      v_call_stack,
+      sys_context('USERENV', 'MODULE'),
+      sys_context('USERENV', 'ACTION'),
+      sys_context('USERENV', 'CLIENT_INFO'),
+      sys_context('USERENV', 'SESSION_USER'),
+      dbms_session.unique_session_id,
+      sys_context('USERENV', 'CLIENT_IDENTIFIER'),
+      sys_context('USERENV', 'IP_ADDRESS'),
+      sys_context('USERENV', 'HOST'),
+      sys_context('USERENV', 'OS_USER'),
+      substr(p_user_agent, 1, 200),
+      sys_context('USERENV', 'INSTANCE'),
+      sys_context('USERENV', 'INSTANCE_NAME'),
+      sys_context('USERENV', 'SERVICE_NAME'),
+      sys_context('USERENV', 'SID'),
+      sys_context('USERENV', 'SESSIONID'));
+    commit;
+  end if;
 end;
+
+--------------------------------------------------------------------------------
 
 procedure permanent (
-  p_message clob,
+  p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null) is
 begin
-  -- level permanent will always be logged
-  log_internal (c_level_permanent, p_message, p_user_agent);
+  log_internal (c_level_permanent, p_message, p_trace, p_user_agent);
 end;
+
+--------------------------------------------------------------------------------
 
 procedure error (
-  p_message clob,
+  p_message    clob,
+  p_trace      boolean  default true,
   p_user_agent varchar2 default null) is
 begin
-  -- level error will always be logged
-  log_internal (c_level_error, p_message, p_user_agent);
+  log_internal (c_level_error, p_message, p_trace, p_user_agent);
 end;
+
+--------------------------------------------------------------------------------
 
 procedure warn (
-  p_message clob,
+  p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null) is
 begin
-  if logging_enabled then
-    log_internal (c_level_warning  , p_message, p_user_agent);
-  end if;
+  log_internal (c_level_warning  , p_message, p_trace, p_user_agent);
 end;
+
+--------------------------------------------------------------------------------
 
 procedure info (
-  p_message clob,
+  p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null) is
 begin
-  if logging_enabled then
-    log_internal (c_level_info, p_message, p_user_agent);
-  end if;
+  log_internal (c_level_info, p_message, p_trace, p_user_agent);
 end;
+
+--------------------------------------------------------------------------------
 
 procedure log (
-  p_message clob,
+  p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null) is
 begin
-  if logging_enabled then
-    log_internal (c_level_info, p_message, p_user_agent);
-  end if;
+  log_internal (c_level_info, p_message, p_trace, p_user_agent);
 end;
 
+--------------------------------------------------------------------------------
+
 procedure debug (
-  p_message clob,
+  p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null) is
 begin
-  if logging_enabled then
-    log_internal (c_level_verbose, p_message, p_user_agent);
-  end if;
+  log_internal (c_level_verbose, p_message, p_trace, p_user_agent);
 end;
+
+--------------------------------------------------------------------------------
 
 end console;
 /

@@ -20,7 +20,7 @@ An instrumentation tool for Oracle developers. Save to install on production and
 
 DEPENDENCIES
 
-Oracle DB >= 18.x???
+Oracle DB >= 18.x??? will mainly depend on the call stack facilities of the release, we will see...
 
 INSTALLATION
 
@@ -77,6 +77,7 @@ SIGNATURE
 ```sql
 procedure permanent (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 ```
 
@@ -91,6 +92,7 @@ SIGNATURE
 ```sql
 procedure error (
   p_message    clob,
+  p_trace      boolean  default true,
   p_user_agent varchar2 default null);
 ```
 
@@ -105,6 +107,7 @@ SIGNATURE
 ```sql
 procedure warn (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 ```
 
@@ -112,13 +115,14 @@ procedure warn (
 <h2><a id="info"></a>Procedure info</h2>
 <!------------------------------------->
 
-Log a message with the level 3 (info). This is an alias for the debug method.
+Log a message with the level 3 (info).
 
 SIGNATURE
 
 ```sql
 procedure info(
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 ```
 
@@ -126,13 +130,14 @@ procedure info(
 <h2><a id="log"></a>Procedure log</h2>
 <!----------------------------------->
 
-Log a message with the level 3 (info). This is an alias for the debug method.
+Log a message with the level 3 (info).
 
 SIGNATURE
 
 ```sql
 procedure log(
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 ```
 
@@ -147,6 +152,7 @@ SIGNATURE
 ```sql
 procedure debug (
   p_message    clob,
+  p_trace      boolean  default false,
   p_user_agent varchar2 default null);
 ```
 
