@@ -11,21 +11,30 @@ Oracle Instrumentation Console
 - [Procedure info](#info)
 - [Procedure log](#log)
 - [Procedure debug](#debug)
+- [Function get_my_unique_session_id](#get_my_unique_session_id)
+- [Function get_unique_session_id](#get_unique_session_id)
+- [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
 
 
 <h2><a id="console"></a>Package console</h2>
 <!----------------------------------------->
 
-An instrumentation tool for Oracle developers. Save to install on production and mostly API compatible with the [JavaScript console](https://developers.google.com/web/tools/chrome-devtools/console/api).
+An instrumentation tool for Oracle developers. Save to install on production and
+mostly API compatible with the [JavaScript
+console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
 DEPENDENCIES
 
-Oracle DB >= 18.x??? will mainly depend on the call stack facilities of the release, we will see...
+Oracle DB >= 18.x??? will mainly depend on the call stack facilities of the
+release, we will see...
 
 INSTALLATION
 
-- Download the [latest version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest) and unzip it or clone the repository
-- Go into the project root directory and use SQL*Plus (or another tool which can run SQL scripts)
+- Download the [latest
+  version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
+  and unzip it or clone the repository
+- Go into the project root directory and use SQL*Plus (or another tool which can
+  run SQL scripts)
 
 The installation itself is splitted into two mandatory and two optional steps:
 
@@ -36,9 +45,12 @@ The installation itself is splitted into two mandatory and two optional steps:
     - `2_install_console.sql`
     - User needs the rights to create a package, a table and views
     - Do this step on every new release of the tool
-3. Optional: When installed in a central tools schema you may want to grant execute rights on the package and select rights on the views to public or other schemas
+3. Optional: When installed in a central tools schema you may want to grant
+   execute rights on the package and select rights on the views to public or
+   other schemas
     - `3_grant_rights.sql`
-4. Optional: When you want to use it in another schema you may want to create synonyms there for easier access
+4. Optional: When you want to use it in another schema you may want to create
+   synonyms there for easier access
     - `4_create_synonyms.sql`
 
 UNINSTALLATION
@@ -70,7 +82,8 @@ c_level_verbose   constant integer := 4;
 <h2><a id="permanent"></a>Procedure permanent</h2>
 <!----------------------------------------------->
 
-Log a message with the level 0 (permanent). These messages will not be deleted on cleanup.
+Log a message with the level 0 (permanent). These messages will not be deleted
+on cleanup.
 
 SIGNATURE
 
@@ -154,6 +167,65 @@ procedure debug (
   p_message    clob,
   p_trace      boolean  default false,
   p_user_agent varchar2 default null);
+```
+
+
+<h2><a id="get_my_unique_session_id"></a>Function get_my_unique_session_id</h2>
+<!---------------------------------------------------------------------------->
+
+Get the unique session id for debugging of the own session.
+
+Returns the ID provided by DBMS_SESSION.UNIQUE_SESSION_ID.
+
+SIGNATURE
+
+```sql
+function get_my_unique_session_id return varchar2;
+```
+
+
+<h2><a id="get_unique_session_id"></a>Function get_unique_session_id</h2>
+<!---------------------------------------------------------------------->
+
+Get the unique session id for debugging of another session.
+
+Calculates the ID provided out of the three parameters:
+
+```sql
+v_session_id := ltrim(to_char(p_sid,     '000X'))
+             || ltrim(to_char(p_serial,  '000X'))
+             || ltrim(to_char(p_inst_id, '0000'));
+```
+
+This method to calculate the unique session ID is not documented by Oracle. It
+seems to work, but we have no guarantee, that it is working forever or under all
+circumstances.
+
+The first two parts seems to work, the part three for the inst_id is only a
+guess and should work from zero to nine. But above I have no experience. Does
+anybody have a RAC running with more then nine instances? Please let me know -
+maybe I need to calculate here also with a hex format mask...
+
+SIGNATURE
+
+```sql
+function get_unique_session_id (
+  p_sid     integer,
+  p_serial  integer,
+  p_inst_id integer default 1) return varchar2;
+```
+
+
+<h2><a id="get_sid_serial_inst_id"></a>Function get_sid_serial_inst_id</h2>
+<!------------------------------------------------------------------------>
+
+Calculates the sid, serial and inst_id out of a unique session ID as it is
+provided by DBMS_SESSION.UNIQUE_SESSION_ID.
+
+SIGNATURE
+
+```sql
+function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2;
 ```
 
 
