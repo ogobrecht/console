@@ -4,22 +4,31 @@ create or replace package body console is
 -- CONSTANTS, TYPES, GLOBALS
 --------------------------------------------------------------------------------
 
-c_tab          constant varchar2(1) := chr(9);
-c_cr           constant varchar2(1) := chr(13);
-c_lf           constant varchar2(1) := chr(10);
-c_crlf         constant varchar2(2) := chr(13) || chr(10);
-c_at           constant varchar2(1) := '@';
-c_hash         constant varchar2(1) := '#';
-c_slash        constant varchar2(1) := '/';
-c_vc2_max_size constant pls_integer := 32767;
+c_tab          constant varchar2(1 byte) := chr(9);
+c_cr           constant varchar2(1 byte) := chr(13);
+c_lf           constant varchar2(1 byte) := chr(10);
+c_crlf         constant varchar2(2 byte) := chr(13) || chr(10);
+c_at           constant varchar2(1 byte) := '@';
+c_hash         constant varchar2(1 byte) := '#';
+c_slash        constant varchar2(1 byte) := '/';
+c_vc_max_size  constant pls_integer := 32767;
+
+subtype vc16    is varchar2(   16 char);
+subtype vc32    is varchar2(   32 char);
+subtype vc64    is varchar2(   64 char);
+subtype vc128   is varchar2(  128 char);
+subtype vc255   is varchar2(  255 char);
+subtype vc500   is varchar2(  500 char);
+subtype vc1000  is varchar2( 1000 char);
+subtype vc2000  is varchar2( 2000 char);
+subtype vc4000  is varchar2( 4000 char);
+subtype vc_max  is varchar2(32767 char);
 
 --------------------------------------------------------------------------------
--- UTILITIES (forward declarations, only compiled when not public)
+-- UTILITIES (forward declarations, only visible when ccflag `utils_public` is set to false)
 --------------------------------------------------------------------------------
 
 $if not $$utils_public $then
-
-
 
 $end
 
@@ -105,6 +114,8 @@ begin
 end;
 
 --------------------------------------------------------------------------------
+-- PUBLIC LOGGING METHODS
+--------------------------------------------------------------------------------
 
 procedure permanent (
   p_message    clob,
@@ -113,7 +124,7 @@ procedure permanent (
 is
 begin
   log_internal (c_level_permanent, p_message, p_trace, p_user_agent);
-end;
+end permanent;
 
 --------------------------------------------------------------------------------
 
@@ -124,7 +135,7 @@ procedure error (
 is
 begin
   log_internal (c_level_error, p_message, p_trace, p_user_agent);
-end;
+end error;
 
 --------------------------------------------------------------------------------
 
@@ -135,7 +146,7 @@ procedure warn (
 is
 begin
   log_internal (c_level_warning  , p_message, p_trace, p_user_agent);
-end;
+end warn;
 
 --------------------------------------------------------------------------------
 
@@ -146,7 +157,7 @@ procedure info (
 is
 begin
   log_internal (c_level_info, p_message, p_trace, p_user_agent);
-end;
+end info;
 
 --------------------------------------------------------------------------------
 
@@ -157,7 +168,7 @@ procedure log (
 is
 begin
   log_internal (c_level_info, p_message, p_trace, p_user_agent);
-end;
+end log;
 
 --------------------------------------------------------------------------------
 
@@ -168,9 +179,22 @@ procedure debug (
 is
 begin
   log_internal (c_level_verbose, p_message, p_trace, p_user_agent);
-end;
+end debug;
 
 --------------------------------------------------------------------------------
+-- PUBLIC HELPER METHODS
+--------------------------------------------------------------------------------
+
+/*
+
+Some Useful Links
+-----------------
+
+- [DBMS_SESSION: Managing Sessions From a Connection Pool in Oracle
+  Databases](https://oracle-base.com/articles/misc/dbms_session)
+
+
+*/
 
 function get_my_unique_session_id return varchar2
 is
@@ -185,14 +209,14 @@ function get_unique_session_id (
   p_serial  integer,
   p_inst_id integer default 1) return varchar2
 is
-  v_inst_id    integer;
-  v_return vc16;
+  v_inst_id integer;
+  v_return  vc16;
 begin
-  v_inst_id := coalesce(p_inst_id, 1); -- param default 1 does not mean the user cannot provide a null ;-)
+  v_inst_id := coalesce(p_inst_id, 1); -- param default 1 does not mean the user cannot provide null ;-)
   if p_sid is null or p_serial is null then
     raise_application_error (
       -20000,
-      'You need to specify at least p_sid and p_serial to calculate the unique session ID.');
+      'You need to specify at least p_sid and p_serial to calculate a unique session ID.');
   else
     v_return := ltrim(to_char(p_sid,     '000x'))
              || ltrim(to_char(p_serial,  '000x'))

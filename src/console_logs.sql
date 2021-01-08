@@ -1,6 +1,6 @@
 --For development only - uncomment temporarely when you need it:
-begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
-/
+--begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
+--/
 
 declare
   v_name varchar2(30 char) := 'CONSOLE_LOGS';

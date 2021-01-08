@@ -64,19 +64,10 @@ FIXME: Create uninstall scripts
 --------------------------------------------------------------------------------
 -- CONSTANTS, TYPES
 --------------------------------------------------------------------------------
-subtype vc16    is varchar2(   16 char);
-subtype vc32    is varchar2(   32 char);
-subtype vc64    is varchar2(   64 char);
-subtype vc128   is varchar2(  128 char);
-subtype vc256   is varchar2(  256 char);
-subtype vc500   is varchar2(  500 char);
-subtype vc1000  is varchar2( 1000 char);
-subtype vc2000  is varchar2( 2000 char);
-subtype vc4000  is varchar2( 4000 char);
-subtype vcmax   is varchar2(32767 char);
+
 
 --------------------------------------------------------------------------------
--- MAIN LOGGING METHODS
+-- PUBLIC LOGGING METHODS
 --------------------------------------------------------------------------------
 procedure permanent (
   p_message    clob,
@@ -140,7 +131,7 @@ Log a message with the level 4 (verbose).
 **/
 
 --------------------------------------------------------------------------------
--- HELPER METHODS
+-- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
 function get_my_unique_session_id return varchar2;
@@ -161,11 +152,11 @@ function get_unique_session_id (
 
 Get the unique session id for debugging of another session.
 
-Calculates the ID provided out of the three parameters:
+Calculates the ID out of three parameters:
 
 ```sql
-v_session_id := ltrim(to_char(p_sid,     '000X'))
-             || ltrim(to_char(p_serial,  '000X'))
+v_session_id := ltrim(to_char(p_sid,     '000x'))
+             || ltrim(to_char(p_serial,  '000x'))
              || ltrim(to_char(p_inst_id, '0000'));
 ```
 
@@ -174,9 +165,25 @@ seems to work, but we have no guarantee, that it is working forever or under all
 circumstances.
 
 The first two parts seems to work, the part three for the inst_id is only a
-guess and should work from zero to nine. But above I have no experience. Does
-anybody have a RAC running with more then nine instances? Please let me know -
-maybe I need to calculate here also with a hex format mask...
+guess and should work fine from zero to nine. But above I have no experience.
+Does anybody have a RAC running with more then nine instances? Please let me
+know - maybe I need to calculate here also with a hex format mask...
+
+Hint: When checking in a session, if the logging is enabled or when we create a
+log entry, we always use DBMS_SESSION.UNIQUE_SESSION_ID. All the helper methods
+here to calculate the unique session id are only existing for the purpose to
+start the logging of another session and to set the global context in a way the
+targeted session can compare against with with DBMS_SESSION.UNIQUE_SESSION_ID or
+SYS_CONTEXT('USERENV','CLIENT_IDENTIFIER'). Unfortunately the unique session id
+is not provided in the (g)v$session views (the client_identifier is) - so we
+need to calculate it by ourselfes. It is worth to note that the schema were the
+console package is installed does not need any higher privileges and does
+therefore not read from the (g)v$session view. In other words: When you want to
+debug another session you need to have a way to find the target session - for
+APEX this is easy - the client identifier is set by APEX and can be calculated
+by looking at your session id in the browser URL. For a specific, non shared
+session you can use the (g)v$session view to calculate the unique session ID by
+providing at least sid and serial.
 
 **/
 
@@ -187,6 +194,19 @@ function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2;
 Calculates the sid, serial and inst_id out of a unique session ID as it is
 provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 
+Is for informational purposes and to map a recent log entry back to maybe
+running session.
+
+The same as with `get_unique_session_id`: I have no idea if the calculation is
+correct. It works for currently and is implementes in this way:
+
+```sql
+v_sid_serial_inst_id :=
+     to_char(to_number(substr(p_unique_session_id, 1, 4), '000x')) || ', '
+  || to_char(to_number(substr(p_unique_session_id, 5, 4), '000x')) || ', '
+  || to_char(to_number(substr(p_unique_session_id, 9, 4), '0000'));
+```
+
 **/
 
 --------------------------------------------------------------------------------
@@ -194,7 +214,7 @@ provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 --------------------------------------------------------------------------------
 
 $if $$utils_public $then
-  -- currently no private utils existing
+
 $end
 
 end console;
