@@ -17,6 +17,8 @@ Oracle Instrumentation Console
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
+- [Procedure set_module](#set_module)
+- [Procedure set_action](#set_action)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -364,6 +366,35 @@ SIGNATURE
 function get_sid_serial_inst_id (
   p_unique_session_id varchar2
 ) return varchar2;
+```
+
+
+<h2><a id="set_module"></a>Procedure set_module</h2>
+<!------------------------------------------------->
+
+An alias for `dbms_application_info.set_module`.
+
+SIGNATURE
+
+```sql
+procedure set_module(
+  p_module varchar2,
+  p_action varchar2 default null
+);
+```
+
+
+<h2><a id="set_action"></a>Procedure set_action</h2>
+<!------------------------------------------------->
+
+An alias for `dbms_application_info.set_action`.
+
+SIGNATURE
+
+```sql
+procedure set_action(
+  p_action varchar2
+);
 ```
 
 

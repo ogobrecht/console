@@ -400,10 +400,10 @@ providing at least sid and serial.
 
 **/
 
+
 function get_sid_serial_inst_id (
   p_unique_session_id varchar2
 ) return varchar2;
-
 /**
 
 Calculates the sid, serial and inst_id out of a unique session ID as it is
@@ -421,6 +421,28 @@ v_sid_serial_inst_id :=
   || to_char(to_number(substr(p_unique_session_id, 5, 4), '000x')) || ', '
   || to_char(to_number(substr(p_unique_session_id, 9, 4), '0000'));
 ```
+
+**/
+
+
+procedure set_module(
+  p_module varchar2,
+  p_action varchar2 default null
+);
+/**
+
+An alias for `dbms_application_info.set_module`.
+
+**/
+
+
+
+procedure set_action(
+  p_action varchar2
+);
+/**
+
+An alias for `dbms_application_info.set_action`.
 
 **/
 
@@ -581,7 +603,7 @@ procedure init(
   p_action varchar2
 ) is
 begin
-  dbms_application_info.set_action(substr(p_action, 1, 64));
+  dbms_application_info.set_action(p_action);
 end init;
 
 --------------------------------------------------------------------------------
@@ -654,6 +676,25 @@ begin
   end if;
   return v_return;
 end get_sid_serial_inst_id;
+
+--------------------------------------------------------------------------------
+
+procedure set_module(
+  p_module varchar2,
+  p_action varchar2 default null
+) is
+begin
+  dbms_application_info.set_module(p_module, p_action);
+end set_module;
+
+--------------------------------------------------------------------------------
+
+procedure set_action(
+  p_action varchar2
+) is
+begin
+  dbms_application_info.set_action(p_action);
+end set_action;
 
 --------------------------------------------------------------------------------
 -- PRIVATE METHODS
