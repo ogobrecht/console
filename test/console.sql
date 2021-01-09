@@ -22,5 +22,5 @@ end;
 prompt
 timing stop
 prompt ================================================================================
-prompt Test Console Done :-)
+prompt Test Console Finished :-)
 prompt

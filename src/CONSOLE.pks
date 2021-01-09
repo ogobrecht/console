@@ -32,8 +32,8 @@ INSTALLATION
 - Download the [latest
   version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
   and unzip it or clone the repository
-- Go into the projects subdirectory install and use SQL*Plus (or another tool
-  which can run SQL scripts)
+- Go into the project subdirectory named install and use SQL*Plus (or another
+  tool which can run SQL scripts)
 
 The installation itself is splitted into two mandatory and two optional steps:
 
@@ -67,12 +67,13 @@ FIXME: Create uninstall scripts
 
 
 --------------------------------------------------------------------------------
--- PUBLIC LOGGING METHODS
+-- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 procedure permanent (
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 /**
 
 Log a message with the level 0 (permanent). These messages will not be deleted
@@ -83,7 +84,8 @@ on cleanup.
 procedure error (
   p_message    clob,
   p_trace      boolean  default true,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 /**
 
 Log a message with the level 1 (error).
@@ -93,7 +95,8 @@ Log a message with the level 1 (error).
 procedure warn (
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 /**
 
 Log a message with the level 2 (warning).
@@ -103,7 +106,8 @@ Log a message with the level 2 (warning).
 procedure info(
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 /**
 
 Log a message with the level 3 (info).
@@ -113,7 +117,8 @@ Log a message with the level 3 (info).
 procedure log(
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 /**
 
 Log a message with the level 3 (info).
@@ -123,18 +128,44 @@ Log a message with the level 3 (info).
 procedure debug (
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 /**
 
 Log a message with the level 4 (verbose).
 
 **/
 
+procedure assert(
+  p_expression in boolean,
+  p_message    in varchar2
+);
+/**
+
+If the given expression evaluates to false an error is raised with the given message.
+
+EXAMPLE
+
+```sql
+begin
+  console.assert(5 < 3, 'test assertion');
+exception
+  when others then
+    console.error('something went wrong');
+    raise;
+end;
+{{/}}
+```
+
+**/
+
+
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
-function get_my_unique_session_id return varchar2;
+function get_unique_session_id
+  return varchar2;
 /**
 
 Get the unique session id for debugging of the own session.
@@ -147,7 +178,8 @@ Returns the ID provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 function get_unique_session_id (
   p_sid     integer,
   p_serial  integer,
-  p_inst_id integer default 1) return varchar2;
+  p_inst_id integer default 1
+) return varchar2;
 /**
 
 Get the unique session id for debugging of another session.
@@ -187,18 +219,20 @@ providing at least sid and serial.
 
 **/
 
-function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2;
+function get_sid_serial_inst_id (
+  p_unique_session_id varchar2
+) return varchar2;
 
 /**
 
 Calculates the sid, serial and inst_id out of a unique session ID as it is
 provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 
-Is for informational purposes and to map a recent log entry back to maybe
+Is for informational purposes and to map a recent log entry back to a maybe
 running session.
 
 The same as with `get_unique_session_id`: I have no idea if the calculation is
-correct. It works for currently and is implementes in this way:
+correct. It works currently and is implementes in this way:
 
 ```sql
 v_sid_serial_inst_id :=

@@ -13,7 +13,8 @@
     "install-console": "echo exit | sqlplus -S /@playground @install/create_console_objects.sql",
     "test-all":"npm-run-all -s test-ccflags test-console",
     "test-ccflags": "echo exit | sqlplus -S /@playground @test/ccflags.sql",
-    "test-console": "echo exit | sqlplus -S /@playground @test/console.sql"
+    "test-console": "echo exit | sqlplus -S /@playground @test/console.sql",
+    "delete-logs": "del *.log"
   },
   "devDependencies": {
     "chokidar-cli": "^2.1.0",

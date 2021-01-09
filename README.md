@@ -11,7 +11,8 @@ Oracle Instrumentation Console
 - [Procedure info](#info)
 - [Procedure log](#log)
 - [Procedure debug](#debug)
-- [Function get_my_unique_session_id](#get_my_unique_session_id)
+- [Procedure assert](#assert)
+- [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
 
@@ -33,8 +34,8 @@ INSTALLATION
 - Download the [latest
   version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
   and unzip it or clone the repository
-- Go into the projects subdirectory install and use SQL*Plus (or another tool
-  which can run SQL scripts)
+- Go into the project subdirectory named install and use SQL*Plus (or another
+  tool which can run SQL scripts)
 
 The installation itself is splitted into two mandatory and two optional steps:
 
@@ -91,7 +92,8 @@ SIGNATURE
 procedure permanent (
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 ```
 
 
@@ -106,7 +108,8 @@ SIGNATURE
 procedure error (
   p_message    clob,
   p_trace      boolean  default true,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 ```
 
 
@@ -121,7 +124,8 @@ SIGNATURE
 procedure warn (
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 ```
 
 
@@ -136,7 +140,8 @@ SIGNATURE
 procedure info(
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 ```
 
 
@@ -151,7 +156,8 @@ SIGNATURE
 procedure log(
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 ```
 
 
@@ -166,12 +172,41 @@ SIGNATURE
 procedure debug (
   p_message    clob,
   p_trace      boolean  default false,
-  p_user_agent varchar2 default null);
+  p_user_agent varchar2 default null
+);
 ```
 
 
-<h2><a id="get_my_unique_session_id"></a>Function get_my_unique_session_id</h2>
-<!---------------------------------------------------------------------------->
+<h2><a id="assert"></a>Procedure assert</h2>
+<!----------------------------------------->
+
+If the given expression evaluates to false an error is raised with the given message.
+
+EXAMPLE
+
+```sql
+begin
+  console.assert(5 < 3, 'test assertion');
+exception
+  when others then
+    console.error('something went wrong');
+    raise;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure assert(
+  p_expression in boolean,
+  p_message    in varchar2
+);
+```
+
+
+<h2><a id="get_unique_session_id"></a>Function get_unique_session_id</h2>
+<!---------------------------------------------------------------------->
 
 Get the unique session id for debugging of the own session.
 
@@ -180,7 +215,8 @@ Returns the ID provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 SIGNATURE
 
 ```sql
-function get_my_unique_session_id return varchar2;
+function get_unique_session_id
+  return varchar2;
 ```
 
 
@@ -228,7 +264,8 @@ SIGNATURE
 function get_unique_session_id (
   p_sid     integer,
   p_serial  integer,
-  p_inst_id integer default 1) return varchar2;
+  p_inst_id integer default 1
+) return varchar2;
 ```
 
 
@@ -238,11 +275,11 @@ function get_unique_session_id (
 Calculates the sid, serial and inst_id out of a unique session ID as it is
 provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 
-Is for informational purposes and to map a recent log entry back to maybe
+Is for informational purposes and to map a recent log entry back to a maybe
 running session.
 
 The same as with `get_unique_session_id`: I have no idea if the calculation is
-correct. It works for currently and is implementes in this way:
+correct. It works currently and is implementes in this way:
 
 ```sql
 v_sid_serial_inst_id :=
@@ -254,7 +291,9 @@ v_sid_serial_inst_id :=
 SIGNATURE
 
 ```sql
-function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2;
+function get_sid_serial_inst_id (
+  p_unique_session_id varchar2
+) return varchar2;
 ```
 
 

@@ -6,7 +6,7 @@ prompt
 prompt Test Compiler Flags
 prompt ================================================================================
 
-prompt Show unset compiler flags as errors. This will result in errors like 
+prompt Show unset compiler flags as errors. This will result in errors like
 prompt "PLW-06003: unknown inquiry directive '$$UTILS_PUBLIC'".
 alter session set plsql_warnings = 'ENABLE:6003';
 
@@ -57,10 +57,10 @@ show errors
 prompt
 
 rem Compile with correct flags
-@2_install_console.sql
+@install/create_console_objects.sql
 
 prompt
 timing stop
 prompt ================================================================================
-prompt Test Compiler Flags Done :-)
+prompt Test Compiler Flags Finished :-)
 prompt

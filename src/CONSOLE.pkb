@@ -56,6 +56,8 @@ begin
 end call_stack;
 
 --------------------------------------------------------------------------------
+-- PRIVATE LOGGING METHOD
+--------------------------------------------------------------------------------
 
 procedure log_internal (
   p_level      integer,
@@ -114,7 +116,7 @@ begin
 end;
 
 --------------------------------------------------------------------------------
--- PUBLIC LOGGING METHODS
+-- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
 procedure permanent (
@@ -182,6 +184,18 @@ begin
 end debug;
 
 --------------------------------------------------------------------------------
+
+procedure assert(
+  p_expression in boolean,
+  p_message    in varchar2)
+is
+begin
+  if not p_expression then
+    raise_application_error(-20000, p_message);
+  end if;
+end;
+
+--------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
@@ -196,11 +210,11 @@ Some Useful Links
 
 */
 
-function get_my_unique_session_id return varchar2
+function get_unique_session_id return varchar2
 is
 begin
   return dbms_session.unique_session_id;
-end get_my_unique_session_id;
+end get_unique_session_id;
 
 --------------------------------------------------------------------------------
 
