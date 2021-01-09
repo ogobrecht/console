@@ -1,9 +1,9 @@
 var fs = require('fs');
-console.log('building install file 2_install_console.sql');
+console.log('building install file "install/create_console_objects.sql"');
 fs.writeFileSync(
-    '2_install_console.sql',
-    '--DO NOT CHANGE THIS FILE - IT IS GENERATED WITH THE BUILD SCRIPT src/build.js\n' +
-    fs.readFileSync('src/install.sql', 'utf8')
+    'install/create_console_objects.sql',
+    'REMARK: DO NOT CHANGE THIS FILE - IT IS GENERATED WITH THE BUILD SCRIPT src/build.js\n' +
+    fs.readFileSync('src/install_template.sql', 'utf8')
         .replace('@console_logs.sql', function(){return fs.readFileSync('src/console_logs.sql', 'utf8')})
         .replace('@CONSOLE.pks', function(){return fs.readFileSync('src/CONSOLE.pks', 'utf8')})
         .replace('@CONSOLE.pkb', function(){return fs.readFileSync('src/CONSOLE.pkb', 'utf8')})

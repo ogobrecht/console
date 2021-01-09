@@ -9,8 +9,8 @@ first parameter.
 EXAMPLE
 
 Start SQL*Plus, connect with a privileged user who can create a context and run
-the script with the target installation schema for the Oracle Instrumentation
-Console.
+the script. Provide as the first parameter the target installation schema for
+the Oracle Instrumentation Console.
 
 ```shell
 @create_context.sql "my_target_schema"
@@ -23,15 +23,16 @@ If the context was created:
 ```shell
 Create Context for Oracle Instrumentation Console
 ================================================================================
-- Installation Log = 1_create_context_20210108_210835.log
-- Target Namespace = CONSOLE_MY_TARGET_SCHEMA
-- Target Schema    = MY_TARGET_SCHEMA
-- Target Package   = CONSOLE
-- Check for existing context
-- Context not found, create it with the following command:
-- create context CONSOLE_PLAYGROUND_DATA using PLAYGROUND_DATA.CONSOLE accessed globally
+(1) Show config
+- installation log = create_context_20210109_150933.log
+- target namespace = CONSOLE_MY_TARGET_SCHEMA
+- target schema    = MY_TARGET_SCHEMA
+- target package   = CONSOLE
+(2) Check for existing context
+- context not found, create it with the following command
+(3) create context CONSOLE_MY_TARGET_SCHEMA using MY_TARGET_SCHEMA.CONSOLE accessed globally
 ================================================================================
-Done
+Finished
 ```
 
 If the context was already existing:
@@ -39,20 +40,21 @@ If the context was already existing:
 ```shell
 Create Context for Oracle Instrumentation Console
 ================================================================================
-- Installation Log = 1_create_context_20210108_210840.log
-- Target Namespace = CONSOLE_MY_TARGET_SCHEMA
-- Target Schema    = MY_TARGET_SCHEMA
-- Target Package   = CONSOLE
-- Check for existing context
-- Context found, no action needed
+(1) Show config
+- installation log = create_context_20210109_151031.log
+- target namespace = CONSOLE_MY_TARGET_SCHEMA
+- target schema    = MY_TARGET_SCHEMA
+- target package   = CONSOLE
+(2) Check for existing context
+- context found, no action needed
 ================================================================================
-Done
+Finished
 ```
 
 META
 
 - Author: [Ottmar Gobrecht](https://ogobrecht.github.io)
-- Script: [1_create_context.sql](https://github.com/ogobrecht/console/blob/main/1_create_context.sql)
+- Script: [create_context.sql](https://github.com/ogobrecht/console/blob/main/create_context.sql)
 - Last Update: 2021-01-08
 
 */
@@ -66,7 +68,7 @@ set trimout on
 set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
 column logfile noprint new_val logfile
-select '1_create_context_' || to_char(sysdate,'yyyymmdd_hh24miss')
+select 'create_context_' || to_char(sysdate,'yyyymmdd_hh24miss')
        || '.log' as logfile from dual;
 spool &logfile
 
@@ -85,11 +87,12 @@ begin
   v_namespace := v_package || '_' || substr(v_schema, 1, 22);
   v_ddl       := 'create context ' || v_namespace || ' using '
                  || v_schema || '.' || v_package || ' accessed globally';
-  dbms_output.put_line('- Installation Log = &logfile');
-  dbms_output.put_line('- Target Namespace = ' || v_namespace);
-  dbms_output.put_line('- Target Schema    = ' || v_schema);
-  dbms_output.put_line('- Target Package   = ' || v_package);
-  dbms_output.put_line('- Check for existing context');
+  dbms_output.put_line('(1) Show config');
+  dbms_output.put_line('- installation log = &logfile');
+  dbms_output.put_line('- target namespace = ' || v_namespace);
+  dbms_output.put_line('- target schema    = ' || v_schema);
+  dbms_output.put_line('- target package   = ' || v_package);
+  dbms_output.put_line('(2) Check for existing context');
   select count(*)
     into v_count
     from dba_context
@@ -97,15 +100,15 @@ begin
      and package   = v_package
      and namespace = v_namespace;
   if v_count = 1 then
-    dbms_output.put_line('- Context found, no action needed');
+    dbms_output.put_line('- context found, no action needed');
   else
-    dbms_output.put_line('- Context not found, create it with the following command:');
-    dbms_output.put_line('- ' || v_ddl);
+    dbms_output.put_line('- context not found, create it with the following command');
+    dbms_output.put_line('(3) ' || v_ddl);
     execute immediate v_ddl;
   end if;
 end;
 /
 prompt ================================================================================
-prompt Done
+prompt Finished
 prompt
 spool off

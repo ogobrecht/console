@@ -1,11 +1,23 @@
-set define off feedback off
+set define on
+set serveroutput on
+set verify off
+set feedback off
+set linesize 120
+set trimout on
+set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
+column logfile noprint new_val logfile
+select 'create_console_objects_' || to_char(sysdate,'yyyymmdd_hh24miss')
+       || '.log' as logfile from dual;
+spool &logfile
 
 prompt
-prompt Installing Oracle Instrumentation Console
-prompt ==================================================
+prompt Create Database Objects for Oracle Instrumentation Console
+prompt ================================================================================
 
-prompt Set compiler flags
+prompt (1) Set install log to &logfile
+
+prompt (2) Set compiler flags
 DECLARE
   v_apex_installed VARCHAR2(5) := 'FALSE'; -- Do not change (is set dynamically).
   v_utils_public   VARCHAR2(5) := 'FALSE'; -- Make utilities public available (for testing or other usages).
@@ -27,17 +39,17 @@ BEGIN
 END;
 /
 
-prompt Create or alter table console_logs
+prompt (3) Create or alter table console_logs
 @console_logs.sql
 
-prompt Compile package console (spec)
+prompt (4) Compile package console (spec)
 @CONSOLE.pks
 show errors
 
-prompt Compile package console (body)
+prompt (5) Compile package console (body)
 @CONSOLE.pkb
 show errors
 
-prompt ==================================================
-prompt Installation Done
+prompt ================================================================================
+prompt Finished
 prompt

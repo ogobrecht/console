@@ -32,25 +32,25 @@ INSTALLATION
 - Download the [latest
   version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
   and unzip it or clone the repository
-- Go into the project root directory and use SQL*Plus (or another tool which can
-  run SQL scripts)
+- Go into the projects subdirectory install and use SQL*Plus (or another tool
+  which can run SQL scripts)
 
 The installation itself is splitted into two mandatory and two optional steps:
 
 1. Create a context with a privileged user
-    - `1_create_context.sql`
+    - `create_context.sql`
     - Maybe your DBA needs to do that for you once
 2. Install the tool itself in your desired target schema
-    - `2_install_console.sql`
+    - `create_console_objects.sql`
     - User needs the rights to create a package, a table and views
     - Do this step on every new release of the tool
 3. Optional: When installed in a central tools schema you may want to grant
    execute rights on the package and select rights on the views to public or
    other schemas
-    - `3_grant_rights.sql`
+    - `grant_rights_to_client_schema.sql`
 4. Optional: When you want to use it in another schema you may want to create
    synonyms there for easier access
-    - `4_create_synonyms.sql`
+    - `create_synonyms_in_client_schema.sql`
 
 UNINSTALLATION
 
