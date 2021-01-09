@@ -12,6 +12,8 @@ Oracle Instrumentation Console
 - [Procedure log](#log)
 - [Procedure debug](#debug)
 - [Procedure assert](#assert)
+- [Procedure init](#init)
+- [Procedure clear](#clear)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
@@ -100,7 +102,8 @@ procedure permanent (
 <h2><a id="error"></a>Procedure error</h2>
 <!--------------------------------------->
 
-Log a message with the level 1 (error).
+Log a message with the level 1 (error) and call also `console.clear` to reset
+the session action attribute.
 
 SIGNATURE
 
@@ -202,6 +205,73 @@ procedure assert(
   p_expression in boolean,
   p_message    in varchar2
 );
+```
+
+
+<h2><a id="init"></a>Procedure init</h2>
+<!------------------------------------->
+
+Use the given action to set the session action attribute (in memory operation,
+does not log anything).
+
+This attribute is then visible in the system session views, the user environment
+and will be logged within all console logging methods.
+
+EXAMPLE
+
+```sql
+begin
+  console.init('My process/task');
+  -- do your stuff here...
+  console.clear;
+exception
+  when others then
+    console.error('something went wrong');
+    raise;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure init(
+  p_action varchar2
+);
+```
+
+
+<h2><a id="clear"></a>Procedure clear</h2>
+<!--------------------------------------->
+
+Reset the session action attribute (in memory operation, does not log anything).
+
+When you set the action attribute with `console.init` you should also call
+`console.clear` to reset it to avoid wrong info in the system and your logging.
+
+Is called automatically in `console.error`.
+
+EXAMPLE
+
+```sql
+begin
+  console.init('My process/task');
+
+  -- your stuff here...
+
+  console.clear;
+exception
+  when others then
+    console.error('something went wrong'); -- calls also console.clear
+    raise;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure clear;
 ```
 
 

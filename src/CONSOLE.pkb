@@ -25,46 +25,195 @@ subtype vc4000  is varchar2( 4000 char);
 subtype vc_max  is varchar2(32767 char);
 
 --------------------------------------------------------------------------------
--- UTILITIES (forward declarations, only visible when ccflag `utils_public` is set to false)
+-- PRIVATE METHODS (forward declarations)
 --------------------------------------------------------------------------------
 
 $if not $$utils_public $then
 
+procedure log_internal (
+  p_level      integer,
+  p_message    clob,
+  p_trace      boolean,
+  p_user_agent varchar2
+);
+
+function logging_enabled return boolean;
+
+function call_stack return varchar2;
+
 $end
 
-
 --------------------------------------------------------------------------------
--- UTILITIES
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- MAIN CODE
+-- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
-function logging_enabled return boolean
-is
+procedure permanent (
+  p_message    clob,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
+) is
 begin
-  return true; --FIXME: implement
-end logging_enabled;
+  log_internal (c_level_permanent, p_message, p_trace, p_user_agent);
+end permanent;
 
 --------------------------------------------------------------------------------
 
-function call_stack return varchar2
-is
+procedure error (
+  p_message    clob,
+  p_trace      boolean  default true,
+  p_user_agent varchar2 default null
+) is
 begin
-  return 'dummy'; --FIXME: implement
-end call_stack;
+  log_internal (c_level_error, p_message, p_trace, p_user_agent);
+  clear;
+end error;
 
 --------------------------------------------------------------------------------
--- PRIVATE LOGGING METHOD
+
+procedure warn (
+  p_message    clob,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
+) is
+begin
+  log_internal (c_level_warning  , p_message, p_trace, p_user_agent);
+end warn;
+
+--------------------------------------------------------------------------------
+
+procedure info (
+  p_message    clob,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
+) is
+begin
+  log_internal (c_level_info, p_message, p_trace, p_user_agent);
+end info;
+
+--------------------------------------------------------------------------------
+
+procedure log (
+  p_message    clob,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
+) is
+begin
+  log_internal (c_level_info, p_message, p_trace, p_user_agent);
+end log;
+
+--------------------------------------------------------------------------------
+
+procedure debug (
+  p_message    clob,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
+) is
+begin
+  log_internal (c_level_verbose, p_message, p_trace, p_user_agent);
+end debug;
+
+--------------------------------------------------------------------------------
+
+procedure assert(
+  p_expression in boolean,
+  p_message    in varchar2
+) is
+begin
+  if not p_expression then
+    raise_application_error(-20000, p_message);
+  end if;
+end assert;
+
+--------------------------------------------------------------------------------
+
+procedure init(
+  p_action varchar2
+) is
+begin
+  dbms_application_info.set_action(substr(p_action, 1, 64));
+end init;
+
+--------------------------------------------------------------------------------
+
+procedure clear is
+begin
+  dbms_application_info.set_action(null);
+end;
+
+--------------------------------------------------------------------------------
+-- PUBLIC HELPER METHODS
+--------------------------------------------------------------------------------
+
+/*
+
+Some Useful Links
+-----------------
+
+- [DBMS_SESSION: Managing Sessions From a Connection Pool in Oracle
+  Databases](https://oracle-base.com/articles/misc/dbms_session)
+
+
+*/
+
+function get_unique_session_id return varchar2 is
+begin
+  return dbms_session.unique_session_id;
+end get_unique_session_id;
+
+--------------------------------------------------------------------------------
+
+function get_unique_session_id (
+  p_sid     integer,
+  p_serial  integer,
+  p_inst_id integer default 1) return varchar2
+is
+  v_inst_id integer;
+  v_return  vc16;
+begin
+  v_inst_id := coalesce(p_inst_id, 1); -- param default 1 does not mean the user cannot provide null ;-)
+  if p_sid is null or p_serial is null then
+    raise_application_error (
+      -20000,
+      'You need to specify at least p_sid and p_serial to calculate a unique session ID.');
+  else
+    v_return := ltrim(to_char(p_sid,     '000x'))
+             || ltrim(to_char(p_serial,  '000x'))
+             || ltrim(to_char(v_inst_id, '0000'));
+  end if;
+  return v_return;
+end get_unique_session_id;
+
+--------------------------------------------------------------------------------
+
+function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2 is
+  v_return vc32;
+begin
+  if p_unique_session_id is null then
+    raise_application_error (
+      -20000,
+      'You need to specify p_unique_session_id to calculate the sid, serial and host_id.');
+  elsif length(p_unique_session_id) != 12 then
+    raise_application_error (
+      -20000,
+      'We use here typically a 12 character long unique session identifier like it is provided by DBMS_SESSION.UNIQUE_SESSION_ID.');
+  else
+    v_return := to_char(to_number(substr(p_unique_session_id, 1, 4), '000x')) || ', '
+             || to_char(to_number(substr(p_unique_session_id, 5, 4), '000x')) || ', '
+             || to_char(to_number(substr(p_unique_session_id, 9, 4), '0000'));
+  end if;
+  return v_return;
+end get_sid_serial_inst_id;
+
+--------------------------------------------------------------------------------
+-- PRIVATE METHODS
 --------------------------------------------------------------------------------
 
 procedure log_internal (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
-  p_user_agent varchar2)
-is
+  p_user_agent varchar2
+) is
   pragma autonomous_transaction;
   v_call_stack varchar2(1000 char);
 begin
@@ -113,155 +262,23 @@ begin
       sys_context('USERENV', 'SESSIONID'));
     commit;
   end if;
-end;
+end log_internal;
 
 --------------------------------------------------------------------------------
--- PUBLIC CONSOLE METHODS
---------------------------------------------------------------------------------
 
-procedure permanent (
-  p_message    clob,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null)
+function logging_enabled return boolean
 is
 begin
-  log_internal (c_level_permanent, p_message, p_trace, p_user_agent);
-end permanent;
+  return true; --FIXME: implement
+end logging_enabled;
 
 --------------------------------------------------------------------------------
 
-procedure error (
-  p_message    clob,
-  p_trace      boolean  default true,
-  p_user_agent varchar2 default null)
+function call_stack return varchar2
 is
 begin
-  log_internal (c_level_error, p_message, p_trace, p_user_agent);
-end error;
-
---------------------------------------------------------------------------------
-
-procedure warn (
-  p_message    clob,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null)
-is
-begin
-  log_internal (c_level_warning  , p_message, p_trace, p_user_agent);
-end warn;
-
---------------------------------------------------------------------------------
-
-procedure info (
-  p_message    clob,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null)
-is
-begin
-  log_internal (c_level_info, p_message, p_trace, p_user_agent);
-end info;
-
---------------------------------------------------------------------------------
-
-procedure log (
-  p_message    clob,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null)
-is
-begin
-  log_internal (c_level_info, p_message, p_trace, p_user_agent);
-end log;
-
---------------------------------------------------------------------------------
-
-procedure debug (
-  p_message    clob,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null)
-is
-begin
-  log_internal (c_level_verbose, p_message, p_trace, p_user_agent);
-end debug;
-
---------------------------------------------------------------------------------
-
-procedure assert(
-  p_expression in boolean,
-  p_message    in varchar2)
-is
-begin
-  if not p_expression then
-    raise_application_error(-20000, p_message);
-  end if;
-end;
-
---------------------------------------------------------------------------------
--- PUBLIC HELPER METHODS
---------------------------------------------------------------------------------
-
-/*
-
-Some Useful Links
------------------
-
-- [DBMS_SESSION: Managing Sessions From a Connection Pool in Oracle
-  Databases](https://oracle-base.com/articles/misc/dbms_session)
-
-
-*/
-
-function get_unique_session_id return varchar2
-is
-begin
-  return dbms_session.unique_session_id;
-end get_unique_session_id;
-
---------------------------------------------------------------------------------
-
-function get_unique_session_id (
-  p_sid     integer,
-  p_serial  integer,
-  p_inst_id integer default 1) return varchar2
-is
-  v_inst_id integer;
-  v_return  vc16;
-begin
-  v_inst_id := coalesce(p_inst_id, 1); -- param default 1 does not mean the user cannot provide null ;-)
-  if p_sid is null or p_serial is null then
-    raise_application_error (
-      -20000,
-      'You need to specify at least p_sid and p_serial to calculate a unique session ID.');
-  else
-    v_return := ltrim(to_char(p_sid,     '000x'))
-             || ltrim(to_char(p_serial,  '000x'))
-             || ltrim(to_char(v_inst_id, '0000'));
-  end if;
-  return v_return;
-end get_unique_session_id;
-
---------------------------------------------------------------------------------
-
-function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2
-is
-  v_return vc32;
-begin
-  if p_unique_session_id is null then
-    raise_application_error (
-      -20000,
-      'You need to specify p_unique_session_id to calculate the sid, serial and host_id.');
-  elsif length(p_unique_session_id) != 12 then
-    raise_application_error (
-      -20000,
-      'We use here typically a 12 character long unique session identifier like it is provided by DBMS_SESSION.UNIQUE_SESSION_ID.');
-  else
-    v_return := to_char(to_number(substr(p_unique_session_id, 1, 4), '000x')) || ', '
-             || to_char(to_number(substr(p_unique_session_id, 5, 4), '000x')) || ', '
-             || to_char(to_number(substr(p_unique_session_id, 9, 4), '0000'));
-  end if;
-  return v_return;
-end get_sid_serial_inst_id;
-
---------------------------------------------------------------------------------
+  return 'dummy'; --FIXME: implement
+end call_stack;
 
 end console;
 /

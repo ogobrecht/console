@@ -88,7 +88,8 @@ procedure error (
 );
 /**
 
-Log a message with the level 1 (error).
+Log a message with the level 1 (error) and call also `console.clear` to reset
+the session action attribute.
 
 **/
 
@@ -152,6 +153,67 @@ begin
 exception
   when others then
     console.error('something went wrong');
+    raise;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure init(
+  p_action varchar2
+);
+/**
+
+Use the given action to set the session action attribute (in memory operation,
+does not log anything).
+
+This attribute is then visible in the system session views, the user environment
+and will be logged within all console logging methods.
+
+EXAMPLE
+
+```sql
+begin
+  console.init('My process/task');
+  -- do your stuff here...
+  console.clear;
+exception
+  when others then
+    console.error('something went wrong');
+    raise;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure clear;
+/**
+
+Reset the session action attribute (in memory operation, does not log anything).
+
+When you set the action attribute with `console.init` you should also call
+`console.clear` to reset it to avoid wrong info in the system and your logging.
+
+Is called automatically in `console.error`.
+
+EXAMPLE
+
+```sql
+begin
+  console.init('My process/task');
+
+  -- your stuff here...
+
+  console.clear;
+exception
+  when others then
+    console.error('something went wrong'); -- calls also console.clear
     raise;
 end;
 {{/}}
@@ -248,6 +310,17 @@ v_sid_serial_inst_id :=
 --------------------------------------------------------------------------------
 
 $if $$utils_public $then
+
+procedure log_internal (
+  p_level      integer,
+  p_message    clob,
+  p_trace      boolean,
+  p_user_agent varchar2
+);
+
+function logging_enabled return boolean;
+
+function call_stack return varchar2;
 
 $end
 
