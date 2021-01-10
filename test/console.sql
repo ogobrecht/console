@@ -24,3 +24,5 @@ timing stop
 prompt ================================================================================
 prompt Test Console Finished :-)
 prompt
+
+exit

@@ -11,8 +11,7 @@ prompt "PLW-06003: unknown inquiry directive '$$UTILS_PUBLIC'".
 alter session set plsql_warnings = 'ENABLE:6003';
 
 prompt
-
-prompt Set compiler flags to apex_installed:false, utils_public:false
+prompt (1) SET COMPILER FLAGS TO APEX_INSTALLED:FALSE, UTILS_PUBLIC:FALSE
 alter session set plsql_ccflags = 'apex_installed:false, utils_public:false';
 prompt Compile package console (spec)
 @src/CONSOLE.pks
@@ -23,7 +22,7 @@ show errors
 
 prompt
 
-prompt Set compiler flags: apex_installed:true, utils_public:false
+prompt (2) SET COMPILER FLAGS: APEX_INSTALLED:TRUE, UTILS_PUBLIC:FALSE
 alter session set plsql_ccflags = 'apex_installed:true, utils_public:false';
 prompt Compile package console (spec)
 @src/CONSOLE.pks
@@ -34,7 +33,7 @@ show errors
 
 prompt
 
-prompt Set compiler flags to apex_installed:false, utils_public:true
+prompt (3) SET COMPILER FLAGS TO APEX_INSTALLED:FALSE, UTILS_PUBLIC:TRUE
 alter session set plsql_ccflags = 'apex_installed:false, utils_public:true';
 prompt Compile package console (spec)
 @src/CONSOLE.pks
@@ -45,7 +44,7 @@ show errors
 
 prompt
 
-prompt Set compiler flags: apex_installed:true, utils_public:true
+prompt (4) SET COMPILER FLAGS: APEX_INSTALLED:TRUE, UTILS_PUBLIC:TRUE
 alter session set plsql_ccflags = 'apex_installed:true, utils_public:true';
 prompt Compile package console (spec)
 @src/CONSOLE.pks
@@ -56,7 +55,7 @@ show errors
 
 prompt
 
-rem Compile with correct flags
+rem (5) COMPILE WITH CORRECT FLAGS
 @install/create_console_objects.sql
 
 prompt
@@ -64,3 +63,5 @@ timing stop
 prompt ================================================================================
 prompt Test Compiler Flags Finished :-)
 prompt
+
+exit
