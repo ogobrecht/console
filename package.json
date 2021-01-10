@@ -7,10 +7,10 @@
     "url": "https://github.com/ogobrecht/oracle-instrumentation-console.git"
   },
   "scripts": {
-    "build": "node src/build.js && npm run create_readme && npm run install_create_console_objects",
     "watch": "chokidar src/* --initial -c \"npm run build\"",
+    "build": "node src/build.js && npm run create_readme && npm run install_create_console_objects",
     "create_readme": "npx ploc --in src/CONSOLE.pks --out README.md",
-    "delete_logs": "del *.log",
+    "delete_logs": "del /s /q *.log",
     "install_all":"npm-run-all -s install_create_context install_create_console_objects install_grant_rights",
     "install_create_context": "echo exit | sqlplus -S /@playground_admin @install/create_context.sql \"PLAYGROUND_DATA\"",
     "install_create_console_objects": "echo exit | sqlplus -S /@playground @install/create_console_objects.sql",

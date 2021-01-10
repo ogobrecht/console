@@ -19,14 +19,14 @@ prompt (1) Set install log to &logfile
 prompt (2) Set compiler flags
 @ccflags.sql
 
-prompt (3) Create or alter table console_logs
+prompt (3) Create or alter table CONSOLE_LOGS
 @console_logs.sql
 
-prompt (4) Compile package console (spec)
+prompt (4) Compile package CONSOLE (spec)
 @CONSOLE.pks
 show errors
 
-prompt (5) Compile package console (body)
+prompt (5) Compile package CONSOLE (body)
 @CONSOLE.pkb
 show errors
 
