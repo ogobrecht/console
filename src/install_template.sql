@@ -17,16 +17,16 @@ prompt =========================================================================
 prompt (1) Set install log to &logfile
 
 prompt (2) Set compiler flags
-@ccflags.sql
+@set_ccflags.sql
 
 prompt (3) Create or alter table CONSOLE_LOGS
-@console_logs.sql
+@CONSOLE_LOGS.sql
 
-prompt (4) Compile package CONSOLE (spec)
+prompt (4) Create or replace package CONSOLE (spec)
 @CONSOLE.pks
 show errors
 
-prompt (5) Compile package CONSOLE (body)
+prompt (5) Create or replace package CONSOLE (body)
 @CONSOLE.pkb
 show errors
 

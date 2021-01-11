@@ -136,7 +136,7 @@ comment on column console_logs.sessionid         is 'The auditing session identi
 
 
 
-prompt (4) Compile package CONSOLE (spec)
+prompt (4) Create or replace package CONSOLE (spec)
 create or replace package console authid current_user is
 
 c_name        constant varchar2(30 char) := 'Oracle Instrumentation Console';
@@ -490,7 +490,7 @@ end console;
 
 show errors
 
-prompt (5) Compile package CONSOLE (body)
+prompt (5) Create or replace package CONSOLE (body)
 create or replace package body console is
 
 --------------------------------------------------------------------------------
