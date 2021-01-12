@@ -276,6 +276,16 @@ Log a message with the level 4 (verbose).
 
 **/
 
+procedure trace(
+  p_message    clob     default null,
+  p_user_agent varchar2 default null
+);
+/**
+
+Logs a call stack with the level 3 (info).
+
+**/
+
 procedure assert(
   p_expression in boolean,
   p_message    in varchar2
@@ -546,7 +556,11 @@ procedure permanent (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (c_level_permanent, p_message, p_trace, p_user_agent);
+  log_internal (
+    p_level      => c_level_permanent,
+    p_message    => p_message,
+    p_trace      => p_trace,
+    p_user_agent => p_user_agent);
 end permanent;
 
 --------------------------------------------------------------------------------
@@ -557,7 +571,11 @@ procedure error (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (c_level_error, p_message, p_trace, p_user_agent);
+  log_internal (
+    p_level      => c_level_error,
+    p_message    => p_message,
+    p_trace      => p_trace,
+    p_user_agent => p_user_agent);
   clear;
 end error;
 
@@ -569,7 +587,11 @@ procedure warn (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (c_level_warning  , p_message, p_trace, p_user_agent);
+  log_internal (
+    p_level      => c_level_warning,
+    p_message    => p_message,
+    p_trace      => p_trace,
+    p_user_agent => p_user_agent);
 end warn;
 
 --------------------------------------------------------------------------------
@@ -580,7 +602,11 @@ procedure info (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (c_level_info, p_message, p_trace, p_user_agent);
+  log_internal (
+    p_level      => c_level_info,
+    p_message    => p_message,
+    p_trace      => p_trace,
+    p_user_agent => p_user_agent);
 end info;
 
 --------------------------------------------------------------------------------
@@ -591,7 +617,11 @@ procedure log (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (c_level_info, p_message, p_trace, p_user_agent);
+  log_internal (
+    p_level      => c_level_info,
+    p_message    => p_message,
+    p_trace      => p_trace,
+    p_user_agent => p_user_agent);
 end log;
 
 --------------------------------------------------------------------------------
@@ -602,8 +632,26 @@ procedure debug (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (c_level_verbose, p_message, p_trace, p_user_agent);
+  log_internal (
+    p_level      => c_level_verbose,
+    p_message    => p_message,
+    p_trace      => p_trace,
+    p_user_agent => p_user_agent);
 end debug;
+
+--------------------------------------------------------------------------------
+
+procedure trace(
+  p_message    clob     default null,
+  p_user_agent varchar2 default null
+) is
+begin
+  log_internal (
+    p_level      => c_level_info,
+    p_message    => nvl(p_message, 'console.trace()'),
+    p_trace      => true,
+    p_user_agent => p_user_agent);
+end trace;
 
 --------------------------------------------------------------------------------
 
@@ -789,7 +837,7 @@ end logging_enabled;
 function call_stack return varchar2
 is
 begin
-  return 'dummy'; --FIXME: implement
+  return 'FIXME: implement';
 end call_stack;
 
 end console;

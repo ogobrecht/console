@@ -11,6 +11,7 @@ Oracle Instrumentation Console
 - [Procedure info](#info)
 - [Procedure log](#log)
 - [Procedure debug](#debug)
+- [Procedure trace](#trace)
 - [Procedure assert](#assert)
 - [Procedure init](#init)
 - [Procedure clear](#clear)
@@ -177,6 +178,21 @@ SIGNATURE
 procedure debug (
   p_message    clob,
   p_trace      boolean  default false,
+  p_user_agent varchar2 default null
+);
+```
+
+
+<h2><a id="trace"></a>Procedure trace</h2>
+<!--------------------------------------->
+
+Logs a call stack with the level 3 (info).
+
+SIGNATURE
+
+```sql
+procedure trace(
+  p_message    clob     default null,
   p_user_agent varchar2 default null
 );
 ```

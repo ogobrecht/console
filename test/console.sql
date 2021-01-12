@@ -16,6 +16,7 @@ begin
   console.info      ('info', p_user_agent => 'dummy');
   console.log       ('log');
   console.debug     ('debug');
+  console.trace     ();
 end;
 /
 

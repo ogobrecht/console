@@ -137,6 +137,16 @@ Log a message with the level 4 (verbose).
 
 **/
 
+procedure trace(
+  p_message    clob     default null,
+  p_user_agent varchar2 default null
+);
+/**
+
+Logs a call stack with the level 3 (info).
+
+**/
+
 procedure assert(
   p_expression in boolean,
   p_message    in varchar2
