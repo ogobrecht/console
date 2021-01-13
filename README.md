@@ -112,7 +112,7 @@ SIGNATURE
 
 ```sql
 procedure error (
-  p_message    clob,
+  p_message    clob     default null,
   p_trace      boolean  default true,
   p_user_agent varchar2 default null
 );

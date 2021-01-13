@@ -82,7 +82,7 @@ on cleanup.
 **/
 
 procedure error (
-  p_message    clob,
+  p_message    clob     default null,
   p_trace      boolean  default true,
   p_user_agent varchar2 default null
 );
@@ -352,7 +352,27 @@ procedure log_internal (
 
 function logging_enabled return boolean;
 
-function call_stack return varchar2;
+--------------------HELPER FUNCTIONS FROM STEVEN--------------------
+function backtrace_to      return varchar2;
+function backtrace_to_line return pls_integer;
+--
+function call_stack (
+  include_anon_block_in   in boolean default false,
+  use_line_breaks_in      in boolean default false,
+  trace_pkg_in            in varchar2 default null
+) return varchar2;
+--
+function show_summary return varchar2;
+--
+procedure show_call_stack_at  (depth_in in pls_integer default 1);
+procedure show_call_stack;
+--
+procedure show_error_stack_at (depth_in in pls_integer default 1);
+procedure show_error_stack;
+--
+procedure show_backtrace_at   (depth_in in pls_integer default 1);
+procedure show_backtrace;
+--------------------HELPER FUNCTIONS FROM STEVEN--------------------
 
 $end
 

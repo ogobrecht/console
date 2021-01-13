@@ -17,6 +17,12 @@ begin
   console.log       ('log');
   console.debug     ('debug');
   console.trace     ();
+  raise_application_error(-20000, 'Test exception');
+exception
+  when others then
+    console.error;
+    --> I know, I know, never do that without a final raise...
+    --> But we want only test our logging procedure without killing the script run...
 end;
 /
 
