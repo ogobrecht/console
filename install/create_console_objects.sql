@@ -62,7 +62,7 @@ begin
         log_level          integer                                                         ,
         action             varchar2(  64 char)                                             ,
         message            clob                                                            ,
-        call_stack         varchar2(1000 char)                                             ,
+        call_stack         varchar2(4000 char)                                             ,
         module             varchar2(  64 char)                                             ,
         client_info        varchar2(  64 char)                                             ,
         session_user       varchar2(  32 char)                                             ,
@@ -482,7 +482,7 @@ An alias for `dbms_application_info.set_action`.
 
 $if $$utils_public $then
 
-procedure log_internal (
+procedure create_entry (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
@@ -503,14 +503,14 @@ function call_stack (
 --
 function show_summary return varchar2;
 --
-procedure show_call_stack_at  (depth_in in pls_integer default 1);
-procedure show_call_stack;
+function show_call_stack_at  (p_depth in pls_integer default 1) return varchar2;
+function show_call_stack                                        return varchar2;
 --
-procedure show_error_stack_at (depth_in in pls_integer default 1);
-procedure show_error_stack;
+function show_error_stack_at (p_depth in pls_integer default 1) return varchar2;
+function show_error_stack                                       return varchar2;
 --
-procedure show_backtrace_at   (depth_in in pls_integer default 1);
-procedure show_backtrace;
+function show_backtrace_at   (p_depth in pls_integer default 1) return varchar2;
+function show_backtrace                                         return varchar2;
 --------------------HELPER FUNCTIONS FROM STEVEN--------------------
 
 $end
@@ -554,7 +554,7 @@ subtype vc_max  is varchar2(32767 char);
 
 $if not $$utils_public $then
 
-procedure log_internal (
+procedure create_entry (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
@@ -575,14 +575,14 @@ function call_stack (
 --
 function show_summary return varchar2;
 --
-procedure show_call_stack_at  (depth_in in pls_integer default 1);
-procedure show_call_stack;
+function show_call_stack_at  (p_depth in pls_integer default 1) return varchar2;
+function show_call_stack                                        return varchar2;
 --
-procedure show_error_stack_at (depth_in in pls_integer default 1);
-procedure show_error_stack;
+function show_error_stack_at (p_depth in pls_integer default 1) return varchar2;
+function show_error_stack                                       return varchar2;
 --
-procedure show_backtrace_at   (depth_in in pls_integer default 1);
-procedure show_backtrace;
+function show_backtrace_at   (p_depth in pls_integer default 1) return varchar2;
+function show_backtrace                                         return varchar2;
 --------------------HELPER FUNCTIONS FROM STEVEN--------------------
 
 $end
@@ -597,7 +597,7 @@ procedure permanent (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (
+  create_entry (
     p_level      => c_level_permanent,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -612,7 +612,7 @@ procedure error (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (
+  create_entry (
     p_level      => c_level_error,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -628,7 +628,7 @@ procedure warn (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (
+  create_entry (
     p_level      => c_level_warning,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -643,7 +643,7 @@ procedure info (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (
+  create_entry (
     p_level      => c_level_info,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -658,7 +658,7 @@ procedure log (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (
+  create_entry (
     p_level      => c_level_info,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -673,7 +673,7 @@ procedure debug (
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (
+  create_entry (
     p_level      => c_level_verbose,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -687,7 +687,7 @@ procedure trace(
   p_user_agent varchar2 default null
 ) is
 begin
-  log_internal (
+  create_entry (
     p_level      => c_level_info,
     p_message    => nvl(p_message, 'console.trace()'),
     p_trace      => true,
@@ -809,14 +809,14 @@ end set_action;
 -- PRIVATE METHODS
 --------------------------------------------------------------------------------
 
-procedure log_internal (
+procedure create_entry (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
   p_user_agent varchar2
 ) is
   pragma autonomous_transaction;
-  v_call_stack varchar2(1000 char);
+  v_call_stack varchar2(4000  char);
 begin
   if p_level <= c_level_error or logging_enabled then
     if p_trace then
@@ -828,9 +828,9 @@ begin
             trace_pkg_in           => $$plsql_unit
           ),
           1,
-          1000)
+          4000)
           --> only for tests
-          || chr(10) || chr (10) || show_summary
+          || chr(10) || chr (10) || show_summary || console.show_call_stack || console.show_error_stack || console.show_backtrace
         ;
     end if;
     --FIXME decide, if we want this or not: dbms_output.put_line(p_message);
@@ -874,7 +874,7 @@ begin
       sys_context('USERENV', 'SESSIONID'));
     commit;
   end if;
-end log_internal;
+end create_entry;
 
 --------------------------------------------------------------------------------
 
@@ -915,12 +915,12 @@ is
   l_add_subprogram   boolean;
   l_return           varchar2 (32767);
 begin
-  /* 1 is always this function, so ignore it. */
-  for indx in reverse 2 .. utl_call_stack.dynamic_depth
+  -- 1 is always this function, so ignore it.
+  for i in reverse 2 .. utl_call_stack.dynamic_depth
   loop
       l_subprogram :=
         utl_call_stack.concatenate_subprogram (
-            utl_call_stack.subprogram (indx));
+            utl_call_stack.subprogram (i));
       l_add_subprogram :=
         not (    l_return is null
               and not include_anon_block_in
@@ -938,10 +938,10 @@ begin
         l_return :=
               l_return
             || case when use_line_breaks_in then chr (10) end
-            || case when l_return is not null then ' -> ' end
+            || case when l_return is not null then ' --> ' end
             || l_subprogram
             || ' ('
-            || to_char (utl_call_stack.unit_line (indx))
+            || to_char (utl_call_stack.unit_line (i))
             || ')';
       end if;
   end loop;
@@ -953,27 +953,27 @@ function show_summary return varchar2
 is
 begin
   return
-  '## UTL_CALL_STACK Summary ' || chr(10)
-  || chr(10)
-  || '- dynamic_depth ' || utl_call_stack.dynamic_depth || chr(10)
-  || '- error_depth ' || utl_call_stack.error_depth || chr(10)
-  || '- backtrace_depth ' || utl_call_stack.backtrace_depth || chr(10)
-  || chr(10)
-  || '## DBMS_UTILITY.FORMAT_CALL_STACK ' || chr(10)
-  || chr(10)
-  || '```' || chr(10)
-  || dbms_utility.format_call_stack
-  || '```' || chr(10)
-  || chr(10)
-  ||
+    '## UTL_CALL_STACK Summary ' || chr(10)
+    || chr(10)
+    || '- dynamic depth: '   || utl_call_stack.dynamic_depth   || chr(10)
+    || '- error depth: '     || utl_call_stack.error_depth     || chr(10)
+    || '- backtrace depth: ' || utl_call_stack.backtrace_depth || chr(10)
+    || chr(10)
+    || '### DBMS_UTILITY.FORMAT_CALL_STACK' || chr(10)
+    || chr(10)
+    || '```' || chr(10)
+    || dbms_utility.format_call_stack
+    || '```' || chr(10)
+    || chr(10)
+    ||
   case when sqlcode <> 0 then
-    '## DBMS_UTILITY.FORMAT_ERROR_STACK' || chr(10)
+    '### DBMS_UTILITY.FORMAT_ERROR_STACK' || chr(10)
     || chr(10)
     || '```' || chr(10)
     || dbms_utility.format_error_stack
     || '```' || chr(10)
     || chr(10)
-    || '## DBMS_UTILITY.FORMAT_ERROR_BACKTRACE' || chr(10)
+    || '### DBMS_UTILITY.FORMAT_ERROR_BACKTRACE' || chr(10)
     || chr(10)
     || '```' || chr(10)
     || dbms_utility.format_error_backtrace
@@ -982,66 +982,87 @@ begin
   end;
 end;
 --------------------
-procedure show_call_stack_at (depth_in in pls_integer default 1)
-is
-  l_names   utl_call_stack.unit_qualified_name;
-  l_name    varchar2 (32767);
+function show_call_stack_at (p_depth in pls_integer default 1) return varchar2 is
+  l_names utl_call_stack.unit_qualified_name;
+  l_name  varchar2 (32767);
 begin
-  dbms_output.put_line ('Call Stack at Depth ' || depth_in);
-  dbms_output.put_line ('> owner ' || utl_call_stack.owner (depth_in));
-  dbms_output.put_line ('> concatenate_subprogram '|| utl_call_stack.concatenate_subprogram (utl_call_stack.subprogram (depth_in)));
-  dbms_output.put_line ('> lexical_depth '|| utl_call_stack.lexical_depth (depth_in));
-  dbms_output.put_line ('> unit_line ' || utl_call_stack.unit_line (depth_in));
-  dbms_output.put_line ('> current_edition '|| utl_call_stack.current_edition (depth_in));
+  return '### Call Stack at Depth ' || p_depth || chr(10)
+    || chr(10)
+    || '- owner: '                  || utl_call_stack.owner                  (p_depth) || chr(10)
+    || '- concatenate subprogram: ' || utl_call_stack.concatenate_subprogram (utl_call_stack.subprogram (p_depth)) || chr(10)
+    || '- lexical depth: '          || utl_call_stack.lexical_depth          (p_depth) || chr(10)
+    || '- unit line: '              || utl_call_stack.unit_line              (p_depth) || chr(10)
+    || '- current edition: '        || utl_call_stack.current_edition        (p_depth) || chr(10)
+    || chr(10);
 end;
 --------------------
-procedure show_call_stack
-is
+function show_call_stack return varchar2 is
+  v_return varchar2(32767);
 begin
-  for indx in 1 .. utl_call_stack.dynamic_depth
-  loop
-      show_call_stack_at (indx);
-  end loop;
-end;
---------------------
-procedure show_error_stack_at (depth_in in pls_integer default 1)
-is
-begin
-  dbms_output.put_line ('Error Stack at Depth ' || depth_in);
-  dbms_output.put_line ('> error_number ' || utl_call_stack.error_number (depth_in));
-  dbms_output.put_line ('> error_msg ' || utl_call_stack.error_msg (depth_in));
-end;
---------------------
-procedure show_error_stack
-is
-begin
-  dbms_output.put_line ('DBMS_UTILITY.FORMAT_ERROR_STACK: ');
-  dbms_output.put_line (dbms_utility.format_error_stack);
+  v_return := '## DBMS_UTILITY.FORMAT_CALL_STACK' || chr(10)
+    || chr(10)
+    || '```' || chr(10)
+    || dbms_utility.format_call_stack
+    || '```' || chr(10)
+    || chr(10);
 
-  for indx in 1 .. utl_call_stack.error_depth
+  for i in 1 .. utl_call_stack.dynamic_depth
   loop
-      show_error_stack_at (indx);
+    v_return := v_return || show_call_stack_at (i);
   end loop;
+  return v_return;
 end;
 --------------------
-procedure show_backtrace_at (depth_in in pls_integer default 1)
-is
+function show_error_stack_at (p_depth in pls_integer default 1) return varchar2 is
 begin
-  dbms_output.put_line ('Error Backtrace at Depth ' || depth_in);
-  dbms_output.put_line ('> backtrace_unit '|| utl_call_stack.backtrace_unit (depth_in));
-  dbms_output.put_line ('> backtrace_line '|| utl_call_stack.backtrace_line (depth_in));
+  return '### Error Stack at Depth ' || p_depth || chr(10)
+  || chr(10)
+  || '- error number: ' || utl_call_stack.error_number (p_depth) || chr(10)
+  || '- error msg: '    || utl_call_stack.error_msg    (p_depth) || chr(10)
+  || chr(10);
 end;
 --------------------
-procedure show_backtrace
-is
+function show_error_stack return varchar2 is
+  v_return varchar2(32767);
 begin
-  dbms_output.put_line ('DBMS_UTILITY.FORMAT_ERROR_BACKTRACE: ');
-  dbms_output.put_line (dbms_utility.format_error_backtrace);
+  v_return := '## DBMS_UTILITY.FORMAT_ERROR_STACK' || chr(10)
+    || chr(10)
+    || '```' || chr(10)
+    || dbms_utility.format_error_stack
+    || '```' || chr(10)
+    || chr(10);
 
-  for indx in 1 .. utl_call_stack.backtrace_depth
+  for i in 1 .. utl_call_stack.error_depth
   loop
-      show_backtrace_at (indx);
+    v_return := v_return || show_error_stack_at (i);
   end loop;
+  return v_return;
+end;
+--------------------
+function show_backtrace_at (p_depth in pls_integer default 1) return varchar2 is
+begin
+  return '### Error Backtrace at Depth ' || p_depth || chr(10)
+    || chr(10)
+    || '- backtrace unit: '|| utl_call_stack.backtrace_unit (p_depth) || chr(10)
+    || '- backtrace line: '|| utl_call_stack.backtrace_line (p_depth) || chr(10)
+    || chr(10);
+end;
+--------------------
+function show_backtrace return varchar2 is
+  v_return varchar2(32767);
+begin
+  v_return := '## DBMS_UTILITY.FORMAT_ERROR_BACKTRACE' || chr(10)
+    || chr(10)
+    || '```' || chr(10)
+    || dbms_utility.format_error_backtrace
+    || '```' || chr(10)
+    || chr(10);
+
+  for i in 1 .. utl_call_stack.backtrace_depth
+  loop
+    v_return := v_return || show_backtrace_at (i);
+  end loop;
+  return v_return;
 end;
 --------------------HELPER FUNCTIONS FROM STEVEN--------------------
 

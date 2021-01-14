@@ -19,7 +19,7 @@ begin
         log_level          integer                                                         ,
         action             varchar2(  64 char)                                             ,
         message            clob                                                            ,
-        call_stack         varchar2(1000 char)                                             ,
+        call_stack         varchar2(4000 char)                                             ,
         module             varchar2(  64 char)                                             ,
         client_info        varchar2(  64 char)                                             ,
         session_user       varchar2(  32 char)                                             ,

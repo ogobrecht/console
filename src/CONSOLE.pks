@@ -343,7 +343,7 @@ An alias for `dbms_application_info.set_action`.
 
 $if $$utils_public $then
 
-procedure log_internal (
+procedure create_entry (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
@@ -364,14 +364,14 @@ function call_stack (
 --
 function show_summary return varchar2;
 --
-procedure show_call_stack_at  (depth_in in pls_integer default 1);
-procedure show_call_stack;
+function show_call_stack_at  (p_depth in pls_integer default 1) return varchar2;
+function show_call_stack                                        return varchar2;
 --
-procedure show_error_stack_at (depth_in in pls_integer default 1);
-procedure show_error_stack;
+function show_error_stack_at (p_depth in pls_integer default 1) return varchar2;
+function show_error_stack                                       return varchar2;
 --
-procedure show_backtrace_at   (depth_in in pls_integer default 1);
-procedure show_backtrace;
+function show_backtrace_at   (p_depth in pls_integer default 1) return varchar2;
+function show_backtrace                                         return varchar2;
 --------------------HELPER FUNCTIONS FROM STEVEN--------------------
 
 $end
