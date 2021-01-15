@@ -6,13 +6,8 @@ set linesize 120
 set trimout on
 set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
-column logfile noprint new_val logfile
-select to_char(sysdate,'yyyymmdd_hh24miss') || '_create_context.log' as logfile from dual;
-spool &logfile
 
-prompt
-prompt Oracle Instrumentation Console: Create Context
-prompt ================================================================================
+prompt ORACLE INSTRUMENTATION CONSOLE: CREATE CONTEXT
 declare
   v_schema                varchar2( 30);
   v_package               varchar2( 30);
@@ -69,40 +64,33 @@ begin
   end;
 
   --show current config
-  dbms_output.put_line('(1) Show config');
-  dbms_output.put_line('Installation log = &logfile');
-  dbms_output.put_line('Target namespace = ' || v_namespace);
-  dbms_output.put_line('Target schema    = ' || v_schema);
-  dbms_output.put_line('Target package   = ' || v_package);
+  dbms_output.put_line('- Target namespace = ' || v_namespace);
+  dbms_output.put_line('- Target schema    = ' || v_schema);
+  dbms_output.put_line('- Target package   = ' || v_package);
 
   --finally try to create the context, if needed
-  dbms_output.put_line('(2) Create context');
-
   if v_dba_context_access_yn = 'Y' and v_context_exist_yn = 'Y' then
-    dbms_output.put_line('Context found, no action required.');
+    dbms_output.put_line('- Context found, no action required');
   else
     if v_dba_context_access_yn = 'Y' and v_context_exist_yn = 'N' then
-      dbms_output.put_line('Context not found, try to run create or replace command:');
+      dbms_output.put_line('- Context not found, try to run create or replace command');
     else
-      dbms_output.put_line('Context status unknown, try to run create or replace command:');
+      dbms_output.put_line('- Context status unknown, try to run create or replace command');
     end if;
     begin
-      dbms_output.put_line(v_ddl);
+      dbms_output.put_line('- ' || v_ddl);
       execute immediate v_ddl;
-      dbms_output.put_line('It seems we were successful :-)');
+      dbms_output.put_line('- It seems we were successful :-)');
     exception
       when insufficient_privileges then
-        dbms_output.put_line(chr(10) || 'ERROR:');
-        dbms_output.put_line('You have not enough rights for this action - please ask your DBA for help.');
-        dbms_output.put_line('No worries, you can still install the console objects and start to work with it.');
-        dbms_output.put_line('The only thing which will not work is to debug other sessions then your own one.');
-        dbms_output.put_line('Please see also the docs at GitHub: FIXME: add link, if docs are available' || chr(10));
+        dbms_output.put_line(chr(10) || '- ERROR');
+        dbms_output.put_line('- You have not enough rights for this action - please ask your DBA for help.');
+        dbms_output.put_line('- No worries, you can still install the console objects and start to work with it.');
+        dbms_output.put_line('- The only thing which will not work is to debug other sessions then your own one.');
+        dbms_output.put_line('- Please see also the docs at GitHub: FIXME: add link, if docs are available.' || chr(10));
         raise;
     end;
   end if;
 end;
 /
-prompt ================================================================================
-prompt Finished
-prompt
-spool off
+prompt - FINISHED

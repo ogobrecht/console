@@ -6,17 +6,7 @@ set linesize 120
 set trimout on
 set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
-column logfile noprint new_val logfile
-select to_char(sysdate,'yyyymmdd_hh24miss') || '_drop_console_objects.log' as logfile from dual;
-spool &logfile
 
-prompt
-prompt Oracle Instrumentation Console: Drop Console Objects
-prompt ============================================================
-
-prompt FIXME: implement
-
-prompt ================================================================================
-prompt Finished
-prompt
-spool off
+prompt ORACLE INSTRUMENTATION CONSOLE: DROP CONSOLE OBJECTS
+prompt - FIXME: implement
+prompt - FINISHED

@@ -6,13 +6,8 @@ set linesize 120
 set trimout on
 set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
-column logfile noprint new_val logfile
-select to_char(sysdate,'yyyymmdd_hh24miss') || '_drop_context.log' as logfile from dual;
-spool &logfile
 
-prompt
-prompt Oracle Instrumentation Console: Drop Context
-prompt ================================================================================
+prompt ORACLE INSTRUMENTATION CONSOLE: DROP CONTEXT
 declare
   v_schema                varchar2( 30);
   v_package               varchar2( 30);
@@ -68,37 +63,30 @@ begin
   end;
 
   --show current config
-  dbms_output.put_line('(1) Show config');
-  dbms_output.put_line('Uninstallation log = &logfile');
-  dbms_output.put_line('Target namespace = ' || v_namespace);
-  dbms_output.put_line('Target schema    = ' || v_schema);
-  dbms_output.put_line('Target package   = ' || v_package);
+  dbms_output.put_line('- Target namespace = ' || v_namespace);
+  dbms_output.put_line('- Target schema    = ' || v_schema);
+  dbms_output.put_line('- Target package   = ' || v_package);
 
   --finally try to drop the context, if needed
-  dbms_output.put_line('(2) Drop context');
-
   if v_dba_context_access_yn = 'Y' and v_context_exist_yn = 'N' then
-    dbms_output.put_line('Context not found, no action required.');
+    dbms_output.put_line('- Context not found, no action required');
   else
     if v_dba_context_access_yn = 'Y' and v_context_exist_yn = 'Y' then
-      dbms_output.put_line('Context found, try to run drop command:');
+      dbms_output.put_line('- Context found, try to run drop command');
     else
-      dbms_output.put_line('Context status unknown, try to run drop command:');
+      dbms_output.put_line('- Context status unknown, try to run drop command');
     end if;
     begin
-      dbms_output.put_line(v_ddl);
+      dbms_output.put_line('- ' || v_ddl);
       execute immediate v_ddl;
-      dbms_output.put_line('It seems we were successful :-)');
+      dbms_output.put_line('- It seems we were successful :-)');
     exception
       when insufficient_privileges then
-        dbms_output.put_line(chr(10) || 'ERROR:');
-        dbms_output.put_line('You have not enough rights for this action - please ask your DBA for help.' || chr(10));
+        dbms_output.put_line(chr(10) || '- ERROR:');
+        dbms_output.put_line('- You have not enough rights for this action - please ask your DBA for help.' || chr(10));
         raise;
     end;
   end if;
 end;
 /
-prompt ================================================================================
-prompt Finished
-prompt
-spool off
+prompt - FINISHED
