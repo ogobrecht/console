@@ -66,7 +66,6 @@ begin
 end;
 /
 
-prompt - Create table comments
 comment on table console_logs                    is 'Table for log entries of the package CONSOLE. Column names are mostly driven by the attribute names of SYS_CONTEXT(''USERENV'') and DBMS_SESSION for easier mapping and clearer context.';
 comment on column console_logs.log_id            is 'Primary key based on a sequence.';
 comment on column console_logs.log_time          is 'Log entry timestamp.';

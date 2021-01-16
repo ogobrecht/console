@@ -18,6 +18,7 @@ Oracle Instrumentation Console
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
+- [Function get_trace](#get_trace)
 - [Procedure set_module](#set_module)
 - [Procedure set_action](#set_action)
 
@@ -74,7 +75,6 @@ c_name        constant varchar2(30 char) := 'Oracle Instrumentation Console';
 c_version     constant varchar2(10 char) := '0.1.0';
 c_url         constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
 c_license     constant varchar2(10 char) := 'MIT';
-c_license_url constant varchar2(60 char) := 'https://github.com/ogobrecht/console/blob/main/LICENSE';
 c_author      constant varchar2(20 char) := 'Ottmar Gobrecht';
 
 c_level_permanent constant integer := 0;
@@ -382,6 +382,33 @@ SIGNATURE
 function get_sid_serial_inst_id (
   p_unique_session_id varchar2
 ) return varchar2;
+```
+
+
+<h2><a id="get_trace"></a>Function get_trace</h2>
+<!---------------------------------------------->
+
+Gets the current call stack and if an error was raised also the error stack and
+the error backtrace. Is used internally by the console methods error and trace
+and also, if you set on other console methods the parameter p_trace to true.
+
+The console package itself is excluded from the trace as you normally would
+trace you business logic and not your instrumentation code.
+
+```sql
+set serveroutput on
+begin
+  dbms_output.put_line(console.get_trace);
+end;
+/
+```
+
+The code above will output `- Call Stack: __anonymous_block (2)`
+
+SIGNATURE
+
+```sql
+function get_trace return varchar2;
 ```
 
 

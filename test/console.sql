@@ -1,14 +1,10 @@
-timing start test_console
 set define off
 set feedback off
 set serveroutput on
 whenever sqlerror exit sql.sqlcode rollback
 
-prompt
-prompt Test Console
-prompt ================================================================================
-
-prompt Test different levels:
+prompt TEST CONSOLE
+prompt - Test different levels
 begin
   console.permanent ('permanent');
   console.error     ('error');
@@ -26,10 +22,4 @@ exception
 end;
 /
 
-prompt
-timing stop
-prompt ================================================================================
-prompt Test Console Finished :-)
-prompt
-
-exit
+prompt - FINISHED

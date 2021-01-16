@@ -4,7 +4,6 @@ c_name        constant varchar2(30 char) := 'Oracle Instrumentation Console';
 c_version     constant varchar2(10 char) := '0.1.0';
 c_url         constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
 c_license     constant varchar2(10 char) := 'MIT';
-c_license_url constant varchar2(60 char) := 'https://github.com/ogobrecht/console/blob/main/LICENSE';
 c_author      constant varchar2(20 char) := 'Ottmar Gobrecht';
 
 c_level_permanent constant integer := 0;
@@ -316,6 +315,32 @@ v_sid_serial_inst_id :=
 **/
 
 
+function get_trace return varchar2;
+/**
+
+Gets the current call stack and if an error was raised also the error stack and
+the error backtrace. Is used internally by the console methods error and trace
+and also, if you set on other console methods the parameter p_trace to true.
+
+The console package itself is excluded from the trace as you normally would
+trace you business logic and not your instrumentation code.
+
+```sql
+set serveroutput on
+begin
+  dbms_output.put_line(console.get_trace);
+end;
+{{/}}
+```
+
+The code above will output `- Call Stack: __anonymous_block (2)`
+
+**/
+
+
+
+
+
 procedure set_module(
   p_module varchar2,
   p_action varchar2 default null
@@ -351,28 +376,6 @@ procedure create_entry (
 );
 
 function logging_enabled return boolean;
-
---------------------HELPER FUNCTIONS FROM STEVEN--------------------
-function backtrace_to      return varchar2;
-function backtrace_to_line return pls_integer;
---
-function call_stack (
-  include_anon_block_in   in boolean default false,
-  use_line_breaks_in      in boolean default false,
-  trace_pkg_in            in varchar2 default null
-) return varchar2;
---
-function show_summary return varchar2;
---
-function show_call_stack_at  (p_depth in pls_integer default 1) return varchar2;
-function show_call_stack                                        return varchar2;
---
-function show_error_stack_at (p_depth in pls_integer default 1) return varchar2;
-function show_error_stack                                       return varchar2;
---
-function show_backtrace_at   (p_depth in pls_integer default 1) return varchar2;
-function show_backtrace                                         return varchar2;
---------------------HELPER FUNCTIONS FROM STEVEN--------------------
 
 $end
 
