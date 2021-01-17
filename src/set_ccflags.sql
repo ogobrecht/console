@@ -1,7 +1,7 @@
 prompt - Set compiler flags
 DECLARE
   v_apex_installed VARCHAR2(5) := 'FALSE'; -- Do not change (is set dynamically).
-  v_utils_public   VARCHAR2(5) := 'FALSE'; -- Make utilities public available (for testing or other usages).
+  v_utils_public   VARCHAR2(5) := 'TRUE'; -- Make utilities public available (for testing or other usages).
 BEGIN
   FOR i IN (SELECT 1
               FROM all_objects

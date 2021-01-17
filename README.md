@@ -13,14 +13,13 @@ Oracle Instrumentation Console
 - [Procedure debug](#debug)
 - [Procedure trace](#trace)
 - [Procedure assert](#assert)
+- [Procedure action](#action)
 - [Procedure init](#init)
 - [Procedure clear](#clear)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
-- [Function get_trace](#get_trace)
-- [Procedure set_module](#set_module)
-- [Procedure set_action](#set_action)
+- [Function get_call_stack](#get_call_stack)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -69,13 +68,13 @@ FIXME: Create uninstall scripts
 SIGNATURE
 
 ```sql
-package console authid current_user is
+package console authid definer is
 
-c_name        constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version     constant varchar2(10 char) := '0.1.0';
-c_url         constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
-c_license     constant varchar2(10 char) := 'MIT';
-c_author      constant varchar2(20 char) := 'Ottmar Gobrecht';
+c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
+c_version constant varchar2(10 char) := '0.2.0';
+c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
+c_license constant varchar2(10 char) := 'MIT';
+c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
 
 c_level_permanent constant integer := 0;
 c_level_error     constant integer := 1;
@@ -226,25 +225,32 @@ procedure assert(
 ```
 
 
-<h2><a id="init"></a>Procedure init</h2>
-<!------------------------------------->
+<h2><a id="action"></a>Procedure action</h2>
+<!----------------------------------------->
+
+An alias for dbms_application_info.set_action.
 
 Use the given action to set the session action attribute (in memory operation,
-does not log anything).
+does not log anything). This attribute is then visible in the system session
+views, the user environment and will be logged within all console logging
+methods.
 
-This attribute is then visible in the system session views, the user environment
-and will be logged within all console logging methods.
+When you set the action attribute with `console.action` you should also reset it
+when you have finished your work to prevent wrong info in the system and your
+logging for subsequent method calls.
+
+The action is automatically cleared in the method `console.error`.
 
 EXAMPLE
 
 ```sql
 begin
-  console.init('My process/task');
+  console.action('My process/task');
   -- do your stuff here...
-  console.clear;
+  console.action(null);
 exception
   when others then
-    console.error('something went wrong');
+    console.error('something went wrong'); --also clears action
     raise;
 end;
 /
@@ -253,8 +259,50 @@ end;
 SIGNATURE
 
 ```sql
-procedure init(
+procedure action(
   p_action varchar2
+);
+```
+
+
+<h2><a id="init"></a>Procedure init</h2>
+<!------------------------------------->
+
+Starts the logging for a specific session.
+
+To avoid spoiling the context with very long input the p_session parameter is
+truncated after 64 characters before using it.
+
+EXAMPLES
+
+```sql
+-- dive into your own session
+exec console.init(dbms_session.unique_session_id);
+
+-- debug an APEX session
+exec console.init('APEX:8805903776765', console.c_level_verbose, 90);
+
+-- debug another session identified by sid and serial
+begin
+  console.init(
+    p_session  => console.get_unique_session_id(
+                    p_sid     => 33312,
+                    p_serial  => 4920
+                  ),
+    p_level    => console.c_level_verbose,
+    p_duration => 15
+  );
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure init(
+  p_session  varchar2 default dbms_session.unique_session_id, -- client_identifier or unique_session_id
+  p_level    integer  default c_level_info,                   -- 2 (warning), 3 (info) or 4 (verbose)
+  p_duration integer  default 60                               -- duration in minutes
 );
 ```
 
@@ -262,18 +310,17 @@ procedure init(
 <h2><a id="clear"></a>Procedure clear</h2>
 <!--------------------------------------->
 
-Reset the session action attribute (in memory operation, does not log anything).
+Stops the logging for a specific session and clears the info in the global
+context for it.
 
-When you set the action attribute with `console.init` you should also call
-`console.clear` to reset it to avoid wrong info in the system and your logging.
-
-Is called automatically in `console.error`.
+Please note that we always log the levels errors and permanent to keep a record
+of things that are going wrong.
 
 EXAMPLE
 
 ```sql
 begin
-  console.init('My process/task');
+  console.('My process/task');
 
   -- your stuff here...
 
@@ -289,7 +336,9 @@ end;
 SIGNATURE
 
 ```sql
-procedure clear;
+procedure clear(
+  p_session  varchar2 default dbms_session.unique_session_id -- client_identifier or unique_session_id
+);
 ```
 
 
@@ -385,8 +434,8 @@ function get_sid_serial_inst_id (
 ```
 
 
-<h2><a id="get_trace"></a>Function get_trace</h2>
-<!---------------------------------------------->
+<h2><a id="get_call_stack"></a>Function get_call_stack</h2>
+<!-------------------------------------------------------->
 
 Gets the current call stack and if an error was raised also the error stack and
 the error backtrace. Is used internally by the console methods error and trace
@@ -398,7 +447,7 @@ trace you business logic and not your instrumentation code.
 ```sql
 set serveroutput on
 begin
-  dbms_output.put_line(console.get_trace);
+  dbms_output.put_line(console.get_call_stack);
 end;
 /
 ```
@@ -408,36 +457,7 @@ The code above will output `- Call Stack: __anonymous_block (2)`
 SIGNATURE
 
 ```sql
-function get_trace return varchar2;
-```
-
-
-<h2><a id="set_module"></a>Procedure set_module</h2>
-<!------------------------------------------------->
-
-An alias for `dbms_application_info.set_module`.
-
-SIGNATURE
-
-```sql
-procedure set_module(
-  p_module varchar2,
-  p_action varchar2 default null
-);
-```
-
-
-<h2><a id="set_action"></a>Procedure set_action</h2>
-<!------------------------------------------------->
-
-An alias for `dbms_application_info.set_action`.
-
-SIGNATURE
-
-```sql
-procedure set_action(
-  p_action varchar2
-);
+function get_call_stack return varchar2;
 ```
 
 

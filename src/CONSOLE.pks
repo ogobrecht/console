@@ -1,16 +1,17 @@
-create or replace package console authid current_user is
+create or replace package console authid definer is
 
-c_name        constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version     constant varchar2(10 char) := '0.1.0';
-c_url         constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
-c_license     constant varchar2(10 char) := 'MIT';
-c_author      constant varchar2(20 char) := 'Ottmar Gobrecht';
+c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
+c_version constant varchar2(10 char) := '0.2.0';
+c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
+c_license constant varchar2(10 char) := 'MIT';
+c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
 
 c_level_permanent constant integer := 0;
 c_level_error     constant integer := 1;
 c_level_warning   constant integer := 2;
 c_level_info      constant integer := 3;
 c_level_verbose   constant integer := 4;
+
 
 /**
 
@@ -171,28 +172,75 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure init(
+procedure action(
   p_action varchar2
 );
 /**
 
-Use the given action to set the session action attribute (in memory operation,
-does not log anything).
+An alias for dbms_application_info.set_action.
 
-This attribute is then visible in the system session views, the user environment
-and will be logged within all console logging methods.
+Use the given action to set the session action attribute (in memory operation,
+does not log anything). This attribute is then visible in the system session
+views, the user environment and will be logged within all console logging
+methods.
+
+When you set the action attribute with `console.action` you should also reset it
+when you have finished your work to prevent wrong info in the system and your
+logging for subsequent method calls.
+
+The action is automatically cleared in the method `console.error`.
 
 EXAMPLE
 
 ```sql
 begin
-  console.init('My process/task');
+  console.action('My process/task');
   -- do your stuff here...
-  console.clear;
+  console.action(null);
 exception
   when others then
-    console.error('something went wrong');
+    console.error('something went wrong'); --also clears action
     raise;
+end;
+{{/}}
+```
+
+**/
+
+
+--------------------------------------------------------------------------------
+
+procedure init(
+  p_session  varchar2 default dbms_session.unique_session_id, -- client_identifier or unique_session_id
+  p_level    integer  default c_level_info,                   -- 2 (warning), 3 (info) or 4 (verbose)
+  p_duration integer  default 60                               -- duration in minutes
+);
+/**
+
+Starts the logging for a specific session.
+
+To avoid spoiling the context with very long input the p_session parameter is
+truncated after 64 characters before using it.
+
+EXAMPLES
+
+```sql
+-- dive into your own session
+exec console.init(dbms_session.unique_session_id);
+
+-- debug an APEX session
+exec console.init('APEX:8805903776765', console.c_level_verbose, 90);
+
+-- debug another session identified by sid and serial
+begin
+  console.init(
+    p_session  => console.get_unique_session_id(
+                    p_sid     => 33312,
+                    p_serial  => 4920
+                  ),
+    p_level    => console.c_level_verbose,
+    p_duration => 15
+  );
 end;
 {{/}}
 ```
@@ -201,21 +249,22 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure clear;
+procedure clear(
+  p_session  varchar2 default dbms_session.unique_session_id -- client_identifier or unique_session_id
+);
 /**
 
-Reset the session action attribute (in memory operation, does not log anything).
+Stops the logging for a specific session and clears the info in the global
+context for it.
 
-When you set the action attribute with `console.init` you should also call
-`console.clear` to reset it to avoid wrong info in the system and your logging.
-
-Is called automatically in `console.error`.
+Please note that we always log the levels errors and permanent to keep a record
+of things that are going wrong.
 
 EXAMPLE
 
 ```sql
 begin
-  console.init('My process/task');
+  console.('My process/task');
 
   -- your stuff here...
 
@@ -229,7 +278,6 @@ end;
 ```
 
 **/
-
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
@@ -245,6 +293,7 @@ Returns the ID provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 
 **/
 
+--------------------------------------------------------------------------------
 
 function get_unique_session_id (
   p_sid     integer,
@@ -290,6 +339,7 @@ providing at least sid and serial.
 
 **/
 
+--------------------------------------------------------------------------------
 
 function get_sid_serial_inst_id (
   p_unique_session_id varchar2
@@ -314,8 +364,9 @@ v_sid_serial_inst_id :=
 
 **/
 
+--------------------------------------------------------------------------------
 
-function get_trace return varchar2;
+function get_call_stack return varchar2;
 /**
 
 Gets the current call stack and if an error was raised also the error stack and
@@ -328,37 +379,12 @@ trace you business logic and not your instrumentation code.
 ```sql
 set serveroutput on
 begin
-  dbms_output.put_line(console.get_trace);
+  dbms_output.put_line(console.get_call_stack);
 end;
 {{/}}
 ```
 
 The code above will output `- Call Stack: __anonymous_block (2)`
-
-**/
-
-
-
-
-
-procedure set_module(
-  p_module varchar2,
-  p_action varchar2 default null
-);
-/**
-
-An alias for `dbms_application_info.set_module`.
-
-**/
-
-
-
-procedure set_action(
-  p_action varchar2
-);
-/**
-
-An alias for `dbms_application_info.set_action`.
 
 **/
 
@@ -375,7 +401,17 @@ procedure create_entry (
   p_user_agent varchar2
 );
 
-function logging_enabled return boolean;
+function logging_enabled(
+  p_session varchar2,
+  p_level   integer
+) return boolean;
+
+function get_context return varchar2;
+
+procedure set_context(p_value varchar2);
+
+procedure clear_context;
+
 
 $end
 
