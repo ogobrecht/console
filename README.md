@@ -31,8 +31,7 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
 DEPENDENCIES
 
-Oracle DB >= 18.x??? will mainly depend on the call stack facilities of the
-release, we will see...
+Oracle DB >= 12.1
 
 INSTALLATION
 
@@ -71,7 +70,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 char) := '0.2.0';
+c_version constant varchar2(10 char) := '0.3.0';
 c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 char) := 'MIT';
 c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
@@ -205,11 +204,14 @@ If the given expression evaluates to false an error is raised with the given mes
 EXAMPLE
 
 ```sql
+declare
+  x number := 5;
+  y number := 3;
 begin
-  console.assert(5 < 3, 'test assertion');
+  console.assert(x < y, 'X should be less then Y');
 exception
   when others then
-    console.error('something went wrong');
+    console.error;
     raise;
 end;
 /

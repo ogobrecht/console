@@ -6,6 +6,7 @@ whenever sqlerror exit sql.sqlcode rollback
 prompt TEST CONSOLE
 prompt - Test different levels
 begin
+  console.init(p_level => 4);
   console.permanent ('permanent');
   console.error     ('error');
   console.warn      ('warn', p_trace => true);

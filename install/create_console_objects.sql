@@ -128,7 +128,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 char) := '0.2.0';
+c_version constant varchar2(10 char) := '0.3.0';
 c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 char) := 'MIT';
 c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
@@ -151,8 +151,7 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
 DEPENDENCIES
 
-Oracle DB >= 18.x??? will mainly depend on the call stack facilities of the
-release, we will see...
+Oracle DB >= 12.1
 
 INSTALLATION
 
@@ -285,11 +284,14 @@ If the given expression evaluates to false an error is raised with the given mes
 EXAMPLE
 
 ```sql
+declare
+  x number := 5;
+  y number := 3;
 begin
-  console.assert(5 < 3, 'test assertion');
+  console.assert(x < y, 'X should be less then Y');
 exception
   when others then
-    console.error('something went wrong');
+    console.error;
     raise;
 end;
 {{/}}
@@ -515,13 +517,15 @@ The code above will output `- Call Stack: __anonymous_block (2)`
 
 **/
 
+function context_available_yn return varchar2;
+
 --------------------------------------------------------------------------------
 -- INTERNAL UTILITIES (only visible when ccflag `utils_public` is set to true)
 --------------------------------------------------------------------------------
 
 $if $$utils_public $then
 
-procedure create_entry (
+procedure create_log_entry (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
@@ -529,7 +533,6 @@ procedure create_entry (
 );
 
 function logging_enabled(
-  p_session varchar2,
   p_level   integer
 ) return boolean;
 
@@ -560,11 +563,12 @@ c_sep               constant varchar2 ( 1 byte) := ',';
 c_at                constant varchar2 ( 1 byte) := '@';
 c_hash              constant varchar2 ( 1 byte) := '#';
 c_slash             constant varchar2 ( 1 byte) := '/';
-c_anon_block_ora    constant varchar2 (20 byte) := '__anonymous_block';
+c_anon_block_orig   constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block   constant varchar2 (20 byte) := 'anonymous_block';
-c_context_namespace constant varchar2(30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
-c_context_attribute constant varchar2(30 byte) := 'CONSOLE_CONFIGURATION';
-c_date_format       constant varchar2(16 byte) := 'yyyymmddhh24miss';
+c_context_namespace constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
+c_context_attribute constant varchar2 (30 byte) := 'CONSOLE_CONFIGURATION';
+c_context_test_attr constant varchar2 (30 byte) := 'TEST_CONTEXT_AVAILABILITY';
+c_date_format       constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_vc_max_size       constant pls_integer        := 32767;
 
 subtype vc16    is varchar2 (   16 char);
@@ -578,13 +582,18 @@ subtype vc2000  is varchar2 ( 2000 char);
 subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
+insufficient_privileges exception;
+pragma exception_init (insufficient_privileges, -1031);
+
+g_context varchar2 (4000 byte);
+
 --------------------------------------------------------------------------------
 -- PRIVATE METHODS (forward declarations)
 --------------------------------------------------------------------------------
 
 $if not $$utils_public $then
 
-procedure create_entry (
+procedure create_log_entry (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
@@ -592,7 +601,6 @@ procedure create_entry (
 );
 
 function logging_enabled(
-  p_session varchar2,
   p_level   integer
 ) return boolean;
 
@@ -614,7 +622,7 @@ procedure permanent (
   p_user_agent varchar2 default null
 ) is
 begin
-  create_entry (
+  create_log_entry (
     p_level      => c_level_permanent,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -629,7 +637,7 @@ procedure error (
   p_user_agent varchar2 default null
 ) is
 begin
-  create_entry (
+  create_log_entry (
     p_level      => c_level_error,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -645,7 +653,7 @@ procedure warn (
   p_user_agent varchar2 default null
 ) is
 begin
-  create_entry (
+  create_log_entry (
     p_level      => c_level_warning,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -660,7 +668,7 @@ procedure info (
   p_user_agent varchar2 default null
 ) is
 begin
-  create_entry (
+  create_log_entry (
     p_level      => c_level_info,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -675,7 +683,7 @@ procedure log (
   p_user_agent varchar2 default null
 ) is
 begin
-  create_entry (
+  create_log_entry (
     p_level      => c_level_info,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -690,7 +698,7 @@ procedure debug (
   p_user_agent varchar2 default null
 ) is
 begin
-  create_entry (
+  create_log_entry (
     p_level      => c_level_verbose,
     p_message    => p_message,
     p_trace      => p_trace,
@@ -704,7 +712,7 @@ procedure trace(
   p_user_agent varchar2 default null
 ) is
 begin
-  create_entry (
+  create_log_entry (
     p_level      => c_level_info,
     p_message    => nvl(p_message, 'console.trace()'),
     p_trace      => true,
@@ -719,7 +727,7 @@ procedure assert(
 ) is
 begin
   if not p_expression then
-    raise_application_error(-20000, p_message);
+    raise_application_error(-20000, 'Assertion failed: ' || p_message);
   end if;
 end assert;
 
@@ -749,13 +757,17 @@ begin
     raise_application_error(-20000,
       'Duration needs to be greater or equal 1 (minute).');
   else
-    v_context := sys_context(c_context_namespace, c_context_attribute);
+    v_context := get_context;
     if instr(v_context, p_session) > 0 then
       null; -- FIXME implement edit of session
     else
       set_context (v_context
-        || v_session || c_sep || to_char(p_level) || c_sep
-        || to_char(sysdate + 1/24/60 * p_duration, c_date_format) || c_lf
+        || to_char(sysdate + 1/24/60 * p_duration, c_date_format)
+        || c_sep
+        || to_char(p_level)
+        || c_sep
+        || v_session
+        || c_lf
       );
     end if;
   end if;
@@ -873,7 +885,7 @@ begin
       --the replace changes `__anonymous_block` to `anonymous_block`
       v_subprogram := replace(
         utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
-        c_anon_block_ora,
+        c_anon_block_orig,
         c_anonymous_block
       );
       --exclude console package from the call stack
@@ -891,10 +903,21 @@ begin
 end;
 
 --------------------------------------------------------------------------------
+
+function context_available_yn return varchar2 is
+begin
+  sys.dbms_session.set_context(c_context_namespace, c_context_test_attr, 'Check context availability');
+  return 'Y';
+exception
+  when others then
+    return 'N';
+end;
+
+--------------------------------------------------------------------------------
 -- PRIVATE METHODS
 --------------------------------------------------------------------------------
 
-procedure create_entry (
+procedure create_log_entry (
   p_level      integer,
   p_message    clob,
   p_trace      boolean,
@@ -902,11 +925,9 @@ procedure create_entry (
 ) is
   pragma autonomous_transaction;
   v_call_stack console_logs.call_stack%type;
+  v_sqlerrm vc255 := case when sqlcode != 0 then substr(sqlerrm,1 , 255) end;
 begin
-  if p_level <= c_level_error
-    or logging_enabled(sys_context('USERENV', 'CLIENT_IDENTIFIER'), p_level)
-    or logging_enabled(dbms_session.unique_session_id, p_level)
-  then
+  if p_level <= c_level_error or logging_enabled (p_level) then
     if p_trace then
       v_call_stack := substr(get_call_stack, 1, 2000);
     end if;
@@ -928,10 +949,11 @@ begin
       instance_name,
       service_name,
       sid,
-      sessionid)
+      sessionid
+    )
     values (
       p_level,
-      p_message,
+      coalesce(p_message, to_clob(v_sqlerrm)),
       v_call_stack,
       sys_context('USERENV', 'MODULE'),
       sys_context('USERENV', 'ACTION'),
@@ -947,54 +969,66 @@ begin
       sys_context('USERENV', 'INSTANCE_NAME'),
       sys_context('USERENV', 'SERVICE_NAME'),
       sys_context('USERENV', 'SID'),
-      sys_context('USERENV', 'SESSIONID'));
+      sys_context('USERENV', 'SESSIONID')
+    );
     commit;
   end if;
-end create_entry;
+end create_log_entry;
 
 --------------------------------------------------------------------------------
 
 function logging_enabled(
-  p_session varchar2,
   p_level   integer
 ) return boolean is
   v_context       vc4000;
-  v_session_start pls_integer;
-  v_level_start   pls_integer;
-  v_level         pls_integer;
-  v_date          date;
+  v_start         pls_integer;
+  --
+  function is_enabled (
+    p_session varchar2,
+    p_level pls_integer
+  ) return boolean is
+    v_level         pls_integer;
+    v_date          date;
+  begin
+    v_start := instr(v_context, p_session);
+    if v_start > 0 then
+      --example entry: 20210117202241,4,APEX:8805903776765
+      begin
+        v_level := to_number(substr(v_context, v_start -  2,  1 ));
+        v_date  := to_date  (substr(v_context, v_start - 17, 14 ), c_date_format);
+      exception
+        when others then
+          null; -- I know, I know - never do this - but here it is ok if we cannot convert
+      end;
+    end if;
+    return v_level >= p_level and v_date > sysdate;
+  end;
+  --
 begin
   v_context := get_context;
-  v_session_start := instr(v_context, p_session);
-  if v_session_start > 0 then
-    v_level_start := instr(v_context, c_sep, v_session_start) + 1;
-    --example entry: APEX:8805903776765,4,20210117202241
-    begin
-      v_level := to_number(substr(v_context, v_level_start, 1));
-      v_date  := to_date(substr(v_context, v_level_start + 2, 14), c_date_format);
-    exception
-      when others then
-        null; -- I know, I know - never do this - but here it is ok if we cant convert
-    end;
-  end if;
-  return v_level >= p_level and v_date > sysdate;
+  return is_enabled(sys_context('USERENV', 'CLIENT_IDENTIFIER'), p_level)
+      or is_enabled(dbms_session.unique_session_id, p_level);
 end logging_enabled;
 
 function get_context return varchar2 is
 begin
-  return sys_context(
-    namespace => c_context_namespace,
-    attribute => c_context_attribute
-  );
+  if context_available_yn = 'Y' then
+    return sys_context(c_context_namespace, c_context_attribute, 4000);
+  else
+    return g_context;
+  end if;
 end;
 
 procedure set_context(p_value varchar2) is
 begin
-  sys.dbms_session.set_context(
-    namespace => c_context_namespace,
-    attribute => c_context_attribute,
-    value     => p_value
-  );
+  assert(lengthb(p_value) <= 4000, 'console.set_context(p_value varchar2) was called with a value longer then 4000 byte (this is an internal call of console.init). Do you really need that much sessions in logging mode? The Average session entry needs 30 to 40 byte, that means you could have around 100 sessions in logging mode.');
+  sys.dbms_session.set_context(c_context_namespace, c_context_attribute, p_value);
+exception
+  when insufficient_privileges then
+    g_context := p_value;
+  when others then
+    error;
+    raise;
 end;
 
 procedure clear_context is
@@ -1003,16 +1037,15 @@ begin
     namespace => c_context_namespace,
     attribute => c_context_attribute
   );
+exception
+  when insufficient_privileges then
+    g_context := null;
 end;
 
 end console;
 /
 
-column "Name"      format a15
-column "Line,Col"  format a10
-column "Type"      format a10
-column "Message"   format a80
-
+-- check for errors in package console and for existing context
 declare
   v_count pls_integer;
 begin
@@ -1022,9 +1055,29 @@ begin
    where name = 'CONSOLE';
   if v_count > 0 then
     dbms_output.put_line('- Package CONSOLE has errors :-(');
+  else
+    -- check for existing context by init logging for the current session
+    begin
+      console.init;
+      dbms_output.put_line('- Context writeable :-)');
+    exception
+      when others then
+        dbms_output.put_line('- CONTEXT NOT AVAILABLE :-(');
+        dbms_output.put_line('-  | No worries - you can still start with the instrumentation of your code.');
+        dbms_output.put_line('-  | Errors (level 1) are always logged, also without a context.');
+        dbms_output.put_line('-  | You will not be able to set other session in logging modes with level 2 (warning) or higher.');
+        dbms_output.put_line('-  | But you will be able to do this for your own session.');
+        dbms_output.put_line('-  | When you (or your DBA) have the context created then simply recheck the availability:');
+        dbms_output.put_line('-  | select console.context_available_yn from dual;');
+    end;
   end if;
 end;
 /
+
+column "Name"      format a15
+column "Line,Col"  format a10
+column "Type"      format a10
+column "Message"   format a80
 
 select name || case when type like '%BODY' then ' body' end as "Name",
        line || ',' || position as "Line,Col",
@@ -1034,7 +1087,7 @@ select name || case when type like '%BODY' then ' body' end as "Name",
  where name = 'CONSOLE'
  order by name, line, position;
 
-prompt - log installed version
+prompt - Log the installed console version
 declare
   v_count pls_integer;
 begin
