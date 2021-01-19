@@ -218,7 +218,7 @@ end;
 procedure init(
   p_session  varchar2 default dbms_session.unique_session_id, -- client_identifier or unique_session_id
   p_level    integer  default c_level_info,                   -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer  default 60                               -- duration in minutes
+  p_duration integer  default 60                              -- duration in minutes
 );
 /**
 
@@ -288,7 +288,7 @@ end;
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
-function get_unique_session_id
+function my_unique_session_id
   return varchar2;
 /**
 
@@ -393,7 +393,45 @@ The code above will output `- Call Stack: __anonymous_block (2)`
 
 **/
 
+--------------------------------------------------------------------------------
+
+function my_log_level return integer;
+/**
+
+Checks the availability of the global context. Returns `Y`, if available and `N`
+if not.
+
+If the global context is not available we simulate it by using a package
+variable. In this case you can only set your own session in logging mode with a
+level of 2 (warning) or higher, because other sessions are not able to read the
+package variable value in your session - this works only with a global
+accessible context.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
 function context_available_yn return varchar2;
+/**
+
+Checks the availability of the global context. Returns `Y`, if available and `N`
+if not.
+
+If the global context is not available we simulate it by using a package
+variable. In this case you can only set your own session in logging mode with a
+level of 2 (warning) or higher, because other sessions are not able to read the
+package variable value in your session - this works only with a global
+accessible context.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+**/
 
 --------------------------------------------------------------------------------
 -- INTERNAL UTILITIES (only visible when ccflag `utils_public` is set to true)
@@ -407,10 +445,6 @@ procedure create_log_entry (
   p_trace      boolean,
   p_user_agent varchar2
 );
-
-function logging_enabled(
-  p_level   integer
-) return boolean;
 
 function get_context return varchar2;
 

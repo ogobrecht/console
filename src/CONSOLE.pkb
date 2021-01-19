@@ -49,10 +49,6 @@ procedure create_log_entry (
   p_user_agent varchar2
 );
 
-function logging_enabled(
-  p_level   integer
-) return boolean;
-
 function get_context return varchar2;
 
 procedure set_context(p_value varchar2);
@@ -246,10 +242,10 @@ Some Useful Links
 
 */
 
-function get_unique_session_id return varchar2 is
+function my_unique_session_id return varchar2 is
 begin
   return dbms_session.unique_session_id;
-end get_unique_session_id;
+end my_unique_session_id;
 
 --------------------------------------------------------------------------------
 
@@ -349,7 +345,42 @@ begin
   end if;
 
   return v_return;
-end;
+end get_call_stack;
+
+--------------------------------------------------------------------------------
+
+function my_log_level return integer is
+  v_context       vc4000;
+  v_start         pls_integer;
+  --
+  function get_level (p_session varchar2) return integer is
+    v_level pls_integer;
+    v_date  date;
+  begin
+    v_start := instr(v_context, p_session);
+    if v_start > 0 then
+      --example entry: 20210117202241,4,APEX:8805903776765
+      begin
+        v_level := to_number(substr(v_context, v_start -  2,  1 ));
+        v_date  := to_date  (substr(v_context, v_start - 17, 14 ), c_date_format);
+      exception
+        when others then
+          null; -- I know, I know - never do this - but here it is ok if we cannot convert
+      end;
+    end if;
+    if v_level is null or v_date < sysdate then
+      v_level := 1; -- the default without logging enabled
+    end if;
+    return v_level;
+  end get_level;
+  --
+begin
+  v_context := get_context;
+  return greatest(
+    get_level(sys_context('USERENV', 'CLIENT_IDENTIFIER')),
+    get_level(dbms_session.unique_session_id)
+  );
+end my_log_level;
 
 --------------------------------------------------------------------------------
 
@@ -376,7 +407,7 @@ procedure create_log_entry (
   v_call_stack console_logs.call_stack%type;
   v_sqlerrm vc255 := case when sqlcode != 0 then substr(sqlerrm,1 , 255) end;
 begin
-  if p_level <= c_level_error or logging_enabled (p_level) then
+  if p_level <= c_level_error or p_level <= my_log_level then
     if p_trace then
       v_call_stack := substr(get_call_stack, 1, 2000);
     end if;
@@ -425,39 +456,6 @@ begin
 end create_log_entry;
 
 --------------------------------------------------------------------------------
-
-function logging_enabled(
-  p_level   integer
-) return boolean is
-  v_context       vc4000;
-  v_start         pls_integer;
-  --
-  function is_enabled (
-    p_session varchar2,
-    p_level pls_integer
-  ) return boolean is
-    v_level         pls_integer;
-    v_date          date;
-  begin
-    v_start := instr(v_context, p_session);
-    if v_start > 0 then
-      --example entry: 20210117202241,4,APEX:8805903776765
-      begin
-        v_level := to_number(substr(v_context, v_start -  2,  1 ));
-        v_date  := to_date  (substr(v_context, v_start - 17, 14 ), c_date_format);
-      exception
-        when others then
-          null; -- I know, I know - never do this - but here it is ok if we cannot convert
-      end;
-    end if;
-    return v_level >= p_level and v_date > sysdate;
-  end;
-  --
-begin
-  v_context := get_context;
-  return is_enabled(sys_context('USERENV', 'CLIENT_IDENTIFIER'), p_level)
-      or is_enabled(dbms_session.unique_session_id, p_level);
-end logging_enabled;
 
 function get_context return varchar2 is
 begin

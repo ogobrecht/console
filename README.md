@@ -16,10 +16,12 @@ Oracle Instrumentation Console
 - [Procedure action](#action)
 - [Procedure init](#init)
 - [Procedure clear](#clear)
-- [Function get_unique_session_id](#get_unique_session_id)
+- [Function my_unique_session_id](#my_unique_session_id)
 - [Function get_unique_session_id](#get_unique_session_id)
 - [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
 - [Function get_call_stack](#get_call_stack)
+- [Function my_log_level](#my_log_level)
+- [Function context_available_yn](#context_available_yn)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -307,7 +309,7 @@ SIGNATURE
 procedure init(
   p_session  varchar2 default dbms_session.unique_session_id, -- client_identifier or unique_session_id
   p_level    integer  default c_level_info,                   -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer  default 60                               -- duration in minutes
+  p_duration integer  default 60                              -- duration in minutes
 );
 ```
 
@@ -347,8 +349,8 @@ procedure clear(
 ```
 
 
-<h2><a id="get_unique_session_id"></a>Function get_unique_session_id</h2>
-<!---------------------------------------------------------------------->
+<h2><a id="my_unique_session_id"></a>Function my_unique_session_id</h2>
+<!-------------------------------------------------------------------->
 
 Get the unique session id for debugging of the own session.
 
@@ -357,7 +359,7 @@ Returns the ID provided by DBMS_SESSION.UNIQUE_SESSION_ID.
 SIGNATURE
 
 ```sql
-function get_unique_session_id
+function my_unique_session_id
   return varchar2;
 ```
 
@@ -463,6 +465,52 @@ SIGNATURE
 
 ```sql
 function get_call_stack return varchar2;
+```
+
+
+<h2><a id="my_log_level"></a>Function my_log_level</h2>
+<!---------------------------------------------------->
+
+Checks the availability of the global context. Returns `Y`, if available and `N`
+if not.
+
+If the global context is not available we simulate it by using a package
+variable. In this case you can only set your own session in logging mode with a
+level of 2 (warning) or higher, because other sessions are not able to read the
+package variable value in your session - this works only with a global
+accessible context.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+SIGNATURE
+
+```sql
+function my_log_level return integer;
+```
+
+
+<h2><a id="context_available_yn"></a>Function context_available_yn</h2>
+<!-------------------------------------------------------------------->
+
+Checks the availability of the global context. Returns `Y`, if available and `N`
+if not.
+
+If the global context is not available we simulate it by using a package
+variable. In this case you can only set your own session in logging mode with a
+level of 2 (warning) or higher, because other sessions are not able to read the
+package variable value in your session - this works only with a global
+accessible context.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+SIGNATURE
+
+```sql
+function context_available_yn return varchar2;
 ```
 
 
