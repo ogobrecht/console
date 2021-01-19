@@ -1,4 +1,4 @@
-prompt - Log the installed console version
+prompt - Log permanent the installed console version
 declare
   v_count pls_integer;
 begin

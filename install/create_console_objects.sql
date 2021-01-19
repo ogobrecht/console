@@ -9,6 +9,7 @@ set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
 
 prompt ORACLE INSTRUMENTATION CONSOLE: CREATE DATABASE OBJECTS
+prompt - Project page https://github.com/ogobrecht/console
 prompt - Set compiler flags
 DECLARE
   v_apex_installed VARCHAR2(5) := 'FALSE'; -- Do not change (is set dynamically).
@@ -128,7 +129,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 char) := '0.3.0';
+c_version constant varchar2(10 char) := '0.3.1';
 c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 char) := 'MIT';
 c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
@@ -288,7 +289,10 @@ declare
   x number := 5;
   y number := 3;
 begin
-  console.assert(x < y, 'X should be less then Y');
+  console.assert(
+    x < y,
+    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+  );
 exception
   when others then
     console.error;
@@ -1021,7 +1025,10 @@ end;
 
 procedure set_context(p_value varchar2) is
 begin
-  assert(lengthb(p_value) <= 4000, 'console.set_context(p_value varchar2) was called with a value longer then 4000 byte (this is an internal call of console.init). Do you really need that much sessions in logging mode? The Average session entry needs 30 to 40 byte, that means you could have around 100 sessions in logging mode.');
+  assert(
+    lengthb(p_value) <= 4000,
+    'console.set_context(p_value varchar2) was called with a value longer then 4000 byte (this is an internal call of console.init). Do you really need that much sessions in logging mode? The Average session entry needs 30 to 40 byte, that means you could have around 100 sessions in logging mode.'
+  );
   sys.dbms_session.set_context(c_context_namespace, c_context_attribute, p_value);
 exception
   when insufficient_privileges then
@@ -1056,20 +1063,17 @@ begin
   if v_count > 0 then
     dbms_output.put_line('- Package CONSOLE has errors :-(');
   else
-    -- check for existing context by init logging for the current session
-    begin
-      console.init;
-      dbms_output.put_line('- Context writeable :-)');
-    exception
-      when others then
-        dbms_output.put_line('- CONTEXT NOT AVAILABLE :-(');
-        dbms_output.put_line('-  | No worries - you can still start with the instrumentation of your code.');
-        dbms_output.put_line('-  | Errors (level 1) are always logged, also without a context.');
-        dbms_output.put_line('-  | You will not be able to set other session in logging modes with level 2 (warning) or higher.');
-        dbms_output.put_line('-  | But you will be able to do this for your own session.');
-        dbms_output.put_line('-  | When you (or your DBA) have the context created then simply recheck the availability:');
-        dbms_output.put_line('-  | select console.context_available_yn from dual;');
-    end;
+    if console.context_available_yn = 'Y' then
+      dbms_output.put_line('- Context available :-)');
+    else
+      dbms_output.put_line('- CONTEXT NOT AVAILABLE :-(');
+      dbms_output.put_line('-  | No worries - you can still start with the instrumentation of your code.');
+      dbms_output.put_line('-  | Level permanent (0) and error (1) are always logged, also without a context.');
+      dbms_output.put_line('-  | You will not be able to set other sessions in logging mode with levels warning (2), info (3) or verbose (4).');
+      dbms_output.put_line('-  | But you will be able to do this for your own session.');
+      dbms_output.put_line('-  | When you (or your DBA) have the context created then simply recheck the availability:');
+      dbms_output.put_line('-  | select console.context_available_yn from dual;');
+    end if;
   end if;
 end;
 /
@@ -1087,7 +1091,7 @@ select name || case when type like '%BODY' then ' body' end as "Name",
  where name = 'CONSOLE'
  order by name, line, position;
 
-prompt - Log the installed console version
+prompt - Log permanent the installed console version
 declare
   v_count pls_integer;
 begin

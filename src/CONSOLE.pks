@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 char) := '0.3.0';
+c_version constant varchar2(10 char) := '0.3.1';
 c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 char) := 'MIT';
 c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
@@ -161,7 +161,10 @@ declare
   x number := 5;
   y number := 3;
 begin
-  console.assert(x < y, 'X should be less then Y');
+  console.assert(
+    x < y,
+    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+  );
 exception
   when others then
     console.error;

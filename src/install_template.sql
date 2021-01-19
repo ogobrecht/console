@@ -8,6 +8,7 @@ set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
 
 prompt ORACLE INSTRUMENTATION CONSOLE: CREATE DATABASE OBJECTS
+prompt - Project page https://github.com/ogobrecht/console
 @set_ccflags.sql
 @CONSOLE_LOGS.sql
 prompt - Package CONSOLE (spec)

@@ -470,7 +470,10 @@ end;
 
 procedure set_context(p_value varchar2) is
 begin
-  assert(lengthb(p_value) <= 4000, 'console.set_context(p_value varchar2) was called with a value longer then 4000 byte (this is an internal call of console.init). Do you really need that much sessions in logging mode? The Average session entry needs 30 to 40 byte, that means you could have around 100 sessions in logging mode.');
+  assert(
+    lengthb(p_value) <= 4000,
+    'console.set_context(p_value varchar2) was called with a value longer then 4000 byte (this is an internal call of console.init). Do you really need that much sessions in logging mode? The Average session entry needs 30 to 40 byte, that means you could have around 100 sessions in logging mode.'
+  );
   sys.dbms_session.set_context(c_context_namespace, c_context_attribute, p_value);
 exception
   when insufficient_privileges then
