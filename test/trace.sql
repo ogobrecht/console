@@ -7,6 +7,8 @@ whenever sqlerror exit sql.sqlcode rollback
 --https://oracle-base.com/articles/12c/utl-call-stack-12cr1
 
 prompt TEST TRACE
+exec console.init;
+
 prompt - Create test package PKG1
 create or replace package pkg1 is
   procedure do_stuff;

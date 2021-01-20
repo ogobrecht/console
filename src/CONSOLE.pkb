@@ -7,6 +7,7 @@ create or replace package body console is
 c_tab               constant varchar2 ( 1 byte) := chr(9);
 c_cr                constant varchar2 ( 1 byte) := chr(13);
 c_lf                constant varchar2 ( 1 byte) := chr(10);
+c_lflf              constant varchar2 ( 2 byte) := chr(10) || chr(10);
 c_crlf              constant varchar2 ( 2 byte) := chr(13) || chr(10);
 c_sep               constant varchar2 ( 1 byte) := ',';
 c_at                constant varchar2 ( 1 byte) := '@';
@@ -44,9 +45,9 @@ $if not $$utils_public $then
 
 procedure create_log_entry (
   p_level      integer,
-  p_message    clob,
-  p_trace      boolean,
-  p_user_agent varchar2
+  p_message    clob     default null,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
 );
 
 function get_context return varchar2;
@@ -61,31 +62,25 @@ $end
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
-procedure permanent (
-  p_message    clob,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null
-) is
+procedure permanent (p_message clob) is
 begin
   create_log_entry (
     p_level      => c_level_permanent,
-    p_message    => p_message,
-    p_trace      => p_trace,
-    p_user_agent => p_user_agent);
+    p_message    => p_message
+  );
 end permanent;
 
 --------------------------------------------------------------------------------
 
 procedure error (
   p_message    clob     default null,
-  p_trace      boolean  default true,
   p_user_agent varchar2 default null
 ) is
 begin
   create_log_entry (
     p_level      => c_level_error,
     p_message    => p_message,
-    p_trace      => p_trace,
+    p_trace      => true,
     p_user_agent => p_user_agent);
   dbms_application_info.set_action(null);
 end error;
@@ -94,14 +89,12 @@ end error;
 
 procedure warn (
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 ) is
 begin
   create_log_entry (
     p_level      => c_level_warning,
     p_message    => p_message,
-    p_trace      => p_trace,
     p_user_agent => p_user_agent);
 end warn;
 
@@ -109,14 +102,12 @@ end warn;
 
 procedure info (
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 ) is
 begin
   create_log_entry (
     p_level      => c_level_info,
     p_message    => p_message,
-    p_trace      => p_trace,
     p_user_agent => p_user_agent);
 end info;
 
@@ -124,14 +115,12 @@ end info;
 
 procedure log (
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 ) is
 begin
   create_log_entry (
     p_level      => c_level_info,
     p_message    => p_message,
-    p_trace      => p_trace,
     p_user_agent => p_user_agent);
 end log;
 
@@ -139,14 +128,12 @@ end log;
 
 procedure debug (
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 ) is
 begin
   create_log_entry (
     p_level      => c_level_verbose,
     p_message    => p_message,
-    p_trace      => p_trace,
     p_user_agent => p_user_agent);
 end debug;
 
@@ -159,7 +146,7 @@ procedure trace(
 begin
   create_log_entry (
     p_level      => c_level_info,
-    p_message    => nvl(p_message, 'console.trace()'),
+    p_message    => p_message,
     p_trace      => true,
     p_user_agent => p_user_agent);
 end trace;
@@ -172,7 +159,7 @@ procedure assert(
 ) is
 begin
   if not p_expression then
-    raise_application_error(-20000, 'Assertion failed: ' || p_message);
+    raise_application_error(-20000, 'Assertion failed: ' || p_message, true);
   end if;
 end assert;
 
@@ -188,9 +175,9 @@ end action;
 --------------------------------------------------------------------------------
 
 procedure init(
-  p_session  varchar2 default dbms_session.unique_session_id,
-  p_level    integer  default c_level_info,
-  p_duration integer  default 60
+  p_session  varchar2,
+  p_level    integer default c_level_info,
+  p_duration integer default 60
 ) is
   v_session vc64 := substr(p_session, 1, 64);
   v_context vc4000;
@@ -218,6 +205,18 @@ begin
   end if;
 end init;
 
+procedure init(
+  p_level    integer default c_level_info,
+  p_duration integer default 60
+) is
+begin
+  init(
+    p_session  => dbms_session.unique_session_id,
+    p_level    => p_level,
+    p_duration => p_duration
+  );
+end init;
+
 --------------------------------------------------------------------------------
 
 procedure clear(
@@ -229,24 +228,6 @@ end;
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
---------------------------------------------------------------------------------
-
-/*
-
-Some Useful Links
------------------
-
-- [DBMS_SESSION: Managing Sessions From a Connection Pool in Oracle
-  Databases](https://oracle-base.com/articles/misc/dbms_session)
-
-
-*/
-
-function my_unique_session_id return varchar2 is
-begin
-  return dbms_session.unique_session_id;
-end my_unique_session_id;
-
 --------------------------------------------------------------------------------
 
 function get_unique_session_id (
@@ -290,6 +271,35 @@ begin
   end if;
   return v_return;
 end get_sid_serial_inst_id;
+
+--------------------------------------------------------------------------------
+
+function get_scope return varchar2 is
+  v_return     vc_max;
+  v_subprogram vc_max;
+begin
+  if utl_call_stack.dynamic_depth > 0 then
+    --ignore 1, is always this function (get_call_stack) itself
+    for i in 2 .. utl_call_stack.dynamic_depth
+    loop
+      --the replace changes `__anonymous_block` to `anonymous_block`
+      v_subprogram := replace(
+        utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
+        c_anon_block_orig,
+        c_anonymous_block
+      );
+      --exclude console package from the call stack
+      if instr(upper(v_subprogram), upper($$plsql_unit)||'.') = 0 then
+        v_return := v_return
+          || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
+          || v_subprogram || ', line ' || utl_call_stack.unit_line (i)
+          || chr (10);
+      end if;
+      exit when v_return is not null;
+    end loop;
+  end if;
+  return v_return;
+end get_scope;
 
 --------------------------------------------------------------------------------
 
@@ -399,22 +409,30 @@ end;
 
 procedure create_log_entry (
   p_level      integer,
-  p_message    clob,
-  p_trace      boolean,
-  p_user_agent varchar2
+  p_message    clob     default null,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
 ) is
   pragma autonomous_transaction;
-  v_call_stack console_logs.call_stack%type;
-  v_sqlerrm vc255 := case when sqlcode != 0 then substr(sqlerrm,1 , 255) end;
+  v_message clob;
+  v_scope   console_logs.scope%type;
 begin
   if p_level <= c_level_error or p_level <= my_log_level then
+    v_scope := substr(get_scope, 1, 1000);
+    if p_message is not null then
+      v_message := p_message;
+    elsif sqlcode != 0 then
+      v_message := sqlerrm;
+    end if;
     if p_trace then
-      v_call_stack := substr(get_call_stack, 1, 2000);
+      v_message :=
+        case when v_message is not null then v_message || c_lflf end
+        || get_call_stack;
     end if;
     insert into console_logs (
       log_level,
+      scope,
       message,
-      call_stack,
       module,
       action,
       client_info,
@@ -433,8 +451,8 @@ begin
     )
     values (
       p_level,
-      coalesce(p_message, to_clob(v_sqlerrm)),
-      v_call_stack,
+      v_scope,
+      v_message,
       sys_context('USERENV', 'MODULE'),
       sys_context('USERENV', 'ACTION'),
       sys_context('USERENV', 'CLIENT_INFO'),

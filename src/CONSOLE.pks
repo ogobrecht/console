@@ -68,11 +68,7 @@ FIXME: Create uninstall scripts
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
-procedure permanent (
-  p_message    clob,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null
-);
+procedure permanent (p_message clob);
 /**
 
 Log a message with the level 0 (permanent). These messages will not be deleted
@@ -82,7 +78,6 @@ on cleanup.
 
 procedure error (
   p_message    clob     default null,
-  p_trace      boolean  default true,
   p_user_agent varchar2 default null
 );
 /**
@@ -94,7 +89,6 @@ the session action attribute.
 
 procedure warn (
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 );
 /**
@@ -105,7 +99,6 @@ Log a message with the level 2 (warning).
 
 procedure info(
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 );
 /**
@@ -116,7 +109,6 @@ Log a message with the level 3 (info).
 
 procedure log(
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 );
 /**
@@ -127,7 +119,6 @@ Log a message with the level 3 (info).
 
 procedure debug (
   p_message    clob,
-  p_trace      boolean  default false,
   p_user_agent varchar2 default null
 );
 /**
@@ -216,9 +207,9 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init(
-  p_session  varchar2 default dbms_session.unique_session_id, -- client_identifier or unique_session_id
-  p_level    integer  default c_level_info,                   -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer  default 60                              -- duration in minutes
+  p_session  varchar2,                     -- client_identifier or unique_session_id
+  p_level    integer default c_level_info, -- 2 (warning), 3 (info) or 4 (verbose)
+  p_duration integer default 60            -- duration in minutes
 );
 /**
 
@@ -227,16 +218,31 @@ Starts the logging for a specific session.
 To avoid spoiling the context with very long input the p_session parameter is
 truncated after 64 characters before using it.
 
+For easier usage there is an overloaded procedure available which uses always
+your unique session id.
+
 EXAMPLES
 
 ```sql
--- dive into your own session
-exec console.init(dbms_session.unique_session_id);
+-- Dive into your own session with the default level of 3 (info) and the
+-- default duration of 60 (minutes).
+exec console.init;
 
--- debug an APEX session
-exec console.init('APEX:8805903776765', console.c_level_verbose, 90);
+-- With level 4 (verbose) for the next 15 minutes.
+exec console.init(4, 15);
 
--- debug another session identified by sid and serial
+-- Using a constant for the level
+exec console.init(console.c_level_verbose, 90);
+
+-- Debug an APEX session...
+exec console.init('APEX:8805903776765', 4, 90);
+
+-- ... with the defaults
+exec console.init('APEX:8805903776765');
+
+-- Debug another session identified by sid and serial.
+-- As you cannot get the unique session id from outside
+-- the other session you need to calculate it.
 begin
   console.init(
     p_session  => console.get_unique_session_id(
@@ -251,6 +257,11 @@ end;
 ```
 
 **/
+
+procedure init(
+  p_level    integer default c_level_info, -- 2 (warning), 3 (info) or 4 (verbose)
+  p_duration integer default 60            -- duration in minutes
+);
 
 --------------------------------------------------------------------------------
 
@@ -286,18 +297,6 @@ end;
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
---------------------------------------------------------------------------------
-
-function my_unique_session_id
-  return varchar2;
-/**
-
-Get the unique session id for debugging of the own session.
-
-Returns the ID provided by DBMS_SESSION.UNIQUE_SESSION_ID.
-
-**/
-
 --------------------------------------------------------------------------------
 
 function get_unique_session_id (
@@ -441,9 +440,9 @@ $if $$utils_public $then
 
 procedure create_log_entry (
   p_level      integer,
-  p_message    clob,
-  p_trace      boolean,
-  p_user_agent varchar2
+  p_message    clob     default null,
+  p_trace      boolean  default false,
+  p_user_agent varchar2 default null
 );
 
 function get_context return varchar2;
