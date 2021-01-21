@@ -17,5 +17,4 @@ prompt - Package CONSOLE (body)
 @CONSOLE.pkb
 @show_errors.sql
 @log_installed_version.sql
-prompt - FINISHED
 

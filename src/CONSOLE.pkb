@@ -182,26 +182,20 @@ procedure init(
   v_session vc64 := substr(p_session, 1, 64);
   v_context vc4000;
 begin
-  if p_level not in (2, 3, 4) then
-    raise_application_error(-20000,
-      'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
-  elsif p_duration < 1 then
-    raise_application_error(-20000,
-      'Duration needs to be greater or equal 1 (minute).');
+  assert(p_level in (2, 3, 4), 'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
+  assert(p_duration > 1, 'Duration needs to be greater or equal 1 (minute).');
+  v_context := get_context;
+  if instr(v_context, p_session) > 0 then
+    null; -- FIXME implement edit of session
   else
-    v_context := get_context;
-    if instr(v_context, p_session) > 0 then
-      null; -- FIXME implement edit of session
-    else
-      set_context (v_context
-        || to_char(sysdate + 1/24/60 * p_duration, c_date_format)
-        || c_sep
-        || to_char(p_level)
-        || c_sep
-        || v_session
-        || c_lf
-      );
-    end if;
+    set_context (v_context
+      || to_char(sysdate + 1/24/60 * p_duration, c_date_format)
+      || c_sep
+      || to_char(p_level)
+      || c_sep
+      || v_session
+      || c_lf
+    );
   end if;
 end init;
 
@@ -404,6 +398,13 @@ exception
 end;
 
 --------------------------------------------------------------------------------
+
+function version return varchar2 is
+begin
+  return c_version;
+end;
+
+--------------------------------------------------------------------------------
 -- PRIVATE METHODS
 --------------------------------------------------------------------------------
 
@@ -414,7 +415,8 @@ procedure create_log_entry (
   p_user_agent varchar2 default null
 ) is
   pragma autonomous_transaction;
-  v_message clob;
+  v_message    clob;
+  v_call_stack vc4000;
   v_scope   console_logs.scope%type;
 begin
   if p_level <= c_level_error or p_level <= my_log_level then
@@ -425,14 +427,13 @@ begin
       v_message := sqlerrm;
     end if;
     if p_trace then
-      v_message :=
-        case when v_message is not null then v_message || c_lflf end
-        || get_call_stack;
+      v_call_stack := substr(get_call_stack, 1, 4000);
     end if;
     insert into console_logs (
       log_level,
       scope,
       message,
+      call_stack,
       module,
       action,
       client_info,
@@ -443,16 +444,13 @@ begin
       host,
       os_user,
       os_user_agent,
-      instance,
-      instance_name,
-      service_name,
-      sid,
-      sessionid
+      sid
     )
     values (
       p_level,
       v_scope,
       v_message,
+      v_call_stack,
       sys_context('USERENV', 'MODULE'),
       sys_context('USERENV', 'ACTION'),
       sys_context('USERENV', 'CLIENT_INFO'),
@@ -463,11 +461,7 @@ begin
       sys_context('USERENV', 'HOST'),
       sys_context('USERENV', 'OS_USER'),
       substr(p_user_agent, 1, 200),
-      sys_context('USERENV', 'INSTANCE'),
-      sys_context('USERENV', 'INSTANCE_NAME'),
-      sys_context('USERENV', 'SERVICE_NAME'),
-      sys_context('USERENV', 'SID'),
-      sys_context('USERENV', 'SESSIONID')
+      sys_context('USERENV', 'SID')
     );
     commit;
   end if;

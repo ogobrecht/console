@@ -1,10 +1,10 @@
 create or replace package console authid definer is
 
-c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 char) := '0.3.1';
-c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
-c_license constant varchar2(10 char) := 'MIT';
-c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
+c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
+c_version constant varchar2(10 byte) := '0.3.1';
+c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
+c_license constant varchar2(10 byte) := 'MIT';
+c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
 
 c_level_permanent constant integer := 0;
 c_level_error     constant integer := 1;
@@ -414,6 +414,20 @@ select console.context_available_yn from dual;
 
 --------------------------------------------------------------------------------
 
+function version return varchar2;
+/**
+
+returns the version information from the console package.
+
+
+```sql
+select console.version from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
 function context_available_yn return varchar2;
 /**
 
@@ -450,7 +464,6 @@ function get_context return varchar2;
 procedure set_context(p_value varchar2);
 
 procedure clear_context;
-
 
 $end
 

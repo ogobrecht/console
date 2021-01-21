@@ -1,6 +1,7 @@
 -- check for errors in package console and for existing context
 declare
-  v_count pls_integer;
+  v_count                pls_integer;
+  v_context_available_yn varchar2(1 byte);
 begin
   select count(*)
     into v_count
@@ -9,7 +10,8 @@ begin
   if v_count > 0 then
     dbms_output.put_line('- Package CONSOLE has errors :-(');
   else
-    if console.context_available_yn = 'Y' then
+    execute immediate 'select console.context_available_yn from dual' into v_context_available_yn;
+    if v_context_available_yn = 'Y' then
       dbms_output.put_line('- Context available :-)');
     else
       dbms_output.put_line('- CONTEXT NOT AVAILABLE :-(');

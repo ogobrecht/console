@@ -33,8 +33,8 @@ END;
 /
 
 --FOR DEVELOPMENT ONLY - UNCOMMENT THE NEXT TWO LINES TEMPORARELY WHEN YOU NEED IT
-begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
-/
+--begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
+--/
 
 declare
   v_table_name        varchar2(  30 char) := 'CONSOLE_LOGS';
@@ -53,6 +53,7 @@ begin
         log_level          integer                                                         ,
         scope              varchar2 (1000 char)                                            ,
         message            clob                                                            ,
+        call_stack         varchar2 (4000 char)                                            ,
         module             varchar2 (  64 char)                                            ,
         action             varchar2 (  64 char)                                            ,
         client_info        varchar2 (  64 char)                                            ,
@@ -63,13 +64,9 @@ begin
         host               varchar2 (  64 char)                                            ,
         os_user            varchar2 (  64 char)                                            ,
         os_user_agent      varchar2 ( 200 char)                                            ,
-        instance           integer                                                         ,
-        instance_name      varchar2 (  32 char)                                            ,
-        service_name       varchar2 (  64 char)                                            ,
         sid                integer                                                         ,
-        sessionid          varchar2 (  64 char)                                            ,
         --
-        constraint #TABLE_NAME#_check_level check (log_level in (0,1,2,3,4))
+        constraint #TABLE_NAME#_level_ck check (log_level in (0,1,2,3,4))
       )
     }','#TABLE_NAME#', v_table_name);
   else
@@ -107,6 +104,7 @@ comment on column console_logs.log_level         is 'Log entry level. Can be 0 (
 comment on column console_logs.action            is 'The action/position in the module (application name). Can be set through the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE).';
 comment on column console_logs.message           is 'The log message itself and in case of an error or trace the call stack informaton.';
+comment on column console_logs.message           is 'The call_stack and in case of an error also the error stack and error backtrace.';
 comment on column console_logs.module            is 'The application name (module). Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.client_info       is 'The client information. Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.session_user      is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
@@ -116,11 +114,7 @@ comment on column console_logs.ip_address        is 'IP address of the machine f
 comment on column console_logs.host              is 'Name of the host machine from which the client is connected.';
 comment on column console_logs.os_user           is 'Operating system user name of the client process that initiated the database session.';
 comment on column console_logs.os_user_agent     is 'Operating system user agent (web browser engine). This information will only be available, if we overwrite the console.error method of the client browser and bring these errors back to the server. For APEX we will have a plug-in in the future to do this.';
-comment on column console_logs.instance          is 'The instance identification number of the current instance.';
-comment on column console_logs.instance_name     is 'The name of the instance.';
-comment on column console_logs.service_name      is 'The name of the service to which a given session is connected.';
 comment on column console_logs.sid               is 'The session ID. Is not unique, the same id can be shown on different instances, which are different sessions.';
-comment on column console_logs.sessionid         is 'The auditing session identifier. You cannot use this attribute in distributed SQL statements.';
 
 
 
@@ -128,11 +122,11 @@ comment on column console_logs.sessionid         is 'The auditing session identi
 prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
-c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 char) := '0.3.1';
-c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
-c_license constant varchar2(10 char) := 'MIT';
-c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
+c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
+c_version constant varchar2(10 byte) := '0.3.1';
+c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
+c_license constant varchar2(10 byte) := 'MIT';
+c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
 
 c_level_permanent constant integer := 0;
 c_level_error     constant integer := 1;
@@ -542,6 +536,20 @@ select console.context_available_yn from dual;
 
 --------------------------------------------------------------------------------
 
+function version return varchar2;
+/**
+
+returns the version information from the console package.
+
+
+```sql
+select console.version from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
 function context_available_yn return varchar2;
 /**
 
@@ -578,7 +586,6 @@ function get_context return varchar2;
 procedure set_context(p_value varchar2);
 
 procedure clear_context;
-
 
 $end
 
@@ -770,26 +777,20 @@ procedure init(
   v_session vc64 := substr(p_session, 1, 64);
   v_context vc4000;
 begin
-  if p_level not in (2, 3, 4) then
-    raise_application_error(-20000,
-      'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
-  elsif p_duration < 1 then
-    raise_application_error(-20000,
-      'Duration needs to be greater or equal 1 (minute).');
+  assert(p_level in (2, 3, 4), 'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
+  assert(p_duration > 1, 'Duration needs to be greater or equal 1 (minute).');
+  v_context := get_context;
+  if instr(v_context, p_session) > 0 then
+    null; -- FIXME implement edit of session
   else
-    v_context := get_context;
-    if instr(v_context, p_session) > 0 then
-      null; -- FIXME implement edit of session
-    else
-      set_context (v_context
-        || to_char(sysdate + 1/24/60 * p_duration, c_date_format)
-        || c_sep
-        || to_char(p_level)
-        || c_sep
-        || v_session
-        || c_lf
-      );
-    end if;
+    set_context (v_context
+      || to_char(sysdate + 1/24/60 * p_duration, c_date_format)
+      || c_sep
+      || to_char(p_level)
+      || c_sep
+      || v_session
+      || c_lf
+    );
   end if;
 end init;
 
@@ -992,6 +993,13 @@ exception
 end;
 
 --------------------------------------------------------------------------------
+
+function version return varchar2 is
+begin
+  return c_version;
+end;
+
+--------------------------------------------------------------------------------
 -- PRIVATE METHODS
 --------------------------------------------------------------------------------
 
@@ -1002,7 +1010,8 @@ procedure create_log_entry (
   p_user_agent varchar2 default null
 ) is
   pragma autonomous_transaction;
-  v_message clob;
+  v_message    clob;
+  v_call_stack vc4000;
   v_scope   console_logs.scope%type;
 begin
   if p_level <= c_level_error or p_level <= my_log_level then
@@ -1013,14 +1022,13 @@ begin
       v_message := sqlerrm;
     end if;
     if p_trace then
-      v_message :=
-        case when v_message is not null then v_message || c_lflf end
-        || get_call_stack;
+      v_call_stack := substr(get_call_stack, 1, 4000);
     end if;
     insert into console_logs (
       log_level,
       scope,
       message,
+      call_stack,
       module,
       action,
       client_info,
@@ -1031,16 +1039,13 @@ begin
       host,
       os_user,
       os_user_agent,
-      instance,
-      instance_name,
-      service_name,
-      sid,
-      sessionid
+      sid
     )
     values (
       p_level,
       v_scope,
       v_message,
+      v_call_stack,
       sys_context('USERENV', 'MODULE'),
       sys_context('USERENV', 'ACTION'),
       sys_context('USERENV', 'CLIENT_INFO'),
@@ -1051,11 +1056,7 @@ begin
       sys_context('USERENV', 'HOST'),
       sys_context('USERENV', 'OS_USER'),
       substr(p_user_agent, 1, 200),
-      sys_context('USERENV', 'INSTANCE'),
-      sys_context('USERENV', 'INSTANCE_NAME'),
-      sys_context('USERENV', 'SERVICE_NAME'),
-      sys_context('USERENV', 'SID'),
-      sys_context('USERENV', 'SESSIONID')
+      sys_context('USERENV', 'SID')
     );
     commit;
   end if;
@@ -1103,7 +1104,8 @@ end console;
 
 -- check for errors in package console and for existing context
 declare
-  v_count pls_integer;
+  v_count                pls_integer;
+  v_context_available_yn varchar2(1 byte);
 begin
   select count(*)
     into v_count
@@ -1112,7 +1114,8 @@ begin
   if v_count > 0 then
     dbms_output.put_line('- Package CONSOLE has errors :-(');
   else
-    if console.context_available_yn = 'Y' then
+    execute immediate 'select console.context_available_yn from dual' into v_context_available_yn;
+    if v_context_available_yn = 'Y' then
       dbms_output.put_line('- Context available :-)');
     else
       dbms_output.put_line('- CONTEXT NOT AVAILABLE :-(');
@@ -1140,19 +1143,29 @@ select name || case when type like '%BODY' then ' body' end as "Name",
  where name = 'CONSOLE'
  order by name, line, position;
 
-prompt - Log permanent the installed console version
+prompt
 declare
-  v_count pls_integer;
+  v_count                pls_integer;
+  v_context_available_yn varchar2( 1 byte);
+  v_console_version      varchar2(10 byte);
 begin
   select count(*)
     into v_count
     from user_errors
    where name = 'CONSOLE';
   if v_count = 0 then
-    console.permanent('CONSOLE v' || console.c_version || ' installed');
+    -- without execute immediate this script will raise an error when the package console is not valid
+    execute immediate 'select console.version from dual' into v_console_version;
+    execute immediate q'[begin console.permanent('{o,o} CONSOLE v]' || v_console_version || q'[ installed'); end;]';
+    dbms_output.put_line('  .___.  ');
+    dbms_output.put_line('  {o,o}  ');
+    dbms_output.put_line('  /)__)   Hopefully you have now sharper debugging eyes with');
+    dbms_output.put_line('  -"-"-   CONSOLE v' || v_console_version);
   end if;
 end;
 /
+prompt
 
-prompt - FINISHED
+
+
 

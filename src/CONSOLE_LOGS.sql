@@ -1,6 +1,6 @@
 --FOR DEVELOPMENT ONLY - UNCOMMENT THE NEXT TWO LINES TEMPORARELY WHEN YOU NEED IT
-begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
-/
+--begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
+--/
 
 declare
   v_table_name        varchar2(  30 char) := 'CONSOLE_LOGS';
@@ -19,6 +19,7 @@ begin
         log_level          integer                                                         ,
         scope              varchar2 (1000 char)                                            ,
         message            clob                                                            ,
+        call_stack         varchar2 (4000 char)                                            ,
         module             varchar2 (  64 char)                                            ,
         action             varchar2 (  64 char)                                            ,
         client_info        varchar2 (  64 char)                                            ,
@@ -29,13 +30,9 @@ begin
         host               varchar2 (  64 char)                                            ,
         os_user            varchar2 (  64 char)                                            ,
         os_user_agent      varchar2 ( 200 char)                                            ,
-        instance           integer                                                         ,
-        instance_name      varchar2 (  32 char)                                            ,
-        service_name       varchar2 (  64 char)                                            ,
         sid                integer                                                         ,
-        sessionid          varchar2 (  64 char)                                            ,
         --
-        constraint #TABLE_NAME#_check_level check (log_level in (0,1,2,3,4))
+        constraint #TABLE_NAME#_level_ck check (log_level in (0,1,2,3,4))
       )
     }','#TABLE_NAME#', v_table_name);
   else
@@ -73,6 +70,7 @@ comment on column console_logs.log_level         is 'Log entry level. Can be 0 (
 comment on column console_logs.action            is 'The action/position in the module (application name). Can be set through the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE).';
 comment on column console_logs.message           is 'The log message itself and in case of an error or trace the call stack informaton.';
+comment on column console_logs.message           is 'The call_stack and in case of an error also the error stack and error backtrace.';
 comment on column console_logs.module            is 'The application name (module). Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.client_info       is 'The client information. Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.session_user      is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
@@ -82,11 +80,7 @@ comment on column console_logs.ip_address        is 'IP address of the machine f
 comment on column console_logs.host              is 'Name of the host machine from which the client is connected.';
 comment on column console_logs.os_user           is 'Operating system user name of the client process that initiated the database session.';
 comment on column console_logs.os_user_agent     is 'Operating system user agent (web browser engine). This information will only be available, if we overwrite the console.error method of the client browser and bring these errors back to the server. For APEX we will have a plug-in in the future to do this.';
-comment on column console_logs.instance          is 'The instance identification number of the current instance.';
-comment on column console_logs.instance_name     is 'The name of the instance.';
-comment on column console_logs.service_name      is 'The name of the service to which a given session is connected.';
 comment on column console_logs.sid               is 'The session ID. Is not unique, the same id can be shown on different instances, which are different sessions.';
-comment on column console_logs.sessionid         is 'The auditing session identifier. You cannot use this attribute in distributed SQL statements.';
 
 
 

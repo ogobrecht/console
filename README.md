@@ -20,6 +20,7 @@ Oracle Instrumentation Console
 - [Function get_sid_serial_inst_id](#get_sid_serial_inst_id)
 - [Function get_call_stack](#get_call_stack)
 - [Function my_log_level](#my_log_level)
+- [Function version](#version)
 - [Function context_available_yn](#context_available_yn)
 
 
@@ -70,11 +71,11 @@ SIGNATURE
 ```sql
 package console authid definer is
 
-c_name    constant varchar2(30 char) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 char) := '0.3.1';
-c_url     constant varchar2(40 char) := 'https://github.com/ogobrecht/console';
-c_license constant varchar2(10 char) := 'MIT';
-c_author  constant varchar2(20 char) := 'Ottmar Gobrecht';
+c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
+c_version constant varchar2(10 byte) := '0.3.1';
+c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
+c_license constant varchar2(10 byte) := 'MIT';
+c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
 
 c_level_permanent constant integer := 0;
 c_level_error     constant integer := 1;
@@ -478,6 +479,23 @@ SIGNATURE
 
 ```sql
 function my_log_level return integer;
+```
+
+
+<h2><a id="version"></a>Function version</h2>
+<!------------------------------------------>
+
+returns the version information from the console package.
+
+
+```sql
+select console.version from dual;
+```
+
+SIGNATURE
+
+```sql
+function version return varchar2;
 ```
 
 
