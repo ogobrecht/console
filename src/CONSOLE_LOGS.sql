@@ -1,6 +1,6 @@
 --FOR DEVELOPMENT ONLY - UNCOMMENT THE NEXT TWO LINES TEMPORARELY WHEN YOU NEED IT
---begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
---/
+begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
+/
 
 declare
   v_table_name        varchar2(  30 char) := 'CONSOLE_LOGS';
@@ -68,9 +68,9 @@ comment on column console_logs.log_id            is 'Primary key based on a sequ
 comment on column console_logs.log_time          is 'Log entry timestamp.';
 comment on column console_logs.log_level         is 'Log entry level. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info) or 4 (verbose).';
 comment on column console_logs.action            is 'The action/position in the module (application name). Can be set through the DBMS_APPLICATION_INFO package or OCI.';
-comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE).';
+comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number).';
 comment on column console_logs.message           is 'The log message itself and in case of an error or trace the call stack informaton.';
-comment on column console_logs.message           is 'The call_stack and in case of an error also the error stack and error backtrace.';
+comment on column console_logs.call_stack        is 'The call_stack and in case of an error also the error stack and error backtrace.';
 comment on column console_logs.module            is 'The application name (module). Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.client_info       is 'The client information. Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.session_user      is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';

@@ -35,7 +35,8 @@ subtype vc_max  is varchar2 (32767 char);
 insufficient_privileges exception;
 pragma exception_init (insufficient_privileges, -1031);
 
-g_context varchar2 (4000 byte);
+g_context           varchar2 (4000 byte);
+g_context_available boolean;
 
 --------------------------------------------------------------------------------
 -- PRIVATE METHODS (forward declarations)
@@ -390,11 +391,7 @@ end my_log_level;
 
 function context_available_yn return varchar2 is
 begin
-  sys.dbms_session.set_context(c_context_namespace, c_context_test_attr, 'Check context availability');
-  return 'Y';
-exception
-  when others then
-    return 'N';
+  return case when g_context_available then 'Y' else 'N' end;
 end;
 
 --------------------------------------------------------------------------------
@@ -471,7 +468,7 @@ end create_log_entry;
 
 function get_context return varchar2 is
 begin
-  if context_available_yn = 'Y' then
+  if g_context_available then
     return sys_context(c_context_namespace, c_context_attribute, 4000);
   else
     return g_context;
@@ -484,13 +481,11 @@ begin
     lengthb(p_value) <= 4000,
     'console.set_context(p_value varchar2) was called with a value longer then 4000 byte (this is an internal call of console.init). Do you really need that much sessions in logging mode? The Average session entry needs 30 to 40 byte, that means you could have around 100 sessions in logging mode.'
   );
-  sys.dbms_session.set_context(c_context_namespace, c_context_attribute, p_value);
-exception
-  when insufficient_privileges then
+  if g_context_available then
+    sys.dbms_session.set_context(c_context_namespace, c_context_attribute, p_value);
+  else
     g_context := p_value;
-  when others then
-    error;
-    raise;
+  end if;
 end;
 
 procedure clear_context is
@@ -504,5 +499,11 @@ exception
     g_context := null;
 end;
 
+begin
+  sys.dbms_session.set_context(c_context_namespace, c_context_test_attr, 'Check context availability');
+  g_context_available := true;
+exception
+  when others then
+    g_context_available := false;
 end console;
 /
