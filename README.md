@@ -14,6 +14,7 @@ Oracle Instrumentation Console
 - [Procedure trace](#trace)
 - [Procedure assert](#assert)
 - [Procedure action](#action)
+- [Function my_client_identifier](#my_client_identifier)
 - [Procedure init](#init)
 - [Procedure clear](#clear)
 - [Function get_unique_session_id](#get_unique_session_id)
@@ -137,7 +138,7 @@ Log a message with the level 3 (info).
 SIGNATURE
 
 ```sql
-procedure info(
+procedure info (
   p_message    clob,
   p_user_agent varchar2 default null
 );
@@ -182,7 +183,7 @@ Logs a call stack with the level 3 (info).
 SIGNATURE
 
 ```sql
-procedure trace(
+procedure trace (
   p_message    clob     default null,
   p_user_agent varchar2 default null
 );
@@ -216,9 +217,9 @@ end;
 SIGNATURE
 
 ```sql
-procedure assert(
-  p_expression in boolean,
-  p_message    in varchar2
+procedure assert (
+  p_expression boolean,
+  p_message    varchar2
 );
 ```
 
@@ -257,9 +258,26 @@ end;
 SIGNATURE
 
 ```sql
-procedure action(
+procedure action (
   p_action varchar2
 );
+```
+
+
+<h2><a id="my_client_identifier"></a>Function my_client_identifier</h2>
+<!-------------------------------------------------------------------->
+
+Returns the current session identifier of the own session. This information is cached in a
+package variable and determined on package initialization.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+SIGNATURE
+
+```sql
+function my_client_identifier return varchar2;
 ```
 
 
@@ -312,7 +330,7 @@ end;
 SIGNATURE
 
 ```sql
-procedure init(
+procedure init (
   p_session  varchar2,                     -- client_identifier or unique_session_id
   p_level    integer default c_level_info, -- 2 (warning), 3 (info) or 4 (verbose)
   p_duration integer default 60            -- duration in minutes
@@ -349,8 +367,8 @@ end;
 SIGNATURE
 
 ```sql
-procedure clear(
-  p_session  varchar2 default dbms_session.unique_session_id -- client_identifier or unique_session_id
+procedure clear (
+  p_session varchar2 default my_client_identifier -- client_identifier or unique_session_id
 );
 ```
 
@@ -462,14 +480,8 @@ function get_call_stack return varchar2;
 <h2><a id="my_log_level"></a>Function my_log_level</h2>
 <!---------------------------------------------------->
 
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-If the global context is not available we simulate it by using a package
-variable. In this case you can only set your own session in logging mode with a
-level of 2 (warning) or higher, because other sessions are not able to read the
-package variable value in your session - this works only with a global
-accessible context.
+Returns the current log level of the own session. This information is cached in a
+package variable for performance reasons and reevaluated every 10 seconds.
 
 ```sql
 select console.context_available_yn from dual;

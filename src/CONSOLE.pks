@@ -97,7 +97,7 @@ Log a message with the level 2 (warning).
 
 **/
 
-procedure info(
+procedure info (
   p_message    clob,
   p_user_agent varchar2 default null
 );
@@ -127,7 +127,7 @@ Log a message with the level 4 (verbose).
 
 **/
 
-procedure trace(
+procedure trace (
   p_message    clob     default null,
   p_user_agent varchar2 default null
 );
@@ -137,9 +137,9 @@ Logs a call stack with the level 3 (info).
 
 **/
 
-procedure assert(
-  p_expression in boolean,
-  p_message    in varchar2
+procedure assert (
+  p_expression boolean,
+  p_message    varchar2
 );
 /**
 
@@ -168,7 +168,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure action(
+procedure action (
   p_action varchar2
 );
 /**
@@ -203,10 +203,23 @@ end;
 
 **/
 
+--------------------------------------------------------------------------------
+
+function my_client_identifier return varchar2;
+/**
+
+Returns the current session identifier of the own session. This information is cached in a
+package variable and determined on package initialization.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+**/
 
 --------------------------------------------------------------------------------
 
-procedure init(
+procedure init (
   p_session  varchar2,                     -- client_identifier or unique_session_id
   p_level    integer default c_level_info, -- 2 (warning), 3 (info) or 4 (verbose)
   p_duration integer default 60            -- duration in minutes
@@ -258,15 +271,15 @@ end;
 
 **/
 
-procedure init(
+procedure init (
   p_level    integer default c_level_info, -- 2 (warning), 3 (info) or 4 (verbose)
   p_duration integer default 60            -- duration in minutes
 );
 
 --------------------------------------------------------------------------------
 
-procedure clear(
-  p_session  varchar2 default dbms_session.unique_session_id -- client_identifier or unique_session_id
+procedure clear (
+  p_session varchar2 default my_client_identifier -- client_identifier or unique_session_id
 );
 /**
 
@@ -397,14 +410,8 @@ The code above will output `- Call Stack: __anonymous_block (2)`
 function my_log_level return integer;
 /**
 
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-If the global context is not available we simulate it by using a package
-variable. In this case you can only set your own session in logging mode with a
-level of 2 (warning) or higher, because other sessions are not able to read the
-package variable value in your session - this works only with a global
-accessible context.
+Returns the current log level of the own session. This information is cached in a
+package variable for performance reasons and reevaluated every 10 seconds.
 
 ```sql
 select console.context_available_yn from dual;
@@ -452,6 +459,7 @@ select console.context_available_yn from dual;
 
 $if $$utils_public $then
 
+function logging_enabled (p_level integer) return boolean;
 procedure create_log_entry (
   p_level      integer,
   p_message    clob     default null,
@@ -459,9 +467,9 @@ procedure create_log_entry (
   p_user_agent varchar2 default null
 );
 
-function get_context return varchar2;
+function get_context (p_attribute varchar2) return varchar2;
 
-procedure set_context(p_value varchar2);
+procedure set_context (p_attribute varchar2, p_value varchar2);
 
 procedure clear_context;
 
