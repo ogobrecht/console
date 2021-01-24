@@ -33,8 +33,8 @@ END;
 /
 
 --FOR DEVELOPMENT ONLY - UNCOMMENT THE NEXT TWO LINES TEMPORARELY WHEN YOU NEED IT
-begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
-/
+--begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
+--/
 
 declare
   v_table_name        varchar2(  30 char) := 'CONSOLE_LOGS';
@@ -54,17 +54,15 @@ begin
         scope              varchar2 (1000 char)                                            ,
         message            clob                                                            ,
         call_stack         varchar2 (4000 char)                                            ,
+        session_user       varchar2 (  32 char)                                            ,
         module             varchar2 (  64 char)                                            ,
         action             varchar2 (  64 char)                                            ,
         client_info        varchar2 (  64 char)                                            ,
-        session_user       varchar2 (  32 char)                                            ,
-        unique_session_id  varchar2 (  16 char)                                            ,
         client_identifier  varchar2 (  64 char)                                            ,
         ip_address         varchar2 (  32 char)                                            ,
         host               varchar2 (  64 char)                                            ,
         os_user            varchar2 (  64 char)                                            ,
         os_user_agent      varchar2 ( 200 char)                                            ,
-        sid                integer                                                         ,
         --
         constraint #TABLE_NAME#_level_ck check (log_level in (0,1,2,3,4))
       )
@@ -101,20 +99,18 @@ comment on table console_logs                    is 'Table for log entries of th
 comment on column console_logs.log_id            is 'Primary key based on a sequence.';
 comment on column console_logs.log_time          is 'Log entry timestamp.';
 comment on column console_logs.log_level         is 'Log entry level. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info) or 4 (verbose).';
-comment on column console_logs.action            is 'The action/position in the module (application name). Can be set through the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number).';
 comment on column console_logs.message           is 'The log message itself and in case of an error or trace the call stack informaton.';
 comment on column console_logs.call_stack        is 'The call_stack and in case of an error also the error stack and error backtrace.';
-comment on column console_logs.module            is 'The application name (module). Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
-comment on column console_logs.client_info       is 'The client information. Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.session_user      is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
-comment on column console_logs.unique_session_id is 'An identifier that is unique for all sessions currently connected to the database. Provided by DBMS_SESSION.UNIQUE_SESSION_ID. Is constructed by sid, serial# and inst_id from (g)v$session (undocumented, there is no official way to construct this ID by yourself, but we need to do this to identify a session).';
+comment on column console_logs.module            is 'The application name (module). Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
+comment on column console_logs.action            is 'The action/position in the module (application name). Can be set through the DBMS_APPLICATION_INFO package or OCI.';
+comment on column console_logs.client_info       is 'The client information. Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.client_identifier is 'The client identifier. Can be set by an application using the DBMS_SESSION.SET_IDENTIFIER procedure, the OCI attribute OCI_ATTR_CLIENT_IDENTIFIER, or Oracle Dynamic Monitoring Service (DMS). This attribute is used by various database components to identify lightweight application users who authenticate as the same database user.';
 comment on column console_logs.ip_address        is 'IP address of the machine from which the client is connected. If the client and server are on the same machine and the connection uses IPv6 addressing, then it is set to ::1.';
 comment on column console_logs.host              is 'Name of the host machine from which the client is connected.';
 comment on column console_logs.os_user           is 'Operating system user name of the client process that initiated the database session.';
 comment on column console_logs.os_user_agent     is 'Operating system user agent (web browser engine). This information will only be available, if we overwrite the console.error method of the client browser and bring these errors back to the server. For APEX we will have a plug-in in the future to do this.';
-comment on column console_logs.sid               is 'The session ID. Is not unique, the same id can be shown on different instances, which are different sessions.';
 
 
 
@@ -128,11 +124,11 @@ c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 byte) := 'MIT';
 c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
 
-c_level_permanent constant integer := 0;
-c_level_error     constant integer := 1;
-c_level_warning   constant integer := 2;
-c_level_info      constant integer := 3;
-c_level_verbose   constant integer := 4;
+c_permanent constant integer := 0;
+c_error     constant integer := 1;
+c_warning   constant integer := 2;
+c_info      constant integer := 3;
+c_verbose   constant integer := 4;
 
 
 /**
@@ -342,19 +338,19 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_session  varchar2,                     -- client_identifier or unique_session_id
-  p_level    integer default c_level_info, -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer default 60            -- duration in minutes
+  p_client_id  varchar2,               -- client_identifier or unique_session_id
+  p_level    integer default c_info, -- 2 (warning), 3 (info) or 4 (verbose)
+  p_duration integer default 60      -- duration in minutes
 );
 /**
 
 Starts the logging for a specific session.
 
-To avoid spoiling the context with very long input the p_session parameter is
+To avoid spoiling the context with very long input the p_client_id parameter is
 truncated after 64 characters before using it.
 
 For easier usage there is an overloaded procedure available which uses always
-your unique session id.
+your own client identifier.
 
 EXAMPLES
 
@@ -367,7 +363,7 @@ exec console.init;
 exec console.init(4, 15);
 
 -- Using a constant for the level
-exec console.init(console.c_level_verbose, 90);
+exec console.init(console.c_verbose, 90);
 
 -- Debug an APEX session...
 exec console.init('APEX:8805903776765', 4, 90);
@@ -375,17 +371,12 @@ exec console.init('APEX:8805903776765', 4, 90);
 -- ... with the defaults
 exec console.init('APEX:8805903776765');
 
--- Debug another session identified by sid and serial.
--- As you cannot get the unique session id from outside
--- the other session you need to calculate it.
+-- Debug another session
 begin
   console.init(
-    p_session  => console.get_unique_session_id(
-                    p_sid     => 33312,
-                    p_serial  => 4920
-                  ),
-    p_level    => console.c_level_verbose,
-    p_duration => 15
+    p_client_id => 'APEX:8805903776765',
+    p_level     => console.c_verbose,
+    p_duration  => 15
   );
 end;
 {{/}}
@@ -394,14 +385,14 @@ end;
 **/
 
 procedure init (
-  p_level    integer default c_level_info, -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer default 60            -- duration in minutes
+  p_level    integer default c_info, -- 2 (warning), 3 (info) or 4 (verbose)
+  p_duration integer default 60      -- duration in minutes
 );
 
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_session varchar2 default my_client_identifier -- client_identifier or unique_session_id
+  p_client_id varchar2 default my_client_identifier -- client_identifier or unique_session_id
 );
 /**
 
@@ -432,77 +423,6 @@ end;
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
---------------------------------------------------------------------------------
-
-function get_unique_session_id (
-  p_sid     integer,
-  p_serial  integer,
-  p_inst_id integer default 1
-) return varchar2;
-/**
-
-Get the unique session id for debugging of another session.
-
-Calculates the ID out of three parameters:
-
-```sql
-v_session_id := ltrim(to_char(p_sid,     '000x'))
-             || ltrim(to_char(p_serial,  '000x'))
-             || ltrim(to_char(p_inst_id, '0000'));
-```
-
-This method to calculate the unique session ID is not documented by Oracle. It
-seems to work, but we have no guarantee, that it is working forever or under all
-circumstances.
-
-The first two parts seems to work, the part three for the inst_id is only a
-guess and should work fine from zero to nine. But above I have no experience.
-Does anybody have a RAC running with more then nine instances? Please let me
-know - maybe I need to calculate here also with a hex format mask...
-
-Hint: When checking in a session, if the logging is enabled or when we create a
-log entry, we always use DBMS_SESSION.UNIQUE_SESSION_ID. All the helper methods
-here to calculate the unique session id are only existing for the purpose to
-start the logging of another session and to set the global context in a way the
-targeted session can compare against with with DBMS_SESSION.UNIQUE_SESSION_ID or
-SYS_CONTEXT('USERENV','CLIENT_IDENTIFIER'). Unfortunately the unique session id
-is not provided in the (g)v$session views (the client_identifier is) - so we
-need to calculate it by ourselfes. It is worth to note that the schema were the
-console package is installed does not need any higher privileges and does
-therefore not read from the (g)v$session view. In other words: When you want to
-debug another session you need to have a way to find the target session - for
-APEX this is easy - the client identifier is set by APEX and can be calculated
-by looking at your session id in the browser URL. For a specific, non shared
-session you can use the (g)v$session view to calculate the unique session ID by
-providing at least sid and serial.
-
-**/
-
---------------------------------------------------------------------------------
-
-function get_sid_serial_inst_id (
-  p_unique_session_id varchar2
-) return varchar2;
-/**
-
-Calculates the sid, serial and inst_id out of a unique session ID as it is
-provided by DBMS_SESSION.UNIQUE_SESSION_ID.
-
-Is for informational purposes and to map a recent log entry back to a maybe
-running session.
-
-The same as with `get_unique_session_id`: I have no idea if the calculation is
-correct. It works currently and is implementes in this way:
-
-```sql
-v_sid_serial_inst_id :=
-     to_char(to_number(substr(p_unique_session_id, 1, 4), '000x')) || ', '
-  || to_char(to_number(substr(p_unique_session_id, 5, 4), '000x')) || ', '
-  || to_char(to_number(substr(p_unique_session_id, 9, 4), '0000'));
-```
-
-**/
-
 --------------------------------------------------------------------------------
 
 function get_call_stack return varchar2;
@@ -595,6 +515,8 @@ procedure set_context (p_attribute varchar2, p_value varchar2);
 
 procedure clear_context;
 
+procedure check_context_availability;
+
 $end
 
 end console;
@@ -619,14 +541,18 @@ c_sep                constant varchar2 ( 1 byte) := ',';
 c_at                 constant varchar2 ( 1 byte) := '@';
 c_hash               constant varchar2 ( 1 byte) := '#';
 c_slash              constant varchar2 ( 1 byte) := '/';
-c_anon_block_orig    constant varchar2 (20 byte) := '__anonymous_block';
+c_anon_block_ora     constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
+c_client_id_prefix   constant varchar2 ( 5 byte) := '{o,o}';
 c_ctx_namespace      constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
---c_context_attribute constant varchar2 (30 byte) := 'CONSOLE_CONFIGURATION';
-c_ctx_test_attribute constant varchar2 (30 byte) := 'TEST';
-c_ctx_level          constant varchar2 (2 byte) := '.L';
-c_ctx_valid_until    constant varchar2 (2 byte) := '.V';
-c_ctx_flush_cache    constant varchar2 (2 byte) := '.F';
+c_ctx_test_attribute constant varchar2 (15 byte) := 'TEST';
+c_ctx_level          constant varchar2 (15 byte) := 'LEVEL';
+c_ctx_valid_until    constant varchar2 (15 byte) := 'VALID_UNTIL';
+c_ctx_flush_cache    constant varchar2 (15 byte) := 'FLUSH_CASHE';
+c_ctx_user_env       constant varchar2 (15 byte) := 'USER_ENV';
+c_ctx_apex_env       constant varchar2 (15 byte) := 'APEX_ENV';
+c_ctx_cgi_env        constant varchar2 (15 byte) := 'CGI_ENV';
+c_ctx_console_env    constant varchar2 (15 byte) := 'CONSOLE_ENV';
 c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_vc_max_size        constant pls_integer        := 32767;
 
@@ -641,11 +567,15 @@ subtype vc2000  is varchar2 ( 2000 char);
 subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
-g_context                 varchar2 (4000 byte);
-g_context_available       boolean;
-g_conf_level              integer := 1;
-g_conf_valid_until        date    := sysdate;
 g_conf_client_identifier varchar2 (64 byte);
+g_conf_context_available boolean := false; -- initial value, will be reevaluated on package initialization
+g_conf_level             pls_integer := 1;
+g_conf_valid_until       date        := sysdate;
+g_conf_flush_cache       boolean;
+g_conf_user_env          boolean;
+g_conf_apex_env          boolean;
+g_conf_cgi_env           boolean;
+g_conf_console_env       boolean;
 
 --------------------------------------------------------------------------------
 -- PRIVATE METHODS (forward declarations)
@@ -675,9 +605,9 @@ $end
 
 procedure permanent (p_message clob) is
 begin
-  if logging_enabled (c_level_permanent) then
+  if logging_enabled (c_permanent) then
     create_log_entry (
-      p_level      => c_level_permanent ,
+      p_level      => c_permanent ,
       p_message    => p_message         );
   end if;
 end permanent;
@@ -689,9 +619,9 @@ procedure error (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_error) then
+  if logging_enabled (c_error) then
     create_log_entry (
-      p_level      => c_level_error ,
+      p_level      => c_error ,
       p_message    => p_message     ,
       p_trace      => true          ,
       p_user_agent => p_user_agent  );
@@ -705,9 +635,9 @@ procedure warn (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_warning) then
+  if logging_enabled (c_warning) then
     create_log_entry (
-      p_level      => c_level_warning ,
+      p_level      => c_warning ,
       p_message    => p_message       ,
       p_user_agent => p_user_agent    );
   end if;
@@ -720,9 +650,9 @@ procedure info (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_info) then
+  if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_level_info ,
+      p_level      => c_info ,
       p_message    => p_message    ,
       p_user_agent => p_user_agent );
   end if;
@@ -735,9 +665,9 @@ procedure log (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_info) then
+  if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_level_info ,
+      p_level      => c_info ,
       p_message    => p_message    ,
       p_user_agent => p_user_agent );
   end if;
@@ -750,9 +680,9 @@ procedure debug (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_verbose) then
+  if logging_enabled (c_verbose) then
     create_log_entry (
-      p_level      => c_level_verbose ,
+      p_level      => c_verbose ,
       p_message    => p_message       ,
       p_user_agent => p_user_agent    );
   end if;
@@ -765,9 +695,9 @@ procedure trace (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_info) then
+  if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_level_info ,
+      p_level      => c_info ,
       p_message    => p_message    ,
       p_trace      => true         ,
       p_user_agent => p_user_agent );
@@ -805,25 +735,25 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_session  varchar2                     ,
-  p_level    integer default c_level_info ,
+  p_client_id  varchar2                     ,
+  p_level    integer default c_info ,
   p_duration integer default 60           )
 is
-  v_session vc64 := substr(p_session, 1, 64);
+  v_session vc64 := substr(p_client_id, 1, 64);
   v_context vc4000;
 begin
   assert(p_level in (2, 3, 4), 'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
   assert(p_duration > 1, 'Duration needs to be greater or equal 1 (minute).');
-  set_context (p_session || c_ctx_level, to_char(p_level));
+  set_context (p_client_id || c_ctx_level, to_char(p_level));
 end init;
 
 procedure init (
-  p_level    integer default c_level_info ,
+  p_level    integer default c_info ,
   p_duration integer default 60           )
 is
 begin
   init(
-    p_session  => g_conf_client_identifier,
+    p_client_id  => g_conf_client_identifier,
     p_level    => p_level,
     p_duration => p_duration
   );
@@ -832,7 +762,7 @@ end init;
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_session  varchar2 default my_client_identifier
+  p_client_id varchar2 default my_client_identifier
 ) is
 begin
   null; -- FIXME implement
@@ -840,50 +770,6 @@ end;
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
---------------------------------------------------------------------------------
-
-function get_unique_session_id (
-  p_sid     integer,
-  p_serial  integer,
-  p_inst_id integer default 1) return varchar2
-is
-  v_inst_id integer;
-  v_return  vc16;
-begin
-  v_inst_id := coalesce(p_inst_id, 1); -- param default 1 does not mean the user cannot provide null ;-)
-  if p_sid is null or p_serial is null then
-    raise_application_error (
-      -20000,
-      'You need to specify at least p_sid and p_serial to calculate a unique session ID.');
-  else
-    v_return := ltrim(to_char(p_sid,     '000x'))
-             || ltrim(to_char(p_serial,  '000x'))
-             || ltrim(to_char(v_inst_id, '0000'));
-  end if;
-  return v_return;
-end get_unique_session_id;
-
---------------------------------------------------------------------------------
-
-function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2 is
-  v_return vc32;
-begin
-  if p_unique_session_id is null then
-    raise_application_error (
-      -20000,
-      'You need to specify p_unique_session_id to calculate the sid, serial and host_id.');
-  elsif length(p_unique_session_id) != 12 then
-    raise_application_error (
-      -20000,
-      'We use here typically a 12 character long unique session identifier like it is provided by DBMS_SESSION.UNIQUE_SESSION_ID.');
-  else
-    v_return := to_char(to_number(substr(p_unique_session_id, 1, 4), '000x')) || ', '
-             || to_char(to_number(substr(p_unique_session_id, 5, 4), '000x')) || ', '
-             || to_char(to_number(substr(p_unique_session_id, 9, 4), '0000'));
-  end if;
-  return v_return;
-end get_sid_serial_inst_id;
-
 --------------------------------------------------------------------------------
 
 function get_scope return varchar2 is
@@ -897,7 +783,7 @@ begin
       --the replace changes `__anonymous_block` to `anonymous_block`
       v_subprogram := replace(
         utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
-        c_anon_block_orig,
+        c_anon_block_ora,
         c_anonymous_block
       );
       --exclude console package from the call stack
@@ -952,7 +838,7 @@ begin
       --the replace changes `__anonymous_block` to `anonymous_block`
       v_subprogram := replace(
         utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
-        c_anon_block_orig,
+        c_anon_block_ora,
         c_anonymous_block
       );
       --exclude console package from the call stack
@@ -980,7 +866,7 @@ end my_log_level;
 
 function context_available_yn return varchar2 is
 begin
-  return case when g_context_available then 'Y' else 'N' end;
+  return case when g_conf_context_available then 'Y' else 'N' end;
 end;
 
 --------------------------------------------------------------------------------
@@ -1031,34 +917,30 @@ begin
     scope,
     message,
     call_stack,
+    session_user,
     module,
     action,
     client_info,
-    session_user,
-    unique_session_id,
     client_identifier,
     ip_address,
     host,
     os_user,
-    os_user_agent,
-    sid
+    os_user_agent
   )
   values (
     p_level,
     v_scope,
     v_message,
     v_call_stack,
+    sys_context('USERENV', 'SESSION_USER'),
     sys_context('USERENV', 'MODULE'),
     sys_context('USERENV', 'ACTION'),
     sys_context('USERENV', 'CLIENT_INFO'),
-    sys_context('USERENV', 'SESSION_USER'),
-    dbms_session.unique_session_id,
     sys_context('USERENV', 'CLIENT_IDENTIFIER'),
     sys_context('USERENV', 'IP_ADDRESS'),
     sys_context('USERENV', 'HOST'),
     sys_context('USERENV', 'OS_USER'),
-    substr(p_user_agent, 1, 200),
-    sys_context('USERENV', 'SID')
+    substr(p_user_agent, 1, 200)
   );
   commit;
 end create_log_entry;
@@ -1067,22 +949,25 @@ end create_log_entry;
 
 function get_context (p_attribute varchar2) return varchar2 is
 begin
-  if g_context_available then
+  if g_conf_context_available then
     return sys_context(c_ctx_namespace, p_attribute);
   else
-    return g_context;
+    return null; --FIXME implement
   end if;
 end;
+
+--------------------------------------------------------------------------------
 
 procedure set_context (p_attribute varchar2, p_value varchar2) is
 begin
-  if g_context_available then
+  if g_conf_context_available then
     sys.dbms_session.set_context(c_ctx_namespace, p_attribute, p_value);
   else
-    g_context := p_value;
+    null; -- FIXME implement
   end if;
 end;
 
+--------------------------------------------------------------------------------
 
 procedure clear_context is
 begin
@@ -1095,28 +980,40 @@ begin
   */
 exception
   when insufficient_privileges then
-    g_context := null;
+    null; -- FIXME implement
 end;
+
+--------------------------------------------------------------------------------
+
+procedure check_context_availability is
+begin
+  -- check only, if needed
+  if not g_conf_context_available then
+    sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
+    g_conf_context_available := true;
+  end if;
+exception
+  when insufficient_privileges then
+    g_conf_context_available := false;
+end;
+
+--------------------------------------------------------------------------------
+
+procedure set_client_identifier is
+begin
+  g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
+  if g_conf_client_identifier is null then
+    g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
+    dbms_session.set_identifier (g_conf_client_identifier);
+  end if;
+end;
+
+--------------------------------------------------------------------------------
 
 -- package inizialization
 begin
-
-  -- set client identifier
-  g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
-  if g_conf_client_identifier is null then
-    g_conf_client_identifier := dbms_session.unique_session_id;
-    dbms_session.set_identifier (g_conf_client_identifier);
-  end if;
-
-  -- test context availability
-  begin
-    sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
-    g_context_available := true;
-  exception
-    when insufficient_privileges then
-      g_context_available := false;
-  end;
-
+  set_client_identifier;
+  check_context_availability;
 end console;
 /
 

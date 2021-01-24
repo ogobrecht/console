@@ -16,14 +16,18 @@ c_sep                constant varchar2 ( 1 byte) := ',';
 c_at                 constant varchar2 ( 1 byte) := '@';
 c_hash               constant varchar2 ( 1 byte) := '#';
 c_slash              constant varchar2 ( 1 byte) := '/';
-c_anon_block_orig    constant varchar2 (20 byte) := '__anonymous_block';
+c_anon_block_ora     constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
+c_client_id_prefix   constant varchar2 ( 5 byte) := '{o,o}';
 c_ctx_namespace      constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
---c_context_attribute constant varchar2 (30 byte) := 'CONSOLE_CONFIGURATION';
-c_ctx_test_attribute constant varchar2 (30 byte) := 'TEST';
-c_ctx_level          constant varchar2 (2 byte) := '.L';
-c_ctx_valid_until    constant varchar2 (2 byte) := '.V';
-c_ctx_flush_cache    constant varchar2 (2 byte) := '.F';
+c_ctx_test_attribute constant varchar2 (15 byte) := 'TEST';
+c_ctx_level          constant varchar2 (15 byte) := 'LEVEL';
+c_ctx_valid_until    constant varchar2 (15 byte) := 'VALID_UNTIL';
+c_ctx_flush_cache    constant varchar2 (15 byte) := 'FLUSH_CASHE';
+c_ctx_user_env       constant varchar2 (15 byte) := 'USER_ENV';
+c_ctx_apex_env       constant varchar2 (15 byte) := 'APEX_ENV';
+c_ctx_cgi_env        constant varchar2 (15 byte) := 'CGI_ENV';
+c_ctx_console_env    constant varchar2 (15 byte) := 'CONSOLE_ENV';
 c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_vc_max_size        constant pls_integer        := 32767;
 
@@ -38,11 +42,15 @@ subtype vc2000  is varchar2 ( 2000 char);
 subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
-g_context                 varchar2 (4000 byte);
-g_context_available       boolean;
-g_conf_level              integer := 1;
-g_conf_valid_until        date    := sysdate;
 g_conf_client_identifier varchar2 (64 byte);
+g_conf_context_available boolean := false; -- initial value, will be reevaluated on package initialization
+g_conf_level             pls_integer := 1;
+g_conf_valid_until       date        := sysdate;
+g_conf_flush_cache       boolean;
+g_conf_user_env          boolean;
+g_conf_apex_env          boolean;
+g_conf_cgi_env           boolean;
+g_conf_console_env       boolean;
 
 --------------------------------------------------------------------------------
 -- PRIVATE METHODS (forward declarations)
@@ -72,9 +80,9 @@ $end
 
 procedure permanent (p_message clob) is
 begin
-  if logging_enabled (c_level_permanent) then
+  if logging_enabled (c_permanent) then
     create_log_entry (
-      p_level      => c_level_permanent ,
+      p_level      => c_permanent ,
       p_message    => p_message         );
   end if;
 end permanent;
@@ -86,9 +94,9 @@ procedure error (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_error) then
+  if logging_enabled (c_error) then
     create_log_entry (
-      p_level      => c_level_error ,
+      p_level      => c_error ,
       p_message    => p_message     ,
       p_trace      => true          ,
       p_user_agent => p_user_agent  );
@@ -102,9 +110,9 @@ procedure warn (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_warning) then
+  if logging_enabled (c_warning) then
     create_log_entry (
-      p_level      => c_level_warning ,
+      p_level      => c_warning ,
       p_message    => p_message       ,
       p_user_agent => p_user_agent    );
   end if;
@@ -117,9 +125,9 @@ procedure info (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_info) then
+  if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_level_info ,
+      p_level      => c_info ,
       p_message    => p_message    ,
       p_user_agent => p_user_agent );
   end if;
@@ -132,9 +140,9 @@ procedure log (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_info) then
+  if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_level_info ,
+      p_level      => c_info ,
       p_message    => p_message    ,
       p_user_agent => p_user_agent );
   end if;
@@ -147,9 +155,9 @@ procedure debug (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_verbose) then
+  if logging_enabled (c_verbose) then
     create_log_entry (
-      p_level      => c_level_verbose ,
+      p_level      => c_verbose ,
       p_message    => p_message       ,
       p_user_agent => p_user_agent    );
   end if;
@@ -162,9 +170,9 @@ procedure trace (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_level_info) then
+  if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_level_info ,
+      p_level      => c_info ,
       p_message    => p_message    ,
       p_trace      => true         ,
       p_user_agent => p_user_agent );
@@ -202,25 +210,25 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_session  varchar2                     ,
-  p_level    integer default c_level_info ,
+  p_client_id  varchar2                     ,
+  p_level    integer default c_info ,
   p_duration integer default 60           )
 is
-  v_session vc64 := substr(p_session, 1, 64);
+  v_session vc64 := substr(p_client_id, 1, 64);
   v_context vc4000;
 begin
   assert(p_level in (2, 3, 4), 'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
   assert(p_duration > 1, 'Duration needs to be greater or equal 1 (minute).');
-  set_context (p_session || c_ctx_level, to_char(p_level));
+  set_context (p_client_id || c_ctx_level, to_char(p_level));
 end init;
 
 procedure init (
-  p_level    integer default c_level_info ,
+  p_level    integer default c_info ,
   p_duration integer default 60           )
 is
 begin
   init(
-    p_session  => g_conf_client_identifier,
+    p_client_id  => g_conf_client_identifier,
     p_level    => p_level,
     p_duration => p_duration
   );
@@ -229,7 +237,7 @@ end init;
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_session  varchar2 default my_client_identifier
+  p_client_id varchar2 default my_client_identifier
 ) is
 begin
   null; -- FIXME implement
@@ -237,50 +245,6 @@ end;
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
---------------------------------------------------------------------------------
-
-function get_unique_session_id (
-  p_sid     integer,
-  p_serial  integer,
-  p_inst_id integer default 1) return varchar2
-is
-  v_inst_id integer;
-  v_return  vc16;
-begin
-  v_inst_id := coalesce(p_inst_id, 1); -- param default 1 does not mean the user cannot provide null ;-)
-  if p_sid is null or p_serial is null then
-    raise_application_error (
-      -20000,
-      'You need to specify at least p_sid and p_serial to calculate a unique session ID.');
-  else
-    v_return := ltrim(to_char(p_sid,     '000x'))
-             || ltrim(to_char(p_serial,  '000x'))
-             || ltrim(to_char(v_inst_id, '0000'));
-  end if;
-  return v_return;
-end get_unique_session_id;
-
---------------------------------------------------------------------------------
-
-function get_sid_serial_inst_id (p_unique_session_id varchar2) return varchar2 is
-  v_return vc32;
-begin
-  if p_unique_session_id is null then
-    raise_application_error (
-      -20000,
-      'You need to specify p_unique_session_id to calculate the sid, serial and host_id.');
-  elsif length(p_unique_session_id) != 12 then
-    raise_application_error (
-      -20000,
-      'We use here typically a 12 character long unique session identifier like it is provided by DBMS_SESSION.UNIQUE_SESSION_ID.');
-  else
-    v_return := to_char(to_number(substr(p_unique_session_id, 1, 4), '000x')) || ', '
-             || to_char(to_number(substr(p_unique_session_id, 5, 4), '000x')) || ', '
-             || to_char(to_number(substr(p_unique_session_id, 9, 4), '0000'));
-  end if;
-  return v_return;
-end get_sid_serial_inst_id;
-
 --------------------------------------------------------------------------------
 
 function get_scope return varchar2 is
@@ -294,7 +258,7 @@ begin
       --the replace changes `__anonymous_block` to `anonymous_block`
       v_subprogram := replace(
         utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
-        c_anon_block_orig,
+        c_anon_block_ora,
         c_anonymous_block
       );
       --exclude console package from the call stack
@@ -349,7 +313,7 @@ begin
       --the replace changes `__anonymous_block` to `anonymous_block`
       v_subprogram := replace(
         utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
-        c_anon_block_orig,
+        c_anon_block_ora,
         c_anonymous_block
       );
       --exclude console package from the call stack
@@ -377,7 +341,7 @@ end my_log_level;
 
 function context_available_yn return varchar2 is
 begin
-  return case when g_context_available then 'Y' else 'N' end;
+  return case when g_conf_context_available then 'Y' else 'N' end;
 end;
 
 --------------------------------------------------------------------------------
@@ -428,34 +392,30 @@ begin
     scope,
     message,
     call_stack,
+    session_user,
     module,
     action,
     client_info,
-    session_user,
-    unique_session_id,
     client_identifier,
     ip_address,
     host,
     os_user,
-    os_user_agent,
-    sid
+    os_user_agent
   )
   values (
     p_level,
     v_scope,
     v_message,
     v_call_stack,
+    sys_context('USERENV', 'SESSION_USER'),
     sys_context('USERENV', 'MODULE'),
     sys_context('USERENV', 'ACTION'),
     sys_context('USERENV', 'CLIENT_INFO'),
-    sys_context('USERENV', 'SESSION_USER'),
-    dbms_session.unique_session_id,
     sys_context('USERENV', 'CLIENT_IDENTIFIER'),
     sys_context('USERENV', 'IP_ADDRESS'),
     sys_context('USERENV', 'HOST'),
     sys_context('USERENV', 'OS_USER'),
-    substr(p_user_agent, 1, 200),
-    sys_context('USERENV', 'SID')
+    substr(p_user_agent, 1, 200)
   );
   commit;
 end create_log_entry;
@@ -464,22 +424,25 @@ end create_log_entry;
 
 function get_context (p_attribute varchar2) return varchar2 is
 begin
-  if g_context_available then
+  if g_conf_context_available then
     return sys_context(c_ctx_namespace, p_attribute);
   else
-    return g_context;
+    return null; --FIXME implement
   end if;
 end;
+
+--------------------------------------------------------------------------------
 
 procedure set_context (p_attribute varchar2, p_value varchar2) is
 begin
-  if g_context_available then
+  if g_conf_context_available then
     sys.dbms_session.set_context(c_ctx_namespace, p_attribute, p_value);
   else
-    g_context := p_value;
+    null; -- FIXME implement
   end if;
 end;
 
+--------------------------------------------------------------------------------
 
 procedure clear_context is
 begin
@@ -492,27 +455,39 @@ begin
   */
 exception
   when insufficient_privileges then
-    g_context := null;
+    null; -- FIXME implement
 end;
+
+--------------------------------------------------------------------------------
+
+procedure check_context_availability is
+begin
+  -- check only, if needed
+  if not g_conf_context_available then
+    sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
+    g_conf_context_available := true;
+  end if;
+exception
+  when insufficient_privileges then
+    g_conf_context_available := false;
+end;
+
+--------------------------------------------------------------------------------
+
+procedure set_client_identifier is
+begin
+  g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
+  if g_conf_client_identifier is null then
+    g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
+    dbms_session.set_identifier (g_conf_client_identifier);
+  end if;
+end;
+
+--------------------------------------------------------------------------------
 
 -- package inizialization
 begin
-
-  -- set client identifier
-  g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
-  if g_conf_client_identifier is null then
-    g_conf_client_identifier := dbms_session.unique_session_id;
-    dbms_session.set_identifier (g_conf_client_identifier);
-  end if;
-
-  -- test context availability
-  begin
-    sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
-    g_context_available := true;
-  exception
-    when insufficient_privileges then
-      g_context_available := false;
-  end;
-
+  set_client_identifier;
+  check_context_availability;
 end console;
 /
