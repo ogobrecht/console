@@ -19,7 +19,7 @@ begin
       dbms_output.put_line('-  | Level permanent (0) and error (1) are always logged, also without a context.');
       dbms_output.put_line('-  | You will not be able to set other sessions in logging mode with levels warning (2), info (3) or verbose (4).');
       dbms_output.put_line('-  | But you will be able to do this for your own session.');
-      dbms_output.put_line('-  | When you (or your DBA) have the context created then simply recheck the availability:');
+      dbms_output.put_line('-  | When you (or your DBA) have the context created then simply reconnect and check the availability:');
       dbms_output.put_line('-  | select console.context_available_yn from dual;');
     end if;
   end if;

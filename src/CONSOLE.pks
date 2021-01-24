@@ -220,9 +220,15 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_id  varchar2,               -- client_identifier or unique_session_id
-  p_level    integer default c_info, -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer default 60      -- duration in minutes
+  p_client_id      varchar2               , -- The client identifier provided by the application or console itself.
+  p_level          integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_duration       integer default 60     , -- The number of minutes the session should be in logging mode.
+  p_cache_duration number  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries.
+  p_cache_size     number  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.
+  p_user_env       boolean default false  , -- Should the user environment be included.
+  p_apex_env       boolean default false  , -- Should the APEX environment be included.
+  p_cgi_env        boolean default false  , -- Should the CGI environment be included.
+  p_console_env    boolean default false    -- Should the console environment be included.
 );
 /**
 
@@ -267,8 +273,14 @@ end;
 **/
 
 procedure init (
-  p_level    integer default c_info, -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer default 60      -- duration in minutes
+  p_level          integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_duration       integer default 60     , -- The number of minutes the session should be in logging mode.
+  p_cache_duration number  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries.
+  p_cache_size     number  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.
+  p_user_env       boolean default false  , -- Should the user environment be included.
+  p_apex_env       boolean default false  , -- Should the APEX environment be included.
+  p_cgi_env        boolean default false  , -- Should the CGI environment be included.
+  p_console_env    boolean default false    -- Should the console environment be included.
 );
 
 --------------------------------------------------------------------------------
@@ -393,7 +405,10 @@ procedure create_log_entry (
 
 function get_context (p_attribute varchar2) return varchar2;
 
-procedure set_context (p_attribute varchar2, p_value varchar2);
+procedure set_context (
+  p_attribute         varchar2 ,
+  p_value             varchar2 ,
+  p_client_identifier varchar2 );
 
 procedure clear_context;
 

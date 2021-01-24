@@ -21,14 +21,15 @@ c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
 c_client_id_prefix   constant varchar2 ( 5 byte) := '{o,o}';
 c_ctx_namespace      constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute constant varchar2 (15 byte) := 'TEST';
+c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_ctx_level          constant varchar2 (15 byte) := 'LEVEL';
-c_ctx_valid_until    constant varchar2 (15 byte) := 'VALID_UNTIL';
-c_ctx_flush_cache    constant varchar2 (15 byte) := 'FLUSH_CASHE';
+c_ctx_end_date       constant varchar2 (15 byte) := 'END_DATE';
+c_ctx_cache_duration constant varchar2 (15 byte) := 'CACHE_DURATION';
+c_ctx_cache_size     constant varchar2 (15 byte) := 'CACHE_SIZE';
 c_ctx_user_env       constant varchar2 (15 byte) := 'USER_ENV';
 c_ctx_apex_env       constant varchar2 (15 byte) := 'APEX_ENV';
 c_ctx_cgi_env        constant varchar2 (15 byte) := 'CGI_ENV';
 c_ctx_console_env    constant varchar2 (15 byte) := 'CONSOLE_ENV';
-c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_vc_max_size        constant pls_integer        := 32767;
 
 subtype vc16    is varchar2 (   16 char);
@@ -46,7 +47,6 @@ g_conf_client_identifier varchar2 (64 byte);
 g_conf_context_available boolean := false; -- initial value, will be reevaluated on package initialization
 g_conf_level             pls_integer := 1;
 g_conf_valid_until       date        := sysdate;
-g_conf_flush_cache       boolean;
 g_conf_user_env          boolean;
 g_conf_apex_env          boolean;
 g_conf_cgi_env           boolean;
@@ -68,7 +68,10 @@ procedure create_log_entry (
 
 function get_context (p_attribute varchar2) return varchar2;
 
-procedure set_context (p_attribute varchar2, p_value varchar2);
+procedure set_context (
+  p_attribute         varchar2 ,
+  p_value             varchar2 ,
+  p_client_identifier varchar2 );
 
 procedure clear_context;
 
@@ -210,28 +213,113 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_id  varchar2                     ,
-  p_level    integer default c_info ,
-  p_duration integer default 60           )
+  p_client_id      varchar2               ,
+  p_level          integer default c_info ,
+  p_duration       integer default 60     ,
+  p_cache_duration number  default 10     ,
+  p_cache_size     number  default 0      ,
+  p_user_env       boolean default false  ,
+  p_apex_env       boolean default false  ,
+  p_cgi_env        boolean default false  ,
+  p_console_env    boolean default false  )
 is
-  v_session vc64 := substr(p_client_id, 1, 64);
-  v_context vc4000;
+  pragma autonomous_transaction;
+  v_session     varchar2 (64 byte) := substrb(p_client_id, 1, 64);
+  v_user_env    varchar2 (1 byte);
+  v_apex_env    varchar2 (1 byte);
+  v_cgi_env     varchar2 (1 byte);
+  v_console_env varchar2 (1 byte);
+  v_end_date    date;
+  v_count       pls_integer;
 begin
-  assert(p_level in (2, 3, 4), 'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
-  assert(p_duration > 1, 'Duration needs to be greater or equal 1 (minute).');
-  set_context (p_client_id || c_ctx_level, to_char(p_level));
+  assert(p_level          in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
+  assert(p_duration       between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).');
+  assert(p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).');
+  assert(p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).');
+  assert(p_user_env       is not null,        'User env needs to be true or false(not null).');
+  assert(p_apex_env       is not null,        'APEX env needs to be true or false(not null).');
+  assert(p_cgi_env        is not null,        'CGI env needs to be true or false(not null).');
+  assert(p_console_env    is not null,        'Console env needs to be true or false(not null).');
+  --
+  v_user_env    := case when p_user_env    then 'Y' else 'N' end;
+  v_apex_env    := case when p_apex_env    then 'Y' else 'N' end;
+  v_cgi_env     := case when p_cgi_env     then 'Y' else 'N' end;
+  v_console_env := case when p_console_env then 'Y' else 'N' end;
+  v_end_date    := localtimestamp + 1/24/60 * p_duration;
+  --
+  select count(*) into v_count from console_sessions where client_identifier = p_client_id;
+  if v_count = 0 then
+    insert into console_sessions (
+      client_identifier,
+      log_level,
+      start_date,
+      end_date,
+      cache_duration,
+      cache_size,
+      user_env,
+      apex_env,
+      cgi_env,
+      console_env
+    ) values (
+      p_client_id,
+      p_level,
+      localtimestamp ,
+      v_end_date,
+      p_cache_duration,
+      p_cache_size,
+      v_user_env,
+      v_apex_env,
+      v_cgi_env,
+      v_console_env
+    );
+  else
+    update
+      console_sessions
+    set
+      log_level      = p_level,
+      end_date       = v_end_date,
+      cache_duration = p_cache_duration,
+      cache_size     = p_cache_size,
+      user_env       = v_user_env,
+      apex_env       = v_apex_env,
+      cgi_env        = v_cgi_env,
+      console_env    = v_console_env
+    where
+      client_identifier = p_client_id;
+  end if;
+  commit;
+  --
+  set_context ( c_ctx_level         , to_char(p_level)                      , p_client_id );
+  set_context ( c_ctx_end_date      , to_char(v_end_date, c_ctx_date_format), p_client_id );
+  set_context ( c_ctx_cache_duration, to_char(p_cache_duration)             , p_client_id );
+  set_context ( c_ctx_cache_size    , to_char(p_cache_size)                 , p_client_id );
+  set_context ( c_ctx_user_env      , to_char(v_user_env)                   , p_client_id );
+  set_context ( c_ctx_apex_env      , to_char(v_apex_env)                   , p_client_id );
+  set_context ( c_ctx_cgi_env       , to_char(v_cgi_env)                    , p_client_id );
+  set_context ( c_ctx_console_env   , to_char(v_console_env)                , p_client_id );
 end init;
 
 procedure init (
-  p_level    integer default c_info ,
-  p_duration integer default 60           )
+  p_level          integer default c_info ,
+  p_duration       integer default 60     ,
+  p_cache_duration number  default 10     ,
+  p_cache_size     number  default 0      ,
+  p_user_env       boolean default false  ,
+  p_apex_env       boolean default false  ,
+  p_cgi_env        boolean default false  ,
+  p_console_env    boolean default false  )
 is
 begin
   init(
-    p_client_id  => g_conf_client_identifier,
-    p_level    => p_level,
-    p_duration => p_duration
-  );
+    p_client_id      => g_conf_client_identifier ,
+    p_level          => p_level                  ,
+    p_duration       => p_duration               ,
+    p_cache_duration => p_cache_duration         ,
+    p_cache_size     => p_cache_size             ,
+    p_user_env       => p_user_env               ,
+    p_apex_env       => p_apex_env               ,
+    p_cgi_env        => p_cgi_env                ,
+    p_console_env    => p_console_env            );
 end init;
 
 --------------------------------------------------------------------------------
@@ -378,14 +466,14 @@ procedure create_log_entry (
   v_call_stack vc4000;
   v_scope   console_logs.scope%type;
 begin
-  v_scope := substr(get_scope, 1, 1000);
+  v_scope := substrb(get_scope, 1, 1000);
   if p_message is not null then
     v_message := p_message;
   elsif sqlcode != 0 then
     v_message := sqlerrm;
   end if;
   if p_trace then
-    v_call_stack := substr(get_call_stack, 1, 4000);
+    v_call_stack := substrb(get_call_stack, 1, 4000);
   end if;
   insert into console_logs (
     log_level,
@@ -407,15 +495,15 @@ begin
     v_scope,
     v_message,
     v_call_stack,
-    sys_context('USERENV', 'SESSION_USER'),
-    sys_context('USERENV', 'MODULE'),
-    sys_context('USERENV', 'ACTION'),
-    sys_context('USERENV', 'CLIENT_INFO'),
-    sys_context('USERENV', 'CLIENT_IDENTIFIER'),
-    sys_context('USERENV', 'IP_ADDRESS'),
-    sys_context('USERENV', 'HOST'),
-    sys_context('USERENV', 'OS_USER'),
-    substr(p_user_agent, 1, 200)
+    substrb( sys_context('USERENV', 'SESSION_USER')     , 1, 32),
+    substrb( sys_context('USERENV', 'MODULE')           , 1, 48),
+    substrb( sys_context('USERENV', 'ACTION')           , 1, 32),
+    substrb( sys_context('USERENV', 'CLIENT_INFO')      , 1, 64),
+    substrb( sys_context('USERENV', 'CLIENT_IDENTIFIER'), 1, 64),
+    substrb( sys_context('USERENV', 'IP_ADDRESS')       , 1, 48),
+    substrb( sys_context('USERENV', 'HOST')             , 1, 64),
+    substrb( sys_context('USERENV', 'OS_USER')          , 1, 64),
+    substrb(p_user_agent, 1, 200)
   );
   commit;
 end create_log_entry;
@@ -433,10 +521,18 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure set_context (p_attribute varchar2, p_value varchar2) is
+procedure set_context (
+  p_attribute         varchar2 ,
+  p_value             varchar2 ,
+  p_client_identifier varchar2 )
+is
 begin
   if g_conf_context_available then
-    sys.dbms_session.set_context(c_ctx_namespace, p_attribute, p_value);
+    sys.dbms_session.set_context(
+      namespace => c_ctx_namespace     ,
+      attribute => p_attribute         ,
+      value     => p_value             ,
+      client_id => p_client_identifier );
   else
     null; -- FIXME implement
   end if;

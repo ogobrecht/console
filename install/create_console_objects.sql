@@ -32,70 +32,160 @@ BEGIN
 END;
 /
 
---FOR DEVELOPMENT ONLY - UNCOMMENT THE NEXT TWO LINES TEMPORARELY WHEN YOU NEED IT
---begin for i in (select 1 from user_tables where table_name = 'CONSOLE_LOGS') loop execute immediate 'drop table console_logs purge'; end loop; end;
---/
+declare
+  v_count pls_integer;
+begin
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_LEVELS';
+  if v_count = 0 then
+    dbms_output.put_line('- Table CONSOLE_LEVELS not found, run creation command');
+    execute immediate q'{
+      create table console_levels (
+        id    number   (1,0)      not null  ,
+        name  varchar2 (10 byte)  not null  ,
+        --
+        constraint console_levels_pk primary key (id)                  ,
+        constraint console_levels_uk unique      (name)                ,
+        constraint console_levels_ck check       (id in (0,1,2,3,4))
+      ) organization index
+    }';
+  else
+    dbms_output.put_line('- Table CONSOLE_LEVELS found, no action required');
+  end if;
+end;
+/
+
+--will not run, when called in the same block as the table creation
+declare
+  v_count pls_integer;
+begin
+  select count(*) into v_count from console_levels;
+  if v_count = 0 then
+    insert into console_levels (id, name) values (0, 'Permanent');
+    insert into console_levels (id, name) values (1, 'Error');
+    insert into console_levels (id, name) values (2, 'Warning');
+    insert into console_levels (id, name) values (3, 'Info');
+    insert into console_levels (id, name) values (4, 'Verbose');
+    commit;
+  end if;
+end;
+/
+
+comment on table  console_levels      is 'Catalog table for the log levels.';
+comment on column console_levels.id   is 'ID of the level, primary key, manual managed.';
+comment on column console_levels.name is 'Name of the level.';
+
+
+
 
 declare
-  v_table_name        varchar2(  30 char) := 'CONSOLE_LOGS';
-  v_index_column_list varchar2(1000 char) := 'LOG_TIME, LOG_LEVEL';
-  v_count             pls_integer;
+  v_count pls_integer;
+begin
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_SESSIONS';
+  if v_count = 0 then
+    dbms_output.put_line('- Table CONSOLE_SESSIONS not found, run creation command');
+    execute immediate q'{
+      create table console_sessions (
+        client_identifier  varchar2 (64 byte)              not null  ,
+        log_level          number   (1,0)                  not null  ,
+        start_date         timestamp with local time zone  not null  ,
+        end_date           timestamp with local time zone  not null  ,
+        cache_duration     number   (2,0)                  not null  ,
+        cache_size         number   (4,0)                  not null  ,
+        user_env           varchar2 (1 byte)               not null  ,
+        apex_env           varchar2 (1 byte)               not null  ,
+        cgi_env            varchar2 (1 byte)               not null  ,
+        console_env        varchar2 (1 byte)               not null  ,
+        --
+        constraint  console_sessions_pk   primary key  (client_identifier)                    ,
+        constraint  console_sessions_fk   foreign key  (log_level) references console_levels  ,
+        constraint  console_sessions_ck1  check        (user_env    in ('Y','N'))             ,
+        constraint  console_sessions_ck2  check        (apex_env    in ('Y','N'))             ,
+        constraint  console_sessions_ck3  check        (cgi_env     in ('Y','N'))             ,
+        constraint  console_sessions_ck4  check        (console_env in ('Y','N'))
+      )
+    }';
+  else
+    dbms_output.put_line('- Table CONSOLE_SESSIONS found, no action required');
+  end if;
+end;
+/
+
+comment on table  console_sessions                   is 'Holds the sessions that are initialized for debugging. Used to manage the global context.';
+comment on column console_sessions.client_identifier is 'The client identifier provided by the application or console itself.';
+comment on column console_sessions.log_level         is 'The defined log level. Any session not listed here has the default log level of 1 (error).';
+comment on column console_sessions.start_date        is 'The logging start date for the nominated client identifier.';
+comment on column console_sessions.end_date          is 'The logging end date for the nominated client identifier.';
+comment on column console_sessions.cache_duration    is 'The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Defaults to 10.';
+comment on column console_sessions.cache_size        is 'The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.';
+comment on column console_sessions.user_env          is 'Should the user environment be included.';
+comment on column console_sessions.apex_env          is 'Should the APEX environment be included.';
+comment on column console_sessions.cgi_env           is 'Should the CGI environment be included.';
+comment on column console_sessions.console_env       is 'Should the console environment be included.';
+
+
+
+
+declare
+  v_count pls_integer;
+  --
+  procedure create_index (p_column_list varchar2, p_postfix varchar2) is
+  begin
+    with t as (
+      select listagg(column_name, ', ') within group(order by column_position) as index_column_list
+        from user_ind_columns
+      where table_name = 'CONSOLE_LOGS'
+      group by index_name
+    )
+    select count(*)
+      into v_count
+      from t
+    where index_column_list = p_column_list;
+    if v_count = 0 then
+      dbms_output.put_line('- Index for CONSOLE_LOGS column list ' || p_column_list || ' not found, run creation command');
+      execute immediate 'create index CONSOLE_LOGS_' || p_postfix || ' on CONSOLE_LOGS (' || p_column_list || ')';
+    else
+      dbms_output.put_line('- Index for CONSOLE_LOGS column list ' || p_column_list || ' found, no action required');
+    end if;
+  end;
+  --
 begin
 
   --create table
-  select count(*) into v_count from user_tables where table_name = v_table_name;
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_LOGS';
   if v_count = 0 then
-    dbms_output.put_line('- Table ' || v_table_name || ' not found, run creation command');
-    execute immediate replace(q'{
-      create table #TABLE_NAME# (
+    dbms_output.put_line('- Table CONSOLE_LOGS not found, run creation command');
+    execute immediate q'{
+      create table console_logs (
         log_id             integer                                               generated by default on null as identity,
         log_time           timestamp with local time zone  default systimestamp  not null  ,
-        log_level          integer                                                         ,
-        scope              varchar2 (1000 char)                                            ,
+        log_level          number (1,0)                                          not null  ,
+        scope              varchar2 (1000 byte)                                            ,
         message            clob                                                            ,
-        call_stack         varchar2 (4000 char)                                            ,
-        session_user       varchar2 (  32 char)                                            ,
-        module             varchar2 (  64 char)                                            ,
-        action             varchar2 (  64 char)                                            ,
-        client_info        varchar2 (  64 char)                                            ,
-        client_identifier  varchar2 (  64 char)                                            ,
-        ip_address         varchar2 (  32 char)                                            ,
-        host               varchar2 (  64 char)                                            ,
-        os_user            varchar2 (  64 char)                                            ,
-        os_user_agent      varchar2 ( 200 char)                                            ,
+        call_stack         varchar2 (4000 byte)                                            ,
+        session_user       varchar2 (  32 byte)                                            ,
+        module             varchar2 (  48 byte)                                            ,
+        action             varchar2 (  32 byte)                                            ,
+        client_info        varchar2 (  64 byte)                                            ,
+        client_identifier  varchar2 (  64 byte)                                            ,
+        ip_address         varchar2 (  48 byte)                                            ,
+        host               varchar2 (  64 byte)                                            ,
+        os_user            varchar2 (  64 byte)                                            ,
+        os_user_agent      varchar2 ( 200 byte)                                            ,
         --
-        constraint #TABLE_NAME#_level_ck check (log_level in (0,1,2,3,4))
+        constraint console_logs_fk foreign key (log_level) references console_levels
       )
-    }','#TABLE_NAME#', v_table_name);
+    }';
   else
-    dbms_output.put_line('- Table ' || v_table_name || ' found, no action required');
+    dbms_output.put_line('- Table CONSOLE_LOGS found, no action required');
   end if;
 
-  --create index
-  with t as (
-    select listagg(column_name, ', ') within group(order by column_position) as index_column_list
-      from user_ind_columns
-     where table_name = v_table_name
-  )
-  select count(*)
-    into v_count
-    from t
-   where index_column_list = v_index_column_list;
-  if v_count = 0 then
-    dbms_output.put_line('- Index for column list ' || v_index_column_list || ' not found, run creation command');
-    execute immediate replace(replace('
-      create index #TABLE_NAME#_ix on #TABLE_NAME# (#INDEX_COLUMN_LIST#)
-    ',
-    '#TABLE_NAME#',        v_table_name),
-    '#INDEX_COLUMN_LIST#', v_index_column_list);
-  else
-    dbms_output.put_line('- Index for column list ' || v_index_column_list || ' found, no action required');
-  end if;
+  create_index ('LOG_TIME, LOG_LEVEL', 'IX1');
+  create_index ('CLIENT_IDENTIFIER', 'IX2');
 
 end;
 /
 
-comment on table console_logs                    is 'Table for log entries of the package CONSOLE. Column names are mostly driven by the attribute names of SYS_CONTEXT(''USERENV'') and DBMS_SESSION for easier mapping and clearer context.';
+comment on table  console_logs                   is 'Table for log entries of the package CONSOLE. Column names are mostly driven by the attribute names of SYS_CONTEXT(''USERENV'') and DBMS_SESSION for easier mapping and clearer context.';
 comment on column console_logs.log_id            is 'Primary key based on a sequence.';
 comment on column console_logs.log_time          is 'Log entry timestamp.';
 comment on column console_logs.log_level         is 'Log entry level. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info) or 4 (verbose).';
@@ -338,9 +428,15 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_id  varchar2,               -- client_identifier or unique_session_id
-  p_level    integer default c_info, -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer default 60      -- duration in minutes
+  p_client_id      varchar2               , -- The client identifier provided by the application or console itself.
+  p_level          integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_duration       integer default 60     , -- The number of minutes the session should be in logging mode.
+  p_cache_duration number  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries.
+  p_cache_size     number  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.
+  p_user_env       boolean default false  , -- Should the user environment be included.
+  p_apex_env       boolean default false  , -- Should the APEX environment be included.
+  p_cgi_env        boolean default false  , -- Should the CGI environment be included.
+  p_console_env    boolean default false    -- Should the console environment be included.
 );
 /**
 
@@ -385,8 +481,14 @@ end;
 **/
 
 procedure init (
-  p_level    integer default c_info, -- 2 (warning), 3 (info) or 4 (verbose)
-  p_duration integer default 60      -- duration in minutes
+  p_level          integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_duration       integer default 60     , -- The number of minutes the session should be in logging mode.
+  p_cache_duration number  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries.
+  p_cache_size     number  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.
+  p_user_env       boolean default false  , -- Should the user environment be included.
+  p_apex_env       boolean default false  , -- Should the APEX environment be included.
+  p_cgi_env        boolean default false  , -- Should the CGI environment be included.
+  p_console_env    boolean default false    -- Should the console environment be included.
 );
 
 --------------------------------------------------------------------------------
@@ -511,7 +613,10 @@ procedure create_log_entry (
 
 function get_context (p_attribute varchar2) return varchar2;
 
-procedure set_context (p_attribute varchar2, p_value varchar2);
+procedure set_context (
+  p_attribute         varchar2 ,
+  p_value             varchar2 ,
+  p_client_identifier varchar2 );
 
 procedure clear_context;
 
@@ -546,14 +651,15 @@ c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
 c_client_id_prefix   constant varchar2 ( 5 byte) := '{o,o}';
 c_ctx_namespace      constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute constant varchar2 (15 byte) := 'TEST';
+c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_ctx_level          constant varchar2 (15 byte) := 'LEVEL';
-c_ctx_valid_until    constant varchar2 (15 byte) := 'VALID_UNTIL';
-c_ctx_flush_cache    constant varchar2 (15 byte) := 'FLUSH_CASHE';
+c_ctx_end_date       constant varchar2 (15 byte) := 'END_DATE';
+c_ctx_cache_duration constant varchar2 (15 byte) := 'CACHE_DURATION';
+c_ctx_cache_size     constant varchar2 (15 byte) := 'CACHE_SIZE';
 c_ctx_user_env       constant varchar2 (15 byte) := 'USER_ENV';
 c_ctx_apex_env       constant varchar2 (15 byte) := 'APEX_ENV';
 c_ctx_cgi_env        constant varchar2 (15 byte) := 'CGI_ENV';
 c_ctx_console_env    constant varchar2 (15 byte) := 'CONSOLE_ENV';
-c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_vc_max_size        constant pls_integer        := 32767;
 
 subtype vc16    is varchar2 (   16 char);
@@ -571,7 +677,6 @@ g_conf_client_identifier varchar2 (64 byte);
 g_conf_context_available boolean := false; -- initial value, will be reevaluated on package initialization
 g_conf_level             pls_integer := 1;
 g_conf_valid_until       date        := sysdate;
-g_conf_flush_cache       boolean;
 g_conf_user_env          boolean;
 g_conf_apex_env          boolean;
 g_conf_cgi_env           boolean;
@@ -593,7 +698,10 @@ procedure create_log_entry (
 
 function get_context (p_attribute varchar2) return varchar2;
 
-procedure set_context (p_attribute varchar2, p_value varchar2);
+procedure set_context (
+  p_attribute         varchar2 ,
+  p_value             varchar2 ,
+  p_client_identifier varchar2 );
 
 procedure clear_context;
 
@@ -735,28 +843,113 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_id  varchar2                     ,
-  p_level    integer default c_info ,
-  p_duration integer default 60           )
+  p_client_id      varchar2               ,
+  p_level          integer default c_info ,
+  p_duration       integer default 60     ,
+  p_cache_duration number  default 10     ,
+  p_cache_size     number  default 0      ,
+  p_user_env       boolean default false  ,
+  p_apex_env       boolean default false  ,
+  p_cgi_env        boolean default false  ,
+  p_console_env    boolean default false  )
 is
-  v_session vc64 := substr(p_client_id, 1, 64);
-  v_context vc4000;
+  pragma autonomous_transaction;
+  v_session     varchar2 (64 byte) := substrb(p_client_id, 1, 64);
+  v_user_env    varchar2 (1 byte);
+  v_apex_env    varchar2 (1 byte);
+  v_cgi_env     varchar2 (1 byte);
+  v_console_env varchar2 (1 byte);
+  v_end_date    date;
+  v_count       pls_integer;
 begin
-  assert(p_level in (2, 3, 4), 'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
-  assert(p_duration > 1, 'Duration needs to be greater or equal 1 (minute).');
-  set_context (p_client_id || c_ctx_level, to_char(p_level));
+  assert(p_level          in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
+  assert(p_duration       between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).');
+  assert(p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).');
+  assert(p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).');
+  assert(p_user_env       is not null,        'User env needs to be true or false(not null).');
+  assert(p_apex_env       is not null,        'APEX env needs to be true or false(not null).');
+  assert(p_cgi_env        is not null,        'CGI env needs to be true or false(not null).');
+  assert(p_console_env    is not null,        'Console env needs to be true or false(not null).');
+  --
+  v_user_env    := case when p_user_env    then 'Y' else 'N' end;
+  v_apex_env    := case when p_apex_env    then 'Y' else 'N' end;
+  v_cgi_env     := case when p_cgi_env     then 'Y' else 'N' end;
+  v_console_env := case when p_console_env then 'Y' else 'N' end;
+  v_end_date    := localtimestamp + 1/24/60 * p_duration;
+  --
+  select count(*) into v_count from console_sessions where client_identifier = p_client_id;
+  if v_count = 0 then
+    insert into console_sessions (
+      client_identifier,
+      log_level,
+      start_date,
+      end_date,
+      cache_duration,
+      cache_size,
+      user_env,
+      apex_env,
+      cgi_env,
+      console_env
+    ) values (
+      p_client_id,
+      p_level,
+      localtimestamp ,
+      v_end_date,
+      p_cache_duration,
+      p_cache_size,
+      v_user_env,
+      v_apex_env,
+      v_cgi_env,
+      v_console_env
+    );
+  else
+    update
+      console_sessions
+    set
+      log_level      = p_level,
+      end_date       = v_end_date,
+      cache_duration = p_cache_duration,
+      cache_size     = p_cache_size,
+      user_env       = v_user_env,
+      apex_env       = v_apex_env,
+      cgi_env        = v_cgi_env,
+      console_env    = v_console_env
+    where
+      client_identifier = p_client_id;
+  end if;
+  commit;
+  --
+  set_context ( c_ctx_level         , to_char(p_level)                      , p_client_id );
+  set_context ( c_ctx_end_date      , to_char(v_end_date, c_ctx_date_format), p_client_id );
+  set_context ( c_ctx_cache_duration, to_char(p_cache_duration)             , p_client_id );
+  set_context ( c_ctx_cache_size    , to_char(p_cache_size)                 , p_client_id );
+  set_context ( c_ctx_user_env      , to_char(v_user_env)                   , p_client_id );
+  set_context ( c_ctx_apex_env      , to_char(v_apex_env)                   , p_client_id );
+  set_context ( c_ctx_cgi_env       , to_char(v_cgi_env)                    , p_client_id );
+  set_context ( c_ctx_console_env   , to_char(v_console_env)                , p_client_id );
 end init;
 
 procedure init (
-  p_level    integer default c_info ,
-  p_duration integer default 60           )
+  p_level          integer default c_info ,
+  p_duration       integer default 60     ,
+  p_cache_duration number  default 10     ,
+  p_cache_size     number  default 0      ,
+  p_user_env       boolean default false  ,
+  p_apex_env       boolean default false  ,
+  p_cgi_env        boolean default false  ,
+  p_console_env    boolean default false  )
 is
 begin
   init(
-    p_client_id  => g_conf_client_identifier,
-    p_level    => p_level,
-    p_duration => p_duration
-  );
+    p_client_id      => g_conf_client_identifier ,
+    p_level          => p_level                  ,
+    p_duration       => p_duration               ,
+    p_cache_duration => p_cache_duration         ,
+    p_cache_size     => p_cache_size             ,
+    p_user_env       => p_user_env               ,
+    p_apex_env       => p_apex_env               ,
+    p_cgi_env        => p_cgi_env                ,
+    p_console_env    => p_console_env            );
 end init;
 
 --------------------------------------------------------------------------------
@@ -903,14 +1096,14 @@ procedure create_log_entry (
   v_call_stack vc4000;
   v_scope   console_logs.scope%type;
 begin
-  v_scope := substr(get_scope, 1, 1000);
+  v_scope := substrb(get_scope, 1, 1000);
   if p_message is not null then
     v_message := p_message;
   elsif sqlcode != 0 then
     v_message := sqlerrm;
   end if;
   if p_trace then
-    v_call_stack := substr(get_call_stack, 1, 4000);
+    v_call_stack := substrb(get_call_stack, 1, 4000);
   end if;
   insert into console_logs (
     log_level,
@@ -932,15 +1125,15 @@ begin
     v_scope,
     v_message,
     v_call_stack,
-    sys_context('USERENV', 'SESSION_USER'),
-    sys_context('USERENV', 'MODULE'),
-    sys_context('USERENV', 'ACTION'),
-    sys_context('USERENV', 'CLIENT_INFO'),
-    sys_context('USERENV', 'CLIENT_IDENTIFIER'),
-    sys_context('USERENV', 'IP_ADDRESS'),
-    sys_context('USERENV', 'HOST'),
-    sys_context('USERENV', 'OS_USER'),
-    substr(p_user_agent, 1, 200)
+    substrb( sys_context('USERENV', 'SESSION_USER')     , 1, 32),
+    substrb( sys_context('USERENV', 'MODULE')           , 1, 48),
+    substrb( sys_context('USERENV', 'ACTION')           , 1, 32),
+    substrb( sys_context('USERENV', 'CLIENT_INFO')      , 1, 64),
+    substrb( sys_context('USERENV', 'CLIENT_IDENTIFIER'), 1, 64),
+    substrb( sys_context('USERENV', 'IP_ADDRESS')       , 1, 48),
+    substrb( sys_context('USERENV', 'HOST')             , 1, 64),
+    substrb( sys_context('USERENV', 'OS_USER')          , 1, 64),
+    substrb(p_user_agent, 1, 200)
   );
   commit;
 end create_log_entry;
@@ -958,10 +1151,18 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure set_context (p_attribute varchar2, p_value varchar2) is
+procedure set_context (
+  p_attribute         varchar2 ,
+  p_value             varchar2 ,
+  p_client_identifier varchar2 )
+is
 begin
   if g_conf_context_available then
-    sys.dbms_session.set_context(c_ctx_namespace, p_attribute, p_value);
+    sys.dbms_session.set_context(
+      namespace => c_ctx_namespace     ,
+      attribute => p_attribute         ,
+      value     => p_value             ,
+      client_id => p_client_identifier );
   else
     null; -- FIXME implement
   end if;
@@ -1038,7 +1239,7 @@ begin
       dbms_output.put_line('-  | Level permanent (0) and error (1) are always logged, also without a context.');
       dbms_output.put_line('-  | You will not be able to set other sessions in logging mode with levels warning (2), info (3) or verbose (4).');
       dbms_output.put_line('-  | But you will be able to do this for your own session.');
-      dbms_output.put_line('-  | When you (or your DBA) have the context created then simply recheck the availability:');
+      dbms_output.put_line('-  | When you (or your DBA) have the context created then simply reconnect and check the availability:');
       dbms_output.put_line('-  | select console.context_available_yn from dual;');
     end if;
   end if;
