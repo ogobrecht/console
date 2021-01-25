@@ -71,7 +71,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 byte) := '0.3.1';
+c_version constant varchar2(10 byte) := '0.4.0';
 c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 byte) := 'MIT';
 c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
@@ -284,7 +284,7 @@ function my_client_identifier return varchar2;
 
 Starts the logging for a specific session.
 
-To avoid spoiling the context with very long input the p_client_id parameter is
+To avoid spoiling the context with very long input the p_client_identifier parameter is
 truncated after 64 characters before using it.
 
 For easier usage there is an overloaded procedure available which uses always
@@ -312,9 +312,9 @@ exec console.init('APEX:8805903776765');
 -- Debug another session
 begin
   console.init(
-    p_client_id => 'APEX:8805903776765',
-    p_level     => console.c_verbose,
-    p_duration  => 15
+    p_client_identifier => 'APEX:8805903776765',
+    p_log_level         => console.c_verbose,
+    p_log_duration      => 15
   );
 end;
 /
@@ -324,15 +324,15 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_client_id      varchar2               , -- The client identifier provided by the application or console itself.
-  p_level          integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_duration       integer default 60     , -- The number of minutes the session should be in logging mode.
-  p_cache_duration integer default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries.
-  p_cache_size     integer default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.
-  p_user_env       boolean default false  , -- Should the user environment be included.
-  p_apex_env       boolean default false  , -- Should the APEX environment be included.
-  p_cgi_env        boolean default false  , -- Should the CGI environment be included.
-  p_console_env    boolean default false    -- Should the console environment be included.
+  p_client_identifier varchar2               , -- The client identifier provided by the application or console itself.
+  p_log_level         integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_log_duration      integer default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        integer default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
+  p_cache_duration    integer default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
+  p_user_env          boolean default false  , -- Should the user environment be included.
+  p_apex_env          boolean default false  , -- Should the APEX environment be included.
+  p_cgi_env           boolean default false  , -- Should the CGI environment be included.
+  p_console_env       boolean default false    -- Should the console environment be included.
 );
 ```
 
@@ -367,7 +367,7 @@ SIGNATURE
 
 ```sql
 procedure clear (
-  p_client_id varchar2 default my_client_identifier -- client_identifier or unique_session_id
+  p_client_identifier varchar2 default my_client_identifier -- client_identifier or unique_session_id
 );
 ```
 

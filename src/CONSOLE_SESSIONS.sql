@@ -6,16 +6,16 @@ begin
     dbms_output.put_line('- Table CONSOLE_SESSIONS not found, run creation command');
     execute immediate q'{
       create table console_sessions (
-        client_identifier  varchar2 (64 byte)              not null  ,
-        log_level          number   (1,0)                  not null  ,
-        start_date         timestamp with local time zone  not null  ,
-        end_date           timestamp with local time zone  not null  ,
-        cache_duration     number   (2,0)                  not null  ,
-        cache_size         number   (4,0)                  not null  ,
-        user_env           varchar2 (1 byte)               not null  ,
-        apex_env           varchar2 (1 byte)               not null  ,
-        cgi_env            varchar2 (1 byte)               not null  ,
-        console_env        varchar2 (1 byte)               not null  ,
+        client_identifier  varchar2 (64 byte)  not null  ,
+        log_level          number   (1,0)      not null  ,
+        start_date         date                not null  ,
+        end_date           date                not null  ,
+        cache_size         number   (4,0)      not null  ,
+        cache_duration     number   (2,0)      not null  ,
+        user_env           varchar2 (1 byte)   not null  ,
+        apex_env           varchar2 (1 byte)   not null  ,
+        cgi_env            varchar2 (1 byte)   not null  ,
+        console_env        varchar2 (1 byte)   not null  ,
         --
         constraint  console_sessions_pk   primary key  (client_identifier)                    ,
         constraint  console_sessions_fk   foreign key  (log_level) references console_levels  ,
