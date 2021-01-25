@@ -58,6 +58,8 @@ g_conf_console_env       boolean;
 
 $if not $$utils_public $then
 
+procedure check_context_availability;
+
 function logging_enabled (p_level integer) return boolean;
 
 procedure create_log_entry (
@@ -68,12 +70,10 @@ procedure create_log_entry (
 
 function get_context (p_attribute varchar2) return varchar2;
 
-procedure set_context (
-  p_attribute         varchar2 ,
-  p_value             varchar2 ,
-  p_client_identifier varchar2 );
+procedure clear_context (p_client_identifier varchar2 );
 
-procedure clear_context;
+procedure clear_all_context;
+
 
 $end
 
@@ -81,13 +81,13 @@ $end
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
-procedure permanent (p_message clob) is
+procedure permanent (
+  p_message clob )
+is
 begin
-  if logging_enabled (c_permanent) then
-    create_log_entry (
-      p_level      => c_permanent ,
-      p_message    => p_message         );
-  end if;
+  create_log_entry (
+    p_level      => c_permanent ,
+    p_message    => p_message   );
 end permanent;
 
 --------------------------------------------------------------------------------
@@ -97,13 +97,11 @@ procedure error (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_error) then
-    create_log_entry (
-      p_level      => c_error ,
-      p_message    => p_message     ,
-      p_trace      => true          ,
-      p_user_agent => p_user_agent  );
-  end if;
+  create_log_entry (
+    p_level      => c_error      ,
+    p_message    => p_message    ,
+    p_trace      => true         ,
+    p_user_agent => p_user_agent );
 end error;
 
 --------------------------------------------------------------------------------
@@ -115,9 +113,9 @@ is
 begin
   if logging_enabled (c_warning) then
     create_log_entry (
-      p_level      => c_warning ,
-      p_message    => p_message       ,
-      p_user_agent => p_user_agent    );
+      p_level      => c_warning    ,
+      p_message    => p_message    ,
+      p_user_agent => p_user_agent );
   end if;
 end warn;
 
@@ -130,7 +128,7 @@ is
 begin
   if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_info ,
+      p_level      => c_info       ,
       p_message    => p_message    ,
       p_user_agent => p_user_agent );
   end if;
@@ -145,7 +143,7 @@ is
 begin
   if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_info ,
+      p_level      => c_info       ,
       p_message    => p_message    ,
       p_user_agent => p_user_agent );
   end if;
@@ -160,9 +158,9 @@ is
 begin
   if logging_enabled (c_verbose) then
     create_log_entry (
-      p_level      => c_verbose ,
-      p_message    => p_message       ,
-      p_user_agent => p_user_agent    );
+      p_level      => c_verbose    ,
+      p_message    => p_message    ,
+      p_user_agent => p_user_agent );
   end if;
 end debug;
 
@@ -175,7 +173,7 @@ is
 begin
   if logging_enabled (c_info) then
     create_log_entry (
-      p_level      => c_info ,
+      p_level      => c_info       ,
       p_message    => p_message    ,
       p_trace      => true         ,
       p_user_agent => p_user_agent );
@@ -216,8 +214,8 @@ procedure init (
   p_client_id      varchar2               ,
   p_level          integer default c_info ,
   p_duration       integer default 60     ,
-  p_cache_duration number  default 10     ,
-  p_cache_size     number  default 0      ,
+  p_cache_duration integer default 10     ,
+  p_cache_size     integer default 0      ,
   p_user_env       boolean default false  ,
   p_apex_env       boolean default false  ,
   p_cgi_env        boolean default false  ,
@@ -231,6 +229,23 @@ is
   v_console_env varchar2 (1 byte);
   v_end_date    date;
   v_count       pls_integer;
+  --
+  procedure set_context (
+  p_attribute         varchar2 ,
+  p_value             varchar2 ,
+  p_client_identifier varchar2 )
+  is
+  begin
+    sys.dbms_session.set_context(
+      namespace => c_ctx_namespace     ,
+      attribute => p_attribute         ,
+      value     => p_value             ,
+      client_id => p_client_identifier );
+  exception
+    when insufficient_privileges then
+      error('Context not available, package var g_conf_context_available tells us it is ?!?');
+  end;
+  --
 begin
   assert(p_level          in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
   assert(p_duration       between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).');
@@ -289,21 +304,25 @@ begin
   end if;
   commit;
   --
-  set_context ( c_ctx_level         , to_char(p_level)                      , p_client_id );
-  set_context ( c_ctx_end_date      , to_char(v_end_date, c_ctx_date_format), p_client_id );
-  set_context ( c_ctx_cache_duration, to_char(p_cache_duration)             , p_client_id );
-  set_context ( c_ctx_cache_size    , to_char(p_cache_size)                 , p_client_id );
-  set_context ( c_ctx_user_env      , to_char(v_user_env)                   , p_client_id );
-  set_context ( c_ctx_apex_env      , to_char(v_apex_env)                   , p_client_id );
-  set_context ( c_ctx_cgi_env       , to_char(v_cgi_env)                    , p_client_id );
-  set_context ( c_ctx_console_env   , to_char(v_console_env)                , p_client_id );
+  if g_conf_context_available then
+    set_context ( c_ctx_level         , to_char(p_level)                      , p_client_id );
+    set_context ( c_ctx_end_date      , to_char(v_end_date, c_ctx_date_format), p_client_id );
+    set_context ( c_ctx_cache_duration, to_char(p_cache_duration)             , p_client_id );
+    set_context ( c_ctx_cache_size    , to_char(p_cache_size)                 , p_client_id );
+    set_context ( c_ctx_user_env      , to_char(v_user_env)                   , p_client_id );
+    set_context ( c_ctx_apex_env      , to_char(v_apex_env)                   , p_client_id );
+    set_context ( c_ctx_cgi_env       , to_char(v_cgi_env)                    , p_client_id );
+    set_context ( c_ctx_console_env   , to_char(v_console_env)                , p_client_id );
+  else
+    null;
+  end if;
 end init;
 
 procedure init (
   p_level          integer default c_info ,
   p_duration       integer default 60     ,
-  p_cache_duration number  default 10     ,
-  p_cache_size     number  default 0      ,
+  p_cache_duration integer default 10     ,
+  p_cache_size     integer default 0      ,
   p_user_env       boolean default false  ,
   p_apex_env       boolean default false  ,
   p_cgi_env        boolean default false  ,
@@ -325,8 +344,8 @@ end init;
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_client_id varchar2 default my_client_identifier
-) is
+  p_client_id varchar2 default my_client_identifier )
+is
 begin
   null; -- FIXME implement
 end;
@@ -364,7 +383,8 @@ end get_scope;
 
 --------------------------------------------------------------------------------
 
-function get_call_stack return varchar2 is
+function get_call_stack return varchar2
+is
   v_return     vc_max;
   v_subprogram vc_max;
 begin
@@ -443,7 +463,9 @@ end;
 -- PRIVATE METHODS
 --------------------------------------------------------------------------------
 
-function logging_enabled (p_level integer) return boolean is
+function logging_enabled (
+  p_level integer )
+return boolean is
 begin
   if g_conf_level >= p_level and g_conf_valid_until >= sysdate or sqlcode != 0 then
     return true;
@@ -457,10 +479,10 @@ end logging_enabled;
 
 procedure create_log_entry (
   p_level      integer,
-  p_message    clob     default null,
-  p_trace      boolean  default false,
-  p_user_agent varchar2 default null
-) is
+  p_message    clob     default null  ,
+  p_trace      boolean  default false ,
+  p_user_agent varchar2 default null  )
+is
   pragma autonomous_transaction;
   v_message    clob;
   v_call_stack vc4000;
@@ -510,7 +532,9 @@ end create_log_entry;
 
 --------------------------------------------------------------------------------
 
-function get_context (p_attribute varchar2) return varchar2 is
+function get_context (
+  p_attribute varchar2 )
+return varchar2 is
 begin
   if g_conf_context_available then
     return sys_context(c_ctx_namespace, p_attribute);
@@ -521,37 +545,28 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure set_context (
-  p_attribute         varchar2 ,
-  p_value             varchar2 ,
+procedure clear_context (
   p_client_identifier varchar2 )
 is
 begin
   if g_conf_context_available then
-    sys.dbms_session.set_context(
-      namespace => c_ctx_namespace     ,
-      attribute => p_attribute         ,
-      value     => p_value             ,
-      client_id => p_client_identifier );
-  else
-    null; -- FIXME implement
+    sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
   end if;
+exception
+  when insufficient_privileges then
+    error('Context not available, package var g_conf_context_available tells us it is ?!?');
 end;
 
 --------------------------------------------------------------------------------
 
-procedure clear_context is
+procedure clear_all_context is
 begin
-  null; -- FIXME implement
-  /*
-  sys.dbms_session.clear_context(
-    namespace => c_ctx_namespace,
-    attribute => c_context_attribute
-  );
-  */
+  if g_conf_context_available then
+    sys.dbms_session.clear_all_context (c_ctx_namespace);
+  end if;
 exception
   when insufficient_privileges then
-    null; -- FIXME implement
+    error('Context not available, package var g_conf_context_available tells us it is ?!?');
 end;
 
 --------------------------------------------------------------------------------

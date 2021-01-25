@@ -1,4 +1,4 @@
-prompt 100.000 LOG CALLS IN LEVEL ERROR (do nothing)
+prompt 100.000 LOG CALLS IN LEVEL ERROR (log only errors)
 set serveroutput on verify off feedback off
 exec logger.set_level(logger.g_error);
 
