@@ -1,7 +1,18 @@
 set serveroutput on verify off feedback off
+
+--configure logger
 exec logger.set_level(logger.g_error);
 
-prompt 100.000 LOG CALLS IN LEVEL ERROR (log only errors)
+--warm up logger and console
+begin
+  for i in 1 .. 10 loop
+    logger.log ('test');
+    console.log ('test');
+  end loop;
+end;
+/
+
+prompt 100.000 LOG CALLS IN LEVEL ERROR (how many time you loose by do nothing)
 declare
   v_iterator   pls_integer := 100000;
   v_start      timestamp;

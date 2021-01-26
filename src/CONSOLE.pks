@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 byte) := '0.4.0';
+c_version constant varchar2(10 byte) := '0.4.1';
 c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 byte) := 'MIT';
 c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
@@ -394,6 +394,10 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 $if $$utils_public $then
+
+function read_row_from_sessions (
+  p_client_identifier varchar2 )
+return console_sessions%rowtype result_cache;
 
 procedure set_client_identifier;
 

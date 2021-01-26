@@ -43,27 +43,28 @@ subtype vc2000  is varchar2 ( 2000 char);
 subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
-type t_rec_conf is record (
-  valid_until_date  date               ,
-  context_available boolean            ,
-  client_identifier varchar2 (64 byte) ,
-  log_level         pls_integer        ,
-  start_date        date               ,
-  end_date          date               ,
-  cache_size        integer            ,
-  cache_duration    integer            ,
-  user_env          boolean            ,
-  apex_env          boolean            ,
-  cgi_env           boolean            ,
-  console_env       boolean            );
-
-g_conf t_rec_conf;
+g_conf_context_available boolean;
+g_conf_valid_until_date  date;
+g_conf_client_identifier varchar2 (64 byte);
+g_conf_log_level         pls_integer;
+g_conf_start_date        date;
+g_conf_end_date          date;
+g_conf_cache_size        integer;
+g_conf_cache_duration    integer;
+g_conf_user_env          boolean;
+g_conf_apex_env          boolean;
+g_conf_cgi_env           boolean;
+g_conf_console_env       boolean;
 
 --------------------------------------------------------------------------------
 -- PRIVATE METHODS (forward declarations)
 --------------------------------------------------------------------------------
 
 $if not $$utils_public $then
+
+function read_row_from_sessions (
+  p_client_identifier varchar2 )
+return console_sessions%rowtype result_cache;
 
 procedure set_client_identifier;
 
@@ -149,7 +150,8 @@ procedure log (
   p_user_agent varchar2 default null )
 is
 begin
-  if logging_enabled (c_info) then
+  --if logging_enabled (c_info) then
+  if g_conf_valid_until_date >= sysdate and g_conf_log_level >= c_info or sqlcode != 0 then
     create_log_entry (
       p_level      => c_info       ,
       p_message    => p_message    ,
@@ -213,7 +215,7 @@ end action;
 
 function my_client_identifier return varchar2 is
 begin
-  return g_conf.client_identifier;
+  return g_conf_client_identifier;
 end;
 
 --------------------------------------------------------------------------------
@@ -251,7 +253,7 @@ is
       client_id => p_client_identifier );
   exception
     when insufficient_privileges then
-      error('Context not available, package var g_conf.context_available tells us it is ?!?');
+      error('Context not available, package var g_conf_context_available tells us it is ?!?');
   end;
   --
 begin
@@ -312,17 +314,24 @@ begin
   end if;
   commit;
   --
-  if g_conf.context_available then
-    set_context ( c_ctx_log_level     , to_char(p_log_level)                  , p_client_identifier );
-    set_context ( c_ctx_end_date      , to_char(v_end_date, c_ctx_date_format), p_client_identifier );
-    set_context ( c_ctx_cache_size    , to_char(p_cache_size)                 , p_client_identifier );
-    set_context ( c_ctx_cache_duration, to_char(p_cache_duration)             , p_client_identifier );
-    set_context ( c_ctx_user_env      , to_char(v_user_env)                   , p_client_identifier );
-    set_context ( c_ctx_apex_env      , to_char(v_apex_env)                   , p_client_identifier );
-    set_context ( c_ctx_cgi_env       , to_char(v_cgi_env)                    , p_client_identifier );
-    set_context ( c_ctx_console_env   , to_char(v_console_env)                , p_client_identifier );
-  else
-    null;
+  if g_conf_context_available then
+    set_context ( c_ctx_log_level      , to_char(p_log_level)                   , p_client_identifier );
+    set_context ( c_ctx_end_date       , to_char(v_end_date, c_ctx_date_format) , p_client_identifier );
+    set_context ( c_ctx_cache_size     , to_char(p_cache_size)                  , p_client_identifier );
+    set_context ( c_ctx_cache_duration , to_char(p_cache_duration)              , p_client_identifier );
+    set_context ( c_ctx_user_env       , to_char(v_user_env)                    , p_client_identifier );
+    set_context ( c_ctx_apex_env       , to_char(v_apex_env)                    , p_client_identifier );
+    set_context ( c_ctx_cgi_env        , to_char(v_cgi_env)                     , p_client_identifier );
+    set_context ( c_ctx_console_env    , to_char(v_console_env)                 , p_client_identifier );
+  end if;
+
+  -- If we want to monitor our own session, wee need to load the configuration
+  -- data from the context or table into the  cahce (package variable).
+  -- Otherwise we need to wait until the cache duration is over (which defaults
+  -- to 10 seconds) and the package does reload the configuration from the
+  -- context or table on next call of a public logging method.
+  if p_client_identifier = g_conf_client_identifier then
+    load_session_configuration;
   end if;
 end init;
 
@@ -338,7 +347,7 @@ procedure init (
 is
 begin
   init(
-    p_client_identifier => g_conf.client_identifier ,
+    p_client_identifier => g_conf_client_identifier ,
     p_log_level         => p_log_level              ,
     p_log_duration      => p_log_duration           ,
     p_cache_duration    => p_cache_duration         ,
@@ -450,14 +459,14 @@ end get_call_stack;
 
 function my_log_level return integer is
 begin
-  return g_conf.log_level;
+  return g_conf_log_level;
 end my_log_level;
 
 --------------------------------------------------------------------------------
 
 function context_available_yn return varchar2 is
 begin
-  return case when g_conf.context_available then 'Y' else 'N' end;
+  return case when g_conf_context_available then 'Y' else 'N' end;
 end;
 
 --------------------------------------------------------------------------------
@@ -479,11 +488,11 @@ begin
     return true;
   end if;
   -- we want to check the valid until date only once, because date comparisons are expensive
-  if g_conf.valid_until_date >= sysdate then
-    return g_conf.log_level >= p_level;
+  if g_conf_valid_until_date >= sysdate then
+    return g_conf_log_level >= p_level;
   else
     load_session_configuration;
-    return g_conf.log_level >= p_level;
+    return g_conf_log_level >= p_level;
   end if;
 end logging_enabled;
 
@@ -548,34 +557,53 @@ procedure clear_context (
   p_client_identifier varchar2 )
 is
 begin
-  if g_conf.context_available then
+  if g_conf_context_available then
     sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
   end if;
 exception
   when insufficient_privileges then
-    error('Context not available, package var g_conf.context_available tells us it is ?!?');
+    error('Context not available, package var g_conf_context_available tells us it is ?!?');
 end clear_context;
 
 --------------------------------------------------------------------------------
 
 procedure clear_all_context is
 begin
-  if g_conf.context_available then
+  if g_conf_context_available then
     sys.dbms_session.clear_all_context (c_ctx_namespace);
   end if;
 exception
   when insufficient_privileges then
-    error('Context not available, package var g_conf.context_available tells us it is ?!?');
+    error('Context not available, package var g_conf_context_available tells us it is ?!?');
 end clear_all_context;
+
+--------------------------------------------------------------------------------
+
+/* check result cache:
+select id, name, cache_id, type, status, invalidations, scan_count
+  from v$result_cache_objects
+ where name like '%CONSOLE%'
+   and status != 'Invalid';
+*/
+function read_row_from_sessions (p_client_identifier varchar2)
+return console_sessions%rowtype result_cache is
+  v_row console_sessions%rowtype;
+begin
+  for i in (select * from console_sessions where client_identifier = p_client_identifier)
+  loop
+    v_row := i;
+  end loop;
+  return v_row;
+end read_row_from_sessions;
 
 --------------------------------------------------------------------------------
 
 procedure set_client_identifier is
 begin
-  g_conf.client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
-  if g_conf.client_identifier is null then
-    g_conf.client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
-    dbms_session.set_identifier (g_conf.client_identifier);
+  g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
+  if g_conf_client_identifier is null then
+    g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
+    dbms_session.set_identifier (g_conf_client_identifier);
   end if;
 end set_client_identifier;
 
@@ -584,10 +612,10 @@ end set_client_identifier;
 procedure check_context_availability is
 begin
   sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
-  g_conf.context_available := true;
+  g_conf_context_available := true;
 exception
   when insufficient_privileges then
-    g_conf.context_available := false;
+    g_conf_context_available := false;
 end check_context_availability;
 
 --------------------------------------------------------------------------------
@@ -595,44 +623,42 @@ end check_context_availability;
 procedure load_session_configuration is
   v_row console_sessions%rowtype;
 begin
-  if g_conf.context_available then
-    g_conf.log_level      := to_number( sys_context(c_ctx_namespace, c_ctx_log_level      )                    ); -- FIXME NLS format? ,.
-    g_conf.cache_size     := to_number( sys_context(c_ctx_namespace, c_ctx_cache_size     )                    ); -- FIXME NLS format? ,.
-    g_conf.cache_duration := to_number( sys_context(c_ctx_namespace, c_ctx_cache_duration )                    ); -- FIXME NLS format? ,.
-    g_conf.end_date       := to_date  ( sys_context(c_ctx_namespace, c_ctx_end_date       ), c_ctx_date_format );
-    g_conf.user_env       := case when nvl(sys_context(c_ctx_namespace, c_ctx_user_env)   , 'N') = 'Y' then true else false end;
-    g_conf.apex_env       := case when nvl(sys_context(c_ctx_namespace, c_ctx_apex_env)   , 'N') = 'Y' then true else false end;
-    g_conf.cgi_env        := case when nvl(sys_context(c_ctx_namespace, c_ctx_cgi_env)    , 'N') = 'Y' then true else false end;
-    g_conf.console_env    := case when nvl(sys_context(c_ctx_namespace, c_ctx_console_env), 'N') = 'Y' then true else false end;
+  if g_conf_context_available then
+    g_conf_log_level      := to_number( sys_context(c_ctx_namespace, c_ctx_log_level      )                    ); -- FIXME NLS format? ,.
+    g_conf_cache_size     := to_number( sys_context(c_ctx_namespace, c_ctx_cache_size     )                    ); -- FIXME NLS format? ,.
+    g_conf_cache_duration := to_number( sys_context(c_ctx_namespace, c_ctx_cache_duration )                    ); -- FIXME NLS format? ,.
+    g_conf_end_date       := to_date  ( sys_context(c_ctx_namespace, c_ctx_end_date       ), c_ctx_date_format );
+    g_conf_user_env       := case when nvl( sys_context(c_ctx_namespace, c_ctx_user_env)   , 'N') = 'Y' then true else false end;
+    g_conf_apex_env       := case when nvl( sys_context(c_ctx_namespace, c_ctx_apex_env)   , 'N') = 'Y' then true else false end;
+    g_conf_cgi_env        := case when nvl( sys_context(c_ctx_namespace, c_ctx_cgi_env)    , 'N') = 'Y' then true else false end;
+    g_conf_console_env    := case when nvl( sys_context(c_ctx_namespace, c_ctx_console_env), 'N') = 'Y' then true else false end;
   else
-    for i in (select * from console_sessions where client_identifier = g_conf.client_identifier)
-    loop
-      v_row := i;
-    end loop;
-    g_conf.log_level      := v_row.log_level;
-    g_conf.cache_size     := v_row.cache_size;
-    g_conf.cache_duration := v_row.cache_duration;
-    g_conf.end_date       := v_row.end_date;
-    g_conf.user_env       := case when nvl(v_row.user_env   , 'N') = 'Y' then true else false end;
-    g_conf.apex_env       := case when nvl(v_row.apex_env   , 'N') = 'Y' then true else false end;
-    g_conf.cgi_env        := case when nvl(v_row.cgi_env    , 'N') = 'Y' then true else false end;
-    g_conf.console_env    := case when nvl(v_row.console_env, 'N') = 'Y' then true else false end;
+    v_row := read_row_from_sessions(g_conf_client_identifier);
+    g_conf_log_level      := v_row.log_level;
+    g_conf_cache_size     := v_row.cache_size;
+    g_conf_cache_duration := v_row.cache_duration;
+    g_conf_end_date       := v_row.end_date;
+    g_conf_user_env       := case when nvl(v_row.user_env   , 'N') = 'Y' then true else false end;
+    g_conf_apex_env       := case when nvl(v_row.apex_env   , 'N') = 'Y' then true else false end;
+    g_conf_cgi_env        := case when nvl(v_row.cgi_env    , 'N') = 'Y' then true else false end;
+    g_conf_console_env    := case when nvl(v_row.console_env, 'N') = 'Y' then true else false end;
   end if;
 
   --handle nulls
-  if g_conf.log_level is null then
-    g_conf.log_level := 1;
+  if g_conf_log_level is null then
+    g_conf_log_level := 1;
   end if;
-  if g_conf.cache_size is null then
-    g_conf.cache_size := 0;
+  if g_conf_cache_size is null then
+    g_conf_cache_size := 0;
   end if;
-  if g_conf.cache_duration is null then
-    g_conf.cache_duration := 10;
+  if g_conf_cache_duration is null then
+    g_conf_cache_duration := 10;
   end if;
-  if g_conf.end_date is null then
-    g_conf.end_date := sysdate + 1; -- we have no real conf until now, so we fake 24 hours, conf will be rechecked at least every 10 seconds
+  if g_conf_end_date is null then
+    g_conf_end_date := sysdate + 1; -- we have no real conf until now, so we fake 24 hours, conf will be rechecked at least every 10 seconds
   end if;
-  g_conf.valid_until_date := least(g_conf.end_date, sysdate + 1/24/60/60*10);
+  g_conf_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
+
 
 end load_session_configuration;
 
