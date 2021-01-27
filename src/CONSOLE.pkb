@@ -150,8 +150,7 @@ procedure log (
   p_user_agent varchar2 default null )
 is
 begin
-  --if logging_enabled (c_info) then
-  if g_conf_valid_until_date >= sysdate and g_conf_log_level >= c_info or sqlcode != 0 then
+  if logging_enabled (c_info) then
     create_log_entry (
       p_level      => c_info       ,
       p_message    => p_message    ,
@@ -487,13 +486,10 @@ begin
   if sqlcode != 0 then
     return true;
   end if;
-  -- we want to check the valid until date only once, because date comparisons are expensive
-  if g_conf_valid_until_date >= sysdate then
-    return g_conf_log_level >= p_level;
-  else
+  if g_conf_valid_until_date < sysdate then
     load_session_configuration;
-    return g_conf_log_level >= p_level;
   end if;
+  return g_conf_log_level >= p_level;
 end logging_enabled;
 
 --------------------------------------------------------------------------------
@@ -589,7 +585,11 @@ function read_row_from_sessions (p_client_identifier varchar2)
 return console_sessions%rowtype result_cache is
   v_row console_sessions%rowtype;
 begin
-  for i in (select * from console_sessions where client_identifier = p_client_identifier)
+  for i in (
+    select *
+      from console_sessions
+     where client_identifier = p_client_identifier
+       and end_date >= sysdate)
   loop
     v_row := i;
   end loop;
@@ -658,7 +658,6 @@ begin
     g_conf_end_date := sysdate + 1; -- we have no real conf until now, so we fake 24 hours, conf will be rechecked at least every 10 seconds
   end if;
   g_conf_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
-
 
 end load_session_configuration;
 
