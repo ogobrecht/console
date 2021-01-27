@@ -1,5 +1,26 @@
 declare
   v_count pls_integer;
+  --
+  procedure create_index (p_column_list varchar2, p_postfix varchar2) is
+  begin
+    with t as (
+      select listagg(column_name, ', ') within group(order by column_position) as index_column_list
+        from user_ind_columns
+      where table_name = 'CONSOLE_SESSIONS'
+      group by index_name
+    )
+    select count(*)
+      into v_count
+      from t
+    where index_column_list = p_column_list;
+    if v_count = 0 then
+      dbms_output.put_line('- Index for CONSOLE_SESSIONS column list ' || p_column_list || ' not found, run creation command');
+      execute immediate 'create index CONSOLE_SESSIONS_' || p_postfix || ' on CONSOLE_SESSIONS (' || p_column_list || ')';
+    else
+      dbms_output.put_line('- Index for CONSOLE_SESSIONS column list ' || p_column_list || ' found, no action required');
+    end if;
+  end;
+  --
 begin
   select count(*) into v_count from user_tables where table_name = 'CONSOLE_SESSIONS';
   if v_count = 0 then
@@ -28,6 +49,9 @@ begin
   else
     dbms_output.put_line('- Table CONSOLE_SESSIONS found, no action required');
   end if;
+
+    create_index ('END_DATE', 'IX1');
+
 end;
 /
 
