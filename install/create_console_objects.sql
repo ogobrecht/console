@@ -1281,16 +1281,16 @@ procedure load_session_configuration is
   v_row console_sessions%rowtype;
 begin
   if g_conf_context_available then
-    g_conf_log_level      := to_number( sys_context(c_ctx_namespace, c_ctx_log_level      )                    ); -- FIXME NLS format? ,.
-    g_conf_cache_size     := to_number( sys_context(c_ctx_namespace, c_ctx_cache_size     )                    ); -- FIXME NLS format? ,.
-    g_conf_cache_duration := to_number( sys_context(c_ctx_namespace, c_ctx_cache_duration )                    ); -- FIXME NLS format? ,.
-    g_conf_end_date       := to_date  ( sys_context(c_ctx_namespace, c_ctx_end_date       ), c_ctx_date_format );
+    g_conf_log_level      := to_number( sys_context(c_ctx_namespace, c_ctx_log_level     ) );
+    g_conf_cache_size     := to_number( sys_context(c_ctx_namespace, c_ctx_cache_size    ) );
+    g_conf_cache_duration := to_number( sys_context(c_ctx_namespace, c_ctx_cache_duration) );
+    g_conf_end_date       := to_date  ( sys_context(c_ctx_namespace, c_ctx_end_date      ), c_ctx_date_format );
     g_conf_user_env       := case when nvl( sys_context(c_ctx_namespace, c_ctx_user_env)   , 'N') = 'Y' then true else false end;
     g_conf_apex_env       := case when nvl( sys_context(c_ctx_namespace, c_ctx_apex_env)   , 'N') = 'Y' then true else false end;
     g_conf_cgi_env        := case when nvl( sys_context(c_ctx_namespace, c_ctx_cgi_env)    , 'N') = 'Y' then true else false end;
     g_conf_console_env    := case when nvl( sys_context(c_ctx_namespace, c_ctx_console_env), 'N') = 'Y' then true else false end;
   else
-    v_row := read_row_from_sessions(g_conf_client_identifier);
+    v_row := read_row_from_sessions (g_conf_client_identifier);
     g_conf_log_level      := v_row.log_level;
     g_conf_cache_size     := v_row.cache_size;
     g_conf_cache_duration := v_row.cache_duration;
