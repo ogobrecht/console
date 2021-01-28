@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 byte) := '0.4.1';
+c_version constant varchar2(10 byte) := '0.4.2';
 c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 byte) := 'MIT';
 c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
@@ -30,26 +30,31 @@ INSTALLATION
 
 - Download the [latest
   version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
-  and unzip it or clone the repository
-- Go into the project subdirectory named install and use SQL*Plus (or another
-  tool which can run SQL scripts)
+  and unzip it or [clone the repository](https://github.com/ogobrecht/console)
+- `cd` into the root of the project
 
-The installation itself is splitted into two mandatory and two optional steps:
+The installation itself is splitted into one mandatory and three optional steps:
 
-1. Create a context with a privileged user
-    - `create_context.sql`
-    - Maybe your DBA needs to do that for you once
-2. Install the tool itself in your desired target schema
-    - `create_console_objects.sql`
+1. Install CONSOLE itself
+    - Start SQL*Plus and connect to your desired install schema
+    - Run `@install/create_console_objects.sql`
     - User needs the rights to create a package, a table and views
-    - Do this step on every new release of the tool
-3. Optional: When installed in a central tools schema you may want to grant
-   execute rights on the package and select rights on the views to public or
-   other schemas
-    - `grant_rights_to_client_schema.sql`
-4. Optional: When you want to use it in another schema you may want to create
-   synonyms there for easier access
-    - `create_synonyms_in_client_schema.sql`
+    - Do this step on every new release of CONSOLE
+2. Optional: Create a context
+    - Start SQL*Plus and connect to a privileged user
+    - Run `@install/create_context.sql "CONSOLE_INSTALL_SCHEMA"`
+    - Maybe your DBA needs to do that for you once
+3. Optional: Grant rights to client schema
+    - When installed in a central tools schema you may want to grant execute
+      rights on the package and select rights on the views to public or other
+      schemas
+    - Start SQL*Plus and connect to your CONSOLE install schema
+    - Run `@install/grant_rights_to_client_schema.sql "CLIENT_SCHEMA"`
+4. Optional: Create synonyms in client schema
+    - When you want to use it in another schema you may want to create synonyms
+      there for easier access
+    - Start SQL*Plus and connect to your client schema
+    - Run`@install/create_synonyms_in_client_schema.sql`
 
 UNINSTALLATION
 
@@ -68,6 +73,7 @@ FIXME: Create uninstall scripts
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
+
 procedure permanent (p_message clob);
 /**
 
@@ -76,6 +82,7 @@ on cleanup.
 
 **/
 
+--------------------------------------------------------------------------------
 procedure error (
   p_message    clob     default null,
   p_user_agent varchar2 default null
@@ -87,6 +94,7 @@ the session action attribute.
 
 **/
 
+--------------------------------------------------------------------------------
 procedure warn (
   p_message    clob,
   p_user_agent varchar2 default null
@@ -97,6 +105,7 @@ Log a message with the level 2 (warning).
 
 **/
 
+--------------------------------------------------------------------------------
 procedure info (
   p_message    clob,
   p_user_agent varchar2 default null
@@ -107,6 +116,7 @@ Log a message with the level 3 (info).
 
 **/
 
+--------------------------------------------------------------------------------
 procedure log(
   p_message    clob,
   p_user_agent varchar2 default null
@@ -116,6 +126,8 @@ procedure log(
 Log a message with the level 3 (info).
 
 **/
+
+--------------------------------------------------------------------------------
 
 procedure debug (
   p_message    clob,
@@ -127,6 +139,7 @@ Log a message with the level 4 (verbose).
 
 **/
 
+--------------------------------------------------------------------------------
 procedure trace (
   p_message    clob     default null,
   p_user_agent varchar2 default null
@@ -136,6 +149,8 @@ procedure trace (
 Logs a call stack with the level 3 (info).
 
 **/
+
+--------------------------------------------------------------------------------
 
 procedure assert (
   p_expression boolean,
@@ -322,9 +337,10 @@ end;
 function get_call_stack return varchar2;
 /**
 
-Gets the current call stack and if an error was raised also the error stack and
-the error backtrace. Is used internally by the console methods error and trace
-and also, if you set on other console methods the parameter p_trace to true.
+Returns the current call stack and if an error was raised also the error stack
+and the error backtrace. Is used internally by the console methods error and
+trace and also, if you set on other console methods the parameter p_trace to
+true. The stacks are represented in a Markdown compatible list style.
 
 The console package itself is excluded from the trace as you normally would
 trace you business logic and not your instrumentation code.
@@ -385,6 +401,49 @@ accessible context.
 
 ```sql
 select console.context_available_yn from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_bool (
+  p_string varchar2)
+return boolean;
+/**
+
+A helper to convert a string into a boolean. When the trimmed, uppercased input
+is in `Y`, `YES, `1`, `TRUE`, then it returns true. In all other cases (also
+NULL) false is returned.
+
+```sql
+begin
+  if console.to_bool('yEs') then
+    dbms_output.put_line('TRUE');
+  else
+    dbms_output.put_line('FALSE');
+  end if;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_yn (
+  p_bool boolean)
+return varchar2;
+/**
+
+A helper to convert a boolean into a string. When the input is true then `Y` is
+returned. In all other cases (also NULL) `N` is returned.
+
+```sql
+begin
+  dbms_output.put_line(console.to_yn(true));
+end;
+{{/}}
 ```
 
 **/

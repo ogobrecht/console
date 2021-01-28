@@ -231,12 +231,7 @@ procedure init (
   p_console_env       boolean default false  )
 is
   pragma autonomous_transaction;
-  v_session     varchar2 (64 byte) := substrb(p_client_identifier, 1, 64);
-  v_user_env    varchar2 (1 byte);
-  v_apex_env    varchar2 (1 byte);
-  v_cgi_env     varchar2 (1 byte);
-  v_console_env varchar2 (1 byte);
-  v_end_date    date;
+  v_row         console_sessions%rowtype;
   v_count       pls_integer;
   --
   procedure set_context (
@@ -256,79 +251,62 @@ is
   end;
   --
 begin
-  assert(p_log_level      in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
-  assert(p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).');
-  assert(p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).');
-  assert(p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).');
-  assert(p_user_env       is not null,        'User env needs to be true or false(not null).');
-  assert(p_apex_env       is not null,        'APEX env needs to be true or false(not null).');
-  assert(p_cgi_env        is not null,        'CGI env needs to be true or false(not null).');
-  assert(p_console_env    is not null,        'Console env needs to be true or false(not null).');
+  assert ( p_log_level      in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
+  assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).');
+  assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).');
+  assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).');
+  assert ( p_user_env       is not null,        'User env needs to be true or false (not null).');
+  assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).');
+  assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).');
+  assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).');
   --
-  v_user_env    := case when p_user_env    then 'Y' else 'N' end;
-  v_apex_env    := case when p_apex_env    then 'Y' else 'N' end;
-  v_cgi_env     := case when p_cgi_env     then 'Y' else 'N' end;
-  v_console_env := case when p_console_env then 'Y' else 'N' end;
-  v_end_date    := localtimestamp + 1/24/60 * p_log_duration;
+  v_row.client_identifier := substrb(p_client_identifier, 1, 64);
+  v_row.log_level         := p_log_level;
+  v_row.start_date        := localtimestamp;
+  v_row.end_date          := localtimestamp + 1/24/60 * p_log_duration;
+  v_row.cache_size        := p_cache_size;
+  v_row.cache_duration    := p_cache_duration;
+  v_row.user_env          := to_yn ( p_user_env    );
+  v_row.apex_env          := to_yn ( p_apex_env    );
+  v_row.cgi_env           := to_yn ( p_cgi_env     );
+  v_row.console_env       := to_yn ( p_console_env );
   --
   select count(*) into v_count from console_sessions where client_identifier = p_client_identifier;
   if v_count = 0 then
-    insert into console_sessions (
-      client_identifier,
-      log_level,
-      start_date,
-      end_date,
-      cache_size,
-      cache_duration,
-      user_env,
-      apex_env,
-      cgi_env,
-      console_env
-    ) values (
-      p_client_identifier,
-      p_log_level,
-      localtimestamp ,
-      v_end_date,
-      p_cache_size,
-      p_cache_duration,
-      v_user_env,
-      v_apex_env,
-      v_cgi_env,
-      v_console_env
-    );
+    insert into console_sessions values v_row;
   else
     update
       console_sessions
     set
-      log_level      = p_log_level,
-      end_date       = v_end_date,
-      cache_duration = p_cache_duration,
-      cache_size     = p_cache_size,
-      user_env       = v_user_env,
-      apex_env       = v_apex_env,
-      cgi_env        = v_cgi_env,
-      console_env    = v_console_env
+      log_level      = v_row.log_level,
+      end_date       = v_row.end_date,
+      cache_duration = v_row.cache_duration,
+      cache_size     = v_row.cache_size,
+      user_env       = v_row.user_env,
+      apex_env       = v_row.apex_env,
+      cgi_env        = v_row.cgi_env,
+      console_env    = v_row.console_env
     where
-      client_identifier = p_client_identifier;
+      client_identifier = v_row.client_identifier;
   end if;
   commit;
   --
   if g_conf_context_available then
-    set_context ( c_ctx_log_level      , to_char(p_log_level)                   , p_client_identifier );
-    set_context ( c_ctx_end_date       , to_char(v_end_date, c_ctx_date_format) , p_client_identifier );
-    set_context ( c_ctx_cache_size     , to_char(p_cache_size)                  , p_client_identifier );
-    set_context ( c_ctx_cache_duration , to_char(p_cache_duration)              , p_client_identifier );
-    set_context ( c_ctx_user_env       , to_char(v_user_env)                    , p_client_identifier );
-    set_context ( c_ctx_apex_env       , to_char(v_apex_env)                    , p_client_identifier );
-    set_context ( c_ctx_cgi_env        , to_char(v_cgi_env)                     , p_client_identifier );
-    set_context ( c_ctx_console_env    , to_char(v_console_env)                 , p_client_identifier );
+    set_context ( c_ctx_log_level      , to_char ( v_row.log_level      )                     , p_client_identifier );
+    set_context ( c_ctx_end_date       , to_char ( v_row.end_date       , c_ctx_date_format ) , p_client_identifier );
+    set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size     )                     , p_client_identifier );
+    set_context ( c_ctx_cache_duration , to_char ( v_row.cache_duration )                     , p_client_identifier );
+    set_context ( c_ctx_user_env       , to_char ( v_row.user_env       )                     , p_client_identifier );
+    set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env       )                     , p_client_identifier );
+    set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env        )                     , p_client_identifier );
+    set_context ( c_ctx_console_env    , to_char ( v_row.console_env    )                     , p_client_identifier );
   end if;
 
   -- If we want to monitor our own session, wee need to load the configuration
-  -- data from the context or table into the  cahce (package variable).
+  -- data from the context or table into the cache (package variables).
   -- Otherwise we need to wait until the cache duration is over (which defaults
-  -- to 10 seconds) and the package does reload the configuration from the
-  -- context or table on next call of a public logging method.
+  -- to 10 seconds) and the package reloads the configuration from the context
+  -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     load_session_configuration;
   end if;
@@ -345,7 +323,7 @@ procedure init (
   p_console_env    boolean default false  )
 is
 begin
-  init(
+  init (
     p_client_identifier => g_conf_client_identifier ,
     p_log_level         => p_log_level              ,
     p_log_duration      => p_log_duration           ,
@@ -470,6 +448,28 @@ end;
 
 --------------------------------------------------------------------------------
 
+function to_bool (
+  p_string varchar2)
+return boolean is
+begin
+  return
+    case when upper(p_string) in ('Y', 'YES', '1', 'TRUE')
+      then true
+      else false
+    end;
+end;
+
+--------------------------------------------------------------------------------
+
+function to_yn (
+  p_bool boolean)
+return varchar2 is
+begin
+  return case when p_bool then 'Y' else 'N' end;
+end;
+
+--------------------------------------------------------------------------------
+
 function version return varchar2 is
 begin
   return c_version;
@@ -483,13 +483,10 @@ function logging_enabled (
   p_level integer )
 return boolean is
 begin
-  if sqlcode != 0 then
-    return true;
-  end if;
   if g_conf_valid_until_date < sysdate then
     load_session_configuration;
   end if;
-  return g_conf_log_level >= p_level;
+  return g_conf_log_level >= p_level or sqlcode != 0;
 end logging_enabled;
 
 --------------------------------------------------------------------------------
@@ -556,9 +553,6 @@ begin
   if g_conf_context_available then
     sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
   end if;
-exception
-  when insufficient_privileges then
-    error('Context not available, package var g_conf_context_available tells us it is ?!?');
 end clear_context;
 
 --------------------------------------------------------------------------------
@@ -568,14 +562,11 @@ begin
   if g_conf_context_available then
     sys.dbms_session.clear_all_context (c_ctx_namespace);
   end if;
-exception
-  when insufficient_privileges then
-    error('Context not available, package var g_conf_context_available tells us it is ?!?');
 end clear_all_context;
 
 --------------------------------------------------------------------------------
 
-/* check result cache:
+/* HOW TO CHECK RESULT CACHE
 select id, name, cache_id, type, status, invalidations, scan_count
   from v$result_cache_objects
  where name like '%CONSOLE%'
@@ -624,46 +615,51 @@ procedure load_session_configuration is
   v_row console_sessions%rowtype;
 begin
   if g_conf_context_available then
-    g_conf_log_level      := to_number( sys_context(c_ctx_namespace, c_ctx_log_level     ) );
-    g_conf_cache_size     := to_number( sys_context(c_ctx_namespace, c_ctx_cache_size    ) );
-    g_conf_cache_duration := to_number( sys_context(c_ctx_namespace, c_ctx_cache_duration) );
-    g_conf_end_date       := to_date  ( sys_context(c_ctx_namespace, c_ctx_end_date      ), c_ctx_date_format );
-    g_conf_user_env       := case when nvl( sys_context(c_ctx_namespace, c_ctx_user_env)   , 'N') = 'Y' then true else false end;
-    g_conf_apex_env       := case when nvl( sys_context(c_ctx_namespace, c_ctx_apex_env)   , 'N') = 'Y' then true else false end;
-    g_conf_cgi_env        := case when nvl( sys_context(c_ctx_namespace, c_ctx_cgi_env)    , 'N') = 'Y' then true else false end;
-    g_conf_console_env    := case when nvl( sys_context(c_ctx_namespace, c_ctx_console_env), 'N') = 'Y' then true else false end;
+    g_conf_end_date       := to_date   ( sys_context ( c_ctx_namespace, c_ctx_end_date       ) , c_ctx_date_format );
+    g_conf_log_level      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level      ) );
+    g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
+    g_conf_cache_duration := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_duration ) );
+    g_conf_user_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env       ) );
+    g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
+    g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
+    g_conf_console_env    := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env    ) );
   else
     v_row := read_row_from_sessions (g_conf_client_identifier);
-    g_conf_log_level      := v_row.log_level;
-    g_conf_cache_size     := v_row.cache_size;
-    g_conf_cache_duration := v_row.cache_duration;
-    g_conf_end_date       := v_row.end_date;
-    g_conf_user_env       := case when nvl(v_row.user_env   , 'N') = 'Y' then true else false end;
-    g_conf_apex_env       := case when nvl(v_row.apex_env   , 'N') = 'Y' then true else false end;
-    g_conf_cgi_env        := case when nvl(v_row.cgi_env    , 'N') = 'Y' then true else false end;
-    g_conf_console_env    := case when nvl(v_row.console_env, 'N') = 'Y' then true else false end;
+    g_conf_end_date       :=           v_row.end_date        ;
+    g_conf_log_level      :=           v_row.log_level       ;
+    g_conf_cache_size     :=           v_row.cache_size      ;
+    g_conf_cache_duration :=           v_row.cache_duration  ;
+    g_conf_user_env       := to_bool ( v_row.user_env       );
+    g_conf_apex_env       := to_bool ( v_row.apex_env       );
+    g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
+    g_conf_console_env    := to_bool ( v_row.console_env    );
   end if;
 
   --handle nulls
+  if g_conf_end_date is null then
+     --We have no real conf until now, so we fake 24 hours.
+     --Conf will be rechecked at least every 10 seconds.
+    g_conf_end_date := sysdate + 1;
+  end if;
+  g_conf_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
+  --
   if g_conf_log_level is null then
     g_conf_log_level := 1;
   end if;
+  --
   if g_conf_cache_size is null then
     g_conf_cache_size := 0;
   end if;
+  --
   if g_conf_cache_duration is null then
     g_conf_cache_duration := 10;
   end if;
-  if g_conf_end_date is null then
-    g_conf_end_date := sysdate + 1; -- we have no real conf until now, so we fake 24 hours, conf will be rechecked at least every 10 seconds
-  end if;
-  g_conf_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
 
 end load_session_configuration;
 
 --------------------------------------------------------------------------------
 
--- package inizialization
+--package inizialization
 begin
   set_client_identifier;
   check_context_availability;
