@@ -275,19 +275,8 @@ begin
   if v_count = 0 then
     insert into console_sessions values v_row;
   else
-    update
-      console_sessions
-    set
-      log_level      = v_row.log_level,
-      end_date       = v_row.end_date,
-      cache_duration = v_row.cache_duration,
-      cache_size     = v_row.cache_size,
-      user_env       = v_row.user_env,
-      apex_env       = v_row.apex_env,
-      cgi_env        = v_row.cgi_env,
-      console_env    = v_row.console_env
-    where
-      client_identifier = v_row.client_identifier;
+    update console_sessions set row = v_row
+     where client_identifier = v_row.client_identifier;
   end if;
   commit;
   --
