@@ -258,19 +258,23 @@ DEPENDENCIES
 
 Oracle DB >= 12.1
 
-INSTALLATION
+ONE MINUTE INSTALLTION
 
-- Download the [latest
-  version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
-  and unzip it or [clone the repository](https://github.com/ogobrecht/console)
-- `cd` into the root of the project
+Open SQLcl, connect to your desired install schema and call
+`@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`
+
+NORMAL INSTALLATION
+
+Download the [latest
+ version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
+ and unzip it or [clone the repository](https://github.com/ogobrecht/console)
 
 The installation itself is splitted into one mandatory and three optional steps:
 
 1. Install CONSOLE itself
     - Start SQL*Plus and connect to your desired install schema
     - Run `@install/create_console_objects.sql`
-    - User needs the rights to create a package, a table and views
+    - User needs the rights to create packages, tables and views
     - Do this step on every new release of CONSOLE
 2. Optional: Create a context
     - Start SQL*Plus and connect to a privileged user
