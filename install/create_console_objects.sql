@@ -320,9 +320,13 @@ on cleanup.
 
 --------------------------------------------------------------------------------
 procedure error (
-  p_message    clob     default null,
-  p_user_agent varchar2 default null
-);
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 /**
 
 Log a message with the level 1 (error) and call also `console.clear` to reset
@@ -332,9 +336,13 @@ the session action attribute.
 
 --------------------------------------------------------------------------------
 procedure warn (
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 /**
 
 Log a message with the level 2 (warning).
@@ -343,9 +351,13 @@ Log a message with the level 2 (warning).
 
 --------------------------------------------------------------------------------
 procedure info (
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -354,9 +366,13 @@ Log a message with the level 3 (info).
 
 --------------------------------------------------------------------------------
 procedure log(
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -366,9 +382,13 @@ Log a message with the level 3 (info).
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 /**
 
 Log a message with the level 4 (verbose).
@@ -377,9 +397,13 @@ Log a message with the level 4 (verbose).
 
 --------------------------------------------------------------------------------
 procedure trace (
-  p_message    clob     default null,
-  p_user_agent varchar2 default null
-);
+  p_message     clob     default null  ,
+  p_trace       boolean  default true  ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 /**
 
 Logs a call stack with the level 3 (info).
@@ -461,6 +485,20 @@ function my_client_identifier return varchar2;
 
 Returns the current session identifier of the own session. This information is cached in a
 package variable and determined on package initialization.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function my_log_level return integer;
+/**
+
+Returns the current log level of the own session. This information is cached in a
+package variable for performance reasons and reevaluated every 10 seconds.
 
 ```sql
 select console.context_available_yn from dual;
@@ -593,19 +631,7 @@ The code above will output `- Call Stack: __anonymous_block (2)`
 
 **/
 
---------------------------------------------------------------------------------
 
-function my_log_level return integer;
-/**
-
-Returns the current log level of the own session. This information is cached in a
-package variable for performance reasons and reevaluated every 10 seconds.
-
-```sql
-select console.context_available_yn from dual;
-```
-
-**/
 
 --------------------------------------------------------------------------------
 
@@ -685,10 +711,14 @@ procedure load_session_configuration;
 function logging_enabled (p_level integer) return boolean;
 
 procedure create_log_entry (
-  p_level      integer                ,
-  p_message    clob     default null  ,
-  p_trace      boolean  default false ,
-  p_user_agent varchar2 default null  );
+  p_level       integer,
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 
 procedure clear_context (p_client_identifier varchar2 );
 
@@ -804,8 +834,13 @@ end permanent;
 --------------------------------------------------------------------------------
 
 procedure error (
-  p_message    clob     default null ,
-  p_user_agent varchar2 default null )
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   create_log_entry (
@@ -818,8 +853,13 @@ end error;
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_warning) then
@@ -833,8 +873,13 @@ end warn;
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -848,8 +893,13 @@ end info;
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -863,8 +913,13 @@ end log;
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_verbose) then
@@ -878,8 +933,13 @@ end debug;
 --------------------------------------------------------------------------------
 
 procedure trace (
-  p_message    clob     default null ,
-  p_user_agent varchar2 default null )
+  p_message     clob     default null  ,
+  p_trace       boolean  default true  ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -918,6 +978,13 @@ function my_client_identifier return varchar2 is
 begin
   return g_conf_client_identifier;
 end;
+
+--------------------------------------------------------------------------------
+
+function my_log_level return integer is
+begin
+  return g_conf_log_level;
+end my_log_level;
 
 --------------------------------------------------------------------------------
 
@@ -1126,13 +1193,6 @@ end get_call_stack;
 
 --------------------------------------------------------------------------------
 
-function my_log_level return integer is
-begin
-  return g_conf_log_level;
-end my_log_level;
-
---------------------------------------------------------------------------------
-
 function context_available_yn return varchar2 is
 begin
   return case when g_conf_context_available then 'Y' else 'N' end;
@@ -1184,10 +1244,14 @@ end logging_enabled;
 --------------------------------------------------------------------------------
 
 procedure create_log_entry (
-  p_level      integer,
-  p_message    clob     default null  ,
-  p_trace      boolean  default false ,
-  p_user_agent varchar2 default null  )
+  p_level       integer,
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
   pragma autonomous_transaction;
   v_message    clob;
@@ -1202,6 +1266,18 @@ begin
   end if;
   if p_trace then
     v_call_stack := substrb(get_call_stack, 1, 4000);
+  end if;
+  if p_apex_env then
+    null; --FIXME implement
+  end if;
+  if p_cgi_env then
+    null; --FIXME implement
+  end if;
+  if p_console_env then
+    null; --FIXME implement
+  end if;
+  if p_user_env then
+    null; --FIXME implement
   end if;
   insert into console_logs (
     log_level,

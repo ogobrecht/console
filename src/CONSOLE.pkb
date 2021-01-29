@@ -102,8 +102,13 @@ end permanent;
 --------------------------------------------------------------------------------
 
 procedure error (
-  p_message    clob     default null ,
-  p_user_agent varchar2 default null )
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   create_log_entry (
@@ -116,8 +121,13 @@ end error;
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_warning) then
@@ -131,8 +141,13 @@ end warn;
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -146,8 +161,13 @@ end info;
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -161,8 +181,13 @@ end log;
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message    clob                  ,
-  p_user_agent varchar2 default null )
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_verbose) then
@@ -176,8 +201,13 @@ end debug;
 --------------------------------------------------------------------------------
 
 procedure trace (
-  p_message    clob     default null ,
-  p_user_agent varchar2 default null )
+  p_message     clob     default null  ,
+  p_trace       boolean  default true  ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -216,6 +246,13 @@ function my_client_identifier return varchar2 is
 begin
   return g_conf_client_identifier;
 end;
+
+--------------------------------------------------------------------------------
+
+function my_log_level return integer is
+begin
+  return g_conf_log_level;
+end my_log_level;
 
 --------------------------------------------------------------------------------
 
@@ -424,13 +461,6 @@ end get_call_stack;
 
 --------------------------------------------------------------------------------
 
-function my_log_level return integer is
-begin
-  return g_conf_log_level;
-end my_log_level;
-
---------------------------------------------------------------------------------
-
 function context_available_yn return varchar2 is
 begin
   return case when g_conf_context_available then 'Y' else 'N' end;
@@ -482,10 +512,14 @@ end logging_enabled;
 --------------------------------------------------------------------------------
 
 procedure create_log_entry (
-  p_level      integer,
-  p_message    clob     default null  ,
-  p_trace      boolean  default false ,
-  p_user_agent varchar2 default null  )
+  p_level       integer,
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
 is
   pragma autonomous_transaction;
   v_message    clob;
@@ -500,6 +534,18 @@ begin
   end if;
   if p_trace then
     v_call_stack := substrb(get_call_stack, 1, 4000);
+  end if;
+  if p_apex_env then
+    null; --FIXME implement
+  end if;
+  if p_cgi_env then
+    null; --FIXME implement
+  end if;
+  if p_console_env then
+    null; --FIXME implement
+  end if;
+  if p_user_env then
+    null; --FIXME implement
   end if;
   insert into console_logs (
     log_level,

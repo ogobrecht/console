@@ -15,10 +15,10 @@ Oracle Instrumentation Console
 - [Procedure assert](#assert)
 - [Procedure action](#action)
 - [Function my_client_identifier](#my_client_identifier)
+- [Function my_log_level](#my_log_level)
 - [Procedure init](#init)
 - [Procedure clear](#clear)
 - [Function get_call_stack](#get_call_stack)
-- [Function my_log_level](#my_log_level)
 - [Function version](#version)
 - [Function context_available_yn](#context_available_yn)
 - [Function to_bool](#to_bool)
@@ -118,9 +118,13 @@ SIGNATURE
 
 ```sql
 procedure error (
-  p_message    clob     default null,
-  p_user_agent varchar2 default null
-);
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 ```
 
 
@@ -133,9 +137,13 @@ SIGNATURE
 
 ```sql
 procedure warn (
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 ```
 
 
@@ -148,9 +156,13 @@ SIGNATURE
 
 ```sql
 procedure info (
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 ```
 
 
@@ -163,9 +175,13 @@ SIGNATURE
 
 ```sql
 procedure log(
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 ```
 
 
@@ -178,9 +194,13 @@ SIGNATURE
 
 ```sql
 procedure debug (
-  p_message    clob,
-  p_user_agent varchar2 default null
-);
+  p_message     clob                   ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 ```
 
 
@@ -193,9 +213,13 @@ SIGNATURE
 
 ```sql
 procedure trace (
-  p_message    clob     default null,
-  p_user_agent varchar2 default null
-);
+  p_message     clob     default null  ,
+  p_trace       boolean  default true  ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  );
 ```
 
 
@@ -287,6 +311,23 @@ SIGNATURE
 
 ```sql
 function my_client_identifier return varchar2;
+```
+
+
+<h2><a id="my_log_level"></a>Function my_log_level</h2>
+<!---------------------------------------------------->
+
+Returns the current log level of the own session. This information is cached in a
+package variable for performance reasons and reevaluated every 10 seconds.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+SIGNATURE
+
+```sql
+function my_log_level return integer;
 ```
 
 
@@ -408,23 +449,6 @@ SIGNATURE
 
 ```sql
 function get_call_stack return varchar2;
-```
-
-
-<h2><a id="my_log_level"></a>Function my_log_level</h2>
-<!---------------------------------------------------->
-
-Returns the current log level of the own session. This information is cached in a
-package variable for performance reasons and reevaluated every 10 seconds.
-
-```sql
-select console.context_available_yn from dual;
-```
-
-SIGNATURE
-
-```sql
-function my_log_level return integer;
 ```
 
 
