@@ -16,10 +16,17 @@ prompt 100.000 LOG CALLS IN LEVEL ERROR (how many time you loose by do nothing)
 declare
   v_iterator   pls_integer := 100000;
   v_start      timestamp;
+  v_rt_null    number;
   v_rt_logger  number;
   v_rt_console number;
   function get_runtime (p_start timestamp) return number is begin return extract(second from (localtimestamp - p_start)); end;
 begin
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    null;
+  end loop;
+  v_rt_null := get_runtime(v_start);
+  --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     logger.log('test');
@@ -32,6 +39,7 @@ begin
   end loop;
   v_rt_console := get_runtime(v_start);
   --
+  dbms_output.put_line( '- empty loop  : ' || trim(to_char(v_rt_null,    '0.000000')) || ' seconds (it does not really matter)' );
   dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
   dbms_output.put_line( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '0.0')));
