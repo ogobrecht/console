@@ -238,11 +238,11 @@ c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 byte) := 'MIT';
 c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
 
-c_permanent constant integer := 0;
-c_error     constant integer := 1;
-c_warning   constant integer := 2;
-c_info      constant integer := 3;
-c_verbose   constant integer := 4;
+c_permanent constant pls_integer := 0;
+c_error     constant pls_integer := 1;
+c_warning   constant pls_integer := 2;
+c_info      constant pls_integer := 3;
+c_verbose   constant pls_integer := 4;
 
 
 /**
@@ -254,16 +254,16 @@ An instrumentation tool for Oracle developers. Save to install on production and
 mostly API compatible with the [JavaScript
 console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
-DEPENDENCIES
+**DEPENDENCIES**
 
 Oracle DB >= 12.1
 
-ONE MINUTE INSTALLTION
+**ONE MINUTE INSTALLATION**
 
 Open SQLcl, connect to your desired install schema and call
 `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`
 
-NORMAL INSTALLATION
+**NORMAL INSTALLATION**
 
 Download the [latest
  version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
@@ -292,7 +292,7 @@ The installation itself is splitted into one mandatory and three optional steps:
     - Start SQL*Plus and connect to your client schema
     - Run`@install/create_synonyms_in_client_schema.sql`
 
-UNINSTALLATION
+**UNINSTALLATION**
 
 Hopefully you will never need this...
 
@@ -649,19 +649,8 @@ return boolean;
 /**
 
 A helper to convert a string into a boolean. When the trimmed, uppercased input
-is in `Y`, `YES, `1`, `TRUE`, then it returns true. In all other cases (also
+is in `Y`, `YES`, `1`, `TRUE`, then it returns true. In all other cases (also
 NULL) false is returned.
-
-```sql
-begin
-  if console.to_bool('yEs') then
-    dbms_output.put_line('TRUE');
-  else
-    dbms_output.put_line('FALSE');
-  end if;
-end;
-{{/}}
-```
 
 **/
 
@@ -674,13 +663,6 @@ return varchar2;
 
 A helper to convert a boolean into a string. When the input is true then `Y` is
 returned. In all other cases (also NULL) `N` is returned.
-
-```sql
-begin
-  dbms_output.put_line(console.to_yn(true));
-end;
-{{/}}
-```
 
 **/
 
@@ -764,7 +746,7 @@ subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
 g_conf_context_available boolean;
-g_conf_valid_until_date  date;
+g_conf_cache_valid_until_date  date;
 g_conf_client_identifier varchar2 (64 byte);
 g_conf_log_level         pls_integer;
 g_conf_start_date        date;
@@ -1088,8 +1070,9 @@ end get_scope;
 
 function get_call_stack return varchar2
 is
-  v_return     vc_max;
-  v_subprogram vc_max;
+  v_return               vc_max;
+  v_subprogram           vc_max;
+  v_console_package_name varchar2(60 byte) := upper($$plsql_unit) || '.';
 begin
 
   if utl_call_stack.error_depth > 0 then
@@ -1128,7 +1111,7 @@ begin
         c_anonymous_block
       );
       --exclude console package from the call stack
-      if instr(upper(v_subprogram), upper($$plsql_unit)||'.') = 0 then
+      if instr(upper(v_subprogram), v_console_package_name) = 0 then
         v_return := v_return
           || '  - '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
@@ -1192,7 +1175,7 @@ function logging_enabled (
   p_level integer )
 return boolean is
 begin
-  if g_conf_valid_until_date < sysdate then
+  if g_conf_cache_valid_until_date < sysdate then
     load_session_configuration;
   end if;
   return g_conf_log_level >= p_level or sqlcode != 0;
@@ -1349,8 +1332,10 @@ begin
      --We have no real conf until now, so we fake 24 hours.
      --Conf will be rechecked at least every 10 seconds.
     g_conf_end_date := sysdate + 1;
+  elsif g_conf_end_date < sysdate then
+    clear_context(g_conf_client_identifier);
   end if;
-  g_conf_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
+  g_conf_cache_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
   --
   if g_conf_log_level is null then
     g_conf_log_level := 1;

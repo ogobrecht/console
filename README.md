@@ -32,16 +32,16 @@ An instrumentation tool for Oracle developers. Save to install on production and
 mostly API compatible with the [JavaScript
 console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
-DEPENDENCIES
+**DEPENDENCIES**
 
 Oracle DB >= 12.1
 
-ONE MINUTE INSTALLTION
+**ONE MINUTE INSTALLATION**
 
 Open SQLcl, connect to your desired install schema and call
 `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`
 
-NORMAL INSTALLATION
+**NORMAL INSTALLATION**
 
 Download the [latest
  version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
@@ -70,7 +70,7 @@ The installation itself is splitted into one mandatory and three optional steps:
     - Start SQL*Plus and connect to your client schema
     - Run`@install/create_synonyms_in_client_schema.sql`
 
-UNINSTALLATION
+**UNINSTALLATION**
 
 Hopefully you will never need this...
 
@@ -87,11 +87,11 @@ c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
 c_license constant varchar2(10 byte) := 'MIT';
 c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
 
-c_permanent constant integer := 0;
-c_error     constant integer := 1;
-c_warning   constant integer := 2;
-c_info      constant integer := 3;
-c_verbose   constant integer := 4;
+c_permanent constant pls_integer := 0;
+c_error     constant pls_integer := 1;
+c_warning   constant pls_integer := 2;
+c_info      constant pls_integer := 3;
+c_verbose   constant pls_integer := 4;
 ```
 
 
@@ -472,19 +472,8 @@ function context_available_yn return varchar2;
 <!------------------------------------------>
 
 A helper to convert a string into a boolean. When the trimmed, uppercased input
-is in `Y`, `YES, `1`, `TRUE`, then it returns true. In all other cases (also
+is in `Y`, `YES`, `1`, `TRUE`, then it returns true. In all other cases (also
 NULL) false is returned.
-
-```sql
-begin
-  if console.to_bool('yEs') then
-    dbms_output.put_line('TRUE');
-  else
-    dbms_output.put_line('FALSE');
-  end if;
-end;
-/
-```
 
 SIGNATURE
 
@@ -500,13 +489,6 @@ return boolean;
 
 A helper to convert a boolean into a string. When the input is true then `Y` is
 returned. In all other cases (also NULL) `N` is returned.
-
-```sql
-begin
-  dbms_output.put_line(console.to_yn(true));
-end;
-/
-```
 
 SIGNATURE
 

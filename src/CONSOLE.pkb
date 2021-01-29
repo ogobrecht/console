@@ -44,7 +44,7 @@ subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
 g_conf_context_available boolean;
-g_conf_valid_until_date  date;
+g_conf_cache_valid_until_date  date;
 g_conf_client_identifier varchar2 (64 byte);
 g_conf_log_level         pls_integer;
 g_conf_start_date        date;
@@ -368,8 +368,9 @@ end get_scope;
 
 function get_call_stack return varchar2
 is
-  v_return     vc_max;
-  v_subprogram vc_max;
+  v_return               vc_max;
+  v_subprogram           vc_max;
+  v_console_package_name varchar2(60 byte) := upper($$plsql_unit) || '.';
 begin
 
   if utl_call_stack.error_depth > 0 then
@@ -408,7 +409,7 @@ begin
         c_anonymous_block
       );
       --exclude console package from the call stack
-      if instr(upper(v_subprogram), upper($$plsql_unit)||'.') = 0 then
+      if instr(upper(v_subprogram), v_console_package_name) = 0 then
         v_return := v_return
           || '  - '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
@@ -472,7 +473,7 @@ function logging_enabled (
   p_level integer )
 return boolean is
 begin
-  if g_conf_valid_until_date < sysdate then
+  if g_conf_cache_valid_until_date < sysdate then
     load_session_configuration;
   end if;
   return g_conf_log_level >= p_level or sqlcode != 0;
@@ -629,8 +630,10 @@ begin
      --We have no real conf until now, so we fake 24 hours.
      --Conf will be rechecked at least every 10 seconds.
     g_conf_end_date := sysdate + 1;
+  elsif g_conf_end_date < sysdate then
+    clear_context(g_conf_client_identifier);
   end if;
-  g_conf_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
+  g_conf_cache_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
   --
   if g_conf_log_level is null then
     g_conf_log_level := 1;
