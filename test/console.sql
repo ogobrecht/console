@@ -15,6 +15,8 @@ begin
   console.debug     ('debug');
   console.trace     ('who is calling us?');
   console.trace     ();
+  console.log       ('stopping now');
+  console.stop;
   raise_application_error(-20000, 'Test exception');
 exception
   when others then

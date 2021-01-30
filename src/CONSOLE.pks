@@ -22,6 +22,51 @@ An instrumentation tool for Oracle developers. Save to install on production and
 mostly API compatible with the [JavaScript
 console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
+**FEATURES**
+
+- Easy to install - works with or without a context
+- Easy to use
+    - Save to run in production without configuration
+        - Errors are always logged
+        - Minimal resource consumption
+        - Logging can be switched on when needed for specific sessions without
+          recompilation
+    - API compatible with the [JavaScript Console
+      API](https://developers.google.com/web/tools/chrome-devtools/console/api)
+      - means, the same method names are provided, the parameters differs a
+      little bit to fit our needs in a PL/SQL environment (not all methods makes
+      sense in PL/SQL and therefore this five are not implemented: dir, dirxml,
+      group, groupCollapsed, groupEnd)
+        - [X] console.error (level 1=error)
+        - [X] console.warn (level 2=warning)
+        - [X] console.info (level 3=info)
+        - [X] console.log (level 3=info)
+        - [X] console.debug (level 4=verbose)
+        - [X] console.trace (level 3=info)
+        - [ ] console.table (level 3=info)
+        - [ ] console.count
+        - [ ] console.countReset (level 3=info)
+        - [ ] console.time
+        - [ ] console.timeEnd (level 3=info)
+        - [X] console.assert (level 1=error, if failed)
+        - [X] console.clear
+    - Additional method to log permanent messages like installation or upgrade
+      notes in the level zero which is not affected when the purge job clears
+      the log
+        - [X] console.permanent (level 0)
+    - Additional method to set the sys context action attribute to be friendly
+      to the DBA and monitoring teams
+        - [X] console.action
+    - Additional methods to manage logging mode of sessions and to see the
+      current status of the package console (for descriptions see the rest of
+      the document)
+        - [X] console.init
+        - [X] console.stop
+        - [X] console.my_client_identifier
+        - [X] console.my_log_level
+        - [X] console.context_available_yn
+        - [X] console.version
+
 **DEPENDENCIES**
 
 Oracle DB >= 12.1
@@ -218,6 +263,9 @@ end;
 
 **/
 
+
+--------------------------------------------------------------------------------
+-- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
 procedure action (
@@ -294,7 +342,8 @@ procedure init (
   p_user_env          boolean  default false  , -- Should the user environment be included.
   p_apex_env          boolean  default false  , -- Should the APEX environment be included.
   p_cgi_env           boolean  default false  , -- Should the CGI environment be included.
-  p_console_env       boolean  default false  );-- Should the console environment be included.
+  p_console_env       boolean  default false    -- Should the console environment be included.
+);
 /**
 
 Starts the logging for a specific session.
@@ -304,6 +353,9 @@ truncated after 64 characters before using it.
 
 For easier usage there is an overloaded procedure available which uses always
 your own client identifier.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
+MANAGING LOGGING MODES OF SESSIONS.
 
 EXAMPLES
 
@@ -345,81 +397,48 @@ procedure init (
   p_user_env       boolean default false  , -- Should the user environment be included.
   p_apex_env       boolean default false  , -- Should the APEX environment be included.
   p_cgi_env        boolean default false  , -- Should the CGI environment be included.
-  p_console_env    boolean default false  );-- Should the console environment be included.
+  p_console_env    boolean default false    -- Should the console environment be included.
+);
 
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_client_identifier varchar2 default my_client_identifier );-- client_identifier or unique_session_id
+  p_client_identifier varchar2 default my_client_identifier -- client_identifier or unique_session_id
+);
 /**
 
-Stops the logging for a specific session and clears the info in the global
-context for it.
+Clears the cached log entries (if any).
 
-Please note that we always log the levels errors and permanent to keep a record
-of things that are going wrong.
+This procedure is useful when you have initialized your own session with a cache
+size greater then zero (for example 1000) and you take a look at the log entries
+with the pipelined function `console.view_log_cache` during development. By
+clearing the cache you can avoid spoiling your CONSOLE_LOGS table with entries
+you dont need longer.
 
-EXAMPLE
-
-```sql
-begin
-  console.('My process/task');
-
-  -- your stuff here...
-
-  console.clear;
-exception
-  when others then
-    console.error('something went wrong'); -- calls also console.clear
-    raise;
-end;
-{{/}}
-```
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
+MANAGING LOGGING MODES OF SESSIONS.
 
 **/
 
---------------------------------------------------------------------------------
--- PUBLIC HELPER METHODS
---------------------------------------------------------------------------------
-
-function get_scope return varchar2;
-
-function get_call_stack return varchar2;
+procedure stop (
+  p_client_identifier varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
+);
 /**
 
-Returns the current call stack and if an error was raised also the error stack
-and the error backtrace. Is used internally by the console methods error and
-trace and also, if you set on other console methods the parameter p_trace to
-true. The stacks are represented in a Markdown compatible list style.
+Stops the logging for a specific session.
 
-The console package itself is excluded from the trace as you normally would
-trace you business logic and not your instrumentation code.
+If you stop your own session then this has an immediate effect as we can clear
+the configuration cache in our package. If you stop another session then it can
+take some seconds until the other session is reloading the cached configuration
+from the context (if available) or the sessions table. The default cache
+duration is ten seconds.
 
-```sql
-set serveroutput on
-begin
-  dbms_output.put_line(console.get_call_stack);
-end;
-{{/}}
-```
+Stopping the logging mode means also the cached log entries will be flushed to
+the logging table CONSOLE_LOGS. If you do not need the cached entries you can
+delete them in advance by calling the `clear` procedure.
 
-The code above will output `- Call Stack: __anonymous_block (2)`
-
-**/
-
-
-
---------------------------------------------------------------------------------
-
-function version return varchar2;
-/**
-
-returns the version information from the console package.
-
-
-```sql
-select console.version from dual;
-```
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
+MANAGING LOGGING MODES OF SESSIONS.
 
 **/
 
@@ -443,51 +462,42 @@ select console.context_available_yn from dual;
 
 **/
 
+
 --------------------------------------------------------------------------------
 
-function to_bool (
-  p_string varchar2 )
-return boolean;
+function version return varchar2;
 /**
 
-A helper to convert a string into a boolean. When the trimmed, uppercased input
-is in `Y`, `YES`, `1`, `TRUE`, then it returns true. In all other cases (also
-NULL) false is returned.
+returns the version information from the console package.
+
+
+```sql
+select console.version from dual;
+```
 
 **/
 
 --------------------------------------------------------------------------------
-
-function to_yn (
-  p_bool boolean )
-return varchar2;
-/**
-
-A helper to convert a boolean into a string. When the input is true then `Y` is
-returned. In all other cases (also NULL) `N` is returned.
-
-**/
-
---------------------------------------------------------------------------------
--- INTERNAL UTILITIES (only visible when ccflag `utils_public` is set to true)
+-- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
 --------------------------------------------------------------------------------
 
 $if $$utils_public $then
 
-function read_row_from_sessions (
-  p_client_identifier varchar2 )
-return console_sessions%rowtype result_cache;
-
-procedure set_client_identifier;
-
+function  get_call_stack return varchar2;
+function  get_scope return varchar2;
+function  logging_enabled ( p_level integer ) return boolean;
+function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
+function  to_bool ( p_string varchar2 ) return boolean;
+function  to_yn ( p_bool boolean ) return varchar2;
 procedure check_context_availability;
-
+procedure clear_all_context;
+procedure clear_context ( p_client_identifier varchar2 );
+procedure flush_log_cache;
 procedure load_session_configuration;
-
-function logging_enabled ( p_level integer ) return boolean;
-
+procedure set_client_identifier;
+--
 procedure create_log_entry (
-  p_level       integer,
+  p_level       integer                ,
   p_message     clob     default null  ,
   p_trace       boolean  default false ,
   p_apex_env    boolean  default false ,
@@ -495,10 +505,6 @@ procedure create_log_entry (
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
   p_user_agent  varchar2 default null  );
-
-procedure clear_context ( p_client_identifier varchar2 );
-
-procedure clear_all_context;
 
 $end
 
