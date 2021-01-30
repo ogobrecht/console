@@ -38,10 +38,11 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
         - Errors are always logged
         - Minimal resource consumption
         - Logging can be switched on when needed for specific sessions without
-          recompilation
+          recompilation (no, there is no way to anable logging for all sessions,
+          for good reasons)
     - API compatible with the [JavaScript Console
-      API](https://developers.google.com/web/tools/chrome-devtools/console/api)
-      - means, the same method names are provided, the parameters differs a
+      API](https://developers.google.com/web/tools/chrome-devtools/console/api),
+      this means, the same method names are provided, the parameters differs a
       little bit to fit our needs in a PL/SQL environment (not all methods makes
       sense in PL/SQL and therefore this five are not implemented: dir, dirxml,
       group, groupCollapsed, groupEnd)
@@ -62,8 +63,9 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
       notes in the level zero which is not affected when the purge job clears
       the log
         - [X] console.permanent (level 0)
-    - Additional method to set the sys context action attribute to be friendly
-      to the DBA and monitoring teams
+    - Additional method as an alias for dbms_application_info.set_action to be
+      friendly to the DBA and monitoring teams. the module is usually set by the
+      application (for example APEX is setting the module)
         - [X] console.action
     - Additional methods to manage logging mode of sessions and to see the
       current status of the package console (for descriptions see the rest of
