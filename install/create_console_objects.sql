@@ -232,17 +232,17 @@ comment on column console_logs.os_user_agent     is 'Operating system user agent
 prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
-c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 byte) := '0.4.2';
-c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
-c_license constant varchar2(10 byte) := 'MIT';
-c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
+c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
+c_version constant varchar2 ( 10 byte ) := '0.4.3'                                ;
+c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
+c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
+c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_permanent constant pls_integer := 0;
-c_error     constant pls_integer := 1;
-c_warning   constant pls_integer := 2;
-c_info      constant pls_integer := 3;
-c_verbose   constant pls_integer := 4;
+c_permanent constant pls_integer := 0 ;
+c_error     constant pls_integer := 1 ;
+c_warning   constant pls_integer := 2 ;
+c_info      constant pls_integer := 3 ;
+c_verbose   constant pls_integer := 4 ;
 
 
 /**
@@ -265,11 +265,13 @@ Open SQLcl, connect to your desired install schema and call
 
 **NORMAL INSTALLATION**
 
-Download the [latest
- version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
- and unzip it or [clone the repository](https://github.com/ogobrecht/console)
+[Clone the repository](https://github.com/ogobrecht/console) or download the
+[latest
+version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
+and unzip it.
 
-The installation itself is splitted into one mandatory and three optional steps:
+The installation itself is splitted into one mandatory and two or three optional
+steps:
 
 1. Install CONSOLE itself
     - Start SQL*Plus and connect to your desired install schema
@@ -285,25 +287,32 @@ The installation itself is splitted into one mandatory and three optional steps:
       rights on the package and select rights on the views to public or other
       schemas
     - Start SQL*Plus and connect to your CONSOLE install schema
-    - Run `@install/grant_rights_to_client_schema.sql "CLIENT_SCHEMA"`
-4. Optional: Create synonyms in client schema
+    - Run `@install/grant_rights.sql "CLIENT_SCHEMA"`
+4. Optional: Create synonyms in client schema(s)
     - When you want to use it in another schema you may want to create synonyms
-      there for easier access
-    - Start SQL*Plus and connect to your client schema
-    - Run`@install/create_synonyms_in_client_schema.sql`
+      there or public ones for easier access
+    - Maybe you want also different names for your synonyms like `log` instead
+      of `console`
+    - As this step is very variable you should create a reusable script by
+      yourself...
 
 **UNINSTALLATION**
 
-Hopefully you will never need this...
+Hopefully you will never need it...
 
-FIXME: Create uninstall scripts
+As with the installation the uninstallation is splitted into multiple steps:
+
+1. Drop the CONSOLE objects
+    - Start SQL*Plus and connect to your CONSOLE install schema
+    - Run `@uninstall/drop_console_objects.sql`
+2. Drop the context (if you have one)
+    - Start SQL*Plus and connect to a privileged user
+    - Run `@uninstall/drop_context.sql "CONSOLE_INSTALL_SCHEMA"`
+    - Maybe your DBA needs to do that for you
+3. Drop synonyms in client schemas
+    - You know, if you created synonyms and how they were named...
 
 **/
-
-
---------------------------------------------------------------------------------
--- CONSTANTS, TYPES
---------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
@@ -321,7 +330,7 @@ on cleanup.
 --------------------------------------------------------------------------------
 procedure error (
   p_message     clob     default null  ,
-  p_trace       boolean  default false ,
+  p_trace       boolean  default true  ,
   p_apex_env    boolean  default false ,
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
@@ -509,16 +518,15 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2               , -- The client identifier provided by the application or console itself.
-  p_log_level         integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration      integer default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        integer default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
-  p_cache_duration    integer default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_user_env          boolean default false  , -- Should the user environment be included.
-  p_apex_env          boolean default false  , -- Should the APEX environment be included.
-  p_cgi_env           boolean default false  , -- Should the CGI environment be included.
-  p_console_env       boolean default false    -- Should the console environment be included.
-);
+  p_client_identifier varchar2                , -- The client identifier provided by the application or console itself.
+  p_log_level         integer  default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_log_duration      integer  default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        integer  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
+  p_cache_duration    integer  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
+  p_user_env          boolean  default false  , -- Should the user environment be included.
+  p_apex_env          boolean  default false  , -- Should the APEX environment be included.
+  p_cgi_env           boolean  default false  , -- Should the CGI environment be included.
+  p_console_env       boolean  default false  );-- Should the console environment be included.
 /**
 
 Starts the logging for a specific session.
@@ -569,14 +577,12 @@ procedure init (
   p_user_env       boolean default false  , -- Should the user environment be included.
   p_apex_env       boolean default false  , -- Should the APEX environment be included.
   p_cgi_env        boolean default false  , -- Should the CGI environment be included.
-  p_console_env    boolean default false    -- Should the console environment be included.
-);
+  p_console_env    boolean default false  );-- Should the console environment be included.
 
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_client_identifier varchar2 default my_client_identifier -- client_identifier or unique_session_id
-);
+  p_client_identifier varchar2 default my_client_identifier );-- client_identifier or unique_session_id
 /**
 
 Stops the logging for a specific session and clears the info in the global
@@ -607,6 +613,8 @@ end;
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
+
+function get_scope return varchar2;
 
 function get_call_stack return varchar2;
 /**
@@ -670,7 +678,7 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 function to_bool (
-  p_string varchar2)
+  p_string varchar2 )
 return boolean;
 /**
 
@@ -683,7 +691,7 @@ NULL) false is returned.
 --------------------------------------------------------------------------------
 
 function to_yn (
-  p_bool boolean)
+  p_bool boolean )
 return varchar2;
 /**
 
@@ -708,7 +716,7 @@ procedure check_context_availability;
 
 procedure load_session_configuration;
 
-function logging_enabled (p_level integer) return boolean;
+function logging_enabled ( p_level integer ) return boolean;
 
 procedure create_log_entry (
   p_level       integer,
@@ -720,7 +728,7 @@ procedure create_log_entry (
   p_user_env    boolean  default false ,
   p_user_agent  varchar2 default null  );
 
-procedure clear_context (p_client_identifier varchar2 );
+procedure clear_context ( p_client_identifier varchar2 );
 
 procedure clear_all_context;
 
@@ -751,6 +759,7 @@ c_slash              constant varchar2 ( 1 byte) := '/';
 c_anon_block_ora     constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
 c_client_id_prefix   constant varchar2 ( 5 byte) := '{o,o}';
+c_console_pkg_name   constant varchar2 (60 byte) := upper($$plsql_unit) || '.';
 c_ctx_namespace      constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute constant varchar2 (15 byte) := 'TEST';
 c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
@@ -835,7 +844,7 @@ end permanent;
 
 procedure error (
   p_message     clob     default null  ,
-  p_trace       boolean  default false ,
+  p_trace       boolean  default true  ,
   p_apex_env    boolean  default false ,
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
@@ -989,15 +998,15 @@ end my_log_level;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2               ,
-  p_log_level         integer default c_info ,
-  p_log_duration      integer default 60     ,
-  p_cache_size        integer default 0      ,
-  p_cache_duration    integer default 10     ,
-  p_user_env          boolean default false  ,
-  p_apex_env          boolean default false  ,
-  p_cgi_env           boolean default false  ,
-  p_console_env       boolean default false  )
+  p_client_identifier varchar2                ,
+  p_log_level         integer  default c_info ,
+  p_log_duration      integer  default 60     ,
+  p_cache_size        integer  default 0      ,
+  p_cache_duration    integer  default 10     ,
+  p_user_env          boolean  default false  ,
+  p_apex_env          boolean  default false  ,
+  p_cgi_env           boolean  default false  ,
+  p_console_env       boolean  default false  )
 is
   pragma autonomous_transaction;
   v_row         console_sessions%rowtype;
@@ -1016,20 +1025,22 @@ is
       client_id => p_client_identifier );
   exception
     when insufficient_privileges then
-      error('Context not available, package var g_conf_context_available tells us it is ?!?');
+      error ( 'Context not available, package var g_conf_context_available tells us it is ?!?' );
   end;
   --
 begin
-  assert ( p_log_level      in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). Level 1 (error) and 0 (permanent) are always logged without a call to the init method.');
-  assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).');
-  assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).');
-  assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).');
-  assert ( p_user_env       is not null,        'User env needs to be true or false (not null).');
-  assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).');
-  assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).');
-  assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).');
+  assert ( p_log_level      in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). ' ||
+                                                'Level 1 (error) and 0 (permanent) are always logged '     ||
+                                                'without a call to the init method.'                       );
+  assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
+  assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).'  );
+  assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).'   );
+  assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
+  assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
+  assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
+  assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).'        );
   --
-  v_row.client_identifier := substrb(p_client_identifier, 1, 64);
+  v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
   v_row.log_level         := p_log_level;
   v_row.start_date        := localtimestamp;
   v_row.end_date          := localtimestamp + 1/24/60 * p_log_duration;
@@ -1115,17 +1126,16 @@ begin
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
-      v_subprogram := replace(
-        utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
+      v_subprogram := replace (
+        utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) ),
         c_anon_block_ora,
-        c_anonymous_block
-      );
+        c_anonymous_block);
       --exclude console package from the call stack
-      if instr(upper(v_subprogram), upper($$plsql_unit)||'.') = 0 then
+      if instr ( upper(v_subprogram), c_console_pkg_name ) = 0 then
         v_return := v_return
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || v_subprogram || ', line ' || utl_call_stack.unit_line (i)
-          || chr (10);
+          || v_subprogram || ', line ' || utl_call_stack.unit_line(i)
+          || chr(10);
       end if;
       exit when v_return is not null;
     end loop;
@@ -1137,53 +1147,51 @@ end get_scope;
 
 function get_call_stack return varchar2
 is
-  v_return               vc_max;
-  v_subprogram           vc_max;
-  v_console_package_name varchar2(60 byte) := upper($$plsql_unit) || '.';
+  v_return     vc_max;
+  v_subprogram vc_max;
 begin
 
   if utl_call_stack.error_depth > 0 then
-    v_return := v_return || '- ERROR STACK' || chr (10);
+    v_return := v_return || '- ERROR STACK' || chr(10);
     for i in 1 .. utl_call_stack.error_depth
     loop
       v_return := v_return
         || '  - ORA-'
         || trim(to_char(utl_call_stack.error_number(i), '00009')) || ' '
         || utl_call_stack.error_msg(i)
-        || chr (10);
+        || chr(10);
     end loop;
   end if;
 
   if utl_call_stack.backtrace_depth > 0 then
-    v_return := v_return || '- ERROR BACKTRACE' || chr (10);
+    v_return := v_return || '- ERROR BACKTRACE' || chr(10);
     for i in 1 .. utl_call_stack.backtrace_depth
     loop
       v_return := v_return
         || '  - '
-        || coalesce(utl_call_stack.backtrace_unit(i), c_anonymous_block)
+        || coalesce( utl_call_stack.backtrace_unit(i), c_anonymous_block )
         || ', line ' || utl_call_stack.backtrace_line(i)
         || chr (10);
     end loop;
   end if;
 
   if utl_call_stack.dynamic_depth > 0 then
-    v_return := v_return || '- CALL STACK' || chr (10);
+    v_return := v_return || '- CALL STACK' || chr(10);
     --ignore 1, is always this function (get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
       v_subprogram := replace(
-        utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(i)),
+        utl_call_stack.concatenate_subprogram ( utl_call_stack.subprogram(i) ),
         c_anon_block_ora,
-        c_anonymous_block
-      );
+        c_anonymous_block);
       --exclude console package from the call stack
-      if instr(upper(v_subprogram), v_console_package_name) = 0 then
+      if instr( upper(v_subprogram), c_console_pkg_name ) = 0 then
         v_return := v_return
           || '  - '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || v_subprogram || ', line ' || utl_call_stack.unit_line (i)
-          || chr (10);
+          || v_subprogram || ', line ' || utl_call_stack.unit_line(i)
+          || chr(10);
       end if;
     end loop;
   end if;
@@ -1201,7 +1209,7 @@ end;
 --------------------------------------------------------------------------------
 
 function to_bool (
-  p_string varchar2)
+  p_string varchar2 )
 return boolean is
 begin
   return
@@ -1214,7 +1222,7 @@ end;
 --------------------------------------------------------------------------------
 
 function to_yn (
-  p_bool boolean)
+  p_bool boolean )
 return varchar2 is
 begin
   return case when p_bool then 'Y' else 'N' end;
@@ -1299,15 +1307,15 @@ begin
     v_scope,
     v_message,
     v_call_stack,
-    substrb( sys_context('USERENV', 'SESSION_USER')     , 1, 32),
-    substrb( sys_context('USERENV', 'MODULE')           , 1, 48),
-    substrb( sys_context('USERENV', 'ACTION')           , 1, 32),
-    substrb( sys_context('USERENV', 'CLIENT_INFO')      , 1, 64),
-    substrb( sys_context('USERENV', 'CLIENT_IDENTIFIER'), 1, 64),
-    substrb( sys_context('USERENV', 'IP_ADDRESS')       , 1, 48),
-    substrb( sys_context('USERENV', 'HOST')             , 1, 64),
-    substrb( sys_context('USERENV', 'OS_USER')          , 1, 64),
-    substrb(p_user_agent, 1, 200)
+    substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 ),
+    substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 ),
+    substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 ),
+    substrb ( sys_context ( 'USERENV', 'CLIENT_INFO'       ), 1, 64 ),
+    substrb ( sys_context ( 'USERENV', 'CLIENT_IDENTIFIER' ), 1, 64 ),
+    substrb ( sys_context ( 'USERENV', 'IP_ADDRESS'        ), 1, 48 ),
+    substrb ( sys_context ( 'USERENV', 'HOST'              ), 1, 64 ),
+    substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 ),
+    substrb ( p_user_agent, 1, 200 )
   );
   commit;
 end create_log_entry;
@@ -1328,19 +1336,20 @@ end clear_context;
 procedure clear_all_context is
 begin
   if g_conf_context_available then
-    sys.dbms_session.clear_all_context (c_ctx_namespace);
+    sys.dbms_session.clear_all_context(c_ctx_namespace);
   end if;
 end clear_all_context;
 
 --------------------------------------------------------------------------------
 
-/* HOW TO CHECK RESULT CACHE
+/* HOW TO CHECK THE RESULT CACHE
 select id, name, cache_id, type, status, invalidations, scan_count
   from v$result_cache_objects
  where name like '%CONSOLE%'
    and status != 'Invalid';
 */
-function read_row_from_sessions (p_client_identifier varchar2)
+function read_row_from_sessions (
+  p_client_identifier varchar2 )
 return console_sessions%rowtype result_cache is
   v_row console_sessions%rowtype;
 begin
@@ -1362,7 +1371,7 @@ begin
   g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
   if g_conf_client_identifier is null then
     g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
-    dbms_session.set_identifier (g_conf_client_identifier);
+    dbms_session.set_identifier(g_conf_client_identifier);
   end if;
 end set_client_identifier;
 

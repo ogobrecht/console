@@ -1,16 +1,16 @@
 create or replace package console authid definer is
 
-c_name    constant varchar2(30 byte) := 'Oracle Instrumentation Console';
-c_version constant varchar2(10 byte) := '0.4.2';
-c_url     constant varchar2(40 byte) := 'https://github.com/ogobrecht/console';
-c_license constant varchar2(10 byte) := 'MIT';
-c_author  constant varchar2(20 byte) := 'Ottmar Gobrecht';
+c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
+c_version constant varchar2 ( 10 byte ) := '0.4.3'                                ;
+c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
+c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
+c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_permanent constant pls_integer := 0;
-c_error     constant pls_integer := 1;
-c_warning   constant pls_integer := 2;
-c_info      constant pls_integer := 3;
-c_verbose   constant pls_integer := 4;
+c_permanent constant pls_integer := 0 ;
+c_error     constant pls_integer := 1 ;
+c_warning   constant pls_integer := 2 ;
+c_info      constant pls_integer := 3 ;
+c_verbose   constant pls_integer := 4 ;
 
 
 /**
@@ -33,11 +33,13 @@ Open SQLcl, connect to your desired install schema and call
 
 **NORMAL INSTALLATION**
 
-Download the [latest
- version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
- and unzip it or [clone the repository](https://github.com/ogobrecht/console)
+[Clone the repository](https://github.com/ogobrecht/console) or download the
+[latest
+version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
+and unzip it.
 
-The installation itself is splitted into one mandatory and three optional steps:
+The installation itself is splitted into one mandatory and two or three optional
+steps:
 
 1. Install CONSOLE itself
     - Start SQL*Plus and connect to your desired install schema
@@ -53,25 +55,32 @@ The installation itself is splitted into one mandatory and three optional steps:
       rights on the package and select rights on the views to public or other
       schemas
     - Start SQL*Plus and connect to your CONSOLE install schema
-    - Run `@install/grant_rights_to_client_schema.sql "CLIENT_SCHEMA"`
-4. Optional: Create synonyms in client schema
+    - Run `@install/grant_rights.sql "CLIENT_SCHEMA"`
+4. Optional: Create synonyms in client schema(s)
     - When you want to use it in another schema you may want to create synonyms
-      there for easier access
-    - Start SQL*Plus and connect to your client schema
-    - Run`@install/create_synonyms_in_client_schema.sql`
+      there or public ones for easier access
+    - Maybe you want also different names for your synonyms like `log` instead
+      of `console`
+    - As this step is very variable you should create a reusable script by
+      yourself...
 
 **UNINSTALLATION**
 
-Hopefully you will never need this...
+Hopefully you will never need it...
 
-FIXME: Create uninstall scripts
+As with the installation the uninstallation is splitted into multiple steps:
+
+1. Drop the CONSOLE objects
+    - Start SQL*Plus and connect to your CONSOLE install schema
+    - Run `@uninstall/drop_console_objects.sql`
+2. Drop the context (if you have one)
+    - Start SQL*Plus and connect to a privileged user
+    - Run `@uninstall/drop_context.sql "CONSOLE_INSTALL_SCHEMA"`
+    - Maybe your DBA needs to do that for you
+3. Drop synonyms in client schemas
+    - You know, if you created synonyms and how they were named...
 
 **/
-
-
---------------------------------------------------------------------------------
--- CONSTANTS, TYPES
---------------------------------------------------------------------------------
 
 
 --------------------------------------------------------------------------------
@@ -89,7 +98,7 @@ on cleanup.
 --------------------------------------------------------------------------------
 procedure error (
   p_message     clob     default null  ,
-  p_trace       boolean  default false ,
+  p_trace       boolean  default true  ,
   p_apex_env    boolean  default false ,
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
@@ -277,16 +286,15 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2               , -- The client identifier provided by the application or console itself.
-  p_log_level         integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration      integer default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        integer default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
-  p_cache_duration    integer default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_user_env          boolean default false  , -- Should the user environment be included.
-  p_apex_env          boolean default false  , -- Should the APEX environment be included.
-  p_cgi_env           boolean default false  , -- Should the CGI environment be included.
-  p_console_env       boolean default false    -- Should the console environment be included.
-);
+  p_client_identifier varchar2                , -- The client identifier provided by the application or console itself.
+  p_log_level         integer  default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_log_duration      integer  default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        integer  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
+  p_cache_duration    integer  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
+  p_user_env          boolean  default false  , -- Should the user environment be included.
+  p_apex_env          boolean  default false  , -- Should the APEX environment be included.
+  p_cgi_env           boolean  default false  , -- Should the CGI environment be included.
+  p_console_env       boolean  default false  );-- Should the console environment be included.
 /**
 
 Starts the logging for a specific session.
@@ -337,14 +345,12 @@ procedure init (
   p_user_env       boolean default false  , -- Should the user environment be included.
   p_apex_env       boolean default false  , -- Should the APEX environment be included.
   p_cgi_env        boolean default false  , -- Should the CGI environment be included.
-  p_console_env    boolean default false    -- Should the console environment be included.
-);
+  p_console_env    boolean default false  );-- Should the console environment be included.
 
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_client_identifier varchar2 default my_client_identifier -- client_identifier or unique_session_id
-);
+  p_client_identifier varchar2 default my_client_identifier );-- client_identifier or unique_session_id
 /**
 
 Stops the logging for a specific session and clears the info in the global
@@ -375,6 +381,8 @@ end;
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
+
+function get_scope return varchar2;
 
 function get_call_stack return varchar2;
 /**
@@ -438,7 +446,7 @@ select console.context_available_yn from dual;
 --------------------------------------------------------------------------------
 
 function to_bool (
-  p_string varchar2)
+  p_string varchar2 )
 return boolean;
 /**
 
@@ -451,7 +459,7 @@ NULL) false is returned.
 --------------------------------------------------------------------------------
 
 function to_yn (
-  p_bool boolean)
+  p_bool boolean )
 return varchar2;
 /**
 
@@ -476,7 +484,7 @@ procedure check_context_availability;
 
 procedure load_session_configuration;
 
-function logging_enabled (p_level integer) return boolean;
+function logging_enabled ( p_level integer ) return boolean;
 
 procedure create_log_entry (
   p_level       integer,
@@ -488,7 +496,7 @@ procedure create_log_entry (
   p_user_env    boolean  default false ,
   p_user_agent  varchar2 default null  );
 
-procedure clear_context (p_client_identifier varchar2 );
+procedure clear_context ( p_client_identifier varchar2 );
 
 procedure clear_all_context;
 
