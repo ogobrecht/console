@@ -76,6 +76,16 @@ procedure flush_log_cache;
 procedure load_session_configuration;
 procedure set_client_identifier;
 --
+function create_log_entry (
+  p_level       integer                ,
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
+return integer;
 procedure create_log_entry (
   p_level       integer                ,
   p_message     clob     default null  ,
@@ -123,6 +133,27 @@ begin
     p_user_env    => p_user_env    ,
     p_user_agent  => p_user_agent  );
 end error;
+
+function error (
+  p_message     clob     default null  ,
+  p_trace       boolean  default true  ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
+return integer is
+begin
+  return create_log_entry (
+    p_level       => c_error       ,
+    p_message     => p_message     ,
+    p_trace       => p_trace       ,
+    p_apex_env    => p_apex_env    ,
+    p_cgi_env     => p_cgi_env     ,
+    p_console_env => p_console_env ,
+    p_user_env    => p_user_env    ,
+    p_user_agent  => p_user_agent  );
+end;
 
 --------------------------------------------------------------------------------
 
@@ -440,6 +471,7 @@ begin
   return c_version;
 end;
 
+
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
@@ -562,7 +594,7 @@ end logging_enabled;
 
 --------------------------------------------------------------------------------
 
-procedure create_log_entry (
+function create_log_entry (
   p_level       integer,
   p_message     clob     default null  ,
   p_trace       boolean  default false ,
@@ -571,11 +603,13 @@ procedure create_log_entry (
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
   p_user_agent  varchar2 default null  )
+return integer
 is
   pragma autonomous_transaction;
   v_message    clob;
   v_call_stack vc4000;
-  v_scope   console_logs.scope%type;
+  v_scope      console_logs.scope%type;
+  v_log_id     integer;
 begin
   v_scope := substrb(get_scope, 1, 1000);
   if p_message is not null then
@@ -627,9 +661,33 @@ begin
     substrb ( sys_context ( 'USERENV', 'HOST'              ), 1, 64 ),
     substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 ),
     substrb ( p_user_agent, 1, 200 )
-  );
+  ) returning log_id into v_log_id;
   commit;
+  return v_log_id;
 end create_log_entry;
+
+procedure create_log_entry (
+  p_level       integer,
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
+is
+  v_log_id integer;
+begin
+  v_log_id := create_log_entry (
+    p_level       => c_error       ,
+    p_message     => p_message     ,
+    p_trace       => p_trace       ,
+    p_apex_env    => p_apex_env    ,
+    p_cgi_env     => p_cgi_env     ,
+    p_console_env => p_console_env ,
+    p_user_env    => p_user_env    ,
+    p_user_agent  => p_user_agent  );
+end;
 
 --------------------------------------------------------------------------------
 

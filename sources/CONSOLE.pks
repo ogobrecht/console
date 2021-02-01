@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.4.3'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.5.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -22,110 +22,8 @@ An instrumentation tool for Oracle developers. Save to install on production and
 mostly API compatible with the [JavaScript
 console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
-**FEATURES**
-
-- Easy to install - works with or without a context
-- Easy to use
-    - Save to run in production without configuration
-        - Errors are always logged
-        - Minimal resource consumption
-        - Logging can be switched on when needed for specific sessions without
-          recompilation (no, there is no way to anable logging for all sessions,
-          for good reasons)
-    - API compatible with the [JavaScript Console
-      API](https://developers.google.com/web/tools/chrome-devtools/console/api),
-      this means, the same method names are provided, the parameters differs a
-      little bit to fit our needs in a PL/SQL environment (not all methods makes
-      sense in PL/SQL and therefore this five are not implemented: dir, dirxml,
-      group, groupCollapsed, groupEnd)
-        - [X] console.error (level 1=error)
-        - [X] console.warn (level 2=warning)
-        - [X] console.info (level 3=info)
-        - [X] console.log (level 3=info)
-        - [X] console.debug (level 4=verbose)
-        - [X] console.trace (level 3=info)
-        - [ ] console.table (level 3=info)
-        - [ ] console.count
-        - [ ] console.countReset (level 3=info)
-        - [ ] console.time
-        - [ ] console.timeEnd (level 3=info)
-        - [X] console.assert (level 1=error, if failed)
-        - [X] console.clear
-    - Additional method to log permanent messages like installation or upgrade
-      notes in the level zero which is not affected when the purge job clears
-      the log
-        - [X] console.permanent (level 0)
-    - Additional method as an alias for dbms_application_info.set_action to be
-      friendly to the DBA and monitoring teams. the module is usually set by the
-      application (for example APEX is setting the module)
-        - [X] console.action
-    - Additional methods to manage logging mode of sessions and to see the
-      current status of the package console (for descriptions see the rest of
-      the document)
-        - [X] console.init
-        - [X] console.stop
-        - [X] console.my_client_identifier
-        - [X] console.my_log_level
-        - [X] console.context_available_yn
-        - [X] console.version
-
-**DEPENDENCIES**
-
-Oracle DB >= 12.1
-
-**ONE MINUTE INSTALLATION**
-
-Open SQLcl, connect to your desired install schema and call
-`@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`
-
-**NORMAL INSTALLATION**
-
-[Clone the repository](https://github.com/ogobrecht/console) or download the
-[latest
-version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
-and unzip it.
-
-The installation itself is splitted into one mandatory and two or three optional
-steps:
-
-1. Install CONSOLE itself
-    - Start SQL*Plus and connect to your desired install schema
-    - Run `@install/create_console_objects.sql`
-    - User needs the rights to create packages, tables and views
-    - Do this step on every new release of CONSOLE
-2. Optional: Create a context
-    - Start SQL*Plus and connect to a privileged user
-    - Run `@install/create_context.sql "CONSOLE_INSTALL_SCHEMA"`
-    - Maybe your DBA needs to do that for you once
-3. Optional: Grant rights to client schema
-    - When installed in a central tools schema you may want to grant execute
-      rights on the package and select rights on the views to public or other
-      schemas
-    - Start SQL*Plus and connect to your CONSOLE install schema
-    - Run `@install/grant_rights.sql "CLIENT_SCHEMA"`
-4. Optional: Create synonyms in client schema(s)
-    - When you want to use it in another schema you may want to create synonyms
-      there or public ones for easier access
-    - Maybe you want also different names for your synonyms like `log` instead
-      of `console`
-    - As this step is very variable you should create a reusable script by
-      yourself...
-
-**UNINSTALLATION**
-
-Hopefully you will never need it...
-
-As with the installation the uninstallation is splitted into multiple steps:
-
-1. Drop the CONSOLE objects
-    - Start SQL*Plus and connect to your CONSOLE install schema
-    - Run `@uninstall/drop_console_objects.sql`
-2. Drop the context (if you have one)
-    - Start SQL*Plus and connect to a privileged user
-    - Run `@uninstall/drop_context.sql "CONSOLE_INSTALL_SCHEMA"`
-    - Maybe your DBA needs to do that for you
-3. Drop synonyms in client schemas
-    - You know, if you created synonyms and how they were named...
+For more infos have a look at the [project page on
+GitHub](https://github.com/ogobrecht/console).
 
 **/
 
@@ -153,8 +51,27 @@ procedure error (
   p_user_agent  varchar2 default null  );
 /**
 
-Log a message with the level 1 (error) and call also `console.clear` to reset
-the session action attribute.
+Log a message with the level 1 (error).
+
+**/
+
+function error (
+  p_message     clob     default null  ,
+  p_trace       boolean  default true  ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
+return integer;
+/**
+
+Log a message with the level 1 (error).
+
+This is an overloaded function which returns the `log_id` as a reference for
+further investigation by a support team. It can be used for example in an [APEX
+error handling
+function](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
 
 **/
 
@@ -242,7 +159,7 @@ procedure assert (
 );
 /**
 
-If the given expression evaluates to false an error is raised with the given message.
+If the given expression evaluates to false, an error is raised with the given message.
 
 EXAMPLE
 
@@ -297,7 +214,8 @@ begin
   console.action(null);
 exception
   when others then
-    console.error('something went wrong'); --also clears action
+    console.error('something went wrong');
+    console.action(null);
     raise;
 end;
 {{/}}
@@ -498,6 +416,16 @@ procedure flush_log_cache;
 procedure load_session_configuration;
 procedure set_client_identifier;
 --
+function create_log_entry (
+  p_level       integer                ,
+  p_message     clob     default null  ,
+  p_trace       boolean  default false ,
+  p_apex_env    boolean  default false ,
+  p_cgi_env     boolean  default false ,
+  p_console_env boolean  default false ,
+  p_user_env    boolean  default false ,
+  p_user_agent  varchar2 default null  )
+return integer;
 procedure create_log_entry (
   p_level       integer                ,
   p_message     clob     default null  ,
