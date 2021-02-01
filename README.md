@@ -6,7 +6,9 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
 
 ## Features
 
-- Easy to install - works with or without a context
+- Easy to install
+  - Works with or without a context
+  - Has a single installation script (can be installed and tested on apex.oracle.com)
 - Easy to use
   - Save to run in production without configuration
     - Errors are always logged
@@ -43,7 +45,8 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
       docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82))
     - [X] console.action: An alias for dbms_application_info.set_action to be
       friendly to the DBA and monitoring teams. The module is usually set by the
-      application (for example APEX is setting the module)
+      application (for example APEX is setting the module, and often also the
+      action...)
   - Additional methods to manage logging mode of sessions and to see the current
     status of the package console
     - [X] console.init
@@ -60,6 +63,7 @@ For a more detailed overview of the public API methods please see the [docs for 
 - [ ] API compatibility with the JavaScript console (with exceptions)
 - [ ] APEX plug-in to be able to track client side browser errors
 - [ ] Something else? Your ideas here...
+
 ## Dependencies
 
 Oracle DB >= 12.1
