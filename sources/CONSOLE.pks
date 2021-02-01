@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.5.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.5.2'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -41,14 +41,17 @@ on cleanup.
 **/
 
 --------------------------------------------------------------------------------
+
 procedure error (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  );
 /**
 
 Log a message with the level 1 (error).
@@ -56,13 +59,15 @@ Log a message with the level 1 (error).
 **/
 
 function error (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 return integer;
 /**
 
@@ -76,6 +81,7 @@ function](https://docs.oracle.com/en/database/oracle/application-express/20.2/ae
 **/
 
 --------------------------------------------------------------------------------
+
 procedure warn (
   p_message     clob                   ,
   p_trace       boolean  default false ,
@@ -91,6 +97,7 @@ Log a message with the level 2 (warning).
 **/
 
 --------------------------------------------------------------------------------
+
 procedure info (
   p_message     clob                   ,
   p_trace       boolean  default false ,
@@ -106,6 +113,7 @@ Log a message with the level 3 (info).
 **/
 
 --------------------------------------------------------------------------------
+
 procedure log(
   p_message     clob                   ,
   p_trace       boolean  default false ,
@@ -137,6 +145,7 @@ Log a message with the level 4 (verbose).
 **/
 
 --------------------------------------------------------------------------------
+
 procedure trace (
   p_message     clob     default null  ,
   p_trace       boolean  default true  ,
@@ -397,7 +406,7 @@ select console.version from dual;
 
 **/
 
-$if $$utils_public $then
+$if $$apex_installed $then
 
 function apex_error_handling (
   p_error in apex_error.t_error )
@@ -442,24 +451,28 @@ procedure load_session_configuration;
 procedure set_client_identifier;
 --
 function create_log_entry (
-  p_level       integer                ,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 return integer;
 procedure create_log_entry (
-  p_level       integer                ,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  );
 
 $end
 

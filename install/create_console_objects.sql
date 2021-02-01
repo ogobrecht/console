@@ -185,6 +185,7 @@ begin
         log_level          number (1,0)                                          not null  ,
         scope              varchar2 (1000 byte)                                            ,
         message            clob                                                            ,
+        error_code         integer                                                         ,
         call_stack         varchar2 (4000 byte)                                            ,
         session_user       varchar2 (  32 byte)                                            ,
         module             varchar2 (  48 byte)                                            ,
@@ -233,7 +234,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.5.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.5.2'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -273,14 +274,17 @@ on cleanup.
 **/
 
 --------------------------------------------------------------------------------
+
 procedure error (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  );
 /**
 
 Log a message with the level 1 (error).
@@ -288,13 +292,15 @@ Log a message with the level 1 (error).
 **/
 
 function error (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 return integer;
 /**
 
@@ -308,6 +314,7 @@ function](https://docs.oracle.com/en/database/oracle/application-express/20.2/ae
 **/
 
 --------------------------------------------------------------------------------
+
 procedure warn (
   p_message     clob                   ,
   p_trace       boolean  default false ,
@@ -323,6 +330,7 @@ Log a message with the level 2 (warning).
 **/
 
 --------------------------------------------------------------------------------
+
 procedure info (
   p_message     clob                   ,
   p_trace       boolean  default false ,
@@ -338,6 +346,7 @@ Log a message with the level 3 (info).
 **/
 
 --------------------------------------------------------------------------------
+
 procedure log(
   p_message     clob                   ,
   p_trace       boolean  default false ,
@@ -369,6 +378,7 @@ Log a message with the level 4 (verbose).
 **/
 
 --------------------------------------------------------------------------------
+
 procedure trace (
   p_message     clob     default null  ,
   p_trace       boolean  default true  ,
@@ -629,7 +639,7 @@ select console.version from dual;
 
 **/
 
-$if $$utils_public $then
+$if $$apex_installed $then
 
 function apex_error_handling (
   p_error in apex_error.t_error )
@@ -674,24 +684,28 @@ procedure load_session_configuration;
 procedure set_client_identifier;
 --
 function create_log_entry (
-  p_level       integer                ,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 return integer;
 procedure create_log_entry (
-  p_level       integer                ,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  );
 
 $end
 
@@ -745,18 +759,18 @@ subtype vc2000  is varchar2 ( 2000 char);
 subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
-g_conf_context_available boolean;
-g_conf_cache_valid_until_date  date;
-g_conf_client_identifier varchar2 (64 byte);
-g_conf_log_level         pls_integer;
-g_conf_start_date        date;
-g_conf_end_date          date;
-g_conf_cache_size        integer;
-g_conf_cache_duration    integer;
-g_conf_user_env          boolean;
-g_conf_apex_env          boolean;
-g_conf_cgi_env           boolean;
-g_conf_console_env       boolean;
+g_conf_context_available      boolean;
+g_conf_cache_valid_until_date date;
+g_conf_client_identifier      varchar2 (64 byte);
+g_conf_log_level              pls_integer;
+g_conf_start_date             date;
+g_conf_end_date               date;
+g_conf_cache_size             integer;
+g_conf_cache_duration         integer;
+g_conf_user_env               boolean;
+g_conf_apex_env               boolean;
+g_conf_cgi_env                boolean;
+g_conf_console_env            boolean;
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -778,24 +792,28 @@ procedure load_session_configuration;
 procedure set_client_identifier;
 --
 function create_log_entry (
-  p_level       integer                ,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 return integer;
 procedure create_log_entry (
-  p_level       integer                ,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  );
 
 $end
 
@@ -815,13 +833,15 @@ end permanent;
 --------------------------------------------------------------------------------
 
 procedure error (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 is
 begin
   create_log_entry (
@@ -836,24 +856,28 @@ begin
 end error;
 
 function error (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 return integer is
 begin
   return create_log_entry (
-    p_level       => c_error       ,
-    p_message     => p_message     ,
-    p_trace       => p_trace       ,
-    p_apex_env    => p_apex_env    ,
-    p_cgi_env     => p_cgi_env     ,
-    p_console_env => p_console_env ,
-    p_user_env    => p_user_env    ,
-    p_user_agent  => p_user_agent  );
+    p_level           => c_error           ,
+    p_message         => p_message         ,
+    p_trace           => p_trace           ,
+    p_apex_env        => p_apex_env        ,
+    p_cgi_env         => p_cgi_env         ,
+    p_console_env     => p_console_env     ,
+    p_user_env        => p_user_env        ,
+    p_user_agent      => p_user_agent      ,
+    p_user_error_code => p_user_error_code ,
+    p_user_call_stack => p_user_call_stack );
 end;
 
 --------------------------------------------------------------------------------
@@ -1174,112 +1198,109 @@ end;
 
 --------------------------------------------------------------------------------
 
-$if $$utils_public $then
+$if $$apex_installed $then
 
 function apex_error_handling (
-    p_error in apex_error.t_error )
-    return apex_error.t_error_result
+  p_error in apex_error.t_error )
+return apex_error.t_error_result
 is
-    v_result          apex_error.t_error_result;
-    v_reference_id    number;
-    v_constraint_name varchar2(255);
-    v_message         clob;
+  v_result          apex_error.t_error_result;
+  v_reference_id    number;
+  v_constraint_name varchar2(255);
+  v_message         clob;
 begin
-    v_result := apex_error.init_error_result (
-                    p_error => p_error );
+  v_result := apex_error.init_error_result (p_error => p_error);
 
-    -- If it's an internal error raised by APEX, like an invalid statement or
-    -- code which can't be executed, the error text might contain security sensitive
-    -- information. To avoid this security problem we can rewrite the error to
-    -- a generic error message and log the original error message for further
-    -- investigation by the help desk.
-    if p_error.is_internal_error then
-        -- mask all errors that are not common runtime errors (Access Denied
-        -- errors raised by application / page authorization and all errors
-        -- regarding session and session state)
-        if not p_error.is_common_runtime_error then
-            -- log error for example with an autonomous transaction and return
-            -- v_reference_id as reference#
-            v_message :=
-                case when p_error.message is not null then p_error.message || c_lf end ||
-                case when p_error.additional_info is not null then p_error.message || c_lf end ||
-                case when p_error.ora_sqlcode is not null then p_error.ora_sqlcode || ' ' || p_error.ora_sqlerrm || c_lf end ||
-                case when p_error.error_backtrace is not null then p_error.error_backtrace || c_lf end ||
-                case when p_error.error_statement is not null then p_error.error_statement || c_lf end;
-                --FIXME what about other attributes like p_error.component?
-            v_reference_id := error (
-                p_message => v_message,
-                p_trace   => false);
-            --
+  -- If it's an internal error raised by APEX, like an invalid statement or
+  -- code which can't be executed, the error text might contain security sensitive
+  -- information. To avoid this security problem we can rewrite the error to
+  -- a generic error message and log the original error message for further
+  -- investigation by the help desk.
+  if p_error.is_internal_error then
+    -- mask all errors that are not common runtime errors (Access Denied
+    -- errors raised by application / page authorization and all errors
+    -- regarding session and session state)
+    if not p_error.is_common_runtime_error then
+      -- log error for example with an autonomous transaction and return
+      -- v_reference_id as reference#
+      v_message :=
+        case when p_error.message is not null then p_error.message || c_lf end ||
+        case when p_error.additional_info is not null then p_error.message || c_lf end ||
+        case when p_error.error_statement is not null then p_error.error_statement || c_lf end;
+        --FIXME what about other attributes like p_error.component?
+      v_reference_id := error (
+        p_message         => v_message               ,
+        p_trace           => false                   ,
+        p_user_error_code => p_error.ora_sqlcode     ,
+        p_user_call_stack => p_error.error_backtrace );
+      -- Change the message to the generic error message which doesn't expose
+      -- any sensitive information.
+      v_result.message := 'An unexpected internal application error has occurred. ' ||
+                          'Please get in contact with your Oracle APEX support team and provide ' ||
+                          'reference# ' || to_char(v_reference_id, '999G999G999G999G990') ||
+                          ' for further investigation.';
+      v_result.additional_info := null;
+    end if;
+  else
+    -- Always show the error as inline error
+    -- Note: If you have created manual tabular forms (using the package
+    --       apex_item/htmldb_item in the SQL statement) you should still
+    --       use "On error page" on that pages to avoid loosing entered data
+    v_result.display_location :=
+      case when v_result.display_location = apex_error.c_on_error_page
+        then apex_error.c_inline_in_notification
+        else v_result.display_location
+      end;
 
-            -- Change the message to the generic error message which doesn't expose
-            -- any sensitive information.
-            v_result.message         := 'An unexpected internal application error has occurred. '||
-                                        'Please get in contact with your Oracle APEX support team and provide '||
-                                        'reference# '||to_char(v_reference_id, '999G999G999G999G990')||
-                                        ' for further investigation.';
-            v_result.additional_info := null;
-        end if;
-    else
-        -- Always show the error as inline error
-        -- Note: If you have created manual tabular forms (using the package
-        --       apex_item/htmldb_item in the SQL statement) you should still
-        --       use "On error page" on that pages to avoid loosing entered data
-        v_result.display_location := case
-                                       when v_result.display_location = apex_error.c_on_error_page then apex_error.c_inline_in_notification
-                                       else v_result.display_location
-                                     end;
+    --
+    -- Note: If you want to have friendlier ORA error messages, you can also define
+    --       a text message with the name pattern APEX.ERROR.ORA-number
+    --       There is no need to implement custom code for that.
+    --
 
-        --
-        -- Note: If you want to have friendlier ORA error messages, you can also define
-        --       a text message with the name pattern APEX.ERROR.ORA-number
-        --       There is no need to implement custom code for that.
-        --
+    -- If it's a constraint violation like
+    --
+    --   -) ORA-00001: unique constraint violated
+    --   -) ORA-02091: transaction rolled back (-> can hide a deferred constraint)
+    --   -) ORA-02290: check constraint violated
+    --   -) ORA-02291: integrity constraint violated - parent key not found
+    --   -) ORA-02292: integrity constraint violated - child record found
+    --
+    -- we try to get a friendly error message from our constraint lookup configuration.
+    -- If we don't find the constraint in our lookup table we fallback to
+    -- the original ORA error message.
+    -- if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
+    --     v_constraint_name := apex_error.extract_constraint_name (
+    --                              p_error => p_error );
+    --
+    --     begin
+    --         select message
+    --           into v_result.message
+    --           from constraint_lookup
+    --          where constraint_name = v_constraint_name;
+    --     exception when no_data_found then null; -- not every constraint has to be in our lookup table
+    --     end;
+    -- end if;
 
-        -- If it's a constraint violation like
-        --
-        --   -) ORA-00001: unique constraint violated
-        --   -) ORA-02091: transaction rolled back (-> can hide a deferred constraint)
-        --   -) ORA-02290: check constraint violated
-        --   -) ORA-02291: integrity constraint violated - parent key not found
-        --   -) ORA-02292: integrity constraint violated - child record found
-        --
-        -- we try to get a friendly error message from our constraint lookup configuration.
-        -- If we don't find the constraint in our lookup table we fallback to
-        -- the original ORA error message.
-        -- if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
-        --     v_constraint_name := apex_error.extract_constraint_name (
-        --                              p_error => p_error );
-        --
-        --     begin
-        --         select message
-        --           into v_result.message
-        --           from constraint_lookup
-        --          where constraint_name = v_constraint_name;
-        --     exception when no_data_found then null; -- not every constraint has to be in our lookup table
-        --     end;
-        -- end if;
-
-        -- If an ORA error has been raised, for example a raise_application_error(-20xxx, '...')
-        -- in a table trigger or in a PL/SQL package called by a process and we
-        -- haven't found the error in our lookup table, then we just want to see
-        -- the actual error text and not the full error stack with all the ORA error numbers.
-        if p_error.ora_sqlcode is not null and v_result.message = p_error.message then
-            v_result.message := apex_error.get_first_ora_error_text (
-                                    p_error => p_error );
-        end if;
-
-        -- If no associated page item/tabular form column has been set, we can use
-        -- apex_error.auto_set_associated_item to automatically guess the affected
-        -- error field by examine the ORA error for constraint names or column names.
-        if v_result.page_item_name is null and v_result.column_alias is null then
-            apex_error.auto_set_associated_item (
-                p_error        => p_error,
-                p_error_result => v_result );
-        end if;
+    -- If an ORA error has been raised, for example a raise_application_error(-20xxx, '...')
+    -- in a table trigger or in a PL/SQL package called by a process and we
+    -- haven't found the error in our lookup table, then we just want to see
+    -- the actual error text and not the full error stack with all the ORA error numbers.
+    if p_error.ora_sqlcode is not null and v_result.message = p_error.message then
+      v_result.message := apex_error.get_first_ora_error_text (p_error => p_error);
     end if;
 
-    return v_result;
+    -- If no associated page item/tabular form column has been set, we can use
+    -- apex_error.auto_set_associated_item to automatically guess the affected
+    -- error field by examine the ORA error for constraint names or column names.
+    if v_result.page_item_name is null and v_result.column_alias is null then
+      apex_error.auto_set_associated_item (
+        p_error        => p_error,
+        p_error_result => v_result );
+    end if;
+  end if;
+
+  return v_result;
 end apex_error_handling;
 
 $end
@@ -1408,18 +1429,21 @@ end logging_enabled;
 --------------------------------------------------------------------------------
 
 function create_log_entry (
-  p_level       integer,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 return integer
 is
   pragma autonomous_transaction;
   v_message    clob;
+  v_sqlcode    integer;
   v_call_stack vc4000;
   v_scope      console_logs.scope%type;
   v_log_id     integer;
@@ -1432,6 +1456,9 @@ begin
   end if;
   if p_trace then
     v_call_stack := substrb(get_call_stack, 1, 4000);
+  end if;
+  if sqlcode != 0 then
+    v_sqlcode := sqlcode;
   end if;
   if p_apex_env then
     null; --FIXME implement
@@ -1449,6 +1476,7 @@ begin
     log_level,
     scope,
     message,
+    error_code,
     call_stack,
     session_user,
     module,
@@ -1464,6 +1492,7 @@ begin
     p_level,
     v_scope,
     v_message,
+    v_sqlcode,
     v_call_stack,
     substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 ),
     substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 ),
@@ -1480,26 +1509,30 @@ begin
 end create_log_entry;
 
 procedure create_log_entry (
-  p_level       integer,
-  p_message     clob     default null  ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_level           integer,
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 is
   v_log_id integer;
 begin
   v_log_id := create_log_entry (
-    p_level       => c_error       ,
-    p_message     => p_message     ,
-    p_trace       => p_trace       ,
-    p_apex_env    => p_apex_env    ,
-    p_cgi_env     => p_cgi_env     ,
-    p_console_env => p_console_env ,
-    p_user_env    => p_user_env    ,
-    p_user_agent  => p_user_agent  );
+    p_level           => c_error           ,
+    p_message         => p_message         ,
+    p_trace           => p_trace           ,
+    p_apex_env        => p_apex_env        ,
+    p_cgi_env         => p_cgi_env         ,
+    p_console_env     => p_console_env     ,
+    p_user_env        => p_user_env        ,
+    p_user_agent      => p_user_agent      ,
+    p_user_error_code => p_user_error_code ,
+    p_user_call_stack => p_user_call_stack );
 end;
 
 --------------------------------------------------------------------------------
