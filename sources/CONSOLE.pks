@@ -397,6 +397,31 @@ select console.version from dual;
 
 **/
 
+$if $$utils_public $then
+
+function apex_error_handling (
+  p_error in apex_error.t_error )
+return apex_error.t_error_result;
+/**
+
+You can register this example APEX error handler function to log APEX internal
+errors.
+
+To do so go into the Application Builder into your app > Edit Application
+Properties > Error Handling > Error Handling Function. You can then provide here
+`console.apex_error_handling`.
+
+For more info see the [official
+docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
+
+The implementation code (see package body) is taken from the docs and aligned
+for CONSOLE as a starting point. If this does not fit your needs then simply
+reimplement an own function and use that instead.
+
+**/
+
+$end
+
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
 --------------------------------------------------------------------------------

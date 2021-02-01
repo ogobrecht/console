@@ -22,6 +22,7 @@ Oracle Instrumentation Console
 - [Procedure stop](#stop)
 - [Function context_available_yn](#context_available_yn)
 - [Function version](#version)
+- [Function apex_error_handling](#apex_error_handling)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -462,6 +463,32 @@ SIGNATURE
 
 ```sql
 function version return varchar2;
+```
+
+
+<h2><a id="apex_error_handling"></a>Function apex_error_handling</h2>
+<!------------------------------------------------------------------>
+
+You can register this example APEX error handler function to log APEX internal
+errors.
+
+To do so go into the Application Builder into your app > Edit Application
+Properties > Error Handling > Error Handling Function. You can then provide here
+`console.apex_error_handling`.
+
+For more info see the [official
+docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
+
+The implementation code (see package body) is taken from the docs and aligned
+for CONSOLE as a starting point. If this does not fit your needs then simply
+reimplement an own function and use that instead.
+
+SIGNATURE
+
+```sql
+function apex_error_handling (
+  p_error in apex_error.t_error )
+return apex_error.t_error_result;
 ```
 
 

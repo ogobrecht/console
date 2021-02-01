@@ -34,14 +34,16 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
     - [ ] console.timeEnd (level 3=info)
     - [X] console.assert (level 1=error, if failed)
     - [X] console.clear
-  - Additional method to log permanent messages like installation or upgrade
-    notes with the level zero, which is not affected when the purge job clears
-    the log
-    - [X] console.permanent (level 0)
-  - Additional method as an alias for dbms_application_info.set_action to be
-    friendly to the DBA and monitoring teams. The module is usually set by the
-    application (for example APEX is setting the module)
-    - [X] console.action
+  - Additional methods:
+    - [X] console.permanent (level 0): Log permanent messages like installation
+      or upgrade notes with the level zero, which is not affected when the purge
+      job clears the log
+    - [X] console.apex_error_handling: Log internal APEX errors (also see the
+      [APEX
+      docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82))
+    - [X] console.action: An alias for dbms_application_info.set_action to be
+      friendly to the DBA and monitoring teams. The module is usually set by the
+      application (for example APEX is setting the module)
   - Additional methods to manage logging mode of sessions and to see the current
     status of the package console
     - [X] console.init
@@ -51,14 +53,13 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
     - [X] console.context_available_yn
     - [X] console.version
 
-For an overview of the public API methods please see the [docs for the package console](docs/console.md).
+For a more detailed overview of the public API methods please see the [docs for the package console](docs/console.md).
 
 ## Roadmap
 
 - [ ] API compatibility with the JavaScript console (with exceptions)
 - [ ] APEX plug-in to be able to track client side browser errors
-- [ ] Provide an APEX custom error function to be able to log internal APEX errors
-
+- [ ] Something else? Your ideas here...
 ## Dependencies
 
 Oracle DB >= 12.1
