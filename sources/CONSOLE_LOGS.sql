@@ -34,6 +34,7 @@ begin
         log_level          number (1,0)                                          not null  ,
         scope              varchar2 (1000 byte)                                            ,
         message            clob                                                            ,
+        error_code         integer                                                         ,
         call_stack         varchar2 (4000 byte)                                            ,
         session_user       varchar2 (  32 byte)                                            ,
         module             varchar2 (  48 byte)                                            ,
