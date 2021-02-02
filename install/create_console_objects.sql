@@ -35,6 +35,33 @@ END;
 declare
   v_count pls_integer;
 begin
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_CONSTRAINT_MESSAGES';
+  if v_count = 0 then
+    dbms_output.put_line('- Table CONSOLE_CONSTRAINT_MESSAGES not found, run creation command');
+    execute immediate q'{
+      create table console_constraint_messages (
+        constraint_name  varchar2 ( 128 byte)  not null  ,
+        message          varchar2 (4000 byte)  not null  ,
+        --
+        constraint console_constraint_messages_pk primary key (constraint_name)
+      ) organization index
+    }';
+  else
+    dbms_output.put_line('- Table CONSOLE_CONSTRAINT_MESSAGES found, no action required');
+  end if;
+end;
+/
+
+comment on table  console_constraint_messages                 is 'Lookup user friendly error messages for your constraints.';
+comment on column console_constraint_messages.constraint_name is 'Name of the constraint, primary key.';
+comment on column console_constraint_messages.message         is 'Your friendly error message, when the constraint is violated.';
+
+
+
+
+declare
+  v_count pls_integer;
+begin
   select count(*) into v_count from user_tables where table_name = 'CONSOLE_LEVELS';
   if v_count = 0 then
     dbms_output.put_line('- Table CONSOLE_LEVELS not found, run creation command');
@@ -234,7 +261,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.5.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.6.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -630,7 +657,7 @@ select console.context_available_yn from dual;
 function version return varchar2;
 /**
 
-returns the version information from the console package.
+Returns the version information from the console package.
 
 
 ```sql
@@ -638,6 +665,35 @@ select console.version from dual;
 ```
 
 **/
+
+--------------------------------------------------------------------------------
+
+function extract_constraint_name (
+  p_sqlerrm varchar2 )
+return varchar2;
+/**
+
+Exracts the constraint name out of a SQL error message.
+
+Used to find user friendly error messages for violated constraints in the table
+CONSOLE_CONSTRAINT_MESSAGES.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_constraint_message (
+  p_constraint_name varchar2 )
+return console_constraint_messages.message%type result_cache;
+/**
+
+Returns a user friendly error message for a constraint name.
+
+The messages are looked up from the table CONSOLE_CONSTRAINT_MESSAGES.
+
+**/
+
+--------------------------------------------------------------------------------
 
 $if $$apex_installed $then
 
@@ -1198,6 +1254,28 @@ end;
 
 --------------------------------------------------------------------------------
 
+function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
+begin
+  return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
+end;
+
+--------------------------------------------------------------------------------
+
+function get_constraint_message (p_constraint_name varchar2) return console_constraint_messages.message%type result_cache is
+v_message console_constraint_messages.message%type;
+begin
+  for i in (
+    select message
+      from console_constraint_messages
+     where constraint_name = p_constraint_name )
+  loop
+    v_message := i.message;
+  end loop;
+  return v_message;
+end;
+
+--------------------------------------------------------------------------------
+
 $if $$apex_installed $then
 
 function apex_error_handling (
@@ -1269,18 +1347,9 @@ begin
     -- we try to get a friendly error message from our constraint lookup configuration.
     -- If we don't find the constraint in our lookup table we fallback to
     -- the original ORA error message.
-    -- if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
-    --     v_constraint_name := apex_error.extract_constraint_name (
-    --                              p_error => p_error );
-    --
-    --     begin
-    --         select message
-    --           into v_result.message
-    --           from constraint_lookup
-    --          where constraint_name = v_constraint_name;
-    --     exception when no_data_found then null; -- not every constraint has to be in our lookup table
-    --     end;
-    -- end if;
+    if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
+      v_result.message := get_constraint_message( extract_constraint_name( p_error.ora_sqlerrm ));
+    end if;
 
     -- If an ORA error has been raised, for example a raise_application_error(-20xxx, '...')
     -- in a table trigger or in a PL/SQL package called by a process and we

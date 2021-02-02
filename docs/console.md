@@ -22,6 +22,8 @@ Oracle Instrumentation Console
 - [Procedure stop](#stop)
 - [Function context_available_yn](#context_available_yn)
 - [Function version](#version)
+- [Function extract_constraint_name](#extract_constraint_name)
+- [Function get_constraint_message](#get_constraint_message)
 - [Function apex_error_handling](#apex_error_handling)
 
 
@@ -41,7 +43,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.5.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.6.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -456,7 +458,7 @@ function context_available_yn return varchar2;
 <h2><a id="version"></a>Function version</h2>
 <!------------------------------------------>
 
-returns the version information from the console package.
+Returns the version information from the console package.
 
 
 ```sql
@@ -467,6 +469,39 @@ SIGNATURE
 
 ```sql
 function version return varchar2;
+```
+
+
+<h2><a id="extract_constraint_name"></a>Function extract_constraint_name</h2>
+<!-------------------------------------------------------------------------->
+
+Exracts the constraint name out of a SQL error message.
+
+Used to find user friendly error messages for violated constraints in the table
+CONSOLE_CONSTRAINT_MESSAGES.
+
+SIGNATURE
+
+```sql
+function extract_constraint_name (
+  p_sqlerrm varchar2 )
+return varchar2;
+```
+
+
+<h2><a id="get_constraint_message"></a>Function get_constraint_message</h2>
+<!------------------------------------------------------------------------>
+
+Returns a user friendly error message for a constraint name.
+
+The messages are looked up from the table CONSOLE_CONSTRAINT_MESSAGES.
+
+SIGNATURE
+
+```sql
+function get_constraint_message (
+  p_constraint_name varchar2 )
+return console_constraint_messages.message%type result_cache;
 ```
 
 

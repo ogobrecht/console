@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.5.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.6.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -397,7 +397,7 @@ select console.context_available_yn from dual;
 function version return varchar2;
 /**
 
-returns the version information from the console package.
+Returns the version information from the console package.
 
 
 ```sql
@@ -405,6 +405,35 @@ select console.version from dual;
 ```
 
 **/
+
+--------------------------------------------------------------------------------
+
+function extract_constraint_name (
+  p_sqlerrm varchar2 )
+return varchar2;
+/**
+
+Exracts the constraint name out of a SQL error message.
+
+Used to find user friendly error messages for violated constraints in the table
+CONSOLE_CONSTRAINT_MESSAGES.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_constraint_message (
+  p_constraint_name varchar2 )
+return console_constraint_messages.message%type result_cache;
+/**
+
+Returns a user friendly error message for a constraint name.
+
+The messages are looked up from the table CONSOLE_CONSTRAINT_MESSAGES.
+
+**/
+
+--------------------------------------------------------------------------------
 
 $if $$apex_installed $then
 

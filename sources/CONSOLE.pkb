@@ -483,6 +483,28 @@ end;
 
 --------------------------------------------------------------------------------
 
+function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
+begin
+  return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
+end;
+
+--------------------------------------------------------------------------------
+
+function get_constraint_message (p_constraint_name varchar2) return console_constraint_messages.message%type result_cache is
+v_message console_constraint_messages.message%type;
+begin
+  for i in (
+    select message
+      from console_constraint_messages
+     where constraint_name = p_constraint_name )
+  loop
+    v_message := i.message;
+  end loop;
+  return v_message;
+end;
+
+--------------------------------------------------------------------------------
+
 $if $$apex_installed $then
 
 function apex_error_handling (
@@ -554,18 +576,9 @@ begin
     -- we try to get a friendly error message from our constraint lookup configuration.
     -- If we don't find the constraint in our lookup table we fallback to
     -- the original ORA error message.
-    -- if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
-    --     v_constraint_name := apex_error.extract_constraint_name (
-    --                              p_error => p_error );
-    --
-    --     begin
-    --         select message
-    --           into v_result.message
-    --           from constraint_lookup
-    --          where constraint_name = v_constraint_name;
-    --     exception when no_data_found then null; -- not every constraint has to be in our lookup table
-    --     end;
-    -- end if;
+    if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
+      v_result.message := get_constraint_message( extract_constraint_name( p_error.ora_sqlerrm ));
+    end if;
 
     -- If an ORA error has been raised, for example a raise_application_error(-20xxx, '...')
     -- in a table trigger or in a PL/SQL package called by a process and we
