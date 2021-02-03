@@ -821,7 +821,7 @@ is
   v_log_id integer;
 begin
   v_log_id := create_log_entry (
-    p_level           => c_error           ,
+    p_level           => p_level           ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
     p_apex_env        => p_apex_env        ,
@@ -889,7 +889,7 @@ end read_row_from_sessions;
 procedure set_client_identifier is
 begin
   g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
-  if g_conf_client_identifier is null then
+  if g_conf_client_identifier is null or g_conf_client_identifier = ':' then
     g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
     dbms_session.set_identifier(g_conf_client_identifier);
   end if;

@@ -10,7 +10,7 @@ begin
         message          varchar2 (4000 byte)  not null  ,
         --
         constraint console_constraint_messages_pk primary key (constraint_name)
-      ) organization index
+      )
     }';
   else
     dbms_output.put_line('- Table CONSOLE_CONSTRAINT_MESSAGES found, no action required');

@@ -44,7 +44,7 @@ begin
         message          varchar2 (4000 byte)  not null  ,
         --
         constraint console_constraint_messages_pk primary key (constraint_name)
-      ) organization index
+      )
     }';
   else
     dbms_output.put_line('- Table CONSOLE_CONSTRAINT_MESSAGES found, no action required');
@@ -73,7 +73,7 @@ begin
         constraint console_levels_pk primary key (id)                  ,
         constraint console_levels_uk unique      (name)                ,
         constraint console_levels_ck check       (id in (0,1,2,3,4))
-      ) organization index
+      )
     }';
   else
     dbms_output.put_line('- Table CONSOLE_LEVELS found, no action required');
@@ -150,7 +150,7 @@ begin
         constraint  console_sessions_ck2  check        (apex_env    in ('Y','N'))             ,
         constraint  console_sessions_ck3  check        (cgi_env     in ('Y','N'))             ,
         constraint  console_sessions_ck4  check        (console_env in ('Y','N'))
-      ) organization index
+      )
     }';
   else
     dbms_output.put_line('- Table CONSOLE_SESSIONS found, no action required');
@@ -261,7 +261,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.6.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.6.1'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1592,7 +1592,7 @@ is
   v_log_id integer;
 begin
   v_log_id := create_log_entry (
-    p_level           => c_error           ,
+    p_level           => p_level           ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
     p_apex_env        => p_apex_env        ,
@@ -1660,7 +1660,7 @@ end read_row_from_sessions;
 procedure set_client_identifier is
 begin
   g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
-  if g_conf_client_identifier is null then
+  if g_conf_client_identifier is null or g_conf_client_identifier = ':' then
     g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
     dbms_session.set_identifier(g_conf_client_identifier);
   end if;
