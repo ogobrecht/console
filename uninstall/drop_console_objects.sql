@@ -41,7 +41,7 @@ begin
   for i in (
     select 'drop table ' || table_name || ' cascade constraints' as ddl
       from user_tables
-     where table_name in ('CONSOLE_LOGS', 'CONSOLE_SESSIONS', 'CONSOLE_LEVELS')
+     where table_name in ('CONSOLE_LOGS','CONSOLE_SESSIONS', 'CONSOLE_LEVELS', 'CONSOLE_CONSTRAINT_MESSAGES')
   )
   loop
     dbms_output.put_line('- ' || i.ddl);

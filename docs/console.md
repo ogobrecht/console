@@ -85,6 +85,7 @@ procedure error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
 ```
@@ -111,6 +112,7 @@ function error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer;
@@ -132,7 +134,8 @@ procedure warn (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 ```
 
 
@@ -151,7 +154,8 @@ procedure info (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 ```
 
 
@@ -170,7 +174,8 @@ procedure log(
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 ```
 
 
@@ -189,7 +194,8 @@ procedure debug (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 ```
 
 
@@ -202,13 +208,15 @@ SIGNATURE
 
 ```sql
 procedure trace (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_call_stack varchar2 default null  );
 ```
 
 

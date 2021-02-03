@@ -50,6 +50,7 @@ procedure error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
 /**
@@ -66,6 +67,7 @@ function error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer;
@@ -89,7 +91,8 @@ procedure warn (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 2 (warning).
@@ -105,7 +108,8 @@ procedure info (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -121,7 +125,8 @@ procedure log(
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -137,7 +142,8 @@ procedure debug (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 4 (verbose).
@@ -147,13 +153,15 @@ Log a message with the level 4 (verbose).
 --------------------------------------------------------------------------------
 
 procedure trace (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_call_stack varchar2 default null  );
 /**
 
 Logs a call stack with the level 3 (info).
@@ -488,6 +496,7 @@ function create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer;
@@ -500,6 +509,7 @@ procedure create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
 

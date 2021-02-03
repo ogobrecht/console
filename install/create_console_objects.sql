@@ -241,9 +241,10 @@ comment on table  console_logs                   is 'Table for log entries of th
 comment on column console_logs.log_id            is 'Primary key based on a sequence.';
 comment on column console_logs.log_time          is 'Log entry timestamp.';
 comment on column console_logs.log_level         is 'Log entry level. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info) or 4 (verbose).';
-comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number).';
+comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number). Couls also be an external scope provided by the user.';
 comment on column console_logs.message           is 'The log message itself and in case of an error or trace the call stack informaton.';
-comment on column console_logs.call_stack        is 'The call_stack and in case of an error also the error stack and error backtrace.';
+comment on column console_logs.error_code        is 'The error code. Is normally the SQLCODE, but could also be a user error code when log entry was coming from external (user interface, ETL preprocessing, whatever...)';
+comment on column console_logs.call_stack        is 'The call_stack and in case of an error also the error stack and error backtrace. Could also be an external call stack provided by the user.';
 comment on column console_logs.session_user      is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
 comment on column console_logs.module            is 'The application name (module). Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.action            is 'The action/position in the module (application name). Can be set through the DBMS_APPLICATION_INFO package or OCI.';
@@ -310,6 +311,7 @@ procedure error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
 /**
@@ -326,6 +328,7 @@ function error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer;
@@ -349,7 +352,8 @@ procedure warn (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 2 (warning).
@@ -365,7 +369,8 @@ procedure info (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -381,7 +386,8 @@ procedure log(
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -397,7 +403,8 @@ procedure debug (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  );
 /**
 
 Log a message with the level 4 (verbose).
@@ -407,13 +414,15 @@ Log a message with the level 4 (verbose).
 --------------------------------------------------------------------------------
 
 procedure trace (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  );
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_call_stack varchar2 default null  );
 /**
 
 Logs a call stack with the level 3 (info).
@@ -748,6 +757,7 @@ function create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer;
@@ -760,6 +770,7 @@ procedure create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
 
@@ -856,6 +867,7 @@ function create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer;
@@ -868,6 +880,7 @@ procedure create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
 
@@ -896,19 +909,23 @@ procedure error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
 begin
   create_log_entry (
-    p_level       => c_error       ,
-    p_message     => p_message     ,
-    p_trace       => p_trace       ,
-    p_apex_env    => p_apex_env    ,
-    p_cgi_env     => p_cgi_env     ,
-    p_console_env => p_console_env ,
-    p_user_env    => p_user_env    ,
-    p_user_agent  => p_user_agent  );
+    p_level           => c_error           ,
+    p_message         => p_message         ,
+    p_trace           => p_trace           ,
+    p_apex_env        => p_apex_env        ,
+    p_cgi_env         => p_cgi_env         ,
+    p_console_env     => p_console_env     ,
+    p_user_env        => p_user_env        ,
+    p_user_agent      => p_user_agent      ,
+    p_user_scope      => p_user_scope      ,
+    p_user_error_code => p_user_error_code ,
+    p_user_call_stack => p_user_call_stack );
 end error;
 
 function error (
@@ -919,6 +936,7 @@ function error (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer is
@@ -932,6 +950,7 @@ begin
     p_console_env     => p_console_env     ,
     p_user_env        => p_user_env        ,
     p_user_agent      => p_user_agent      ,
+    p_user_scope      => p_user_scope      ,
     p_user_error_code => p_user_error_code ,
     p_user_call_stack => p_user_call_stack );
 end;
@@ -945,7 +964,8 @@ procedure warn (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  )
 is
 begin
   if logging_enabled (c_warning) then
@@ -957,7 +977,8 @@ begin
       p_cgi_env     => p_cgi_env     ,
       p_console_env => p_console_env ,
       p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  );
+      p_user_agent  => p_user_agent  ,
+      p_user_scope  => p_user_scope  );
   end if;
 end warn;
 
@@ -970,7 +991,8 @@ procedure info (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -982,7 +1004,8 @@ begin
       p_cgi_env     => p_cgi_env     ,
       p_console_env => p_console_env ,
       p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  );
+      p_user_agent  => p_user_agent  ,
+      p_user_scope  => p_user_scope  );
   end if;
 end info;
 
@@ -995,7 +1018,8 @@ procedure log (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
@@ -1007,7 +1031,8 @@ begin
       p_cgi_env     => p_cgi_env     ,
       p_console_env => p_console_env ,
       p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  );
+      p_user_agent  => p_user_agent  ,
+      p_user_scope  => p_user_scope  );
   end if;
 end log;
 
@@ -1020,7 +1045,8 @@ procedure debug (
   p_cgi_env     boolean  default false ,
   p_console_env boolean  default false ,
   p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_user_agent  varchar2 default null  ,
+  p_user_scope  varchar2 default null  )
 is
 begin
   if logging_enabled (c_verbose) then
@@ -1032,32 +1058,37 @@ begin
       p_cgi_env     => p_cgi_env     ,
       p_console_env => p_console_env ,
       p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  );
+      p_user_agent  => p_user_agent  ,
+      p_user_scope  => p_user_scope  );
   end if;
 end debug;
 
 --------------------------------------------------------------------------------
 
 procedure trace (
-  p_message     clob     default null  ,
-  p_trace       boolean  default true  ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_call_stack varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
     create_log_entry (
-      p_level       => c_info        ,
-      p_message     => p_message     ,
-      p_trace       => p_trace       ,
-      p_apex_env    => p_apex_env    ,
-      p_cgi_env     => p_cgi_env     ,
-      p_console_env => p_console_env ,
-      p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  );
+      p_level           => c_info           ,
+      p_message         => p_message        ,
+      p_trace           => p_trace          ,
+      p_apex_env        => p_apex_env       ,
+      p_cgi_env         => p_cgi_env        ,
+      p_console_env     => p_console_env    ,
+      p_user_env        => p_user_env       ,
+      p_user_agent      => p_user_agent     ,
+      p_user_scope      => p_user_scope     ,
+      p_user_call_stack => p_user_call_stack);
   end if;
 end trace;
 
@@ -1506,6 +1537,7 @@ function create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer
@@ -1517,18 +1549,25 @@ is
   v_scope      console_logs.scope%type;
   v_log_id     integer;
 begin
-  v_scope := substrb(get_scope, 1, 1000);
-  if p_message is not null then
-    v_message := p_message;
-  elsif sqlcode != 0 then
-    v_message := sqlerrm;
-  end if;
-  if p_trace then
-    v_call_stack := substrb(get_call_stack, 1, 4000);
-  end if;
-  if sqlcode != 0 then
-    v_sqlcode := sqlcode;
-  end if;
+  v_scope := case
+    when p_user_scope is not null then substrb(p_user_scope, 1, 1000)
+    else substrb(get_scope, 1, 1000)
+    end;
+  v_message := case
+    when p_message is not null then p_message
+    when sqlcode != 0 then sqlerrm
+    else null
+    end;
+  v_sqlcode := case
+    when p_user_error_code is not null then p_user_error_code
+    when sqlcode != 0 then sqlcode
+    else null
+    end;
+  v_call_stack := case
+    when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
+    when p_trace then substrb(get_call_stack, 1, 4000)
+    else null
+    end;
   if p_apex_env then
     null; --FIXME implement
   end if;
@@ -1586,6 +1625,7 @@ procedure create_log_entry (
   p_console_env     boolean  default false ,
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
@@ -1600,6 +1640,7 @@ begin
     p_console_env     => p_console_env     ,
     p_user_env        => p_user_env        ,
     p_user_agent      => p_user_agent      ,
+    p_user_scope      => p_user_scope      ,
     p_user_error_code => p_user_error_code ,
     p_user_call_stack => p_user_call_stack );
 end;
