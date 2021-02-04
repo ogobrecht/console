@@ -1,21 +1,27 @@
-prompt - Set compiler flags
-DECLARE
-  v_apex_installed VARCHAR2(5) := 'FALSE'; -- Do not change (is set dynamically).
-  v_utils_public   VARCHAR2(5) := 'TRUE'; -- Make utilities public available (for testing or other usages).
-BEGIN
-  FOR i IN (SELECT 1
-              FROM all_objects
-             WHERE object_type = 'SYNONYM'
-               AND object_name = 'APEX_EXPORT')
-  LOOP
-    v_apex_installed := 'TRUE';
-  END LOOP;
+-- select * from all_plsql_object_settings where name = 'CONSOLE';
 
-  -- Show unset compiler flags as errors (results for example in errors like "PLW-06003: unknown inquiry directive '$$UTILS_PUBLIC'")
-  EXECUTE IMMEDIATE 'alter session set plsql_warnings = ''ENABLE:6003''';
-  -- Finally set compiler flags
-  EXECUTE IMMEDIATE 'alter session set plsql_ccflags = '''
+prompt - Set compiler flags
+declare
+  v_apex_installed varchar2(5) := 'FALSE'; -- Do not change (is set dynamically).
+  v_utils_public   varchar2(5) := 'FALSE'; -- Make utilities public available (for testing or other usages).
+begin
+
+  --Basic settings
+  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6010,disable:6027''';
+  execute immediate 'alter session set plscope_settings = ''identifiers:all''';
+  execute immediate 'alter session set plsql_optimize_level = 3';
+
+  for i in (select 1
+              from all_objects
+             where object_type = 'SYNONYM'
+               and object_name = 'APEX_EXPORT')
+  loop
+    v_apex_installed := 'TRUE';
+  end loop;
+
+  execute immediate 'alter session set plsql_ccflags = '''
     || 'APEX_INSTALLED:' || v_apex_installed || ','
     || 'UTILS_PUBLIC:'   || v_utils_public   || '''';
-END;
+
+end;
 /
