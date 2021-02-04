@@ -30,23 +30,21 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
   PL/SQL instrumentation tool and therefore these six are not implemented:
   countReset (instead we have countEnd), dir, dirxml, group, groupCollapsed,
   groupEnd.
-  |                      |                                  |
-  |----------------------|----------------------------------|
-  | [X] console.error    | (level 1=error)                  |
-  | [X] console.warn     | (level 2=warning)                |
-  | [X] console.info     | (level 3=info)                   |
-  | [X] console.log      | (level 3=info)                   |
-  | [X] console.debug    | (level 4=verbose)                |
-  | [X] console.trace    | (level 3=info)                   |
-  | [ ] console.table    | (level 3=info)                   |
-  | [ ] console.count    |                                  |
-  | [ ] console.countEnd | (level 3=info, differs from API) |
-  | [ ] console.time     |                                  |
-  | [ ] console.timeEnd  | (level 3=info)                   |
-  | [X] console.assert   | (level 1=error, if failed)       |
-  | [X] console.clear    |                                  |
+  - [X] `console.error     >` (level 1=error)
+  - [X] `console.warn      >` (level 2=warning)
+  - [X] `console.info      >` (level 3=info)
+  - [X] `console.log       >` (level 3=info)
+  - [X] `console.debug     >` (level 4=verbose)
+  - [X] `console.trace     >` (level 3=info)
+  - [ ] `console.table     >` (level 3=info)
+  - [ ] `console.count     >`
+  - [ ] `console.countEnd  >` (level 3=info, differs from API)
+  - [ ] `console.time      >`
+  - [ ] `console.timeEnd   >` (level 3=info)
+  - [X] `console.assert    >` (level 1=error, if failed)
+  - [X] `console.clear     >`
 - Additional methods:
-  - [X] console.permanent (level 0=permanent): Log permanent messages like
+  - [X] `console.permanent >` (level 0=permanent): Log permanent messages like
     installation or upgrade notes with the level zero, which is not affected
     when the purge job clears the log.
   - [X] console.apex_error_handling: Log internal APEX errors (also see the
