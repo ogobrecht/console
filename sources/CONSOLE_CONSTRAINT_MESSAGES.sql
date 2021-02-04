@@ -6,11 +6,11 @@ begin
     dbms_output.put_line('- Table CONSOLE_CONSTRAINT_MESSAGES not found, run creation command');
     execute immediate q'{
       create table console_constraint_messages (
-        constraint_name  varchar2 ( 128 byte)  not null  ,
-        message          varchar2 (4000 byte)  not null  ,
+        constraint_name  varchar2 (128 byte)  not null  ,
+        message          varchar2 (512 byte)  not null  ,
         --
         constraint console_constraint_messages_pk primary key (constraint_name)
-      )
+      ) organization index
     }';
   else
     dbms_output.put_line('- Table CONSOLE_CONSTRAINT_MESSAGES found, no action required');

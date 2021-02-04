@@ -12,7 +12,7 @@ begin
         constraint console_levels_pk primary key (id)                  ,
         constraint console_levels_uk unique      (name)                ,
         constraint console_levels_ck check       (id in (0,1,2,3,4))
-      )
+      ) organization index
     }';
   else
     dbms_output.put_line('- Table CONSOLE_LEVELS found, no action required');

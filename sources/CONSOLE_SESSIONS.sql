@@ -44,7 +44,7 @@ begin
         constraint  console_sessions_ck2  check        (apex_env    in ('Y','N'))             ,
         constraint  console_sessions_ck3  check        (cgi_env     in ('Y','N'))             ,
         constraint  console_sessions_ck4  check        (console_env in ('Y','N'))
-      )
+      ) organization index
     }';
   else
     dbms_output.put_line('- Table CONSOLE_SESSIONS found, no action required');
