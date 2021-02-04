@@ -18,7 +18,7 @@ c_hash               constant varchar2 ( 1 byte) := '#';
 c_slash              constant varchar2 ( 1 byte) := '/';
 c_anon_block_ora     constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
-c_client_id_prefix   constant varchar2 ( 5 byte) := '{o,o}';
+c_client_id_prefix   constant varchar2 ( 6 byte) := '{o,o} ';
 c_console_pkg_name   constant varchar2 (60 byte) := upper($$plsql_unit) || '.';
 c_ctx_namespace      constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute constant varchar2 (15 byte) := 'TEST';
@@ -176,108 +176,124 @@ end;
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message     clob                   ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  ,
-  p_user_scope  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 is
 begin
   if logging_enabled (c_warning) then
     create_log_entry (
-      p_level       => c_warning     ,
-      p_message     => p_message     ,
-      p_trace       => p_trace       ,
-      p_apex_env    => p_apex_env    ,
-      p_cgi_env     => p_cgi_env     ,
-      p_console_env => p_console_env ,
-      p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  ,
-      p_user_scope  => p_user_scope  );
+      p_level           => c_warning         ,
+      p_message         => p_message         ,
+      p_trace           => p_trace           ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
   end if;
 end warn;
 
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message     clob                   ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  ,
-  p_user_scope  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
     create_log_entry (
-      p_level       => c_info        ,
-      p_message     => p_message     ,
-      p_trace       => p_trace       ,
-      p_apex_env    => p_apex_env    ,
-      p_cgi_env     => p_cgi_env     ,
-      p_console_env => p_console_env ,
-      p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  ,
-      p_user_scope  => p_user_scope  );
+      p_level           => c_info            ,
+      p_message         => p_message         ,
+      p_trace           => p_trace           ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
   end if;
 end info;
 
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message     clob                   ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  ,
-  p_user_scope  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
     create_log_entry (
-      p_level       => c_info        ,
-      p_message     => p_message     ,
-      p_trace       => p_trace       ,
-      p_apex_env    => p_apex_env    ,
-      p_cgi_env     => p_cgi_env     ,
-      p_console_env => p_console_env ,
-      p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  ,
-      p_user_scope  => p_user_scope  );
+      p_level           => c_info            ,
+      p_message         => p_message         ,
+      p_trace           => p_trace           ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
   end if;
 end log;
 
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message     clob                   ,
-  p_trace       boolean  default false ,
-  p_apex_env    boolean  default false ,
-  p_cgi_env     boolean  default false ,
-  p_console_env boolean  default false ,
-  p_user_env    boolean  default false ,
-  p_user_agent  varchar2 default null  ,
-  p_user_scope  varchar2 default null  )
+  p_message         clob     default null  ,
+  p_trace           boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
 is
 begin
   if logging_enabled (c_verbose) then
     create_log_entry (
-      p_level       => c_verbose     ,
-      p_message     => p_message     ,
-      p_trace       => p_trace       ,
-      p_apex_env    => p_apex_env    ,
-      p_cgi_env     => p_cgi_env     ,
-      p_console_env => p_console_env ,
-      p_user_env    => p_user_env    ,
-      p_user_agent  => p_user_agent  ,
-      p_user_scope  => p_user_scope  );
+      p_level           => c_verbose         ,
+      p_message         => p_message         ,
+      p_trace           => p_trace           ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
   end if;
 end debug;
 
@@ -292,21 +308,23 @@ procedure trace (
   p_user_env        boolean  default false ,
   p_user_agent      varchar2 default null  ,
   p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
 begin
   if logging_enabled (c_info) then
     create_log_entry (
-      p_level           => c_info           ,
-      p_message         => p_message        ,
-      p_trace           => p_trace          ,
-      p_apex_env        => p_apex_env       ,
-      p_cgi_env         => p_cgi_env        ,
-      p_console_env     => p_console_env    ,
-      p_user_env        => p_user_env       ,
-      p_user_agent      => p_user_agent     ,
-      p_user_scope      => p_user_scope     ,
-      p_user_call_stack => p_user_call_stack);
+      p_level           => c_info            ,
+      p_message         => p_message         ,
+      p_trace           => p_trace           ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
   end if;
 end trace;
 
