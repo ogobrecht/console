@@ -39,14 +39,21 @@ begin
 
   --tables
   for i in (
-    select 'drop table ' || table_name || ' cascade constraints' as ddl
+    select 'drop table ' || table_name || ' cascade constraints' as ddl,
+           table_name
       from user_tables
-     where table_name in ('CONSOLE_LOGS','CONSOLE_SESSIONS', 'CONSOLE_LEVELS', 'CONSOLE_CONSTRAINT_MESSAGES')
-  )
+     where table_name in ('CONSOLE_LOGS','CONSOLE_SESSIONS', 'CONSOLE_LEVELS', 'CONSOLE_CONSTRAINT_MESSAGES') )
   loop
-    dbms_output.put_line('- ' || i.ddl);
-    execute immediate i.ddl;
-    v_object_count := v_object_count + 1;
+    execute immediate 'select count(*) from ' || i.table_name ||
+      case when i.table_name = 'CONSOLE_LOGS' then q'{ where log_level = 0 and message not like '{o,o} CONSOLE%' }'
+      end into v_count;
+    if i.table_name in ('CONSOLE_LOGS','CONSOLE_CONSTRAINT_MESSAGES') and v_count > 0 then
+      dbms_output.put_line('- NOTE: ' || i.table_name || ' contains important user data - please review and drop it by youself');
+    else
+      dbms_output.put_line('- ' || i.ddl);
+      execute immediate i.ddl;
+      v_object_count := v_object_count + 1;
+    end if;
   end loop;
 
   dbms_output.put_line('- ' || v_object_count || ' object' || case when v_object_count != 1 then 's' end || ' dropped');

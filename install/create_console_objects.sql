@@ -259,7 +259,7 @@ comment on column console_logs.client_identifier is 'The client identifier. Can 
 comment on column console_logs.ip_address        is 'IP address of the machine from which the client is connected. If the client and server are on the same machine and the connection uses IPv6 addressing, then it is set to ::1.';
 comment on column console_logs.host              is 'Name of the host machine from which the client is connected.';
 comment on column console_logs.os_user           is 'Operating system user name of the client process that initiated the database session.';
-comment on column console_logs.os_user_agent     is 'Operating system user agent (web browser engine). This information will only be available, if we overwrite the console.error method of the client browser and bring these errors back to the server. For APEX we will have a plug-in in the future to do this.';
+comment on column console_logs.os_user_agent     is 'Operating system user agent (for example web browser engine). This information will only be available, if actively provided to one of the console log methods. For APEX we will have a plug-in in the future to log client side JavaScript errors - then this attribute will be interesting.';
 
 
 
