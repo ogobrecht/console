@@ -28,8 +28,9 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
   This means, the same method names are provided, the parameters differs a
   little bit to fit our needs in PL/SQL. Not all methods making sense in a
   PL/SQL instrumentation tool and therefore these six are not implemented:
-  countReset (instead we have countEnd), dir, dirxml, group, groupCollapsed,
-  groupEnd.
+  countReset (instead we have count_end), dir, dirxml, group, groupCollapsed,
+  groupEnd. For the two \*_end methods we use snake case instead of camel case
+  for readability:
   - [X] `console.error` (level 1=error)
   - [X] `console.warn` (level 2=warning)
   - [X] `console.info` (level 3=info)
@@ -38,9 +39,9 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
   - [X] `console.trace` (level 3=info)
   - [ ] `console.table` (level 3=info)
   - [ ] `console.count`
-  - [ ] `console.countEnd` (level 3=info, differs from API)
+  - [ ] `console.count_end` (level 3=info, differs from API)
   - [ ] `console.time`
-  - [ ] `console.timeEnd` (level 3=info)
+  - [ ] `console.time_end` (level 3=info)
   - [X] `console.assert` (level 1=error, if failed)
   - [X] `console.clear`
 - Additional methods:
@@ -69,7 +70,7 @@ For a more detailed overview of the public API methods please see the [docs for 
 
 - [ ] API compatibility with the JavaScript console (with exceptions)
 - [ ] APEX plug-in to be able to track client side browser errors
-- [ ] Something else? Let us discuss your ideas - simply open an [issue](https://github.com/ogobrecht/console/issues/new) ...
+- [ ] Something else? Let us discuss your ideas - simply [open an issue](https://github.com/ogobrecht/console/issues/new) ...
 
 ## Dependencies
 
