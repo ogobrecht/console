@@ -14,6 +14,7 @@ Oracle Instrumentation Console
 - [Procedure debug](#debug)
 - [Procedure trace](#trace)
 - [Procedure assert](#assert)
+- [Procedure module](#module)
 - [Procedure action](#action)
 - [Function my_client_identifier](#my_client_identifier)
 - [Function my_log_level](#my_log_level)
@@ -43,7 +44,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.7.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.7.2'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -263,6 +264,29 @@ procedure assert (
 ```
 
 
+<h2><a id="module"></a>Procedure module</h2>
+<!----------------------------------------->
+
+An alias for dbms_application_info.set_module.
+
+Use the given module and action to set the session module and action attributes
+(in memory operation, does not log anything). These attributes are then visible
+in the system session views, the user environment and will be logged within all
+console logging methods.
+
+Please note that your app framework may set the module and you should consider
+to only set the action attribute with the `action` (see below).
+
+SIGNATURE
+
+```sql
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+);
+```
+
+
 <h2><a id="action"></a>Procedure action</h2>
 <!----------------------------------------->
 
@@ -276,8 +300,6 @@ methods.
 When you set the action attribute with `console.action` you should also reset it
 when you have finished your work to prevent wrong info in the system and your
 logging for subsequent method calls.
-
-The action is automatically cleared in the method `console.error`.
 
 EXAMPLE
 

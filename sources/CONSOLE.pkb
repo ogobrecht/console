@@ -345,11 +345,23 @@ end assert;
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+)
+is
+begin
+  dbms_application_info.set_module(
+    p_module ,
+    p_action );
+end module;
+
 procedure action (
   p_action varchar2 )
 is
 begin
-  dbms_application_info.set_action(p_action);
+  dbms_application_info.set_action (
+    p_action );
 end action;
 
 --------------------------------------------------------------------------------

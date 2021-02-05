@@ -1,8 +1,7 @@
 # Oracle Instrumentation Console
 
-An instrumentation tool for Oracle developers. Save to install on production and
-mostly API compatible with the [JavaScript
-console](https://developers.google.com/web/tools/chrome-devtools/console/api).
+An instrumentation tool for Oracle developers focused on easy installation and
+usage.
 
 ## Easy to install
 
@@ -23,7 +22,7 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
     the client identifier without recompilation (no, there is no way to enable
     logging for all sessions, for good reasons and if a session has no client
     identifier, console is setting one for you).
-- API compatible with the [JavaScript Console
+- Mostly API compatible with the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   This means, the same method names are provided, the parameters differs a
   little bit to fit our needs in PL/SQL. Not all methods making sense in a

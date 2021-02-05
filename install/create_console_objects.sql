@@ -268,7 +268,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.7.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.7.2'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -480,6 +480,24 @@ end;
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+);
+/**
+
+An alias for dbms_application_info.set_module.
+
+Use the given module and action to set the session module and action attributes
+(in memory operation, does not log anything). These attributes are then visible
+in the system session views, the user environment and will be logged within all
+console logging methods.
+
+Please note that your app framework may set the module and you should consider
+to only set the action attribute with the `action` (see below).
+
+**/
+
 procedure action (
   p_action varchar2
 );
@@ -495,8 +513,6 @@ methods.
 When you set the action attribute with `console.action` you should also reset it
 when you have finished your work to prevent wrong info in the system and your
 logging for subsequent method calls.
-
-The action is automatically cleared in the method `console.error`.
 
 EXAMPLE
 
@@ -1142,11 +1158,23 @@ end assert;
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+)
+is
+begin
+  dbms_application_info.set_module(
+    p_module ,
+    p_action );
+end module;
+
 procedure action (
   p_action varchar2 )
 is
 begin
-  dbms_application_info.set_action(p_action);
+  dbms_application_info.set_action (
+    p_action );
 end action;
 
 --------------------------------------------------------------------------------
