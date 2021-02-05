@@ -39,7 +39,7 @@ console](https://developers.google.com/web/tools/chrome-devtools/console/api).
   - [X] `console.trace` (level 3=info)
   - [ ] `console.table` (level 3=info)
   - [ ] `console.count`
-  - [ ] `console.count_end` (level 3=info, differs from API)
+  - [ ] `console.count_end` (level 3=info)
   - [ ] `console.time`
   - [ ] `console.time_end` (level 3=info)
   - [X] `console.assert` (level 1=error, if failed)
