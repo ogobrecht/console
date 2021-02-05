@@ -42,7 +42,7 @@ begin
   --dbms_output.put_line( '- empty loop  : ' || trim(to_char(v_rt_null,    '0.000000')) || ' seconds (it does not really matter)' );
   dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
   dbms_output.put_line( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '0.0')));
+  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
 end;
 /
 
@@ -71,7 +71,7 @@ begin
   --
   dbms_output.put_line( '- timestamp   : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- date        : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_time/v_rt_date, '0.0')));
+  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_time/v_rt_date, '90.0')));
 end;
 /
 
@@ -100,7 +100,7 @@ begin
   --
   dbms_output.put_line( '- date        : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- get_time    : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_date/v_rt_time, '0.0')));
+  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_date/v_rt_time, '90.0')));
 end;
 /
 
@@ -129,6 +129,6 @@ begin
   --
   dbms_output.put_line( '- boolean     : ' || trim(to_char(v_rt_bool, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- integer     : ' || trim(to_char(v_rt_int, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_bool/v_rt_int, '0.0')));
+  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_bool/v_rt_int, '90.0')));
 end;
 /
