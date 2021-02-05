@@ -88,7 +88,7 @@ function create_log_entry (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer;
+return console_logs.log_id%type;
 procedure create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
@@ -776,30 +776,26 @@ function create_log_entry (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer
+return console_logs.log_id%type
 is
   pragma autonomous_transaction;
-  v_message    clob;
-  v_sqlcode    integer;
-  v_call_stack vc4000;
-  v_scope      console_logs.scope%type;
-  v_log_id     integer;
+  v_row console_logs%rowtype;
 begin
-  v_scope := case
-    when p_user_scope is not null then substrb(p_user_scope, 1, 1000)
-    else substrb(get_scope, 1, 1000)
+  v_row.scope := case
+    when p_user_scope is not null then substrb(p_user_scope, 1, 256)
+    else substrb(get_scope, 1, 256)
     end;
-  v_message := case
+  v_row.message := case
     when p_message is not null then p_message
     when sqlcode != 0 then sqlerrm
     else null
     end;
-  v_sqlcode := case
+  v_row.error_code := case
     when p_user_error_code is not null then p_user_error_code
     when sqlcode != 0 then sqlcode
     else null
     end;
-  v_call_stack := case
+  v_row.call_stack := case
     when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
     when p_trace then substrb(get_call_stack, 1, 4000)
     else null
@@ -816,40 +812,22 @@ begin
   if p_user_env then
     null; --FIXME implement
   end if;
-  insert into console_logs (
-    log_level,
-    scope,
-    message,
-    error_code,
-    call_stack,
-    session_user,
-    module,
-    action,
-    client_info,
-    client_identifier,
-    ip_address,
-    host,
-    os_user,
-    os_user_agent
-  )
-  values (
-    p_level,
-    v_scope,
-    v_message,
-    v_sqlcode,
-    v_call_stack,
-    substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 ),
-    substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 ),
-    substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 ),
-    substrb ( sys_context ( 'USERENV', 'CLIENT_INFO'       ), 1, 64 ),
-    substrb ( sys_context ( 'USERENV', 'CLIENT_IDENTIFIER' ), 1, 64 ),
-    substrb ( sys_context ( 'USERENV', 'IP_ADDRESS'        ), 1, 48 ),
-    substrb ( sys_context ( 'USERENV', 'HOST'              ), 1, 64 ),
-    substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 ),
-    substrb ( p_user_agent, 1, 200 )
-  ) returning log_id into v_log_id;
+
+  v_row.log_level         := p_level;
+  v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
+  v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
+  v_row.action            := substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 );
+  v_row.client_info       := substrb ( sys_context ( 'USERENV', 'CLIENT_INFO'       ), 1, 64 );
+  v_row.client_identifier := substrb ( sys_context ( 'USERENV', 'CLIENT_IDENTIFIER' ), 1, 64 );
+  v_row.ip_address        := substrb ( sys_context ( 'USERENV', 'IP_ADDRESS'        ), 1, 48 );
+  v_row.host              := substrb ( sys_context ( 'USERENV', 'HOST'              ), 1, 64 );
+  v_row.os_user           := substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 );
+  v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
+  v_row.log_time          := systimestamp;
+
+  insert into console_logs values v_row returning log_id into v_row.log_id;
   commit;
-  return v_log_id;
+  return v_row.log_id;
 end create_log_entry;
 
 procedure create_log_entry (
