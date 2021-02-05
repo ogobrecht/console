@@ -176,7 +176,7 @@ end;
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -207,7 +207,7 @@ end warn;
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -238,7 +238,7 @@ end info;
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -269,7 +269,7 @@ end log;
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,

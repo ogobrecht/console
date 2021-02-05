@@ -352,7 +352,7 @@ function](https://docs.oracle.com/en/database/oracle/application-express/20.2/ae
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -371,7 +371,7 @@ Log a message with the level 2 (warning).
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -390,7 +390,7 @@ Log a message with the level 3 (info).
 --------------------------------------------------------------------------------
 
 procedure log(
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -409,7 +409,7 @@ Log a message with the level 3 (info).
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -973,7 +973,7 @@ end;
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1004,7 +1004,7 @@ end warn;
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1035,7 +1035,7 @@ end info;
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1066,7 +1066,7 @@ end log;
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         clob     default null  ,
+  p_message         clob                   ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
