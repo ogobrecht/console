@@ -2,7 +2,7 @@ set define on
 set serveroutput on
 set verify off
 set feedback off
-set linesize 120
+set linesize 240
 set trimout on
 set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
@@ -45,10 +45,16 @@ begin
      where table_name in ('CONSOLE_LOGS','CONSOLE_SESSIONS', 'CONSOLE_LEVELS', 'CONSOLE_CONSTRAINT_MESSAGES') )
   loop
     execute immediate 'select count(*) from ' || i.table_name ||
-      case when i.table_name = 'CONSOLE_LOGS' then q'{ where log_level = 0 and message not like '{o,o} CONSOLE%' }'
-      end into v_count;
+      case when i.table_name = 'CONSOLE_LOGS'
+        then q'{ where log_level = 0 and message not like '{o,o} CONSOLE%' }'
+        else null
+      end
+      into v_count;
     if i.table_name in ('CONSOLE_LOGS','CONSOLE_CONSTRAINT_MESSAGES') and v_count > 0 then
-      dbms_output.put_line('- NOTE: ' || i.table_name || ' contains important user data - please review and drop it by youself');
+      dbms_output.put_line(
+        '- NOTE: ' || i.table_name ||
+        ' contains important user data - please review and drop it by youself (' ||
+        i.ddl || ')');
     else
       dbms_output.put_line('- ' || i.ddl);
       execute immediate i.ddl;
