@@ -6,12 +6,12 @@ begin
     dbms_output.put_line('- Table CONSOLE_LEVELS not found, run creation command');
     execute immediate q'{
       create table console_levels (
-        id    number   (1,0)      not null  ,
+        id    number   ( 1,0)     not null  ,
         name  varchar2 (10 byte)  not null  ,
         --
-        constraint console_levels_pk primary key (id)                  ,
-        constraint console_levels_uk unique      (name)                ,
-        constraint console_levels_ck check       (id in (0,1,2,3,4))
+        constraint  console_levels_pk  primary key (id)                 ,
+        constraint  console_levels_uk  unique      (name)               ,
+        constraint  console_levels_ck  check       (id in (0,1,2,3,4))
       ) organization index
     }';
   else

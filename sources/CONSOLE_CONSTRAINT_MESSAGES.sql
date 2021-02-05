@@ -9,7 +9,7 @@ begin
         constraint_name  varchar2 (128 byte)  not null  ,
         message          varchar2 (512 byte)  not null  ,
         --
-        constraint console_constraint_messages_pk primary key (constraint_name)
+        constraint  console_constraint_messages_pk  primary key (constraint_name)
       ) organization index
     }';
   else
