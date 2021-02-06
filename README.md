@@ -46,14 +46,14 @@ usage.
 - Additional methods:
   - [X] `console.permanent` (level 0=permanent): Log permanent messages like
     installation or upgrade notes with the level zero, which is not affected
-    when the purge job clears the log.
+    when the purge job clears the log table.
   - [X] `console.apex_error_handling`: Log internal APEX errors (also see the
     [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
-  - [X] `console.action`: An alias for dbms_application_info.set_action to be
-    friendly to the DBA and monitoring teams. The module is usually set by the
-    application (for example APEX is setting the module, and often also the
-    action).
+  - [X] `console.action` & `console.module`: Aliases for
+    dbms_application_info.set_action and set_module to be friendly to the DBA
+    and monitoring teams. The module is usually set by the application (for
+    example APEX is setting the module, and often also the action).
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
   - [X] `console.init`

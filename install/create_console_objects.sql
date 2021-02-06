@@ -268,7 +268,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.7.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.8.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -352,7 +352,7 @@ function](https://docs.oracle.com/en/database/oracle/application-express/20.2/ae
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -371,7 +371,7 @@ Log a message with the level 2 (warning).
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -390,7 +390,7 @@ Log a message with the level 3 (info).
 --------------------------------------------------------------------------------
 
 procedure log(
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -409,7 +409,7 @@ Log a message with the level 3 (info).
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -443,6 +443,51 @@ procedure trace (
 Logs a call stack with the level 3 (info).
 
 **/
+
+--------------------------------------------------------------------------------
+
+procedure time (
+  p_label varchar2 default null );
+/**
+
+Starts a new timer. Call `console.time_end([label]) to stop the timer and get or
+log the elapsed time.
+
+EXAMPLE
+
+```sql
+begin
+  console.time('myLabel');
+
+  --do your stuff
+
+  console.time_end('myLabel'); --this is logging your time
+end;
+{{/}}
+```
+
+```sql
+declare my_runtime interval hour to second;
+begin
+  console.time('myLabel');
+
+  --do your stuff
+
+  my_runtime := console.time_end('myLabel'); --this is returning your time (no logging)
+
+  --do something with your time
+end;
+{{/}}
+```
+
+**/
+
+procedure time_end (
+  p_label varchar2 default null );
+
+function time_end (
+  p_label varchar2 default null )
+return varchar2;
 
 --------------------------------------------------------------------------------
 
@@ -829,6 +874,7 @@ c_sep                constant varchar2 ( 1 byte) := ',';
 c_at                 constant varchar2 ( 1 byte) := '@';
 c_hash               constant varchar2 ( 1 byte) := '#';
 c_slash              constant varchar2 ( 1 byte) := '/';
+c_default_label      constant varchar2 (64 byte) := 'Default';
 c_anon_block_ora     constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
 c_client_id_prefix   constant varchar2 ( 6 byte) := '{o,o} ';
@@ -870,7 +916,10 @@ g_conf_apex_env               boolean;
 g_conf_cgi_env                boolean;
 g_conf_console_env            boolean;
 
---------------------------------------------------------------------------------
+type tab_timers is table of timestamp index by varchar2 (64 byte);
+g_timers tab_timers;
+
+-------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
 --------------------------------------------------------------------------------
 
@@ -989,7 +1038,7 @@ end;
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1020,7 +1069,7 @@ end warn;
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1051,7 +1100,7 @@ end info;
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1082,7 +1131,7 @@ end log;
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1149,9 +1198,49 @@ procedure assert (
 is
 begin
   if not p_expression then
-    raise_application_error(-20000, 'Assertion failed: ' || p_message, true);
+    raise_application_error(-20777, 'Assertion failed: ' || p_message, true);
   end if;
 end assert;
+
+--------------------------------------------------------------------------------
+
+procedure time (
+  p_label varchar2 default null )
+is
+  v_label varchar (64 byte) := nvl(substrb(p_label, 1, 64), c_default_label);
+begin
+  g_timers (v_label) := localtimestamp;
+end;
+
+procedure time_end (
+  p_label varchar2 default null )
+is
+  v_label    varchar (64 byte) := nvl(substrb(p_label, 1, 64), c_default_label);
+begin
+  if logging_enabled (c_info) and g_timers.exists(v_label) then
+    create_log_entry (
+      p_level   => c_info,
+      p_message => 'Runtime for **' || v_label || '**: ' ||
+        regexp_substr(to_char(localtimestamp - g_timers(v_label)), '\d{2}:\d{2}:\d{2}\.\d{6}')
+    );
+    g_timers.delete(v_label);
+  end if;
+end;
+
+function time_end (
+  p_label varchar2 default null )
+return varchar2
+is
+  v_label    varchar (64 byte) := nvl(substrb(p_label, 1, 64), c_default_label);
+  v_return varchar2(20);
+begin
+  if g_timers.exists(v_label) then
+    v_return := regexp_substr(to_char(localtimestamp - g_timers(v_label)), '\d{2}:\d{2}:\d{2}\.\d{6}');
+    g_timers.delete(v_label);
+  end if;
+  return v_return;
+end;
+
 
 
 --------------------------------------------------------------------------------

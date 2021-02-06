@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.7.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.8.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -85,7 +85,7 @@ function](https://docs.oracle.com/en/database/oracle/application-express/20.2/ae
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -104,7 +104,7 @@ Log a message with the level 2 (warning).
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -123,7 +123,7 @@ Log a message with the level 3 (info).
 --------------------------------------------------------------------------------
 
 procedure log(
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -142,7 +142,7 @@ Log a message with the level 3 (info).
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -176,6 +176,51 @@ procedure trace (
 Logs a call stack with the level 3 (info).
 
 **/
+
+--------------------------------------------------------------------------------
+
+procedure time (
+  p_label varchar2 default null );
+/**
+
+Starts a new timer. Call `console.time_end([label]) to stop the timer and get or
+log the elapsed time.
+
+EXAMPLE
+
+```sql
+begin
+  console.time('myLabel');
+
+  --do your stuff
+
+  console.time_end('myLabel'); --this is logging your time
+end;
+{{/}}
+```
+
+```sql
+declare my_runtime interval hour to second;
+begin
+  console.time('myLabel');
+
+  --do your stuff
+
+  my_runtime := console.time_end('myLabel'); --this is returning your time (no logging)
+
+  --do something with your time
+end;
+{{/}}
+```
+
+**/
+
+procedure time_end (
+  p_label varchar2 default null );
+
+function time_end (
+  p_label varchar2 default null )
+return varchar2;
 
 --------------------------------------------------------------------------------
 

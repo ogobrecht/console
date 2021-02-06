@@ -13,6 +13,7 @@ Oracle Instrumentation Console
 - [Procedure log](#log)
 - [Procedure debug](#debug)
 - [Procedure trace](#trace)
+- [Procedure time](#time)
 - [Procedure assert](#assert)
 - [Procedure module](#module)
 - [Procedure action](#action)
@@ -44,7 +45,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.7.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.8.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -129,7 +130,7 @@ SIGNATURE
 
 ```sql
 procedure warn (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -151,7 +152,7 @@ SIGNATURE
 
 ```sql
 procedure info (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -173,7 +174,7 @@ SIGNATURE
 
 ```sql
 procedure log(
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -195,7 +196,7 @@ SIGNATURE
 
 ```sql
 procedure debug (
-  p_message         clob                   ,
+  p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -227,6 +228,47 @@ procedure trace (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
+```
+
+
+<h2><a id="time"></a>Procedure time</h2>
+<!------------------------------------->
+
+Starts a new timer. Call `console.time_end([label]) to stop the timer and get or
+log the elapsed time.
+
+EXAMPLE
+
+```sql
+begin
+  console.time('myLabel');
+
+  --do your stuff
+
+  console.time_end('myLabel'); --this is logging your time
+end;
+/
+```
+
+```sql
+declare my_runtime interval hour to second;
+begin
+  console.time('myLabel');
+
+  --do your stuff
+
+  my_runtime := console.time_end('myLabel'); --this is returning your time (no logging)
+
+  --do something with your time
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure time (
+  p_label varchar2 default null );
 ```
 
 
