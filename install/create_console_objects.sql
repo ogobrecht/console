@@ -268,7 +268,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.8.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.8.1'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -294,6 +294,11 @@ GitHub](https://github.com/ogobrecht/console).
 
 **/
 
+--------------------------------------------------------------------------------
+-- PUBLIC CONSTANTS, TYPES, GLOBALS
+--------------------------------------------------------------------------------
+c_identifier_length   constant pls_integer := 128;
+subtype t_identifier  is varchar2 (c_identifier_length char);
 
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
@@ -817,6 +822,8 @@ function  logging_enabled ( p_level integer ) return boolean;
 function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 function  to_bool ( p_string varchar2 ) return boolean;
 function  to_yn ( p_bool boolean ) return varchar2;
+function  util_normalize_label (p_label varchar2) return varchar2;
+function  util_get_runtime (p_start timestamp) return varchar2;
 procedure check_context_availability;
 procedure clear_all_context;
 procedure clear_context ( p_client_identifier varchar2 );
@@ -859,7 +866,7 @@ prompt - Package CONSOLE (body)
 create or replace package body console is
 
 --------------------------------------------------------------------------------
--- CONSTANTS, TYPES, GLOBALS
+-- PRIVATE CONSTANTS, TYPES, GLOBALS
 --------------------------------------------------------------------------------
 
 insufficient_privileges exception;
@@ -916,7 +923,7 @@ g_conf_apex_env               boolean;
 g_conf_cgi_env                boolean;
 g_conf_console_env            boolean;
 
-type tab_timers is table of timestamp index by varchar2 (64 byte);
+type tab_timers is table of timestamp index by t_identifier;
 g_timers tab_timers;
 
 -------------------------------------------------------------------------------
@@ -931,6 +938,8 @@ function  logging_enabled ( p_level integer ) return boolean;
 function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 function  to_bool ( p_string varchar2 ) return boolean;
 function  to_yn ( p_bool boolean ) return varchar2;
+function  util_normalize_label (p_label varchar2) return varchar2;
+ function  util_get_runtime (p_start timestamp) return varchar2;
 procedure check_context_availability;
 procedure clear_all_context;
 procedure clear_context ( p_client_identifier varchar2 );
@@ -1207,40 +1216,36 @@ end assert;
 procedure time (
   p_label varchar2 default null )
 is
-  v_label varchar (64 byte) := nvl(substrb(p_label, 1, 64), c_default_label);
 begin
-  g_timers (v_label) := localtimestamp;
+  g_timers (util_normalize_label(p_label)) := localtimestamp;
 end;
 
 procedure time_end (
   p_label varchar2 default null )
 is
-  v_label    varchar (64 byte) := nvl(substrb(p_label, 1, 64), c_default_label);
+  v_label t_identifier := util_normalize_label(p_label);
 begin
   if logging_enabled (c_info) and g_timers.exists(v_label) then
     create_log_entry (
       p_level   => c_info,
-      p_message => 'Runtime for **' || v_label || '**: ' ||
-        regexp_substr(to_char(localtimestamp - g_timers(v_label)), '\d{2}:\d{2}:\d{2}\.\d{6}')
-    );
-    g_timers.delete(v_label);
+      p_message => v_label || ': ' || util_get_runtime (g_timers(v_label)) );
   end if;
+  g_timers.delete(v_label);
 end;
 
 function time_end (
   p_label varchar2 default null )
 return varchar2
 is
-  v_label    varchar (64 byte) := nvl(substrb(p_label, 1, 64), c_default_label);
+  v_label t_identifier := util_normalize_label(p_label);
   v_return varchar2(20);
 begin
   if g_timers.exists(v_label) then
-    v_return := regexp_substr(to_char(localtimestamp - g_timers(v_label)), '\d{2}:\d{2}:\d{2}\.\d{6}');
-    g_timers.delete(v_label);
+    v_return :=  util_get_runtime (g_timers(v_label));
   end if;
+  g_timers.delete(v_label);
   return v_return;
 end;
-
 
 
 --------------------------------------------------------------------------------
@@ -1555,9 +1560,24 @@ end apex_error_handling;
 
 $end
 
-
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
+--------------------------------------------------------------------------------
+
+function util_get_runtime (p_start timestamp) return varchar2 is
+  v_runtime varchar2(32);
+begin
+  v_runtime := to_char(localtimestamp - p_start);
+  return substr(v_runtime, instr(v_runtime,':')-2, 15);
+end util_get_runtime;
+
+--------------------------------------------------------------------------------
+
+function util_normalize_label (p_label varchar2) return varchar2 is
+begin
+  return coalesce(substrb(p_label, 1, c_identifier_length), c_default_label);
+end;
+
 --------------------------------------------------------------------------------
 
 function get_scope return varchar2 is

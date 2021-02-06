@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.8.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.8.1'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -27,6 +27,11 @@ GitHub](https://github.com/ogobrecht/console).
 
 **/
 
+--------------------------------------------------------------------------------
+-- PUBLIC CONSTANTS, TYPES, GLOBALS
+--------------------------------------------------------------------------------
+c_identifier_length   constant pls_integer := 128;
+subtype t_identifier  is varchar2 (c_identifier_length char);
 
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
@@ -550,6 +555,8 @@ function  logging_enabled ( p_level integer ) return boolean;
 function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 function  to_bool ( p_string varchar2 ) return boolean;
 function  to_yn ( p_bool boolean ) return varchar2;
+function  util_normalize_label (p_label varchar2) return varchar2;
+function  util_get_runtime (p_start timestamp) return varchar2;
 procedure check_context_availability;
 procedure clear_all_context;
 procedure clear_context ( p_client_identifier varchar2 );
