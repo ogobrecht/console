@@ -47,7 +47,7 @@ end;
 /
 
 prompt
-prompt TIMESTAMP VERSUS DATE - 100.000 CALLS
+prompt TIMESTAMP > DATE - 100.000 CALLS
 declare
   v_iterator pls_integer := 100000;
   v_start    timestamp;
@@ -76,7 +76,7 @@ end;
 /
 
 prompt
-prompt DATE VERSUS GET_TIME - 100.000 CALLS
+prompt DATE > GET_TIME - 100.000 CALLS
 declare
   v_iterator pls_integer := 100000;
   v_start    timestamp;
@@ -105,7 +105,7 @@ end;
 /
 
 prompt
-prompt BOOLEAN VERSUS INTEGER - 100.000 CALLS
+prompt BOOLEAN > INTEGER - 100.000 CALLS
 declare
   v_iterator pls_integer := 100000;
   v_start    timestamp;
@@ -130,5 +130,65 @@ begin
   dbms_output.put_line( '- boolean     : ' || trim(to_char(v_rt_bool, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- integer     : ' || trim(to_char(v_rt_int, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_bool/v_rt_int, '90.0')));
+end;
+/
+
+prompt
+prompt RUNTIME: REGEX > EXTRACT > SUBSTR - 100.000 CALLS
+declare
+  v_iterator   pls_integer := 100000;
+  v_start      timestamp;
+  v_temp       varchar2(20);
+  v_rt_extract number;
+  v_rt_regex   number;
+  v_rt_substr  number;
+  --
+  function util_runtime_regex (p_start timestamp) return varchar2 is
+  begin
+    return regexp_substr(to_char(localtimestamp - p_start), '\d{2}:\d{2}:\d{2}\.\d{6}');
+  end util_runtime_regex;
+  --
+  function util_runtime_extract (p_start timestamp) return varchar2 is
+    v_runtime interval day to second (6);
+  begin
+    v_runtime := localtimestamp - p_start;
+    return
+      trim(to_char(extract(hour   from v_runtime), '00'       )) || ':' ||
+      trim(to_char(extract(minute from v_runtime), '00'       )) || ':' ||
+      trim(to_char(extract(second from v_runtime), '00D000000')) ;
+  end util_runtime_extract;
+  --
+  function util_runtime_substr (p_start timestamp) return varchar2 is
+    v_runtime varchar2(32);
+  begin
+    v_runtime := to_char(localtimestamp - p_start);
+    return substr(v_runtime, instr(v_runtime,':')-2, 15);
+  end util_runtime_substr;
+  --
+  function get_runtime (p_start timestamp) return number is begin return extract(second from (localtimestamp - p_start)); end;
+begin
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_temp := util_runtime_regex(v_start);
+  end loop;
+  v_rt_regex := get_runtime(v_start);
+  --
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_temp := util_runtime_extract(v_start);
+  end loop;
+  v_rt_extract := get_runtime(v_start);
+  --
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_temp := util_runtime_substr(v_start);
+  end loop;
+  v_rt_substr := get_runtime(v_start);
+  --
+  dbms_output.put_line( '- regex       : ' || trim(to_char(v_rt_regex,   '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- exract      : ' || trim(to_char(v_rt_extract, '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- substr      : ' || trim(to_char(v_rt_substr,  '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- factor r/s  : ' || trim(to_char(v_rt_regex/v_rt_substr, '90.0')));
+  dbms_output.put_line( '- factor e/s  : ' || trim(to_char(v_rt_extract/v_rt_substr, '90.0')));
 end;
 /
