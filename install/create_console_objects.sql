@@ -948,184 +948,6 @@ end;
 
 **/
 
---------------------------------------------------------------------------------
-
-function get_call_stack return varchar2;
-/**
-
-Returns the current call stack.
-
-Calls to the package CONSOLE are omitted.
-
-EXAMPLE 1
-
-```sql
-set serveroutput on
-
-create or replace package pkg1 is
-  procedure do_stuff;
-end;
-{{/}}
-
-create or replace package body pkg1 is
-  procedure do_stuff is
-    procedure sub1 is
-      procedure sub2 is
-        procedure sub3 is
-        begin
-          dbms_output.put_line(console.get_call_stack);
-        end;
-      begin
-        sub3;
-      end;
-    begin
-      sub2;
-    end;
-  begin
-    sub1;
-  end;
-end;
-{{/}}
-
-begin
-  pkg1.do_stuff;
-end;
-{{/}}
-```
-
-The example above will output:
-
-```
-- CALL STACK
-  - PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7
-  - PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2, line 10
-  - PLAYGROUND.PKG1.DO_STUFF.SUB1, line 13
-  - PLAYGROUND.PKG1.DO_STUFF, line 16
-  - anonymous_block, line 2
-```
-
-EXAMPLE 2
-
-```sql
-set serveroutput on
-
-create or replace package pkg1 is
-  procedure do_stuff;
-end;
-{{/}}
-
-create or replace package body pkg1 is
-  procedure do_stuff is
-    procedure sub1 is
-      procedure sub2 is
-        procedure sub3 is
-        begin
-          raise_application_error (-20999, 'Demo');
-        end;
-      begin
-        sub3;
-      end;
-    begin
-      sub2;
-    end;
-  begin
-    sub1;
-  end;
-end;
-{{/}}
-
-begin
-  pkg1.do_stuff;
-exception
-  when others then
-    dbms_output.put_line(console.get_call_stack);
-  raise;
-end;
-{{/}}
-```
-
-The example above will output:
-
-```
-- ERROR STACK
-  - ORA-20999 Demo
-  - ORA-06512 at "PLAYGROUND.PKG1", line 7
-  - ORA-06512 at "PLAYGROUND.PKG1", line 10
-  - ORA-06512 at "PLAYGROUND.PKG1", line 13
-  - ORA-06512 at "PLAYGROUND.PKG1", line 16
-- ERROR BACKTRACE
-  - PLAYGROUND.PKG1, line 7
-  - PLAYGROUND.PKG1, line 10
-  - PLAYGROUND.PKG1, line 13
-  - PLAYGROUND.PKG1, line 16
-  - anonymous_block, line 2
-- CALL STACK
-  - anonymous_block, line 5
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-function get_scope return varchar2;
-/**
-
-Returns the current call stack entry.
-
-Calls to the package CONSOLE are omitted.
-
-EXAMPLE 1
-
-```sql
-set serveroutput on
-begin
-  dbms_output.put_line(console.get_scope);
-end;
-{{/}}
-```
-
-The example above will output `anonymous_block, line 2`.
-
-EXAMPLE 2
-
-```sql
-set serveroutput on
-
-create or replace package pkg1 is
-  procedure do_stuff;
-end;
-{{/}}
-
-create or replace package body pkg1 is
-  procedure do_stuff is
-    procedure sub1 is
-      procedure sub2 is
-        procedure sub3 is
-        begin
-          dbms_output.put_line(console.get_scope);
-        end;
-      begin
-        sub3;
-      end;
-    begin
-      sub2;
-    end;
-  begin
-    sub1;
-  end;
-end;
-{{/}}
-
-begin
-  pkg1.do_stuff;
-end;
-{{/}}
-```
-
-The example above will output `PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7`.
-
-**/
-
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
@@ -1133,6 +955,8 @@ The example above will output `PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7`.
 
 $if $$utils_public $then
 
+function  utl_get_call_stack return varchar2;
+function  utl_get_scope return varchar2;
 function  utl_logging_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -1249,6 +1073,8 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
+function  utl_get_call_stack return varchar2;
+function  utl_get_scope return varchar2;
 function  utl_logging_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -1961,9 +1787,12 @@ begin
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
 end get_runtime;
 
+
+--------------------------------------------------------------------------------
+-- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function get_call_stack return varchar2
+function utl_get_call_stack return varchar2
 is
   v_return     vc_max;
   v_subprogram vc_max;
@@ -1995,7 +1824,7 @@ begin
 
   if utl_call_stack.dynamic_depth > 0 then
     v_return := v_return || '- CALL STACK' || chr(10);
-    --ignore 1, is always this function (get_call_stack) itself
+    --ignore 1, is always this function (utl_get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
@@ -2015,16 +1844,16 @@ begin
   end if;
 
   return v_return;
-end get_call_stack;
+end utl_get_call_stack;
 
 --------------------------------------------------------------------------------
 
-function get_scope return varchar2 is
+function utl_get_scope return varchar2 is
   v_return     vc_max;
   v_subprogram vc_max;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_call_stack) itself
+    --ignore 1, is always this function (utl_get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
@@ -2043,11 +1872,8 @@ begin
     end loop;
   end if;
   return v_return;
-end get_scope;
+end utl_get_scope;
 
-
---------------------------------------------------------------------------------
--- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
 function utl_logging_enabled (
@@ -2212,7 +2038,7 @@ is
 begin
   v_row.scope := case
     when p_user_scope is not null then substrb(p_user_scope, 1, 256)
-    else substrb(get_scope, 1, 256)
+    else substrb(utl_get_scope, 1, 256)
     end;
   v_row.message := case
     when p_message is not null then p_message
@@ -2226,7 +2052,7 @@ begin
     end;
   v_row.call_stack := case
     when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
-    when p_trace then substrb(get_call_stack, 1, 4000)
+    when p_trace then substrb(utl_get_call_stack, 1, 4000)
     else null
     end;
   if p_apex_env then

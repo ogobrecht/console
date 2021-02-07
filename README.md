@@ -71,8 +71,6 @@ usage.
   - [X] `console.to_bool`
   - [X] `console.to_yn`
   - [X] `console.get_runtime`
-  - [X] `console.get_call_stack`
-  - [X] `console.get_scope`
 
 For a more detailed overview of the public API methods please see the [docs for the package console](docs/console.md).
 

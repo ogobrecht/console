@@ -72,6 +72,8 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
+function  utl_get_call_stack return varchar2;
+function  utl_get_scope return varchar2;
 function  utl_logging_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -784,9 +786,12 @@ begin
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
 end get_runtime;
 
+
+--------------------------------------------------------------------------------
+-- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function get_call_stack return varchar2
+function utl_get_call_stack return varchar2
 is
   v_return     vc_max;
   v_subprogram vc_max;
@@ -818,7 +823,7 @@ begin
 
   if utl_call_stack.dynamic_depth > 0 then
     v_return := v_return || '- CALL STACK' || chr(10);
-    --ignore 1, is always this function (get_call_stack) itself
+    --ignore 1, is always this function (utl_get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
@@ -838,16 +843,16 @@ begin
   end if;
 
   return v_return;
-end get_call_stack;
+end utl_get_call_stack;
 
 --------------------------------------------------------------------------------
 
-function get_scope return varchar2 is
+function utl_get_scope return varchar2 is
   v_return     vc_max;
   v_subprogram vc_max;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_call_stack) itself
+    --ignore 1, is always this function (utl_get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
@@ -866,11 +871,8 @@ begin
     end loop;
   end if;
   return v_return;
-end get_scope;
+end utl_get_scope;
 
-
---------------------------------------------------------------------------------
--- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
 function utl_logging_enabled (
@@ -1035,7 +1037,7 @@ is
 begin
   v_row.scope := case
     when p_user_scope is not null then substrb(p_user_scope, 1, 256)
-    else substrb(get_scope, 1, 256)
+    else substrb(utl_get_scope, 1, 256)
     end;
   v_row.message := case
     when p_message is not null then p_message
@@ -1049,7 +1051,7 @@ begin
     end;
   v_row.call_stack := case
     when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
-    when p_trace then substrb(get_call_stack, 1, 4000)
+    when p_trace then substrb(utl_get_call_stack, 1, 4000)
     else null
     end;
   if p_apex_env then
