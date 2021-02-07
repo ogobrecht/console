@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.9.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.9.2'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -27,14 +27,37 @@ GitHub](https://github.com/ogobrecht/console).
 
 **/
 
---------------------------------------------------------------------------------
--- PUBLIC CONSTANTS, TYPES, GLOBALS
---------------------------------------------------------------------------------
-c_identifier_length   constant pls_integer := 128;
-subtype t_identifier  is varchar2 (c_identifier_length char);
 
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
+--------------------------------------------------------------------------------
+
+function my_client_identifier return varchar2;
+/**
+
+Returns the current session identifier of the own session. This information is cached in a
+package variable and determined on package initialization.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function my_log_level return integer;
+/**
+
+Returns the current log level of the own session. This information is cached in a
+package variable for performance reasons and reevaluated every 10 seconds.
+
+```sql
+select console.context_available_yn from dual;
+```
+
+**/
+
 --------------------------------------------------------------------------------
 
 procedure permanent (p_message clob);
@@ -165,6 +188,37 @@ Log a message with the level 4 (verbose).
 
 --------------------------------------------------------------------------------
 
+procedure assert (
+  p_expression boolean,
+  p_message    varchar2
+);
+/**
+
+If the given expression evaluates to false, an error is raised with the given message.
+
+EXAMPLE
+
+```sql
+declare
+  x number := 5;
+  y number := 3;
+begin
+  console.assert(
+    x < y,
+    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+  );
+exception
+  when others then
+    console.error;
+    raise;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure trace (
   p_message         clob     default null  ,
   p_trace           boolean  default true  ,
@@ -181,68 +235,6 @@ procedure trace (
 Logs a call stack with the level 3 (info).
 
 **/
-
---------------------------------------------------------------------------------
-
-procedure time (
-  p_label varchar2 default null );
-/**
-
-Starts a new timer. Call `console.time_end([label]) to stop the timer and get or
-log the elapsed time.
-
-EXAMPLE 1
-
-```sql
---Set you own session in logging mode (defaults: level 3[info] for the next 60 minutes).
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the time (if log level >= 3:info).
-  console.time_end('myLabel');
-end;
-{{/}}
-
---Stop logging mode of your own session.
-exec console.stop;
-```
-
-EXAMPLE 2
-
-```sql
-set serveroutput on
-
-declare
-  v_my_label constant varchar2(20) := 'My label: ';
-begin
-  console.time(v_my_label);
-
-  --do your stuff here
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Return the runtime (no logging, therefore log level does not matter).
-  dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
-end;
-{{/}}
-```
-
-**/
-
-procedure time_end (
-  p_label varchar2 default null );
-
-function time_end (
-  p_label varchar2 default null )
-return varchar2;
 
 --------------------------------------------------------------------------------
 
@@ -308,32 +300,83 @@ return varchar2;
 
 --------------------------------------------------------------------------------
 
-procedure assert (
-  p_expression boolean,
-  p_message    varchar2
-);
+procedure time (
+  p_label varchar2 default null );
 /**
 
-If the given expression evaluates to false, an error is raised with the given message.
+Starts a new timer. Call `console.time_end([label]) to stop the timer and get or
+log the elapsed time.
 
-EXAMPLE
+EXAMPLE 1
 
 ```sql
-declare
-  x number := 5;
-  y number := 3;
+--Set you own session in logging mode (defaults: level 3[info] for the next 60 minutes).
+exec console.init;
+
 begin
-  console.assert(
-    x < y,
-    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
-  );
-exception
-  when others then
-    console.error;
-    raise;
+  console.time('myLabel');
+
+  --Do your stuff here.
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+
+  --Log the time (if log level >= 3:info).
+  console.time_end('myLabel');
+end;
+{{/}}
+
+--Stop logging mode of your own session.
+exec console.stop;
+```
+
+EXAMPLE 2
+
+```sql
+set serveroutput on
+
+declare
+  v_my_label constant varchar2(20) := 'My label: ';
+begin
+  console.time(v_my_label);
+
+  --do your stuff here
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+
+  --Return the runtime (no logging, therefore log level does not matter).
+  dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
 end;
 {{/}}
 ```
+
+**/
+
+procedure time_end (
+  p_label varchar2 default null );
+
+function time_end (
+  p_label varchar2 default null )
+return varchar2;
+
+--------------------------------------------------------------------------------
+
+procedure clear (
+  p_client_identifier varchar2 default my_client_identifier -- client_identifier or unique_session_id
+);
+/**
+
+Clears the cached log entries (if any).
+
+This procedure is useful when you have initialized your own session with a cache
+size greater then zero (for example 1000) and you take a look at the log entries
+with the pipelined function `console.view_log_cache` during development. By
+clearing the cache you can avoid spoiling your CONSOLE_LOGS table with entries
+you dont need longer.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
+MANAGING LOGGING MODES OF SESSIONS.
 
 **/
 
@@ -342,23 +385,57 @@ end;
 -- PUBLIC HELPER METHODS
 --------------------------------------------------------------------------------
 
-procedure module (
-  p_module varchar2,
-  p_action varchar2 default null
-);
+$if $$apex_installed $then
+
+function apex_error_handling (
+  p_error in apex_error.t_error )
+return apex_error.t_error_result;
 /**
 
-An alias for dbms_application_info.set_module.
+You can register this example APEX error handler function to log APEX internal
+errors.
 
-Use the given module and action to set the session module and action attributes
-(in memory operation, does not log anything). These attributes are then visible
-in the system session views, the user environment and will be logged within all
-console logging methods.
+To do so go into the Application Builder into your app > Edit Application
+Properties > Error Handling > Error Handling Function. You can then provide here
+`console.apex_error_handling`.
 
-Please note that your app framework may set the module and you should consider
-to only set the action attribute with the `action` (see below).
+For more info see the [official
+docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
+
+The implementation code (see package body) is taken from the docs and aligned
+for CONSOLE as a starting point. If this does not fit your needs then simply
+reimplement an own function and use that instead.
 
 **/
+
+$end
+
+--------------------------------------------------------------------------------
+
+function extract_constraint_name ( p_sqlerrm varchar2 ) return varchar2;
+/**
+
+Exracts the constraint name out of a SQL error message.
+
+Used to find user friendly error messages for violated constraints in the table
+CONSOLE_CONSTRAINT_MESSAGES.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_constraint_message (
+  p_constraint_name varchar2 )
+return console_constraint_messages.message%type result_cache;
+/**
+
+Returns a user friendly error message for a constraint name.
+
+The messages are looked up from the table CONSOLE_CONSTRAINT_MESSAGES.
+
+**/
+
+--------------------------------------------------------------------------------
 
 procedure action (
   p_action varchar2
@@ -396,29 +473,21 @@ end;
 
 --------------------------------------------------------------------------------
 
-function my_client_identifier return varchar2;
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+);
 /**
 
-Returns the current session identifier of the own session. This information is cached in a
-package variable and determined on package initialization.
+An alias for dbms_application_info.set_module.
 
-```sql
-select console.context_available_yn from dual;
-```
+Use the given module and action to set the session module and action attributes
+(in memory operation, does not log anything). These attributes are then visible
+in the system session views, the user environment and will be logged within all
+console logging methods.
 
-**/
-
---------------------------------------------------------------------------------
-
-function my_log_level return integer;
-/**
-
-Returns the current log level of the own session. This information is cached in a
-package variable for performance reasons and reevaluated every 10 seconds.
-
-```sql
-select console.context_available_yn from dual;
-```
+Please note that your app framework may set the module and you should consider
+to only set the action attribute with the `action` (see below).
 
 **/
 
@@ -491,26 +560,6 @@ procedure init (
   p_console_env    boolean default false    -- Should the console environment be included.
 );
 
---------------------------------------------------------------------------------
-
-procedure clear (
-  p_client_identifier varchar2 default my_client_identifier -- client_identifier or unique_session_id
-);
-/**
-
-Clears the cached log entries (if any).
-
-This procedure is useful when you have initialized your own session with a cache
-size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_log_cache` during development. By
-clearing the cache you can avoid spoiling your CONSOLE_LOGS table with entries
-you dont need longer.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
-
-**/
-
 procedure stop (
   p_client_identifier varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
 );
@@ -570,13 +619,24 @@ select console.version from dual;
 
 --------------------------------------------------------------------------------
 
-function extract_constraint_name ( p_sqlerrm varchar2 ) return varchar2;
+function to_bool ( p_string varchar2 ) return boolean;
 /**
 
-Exracts the constraint name out of a SQL error message.
+Converts a string to a boolean value.
 
-Used to find user friendly error messages for violated constraints in the table
-CONSOLE_CONSTRAINT_MESSAGES.
+Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
+all other cases (also on null) false is returned.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_yn ( p_bool boolean ) return varchar2;
+/**
+
+Converts a boolean value to a string.
+
+Returns `Y` when the input is true and `N` if the input is false or null.
 
 **/
 
@@ -724,7 +784,6 @@ The example above will output:
 
 **/
 
-
 --------------------------------------------------------------------------------
 
 function get_scope return varchar2;
@@ -788,78 +847,14 @@ The example above will output `PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7`.
 
 
 --------------------------------------------------------------------------------
-
-function to_bool ( p_string varchar2 ) return boolean;
-/**
-
-Converts a string to a boolean value.
-
-Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
-all other cases (also on null) false is returned.
-
-**/
-
---------------------------------------------------------------------------------
-
-function to_yn ( p_bool boolean ) return varchar2;
-/**
-
-Converts a boolean value to a string.
-
-Returns `Y` when the input is true and `N` if the input is false or null.
-
-**/
-
---------------------------------------------------------------------------------
-
-
-function get_constraint_message (
-  p_constraint_name varchar2 )
-return console_constraint_messages.message%type result_cache;
-/**
-
-Returns a user friendly error message for a constraint name.
-
-The messages are looked up from the table CONSOLE_CONSTRAINT_MESSAGES.
-
-**/
-
---------------------------------------------------------------------------------
-
-$if $$apex_installed $then
-
-function apex_error_handling (
-  p_error in apex_error.t_error )
-return apex_error.t_error_result;
-/**
-
-You can register this example APEX error handler function to log APEX internal
-errors.
-
-To do so go into the Application Builder into your app > Edit Application
-Properties > Error Handling > Error Handling Function. You can then provide here
-`console.apex_error_handling`.
-
-For more info see the [official
-docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
-
-The implementation code (see package body) is taken from the docs and aligned
-for CONSOLE as a starting point. If this does not fit your needs then simply
-reimplement an own function and use that instead.
-
-**/
-
-$end
-
---------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
 --------------------------------------------------------------------------------
 
 $if $$utils_public $then
 
 function  utl_logging_enabled ( p_level integer ) return boolean;
-function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 function  utl_normalize_label (p_label varchar2) return varchar2;
+function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
 procedure utl_clear_context ( p_client_identifier varchar2 );

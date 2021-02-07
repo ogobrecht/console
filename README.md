@@ -45,7 +45,7 @@ usage.
   - [X] `console.clear`
 - Additional methods:
   - [X] `console.permanent` (level 0=permanent): Log permanent messages like
-    installation or upgrade notes with the level zero, which is not affected
+    installation or upgrade notes with the level zero, which are not deleted
     when the purge job clears the log table.
   - [X] `console.apex_error_handling`: Log internal APEX errors (also see the
     [APEX
