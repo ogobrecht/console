@@ -365,6 +365,8 @@ begin
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
     end if;
     g_timers.delete(v_label);
+  else
+    warn('Timer `' || v_label || '` does not exist.');
   end if;
 end time_end;
 
@@ -372,15 +374,17 @@ function time_end (
   p_label varchar2 default null )
 return varchar2
 is
-  v_label   t_identifier;
-  v_runtime varchar2(20);
+  v_label  t_identifier;
+  v_return varchar2(50);
 begin
   v_label := util_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    v_runtime :=  get_runtime(g_timers(v_label));
+    v_return :=  get_runtime(g_timers(v_label));
     g_timers.delete(v_label);
+  else
+    v_return := 'Timer `' || v_label || '` does not exist.';
   end if;
-  return v_runtime;
+  return v_return;
 end time_end;
 
 --------------------------------------------------------------------------------
@@ -411,6 +415,8 @@ begin
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
     end if;
     g_counters.delete(v_label);
+  else
+    warn('Counter `' || v_label || '` does not exist.');
   end if;
 end count_end;
 
@@ -419,14 +425,16 @@ function count_end (
 return varchar2
 is
   v_label   t_identifier;
-  v_counter pls_integer;
+  v_return  varchar2(50);
 begin
   v_label := util_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    v_counter := g_counters(v_label);
+    v_return := to_char(g_counters(v_label));
     g_counters.delete(v_label);
+  else
+    v_return := 'Counter `' || v_label || '` does not exist.';
   end if;
-  return to_char(v_counter);
+  return v_return;
 end count_end;
 
 
