@@ -3,6 +3,10 @@
 An instrumentation tool for Oracle developers focused on easy installation and
 usage.
 
+*This is currently beta and in heavy development. Therefore I do not update the
+[changelog](docs/changelog.md) until we have a stable version available.
+Feedback and help is welcome.*
+
 ## Easy to install
 
 - Works with or without a context.
