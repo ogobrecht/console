@@ -268,7 +268,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.9.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.9.1'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1124,17 +1124,17 @@ $end
 
 $if $$utils_public $then
 
-function  logging_enabled ( p_level integer ) return boolean;
-function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
-function  util_normalize_label (p_label varchar2) return varchar2;
-procedure check_context_availability;
-procedure clear_all_context;
-procedure clear_context ( p_client_identifier varchar2 );
-procedure flush_log_cache;
-procedure load_session_configuration;
-procedure set_client_identifier;
+function  utl_logging_enabled ( p_level integer ) return boolean;
+function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
+function  utl_normalize_label (p_label varchar2) return varchar2;
+procedure utl_check_context_availability;
+procedure utl_clear_all_context;
+procedure utl_clear_context ( p_client_identifier varchar2 );
+procedure utl_flush_log_cache;
+procedure utl_load_session_configuration;
+procedure utl_set_client_identifier;
 --
-function create_log_entry (
+function utl_create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
@@ -1147,7 +1147,7 @@ function create_log_entry (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return console_logs.log_id%type;
-procedure create_log_entry (
+procedure utl_create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
@@ -1237,17 +1237,17 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
-function  logging_enabled ( p_level integer ) return boolean;
-function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
-function  util_normalize_label (p_label varchar2) return varchar2;
-procedure check_context_availability;
-procedure clear_all_context;
-procedure clear_context ( p_client_identifier varchar2 );
-procedure flush_log_cache;
-procedure load_session_configuration;
-procedure set_client_identifier;
+function  utl_logging_enabled ( p_level integer ) return boolean;
+function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
+function  utl_normalize_label (p_label varchar2) return varchar2;
+procedure utl_check_context_availability;
+procedure utl_clear_all_context;
+procedure utl_clear_context ( p_client_identifier varchar2 );
+procedure utl_flush_log_cache;
+procedure utl_load_session_configuration;
+procedure utl_set_client_identifier;
 --
-function create_log_entry (
+function utl_create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
@@ -1260,7 +1260,7 @@ function create_log_entry (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return console_logs.log_id%type;
-procedure create_log_entry (
+procedure utl_create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
@@ -1283,7 +1283,7 @@ procedure permanent (
   p_message clob )
 is
 begin
-  create_log_entry (
+  utl_create_log_entry (
     p_level      => c_permanent ,
     p_message    => p_message   );
 end permanent;
@@ -1303,7 +1303,7 @@ procedure error (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  create_log_entry (
+  utl_create_log_entry (
     p_level           => c_error           ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
@@ -1330,7 +1330,7 @@ function error (
   p_user_call_stack varchar2 default null  )
 return integer is
 begin
-  return create_log_entry (
+  return utl_create_log_entry (
     p_level           => c_error           ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
@@ -1359,8 +1359,8 @@ procedure warn (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if logging_enabled (c_warning) then
-    create_log_entry (
+  if utl_logging_enabled (c_warning) then
+    utl_create_log_entry (
       p_level           => c_warning         ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
@@ -1390,8 +1390,8 @@ procedure info (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if logging_enabled (c_info) then
-    create_log_entry (
+  if utl_logging_enabled (c_info) then
+    utl_create_log_entry (
       p_level           => c_info            ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
@@ -1421,8 +1421,8 @@ procedure log (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if logging_enabled (c_info) then
-    create_log_entry (
+  if utl_logging_enabled (c_info) then
+    utl_create_log_entry (
       p_level           => c_info            ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
@@ -1452,8 +1452,8 @@ procedure debug (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if logging_enabled (c_verbose) then
-    create_log_entry (
+  if utl_logging_enabled (c_verbose) then
+    utl_create_log_entry (
       p_level           => c_verbose         ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
@@ -1483,8 +1483,8 @@ procedure trace (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if logging_enabled (c_info) then
-    create_log_entry (
+  if utl_logging_enabled (c_info) then
+    utl_create_log_entry (
       p_level           => c_info            ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
@@ -1517,7 +1517,7 @@ procedure time (
   p_label varchar2 default null )
 is
 begin
-  g_timers(util_normalize_label(p_label)) := localtimestamp;
+  g_timers(utl_normalize_label(p_label)) := localtimestamp;
 end time;
 
 procedure time_end (
@@ -1525,10 +1525,10 @@ procedure time_end (
 is
   v_label t_identifier;
 begin
-  v_label := util_normalize_label(p_label);
+  v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    if logging_enabled (c_info) then
-      create_log_entry (
+    if utl_logging_enabled (c_info) then
+      utl_create_log_entry (
         p_level   => c_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
     end if;
@@ -1545,7 +1545,7 @@ is
   v_label  t_identifier;
   v_return varchar2(50);
 begin
-  v_label := util_normalize_label(p_label);
+  v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
     v_return :=  get_runtime(g_timers(v_label));
     g_timers.delete(v_label);
@@ -1562,7 +1562,7 @@ procedure count (
 is
   v_label t_identifier;
 begin
-  v_label := util_normalize_label(p_label);
+  v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
     g_counters(v_label) := g_counters(v_label) + 1;
   else
@@ -1575,10 +1575,10 @@ procedure count_end (
 is
   v_label t_identifier;
 begin
-  v_label := util_normalize_label(p_label);
+  v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    if logging_enabled (c_info) then
-      create_log_entry (
+    if utl_logging_enabled (c_info) then
+      utl_create_log_entry (
         p_level   => c_info,
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
     end if;
@@ -1595,7 +1595,7 @@ is
   v_label   t_identifier;
   v_return  varchar2(50);
 begin
-  v_label := util_normalize_label(p_label);
+  v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
     v_return := to_char(g_counters(v_label));
     g_counters.delete(v_label);
@@ -1725,7 +1725,7 @@ begin
   -- to 10 seconds) and the package reloads the configuration from the context
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
-    load_session_configuration;
+    utl_load_session_configuration;
   end if;
 end init;
 
@@ -1770,15 +1770,15 @@ is
 begin
   delete from console_sessions where client_identifier = p_client_identifier;
   commit;
-  clear_context( p_client_identifier );
+  utl_clear_context( p_client_identifier );
   -- If we monitor our own session, wee need to load the configuration
   -- data from the context or table into the cache (package variables).
   -- Otherwise we need to wait until the cache duration is over (which defaults
   -- to 10 seconds) and the package reloads the configuration from the context
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
-    load_session_configuration;
-    flush_log_cache;
+    utl_load_session_configuration;
+    utl_flush_log_cache;
   end if;
 end;
 
@@ -1931,7 +1931,7 @@ $end
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function util_normalize_label (p_label varchar2) return varchar2 is
+function utl_normalize_label (p_label varchar2) return varchar2 is
 begin
   return coalesce(substrb(p_label, 1, c_identifier_length), c_default_label);
 end;
@@ -2044,19 +2044,19 @@ end;
 
 --------------------------------------------------------------------------------
 
-function logging_enabled (
+function utl_logging_enabled (
   p_level integer )
 return boolean is
 begin
   if g_conf_cache_valid_until_date < sysdate then
-    load_session_configuration;
+    utl_load_session_configuration;
   end if;
   return g_conf_log_level >= p_level or sqlcode != 0;
-end logging_enabled;
+end utl_logging_enabled;
 
 --------------------------------------------------------------------------------
 
-function create_log_entry (
+function utl_create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
@@ -2120,9 +2120,9 @@ begin
   insert into console_logs values v_row returning log_id into v_row.log_id;
   commit;
   return v_row.log_id;
-end create_log_entry;
+end utl_create_log_entry;
 
-procedure create_log_entry (
+procedure utl_create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
@@ -2137,7 +2137,7 @@ procedure create_log_entry (
 is
   v_log_id integer;
 begin
-  v_log_id := create_log_entry (
+  v_log_id := utl_create_log_entry (
     p_level           => p_level           ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
@@ -2153,30 +2153,30 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure flush_log_cache is
+procedure utl_flush_log_cache is
 begin
   null; --FIXME implement
 end;
 
 --------------------------------------------------------------------------------
 
-procedure clear_context (
+procedure utl_clear_context (
   p_client_identifier varchar2 )
 is
 begin
   if g_conf_context_available then
     sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
   end if;
-end clear_context;
+end utl_clear_context;
 
 --------------------------------------------------------------------------------
 
-procedure clear_all_context is
+procedure utl_clear_all_context is
 begin
   if g_conf_context_available then
     sys.dbms_session.clear_all_context(c_ctx_namespace);
   end if;
-end clear_all_context;
+end utl_clear_all_context;
 
 --------------------------------------------------------------------------------
 
@@ -2186,7 +2186,7 @@ select id, name, cache_id, type, status, invalidations, scan_count
  where name like '%CONSOLE%'
    and status != 'Invalid';
 */
-function read_row_from_sessions (
+function utl_read_row_from_sessions (
   p_client_identifier varchar2 )
 return console_sessions%rowtype result_cache is
   v_row console_sessions%rowtype;
@@ -2200,33 +2200,33 @@ begin
     v_row := i;
   end loop;
   return v_row;
-end read_row_from_sessions;
+end utl_read_row_from_sessions;
 
 --------------------------------------------------------------------------------
 
-procedure set_client_identifier is
+procedure utl_set_client_identifier is
 begin
   g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
   if g_conf_client_identifier is null or g_conf_client_identifier = ':' then
     g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
     dbms_session.set_identifier(g_conf_client_identifier);
   end if;
-end set_client_identifier;
+end utl_set_client_identifier;
 
 --------------------------------------------------------------------------------
 
-procedure check_context_availability is
+procedure utl_check_context_availability is
 begin
   sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
   g_conf_context_available := true;
 exception
   when insufficient_privileges then
     g_conf_context_available := false;
-end check_context_availability;
+end utl_check_context_availability;
 
 --------------------------------------------------------------------------------
 
-procedure load_session_configuration is
+procedure utl_load_session_configuration is
   v_row console_sessions%rowtype;
 begin
   if g_conf_context_available then
@@ -2239,7 +2239,7 @@ begin
     g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
     g_conf_console_env    := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env    ) );
   else
-    v_row := read_row_from_sessions (g_conf_client_identifier);
+    v_row := utl_read_row_from_sessions (g_conf_client_identifier);
     --
     g_conf_end_date       :=           v_row.end_date        ;
     g_conf_log_level      :=           v_row.log_level       ;
@@ -2257,7 +2257,7 @@ begin
      --Conf will be rechecked at least every 10 seconds.
     g_conf_end_date := sysdate + 1;
   elsif g_conf_end_date < sysdate then
-    clear_context(g_conf_client_identifier);
+    utl_clear_context(g_conf_client_identifier);
   end if;
   g_conf_cache_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
   --
@@ -2273,15 +2273,15 @@ begin
     g_conf_cache_duration := 10;
   end if;
 
-end load_session_configuration;
+end utl_load_session_configuration;
 
 --------------------------------------------------------------------------------
 
 --package inizialization
 begin
-  set_client_identifier;
-  check_context_availability;
-  load_session_configuration;
+  utl_set_client_identifier;
+  utl_check_context_availability;
+  utl_load_session_configuration;
 end console;
 /
 

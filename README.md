@@ -27,21 +27,21 @@ usage.
   This means, the same method names are provided, the parameters differs a
   little bit to fit our needs in PL/SQL. Not all methods making sense in a
   PL/SQL instrumentation tool and therefore these six are not implemented:
-  countReset (instead we have count_end), dir, dirxml, group, groupCollapsed,
-  groupEnd. For the two \*_end methods we use snake case instead of camel case
-  for readability:
+  countReset (instead we have count_end and we ignore the line number, where the
+  count occurred), dir, dirxml, group, groupCollapsed, groupEnd. For the two
+  \*_end methods we use snake case instead of camel case for readability:
   - [X] `console.error` (level 1=error)
   - [X] `console.warn` (level 2=warning)
   - [X] `console.info` (level 3=info)
   - [X] `console.log` (level 3=info)
   - [X] `console.debug` (level 4=verbose)
-  - [X] `console.trace` (level 3=info)
+  - [X] `console.assert` (level 1=error, if failed)
   - [ ] `console.table` (level 3=info)
+  - [X] `console.trace` (level 3=info)
   - [x] `console.count`
   - [x] `console.count_end` (level 3=info)
   - [X] `console.time`
   - [X] `console.time_end` (level 3=info)
-  - [X] `console.assert` (level 1=error, if failed)
   - [X] `console.clear`
 - Additional methods:
   - [X] `console.permanent` (level 0=permanent): Log permanent messages like
@@ -50,6 +50,11 @@ usage.
   - [X] `console.apex_error_handling`: Log internal APEX errors (also see the
     [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
+  - [X] `extract_constraint_name`: Extracts a constraint name out of an error
+    message (see APEX docs above for example APEX error handling function)
+  - [X] `get_constraint_message`: Gets an user friendly message from the table
+    CONSOLE_CONSTRAINT_MESSAGES by the constraint name (yes, this table is for
+    you...)
   - [X] `console.action` & `console.module`: Aliases for
     dbms_application_info.set_action and set_module to be friendly to the DBA
     and monitoring teams. The module is usually set by the application (for
@@ -62,6 +67,12 @@ usage.
   - [X] `console.my_log_level`
   - [X] `console.context_available_yn`
   - [X] `console.version`
+- Additional methods used by console internally, which might also helpful for you:
+  - [X] `console.to_bool`
+  - [X] `console.to_yn`
+  - [X] `console.get_runtime`
+  - [X] `console.get_call_stack`
+  - [X] `console.get_scope`
 
 For a more detailed overview of the public API methods please see the [docs for the package console](docs/console.md).
 
