@@ -25,6 +25,11 @@ Oracle Instrumentation Console
 - [Function context_available_yn](#context_available_yn)
 - [Function version](#version)
 - [Function extract_constraint_name](#extract_constraint_name)
+- [Function get_runtime](#get_runtime)
+- [Function get_call_stack](#get_call_stack)
+- [Function get_scope](#get_scope)
+- [Function to_bool](#to_bool)
+- [Function to_yn](#to_yn)
 - [Function get_constraint_message](#get_constraint_message)
 - [Function apex_error_handling](#apex_error_handling)
 
@@ -45,7 +50,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.8.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.8.2'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -564,9 +569,250 @@ CONSOLE_CONSTRAINT_MESSAGES.
 SIGNATURE
 
 ```sql
-function extract_constraint_name (
-  p_sqlerrm varchar2 )
-return varchar2;
+function extract_constraint_name ( p_sqlerrm varchar2 ) return varchar2;
+```
+
+
+<h2><a id="get_runtime"></a>Function get_runtime</h2>
+<!-------------------------------------------------->
+
+Returns a string in the format hh24:mi:ss.ff6 (for example 00:00:01.123456).
+
+Is internally used by the `time_end` method and uses `localtimestamp` to compare
+with `p_start`.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line('Runtime: ' || console.get_runtime(v_start));
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+function  get_runtime ( p_start timestamp ) return varchar2;
+```
+
+
+<h2><a id="get_call_stack"></a>Function get_call_stack</h2>
+<!-------------------------------------------------------->
+
+Returns the current call stack.
+
+Calls to the package CONSOLE are omitted.
+
+EXAMPLE 1
+
+```sql
+set serveroutput on
+
+create or replace package pkg1 is
+  procedure do_stuff;
+end;
+/
+
+create or replace package body pkg1 is
+  procedure do_stuff is
+    procedure sub1 is
+      procedure sub2 is
+        procedure sub3 is
+        begin
+          dbms_output.put_line(console.get_call_stack);
+        end;
+      begin
+        sub3;
+      end;
+    begin
+      sub2;
+    end;
+  begin
+    sub1;
+  end;
+end;
+/
+
+begin
+  pkg1.do_stuff;
+end;
+/
+```
+
+The example above will output:
+
+```
+- CALL STACK
+  - PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7
+  - PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2, line 10
+  - PLAYGROUND.PKG1.DO_STUFF.SUB1, line 13
+  - PLAYGROUND.PKG1.DO_STUFF, line 16
+  - anonymous_block, line 2
+```
+
+EXAMPLE 2
+
+```sql
+set serveroutput on
+
+create or replace package pkg1 is
+  procedure do_stuff;
+end;
+/
+
+create or replace package body pkg1 is
+  procedure do_stuff is
+    procedure sub1 is
+      procedure sub2 is
+        procedure sub3 is
+        begin
+          raise_application_error (-20999, 'Demo');
+        end;
+      begin
+        sub3;
+      end;
+    begin
+      sub2;
+    end;
+  begin
+    sub1;
+  end;
+end;
+/
+
+begin
+  pkg1.do_stuff;
+exception
+  when others then
+    dbms_output.put_line(console.get_call_stack);
+  raise;
+end;
+/
+```
+
+The example above will output:
+
+```
+- ERROR STACK
+  - ORA-20999 Demo
+  - ORA-06512 at "PLAYGROUND.PKG1", line 7
+  - ORA-06512 at "PLAYGROUND.PKG1", line 10
+  - ORA-06512 at "PLAYGROUND.PKG1", line 13
+  - ORA-06512 at "PLAYGROUND.PKG1", line 16
+- ERROR BACKTRACE
+  - PLAYGROUND.PKG1, line 7
+  - PLAYGROUND.PKG1, line 10
+  - PLAYGROUND.PKG1, line 13
+  - PLAYGROUND.PKG1, line 16
+  - anonymous_block, line 2
+- CALL STACK
+  - anonymous_block, line 5
+```
+
+SIGNATURE
+
+```sql
+function get_call_stack return varchar2;
+```
+
+
+<h2><a id="get_scope"></a>Function get_scope</h2>
+<!---------------------------------------------->
+
+Returns the current call stack entry.
+
+Calls to the package CONSOLE are omitted.
+
+EXAMPLE 1
+
+```sql
+set serveroutput on
+begin
+  dbms_output.put_line(console.get_scope);
+end;
+/
+```
+
+The example above will output `anonymous_block, line 2`.
+
+EXAMPLE 2
+
+```sql
+set serveroutput on
+
+create or replace package pkg1 is
+  procedure do_stuff;
+end;
+/
+
+create or replace package body pkg1 is
+  procedure do_stuff is
+    procedure sub1 is
+      procedure sub2 is
+        procedure sub3 is
+        begin
+          dbms_output.put_line(console.get_scope);
+        end;
+      begin
+        sub3;
+      end;
+    begin
+      sub2;
+    end;
+  begin
+    sub1;
+  end;
+end;
+/
+
+begin
+  pkg1.do_stuff;
+end;
+/
+```
+
+The example above will output `PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7`.
+
+SIGNATURE
+
+```sql
+function get_scope return varchar2;
+```
+
+
+<h2><a id="to_bool"></a>Function to_bool</h2>
+<!------------------------------------------>
+
+Converts a string to a boolean value.
+
+Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
+all other cases (also on null) false is returned.
+
+SIGNATURE
+
+```sql
+function to_bool ( p_string varchar2 ) return boolean;
+```
+
+
+<h2><a id="to_yn"></a>Function to_yn</h2>
+<!-------------------------------------->
+
+Converts a boolean value to a string.
+
+Returns `Y` when the input is true and `N` if the input is false or null.
+
+SIGNATURE
+
+```sql
+function to_yn ( p_bool boolean ) return varchar2;
 ```
 
 

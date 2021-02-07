@@ -67,14 +67,9 @@ g_timers tab_timers;
 
 $if not $$utils_public $then
 
-function  get_call_stack return varchar2;
-function  get_scope return varchar2;
 function  logging_enabled ( p_level integer ) return boolean;
 function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
-function  to_bool ( p_string varchar2 ) return boolean;
-function  to_yn ( p_bool boolean ) return varchar2;
 function  util_normalize_label (p_label varchar2) return varchar2;
- function  util_get_runtime (p_start timestamp) return varchar2;
 procedure check_context_availability;
 procedure clear_all_context;
 procedure clear_context ( p_client_identifier varchar2 );
@@ -363,7 +358,7 @@ begin
   if logging_enabled (c_info) and g_timers.exists(v_label) then
     create_log_entry (
       p_level   => c_info,
-      p_message => v_label || ': ' || util_get_runtime (g_timers(v_label)) );
+      p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
   end if;
   g_timers.delete(v_label);
 end;
@@ -376,7 +371,7 @@ is
   v_return varchar2(20);
 begin
   if g_timers.exists(v_label) then
-    v_return :=  util_get_runtime (g_timers(v_label));
+    v_return :=  get_runtime (g_timers(v_label));
   end if;
   g_timers.delete(v_label);
   return v_return;
@@ -582,6 +577,15 @@ end;
 
 --------------------------------------------------------------------------------
 
+function get_runtime (p_start timestamp) return varchar2 is
+  v_runtime varchar2(32);
+begin
+  v_runtime := to_char(localtimestamp - p_start);
+  return substr(v_runtime, instr(v_runtime,':')-2, 15);
+end get_runtime;
+
+--------------------------------------------------------------------------------
+
 function get_constraint_message (p_constraint_name varchar2) return console_constraint_messages.message%type result_cache is
 v_message console_constraint_messages.message%type;
 begin
@@ -699,15 +703,6 @@ $end
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function util_get_runtime (p_start timestamp) return varchar2 is
-  v_runtime varchar2(32);
-begin
-  v_runtime := to_char(localtimestamp - p_start);
-  return substr(v_runtime, instr(v_runtime,':')-2, 15);
-end util_get_runtime;
-
---------------------------------------------------------------------------------
-
 function util_normalize_label (p_label varchar2) return varchar2 is
 begin
   return coalesce(substrb(p_label, 1, c_identifier_length), c_default_label);
@@ -804,7 +799,7 @@ function to_bool (
 return boolean is
 begin
   return
-    case when upper(p_string) in ('Y', 'YES', '1', 'TRUE')
+    case when upper(trim(p_string)) in ('Y', 'YES', '1', 'TRUE')
       then true
       else false
     end;

@@ -268,7 +268,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.8.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.8.2'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -758,9 +758,7 @@ select console.version from dual;
 
 --------------------------------------------------------------------------------
 
-function extract_constraint_name (
-  p_sqlerrm varchar2 )
-return varchar2;
+function extract_constraint_name ( p_sqlerrm varchar2 ) return varchar2;
 /**
 
 Exracts the constraint name out of a SQL error message.
@@ -771,6 +769,237 @@ CONSOLE_CONSTRAINT_MESSAGES.
 **/
 
 --------------------------------------------------------------------------------
+
+function  get_runtime ( p_start timestamp ) return varchar2;
+/**
+
+Returns a string in the format hh24:mi:ss.ff6 (for example 00:00:01.123456).
+
+Is internally used by the `time_end` method and uses `localtimestamp` to compare
+with `p_start`.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line('Runtime: ' || console.get_runtime(v_start));
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_call_stack return varchar2;
+/**
+
+Returns the current call stack.
+
+Calls to the package CONSOLE are omitted.
+
+EXAMPLE 1
+
+```sql
+set serveroutput on
+
+create or replace package pkg1 is
+  procedure do_stuff;
+end;
+{{/}}
+
+create or replace package body pkg1 is
+  procedure do_stuff is
+    procedure sub1 is
+      procedure sub2 is
+        procedure sub3 is
+        begin
+          dbms_output.put_line(console.get_call_stack);
+        end;
+      begin
+        sub3;
+      end;
+    begin
+      sub2;
+    end;
+  begin
+    sub1;
+  end;
+end;
+{{/}}
+
+begin
+  pkg1.do_stuff;
+end;
+{{/}}
+```
+
+The example above will output:
+
+```
+- CALL STACK
+  - PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7
+  - PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2, line 10
+  - PLAYGROUND.PKG1.DO_STUFF.SUB1, line 13
+  - PLAYGROUND.PKG1.DO_STUFF, line 16
+  - anonymous_block, line 2
+```
+
+EXAMPLE 2
+
+```sql
+set serveroutput on
+
+create or replace package pkg1 is
+  procedure do_stuff;
+end;
+{{/}}
+
+create or replace package body pkg1 is
+  procedure do_stuff is
+    procedure sub1 is
+      procedure sub2 is
+        procedure sub3 is
+        begin
+          raise_application_error (-20999, 'Demo');
+        end;
+      begin
+        sub3;
+      end;
+    begin
+      sub2;
+    end;
+  begin
+    sub1;
+  end;
+end;
+{{/}}
+
+begin
+  pkg1.do_stuff;
+exception
+  when others then
+    dbms_output.put_line(console.get_call_stack);
+  raise;
+end;
+{{/}}
+```
+
+The example above will output:
+
+```
+- ERROR STACK
+  - ORA-20999 Demo
+  - ORA-06512 at "PLAYGROUND.PKG1", line 7
+  - ORA-06512 at "PLAYGROUND.PKG1", line 10
+  - ORA-06512 at "PLAYGROUND.PKG1", line 13
+  - ORA-06512 at "PLAYGROUND.PKG1", line 16
+- ERROR BACKTRACE
+  - PLAYGROUND.PKG1, line 7
+  - PLAYGROUND.PKG1, line 10
+  - PLAYGROUND.PKG1, line 13
+  - PLAYGROUND.PKG1, line 16
+  - anonymous_block, line 2
+- CALL STACK
+  - anonymous_block, line 5
+```
+
+**/
+
+
+--------------------------------------------------------------------------------
+
+function get_scope return varchar2;
+/**
+
+Returns the current call stack entry.
+
+Calls to the package CONSOLE are omitted.
+
+EXAMPLE 1
+
+```sql
+set serveroutput on
+begin
+  dbms_output.put_line(console.get_scope);
+end;
+{{/}}
+```
+
+The example above will output `anonymous_block, line 2`.
+
+EXAMPLE 2
+
+```sql
+set serveroutput on
+
+create or replace package pkg1 is
+  procedure do_stuff;
+end;
+{{/}}
+
+create or replace package body pkg1 is
+  procedure do_stuff is
+    procedure sub1 is
+      procedure sub2 is
+        procedure sub3 is
+        begin
+          dbms_output.put_line(console.get_scope);
+        end;
+      begin
+        sub3;
+      end;
+    begin
+      sub2;
+    end;
+  begin
+    sub1;
+  end;
+end;
+{{/}}
+
+begin
+  pkg1.do_stuff;
+end;
+{{/}}
+```
+
+The example above will output `PLAYGROUND.PKG1.DO_STUFF.SUB1.SUB2.SUB3, line 7`.
+
+**/
+
+
+--------------------------------------------------------------------------------
+
+function to_bool ( p_string varchar2 ) return boolean;
+/**
+
+Converts a string to a boolean value.
+
+Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
+all other cases (also on null) false is returned.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_yn ( p_bool boolean ) return varchar2;
+/**
+
+Converts a boolean value to a string.
+
+Returns `Y` when the input is true and `N` if the input is false or null.
+
+**/
+
+--------------------------------------------------------------------------------
+
 
 function get_constraint_message (
   p_constraint_name varchar2 )
@@ -816,14 +1045,9 @@ $end
 
 $if $$utils_public $then
 
-function  get_call_stack return varchar2;
-function  get_scope return varchar2;
 function  logging_enabled ( p_level integer ) return boolean;
 function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
-function  to_bool ( p_string varchar2 ) return boolean;
-function  to_yn ( p_bool boolean ) return varchar2;
 function  util_normalize_label (p_label varchar2) return varchar2;
-function  util_get_runtime (p_start timestamp) return varchar2;
 procedure check_context_availability;
 procedure clear_all_context;
 procedure clear_context ( p_client_identifier varchar2 );
@@ -932,14 +1156,9 @@ g_timers tab_timers;
 
 $if not $$utils_public $then
 
-function  get_call_stack return varchar2;
-function  get_scope return varchar2;
 function  logging_enabled ( p_level integer ) return boolean;
 function  read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
-function  to_bool ( p_string varchar2 ) return boolean;
-function  to_yn ( p_bool boolean ) return varchar2;
 function  util_normalize_label (p_label varchar2) return varchar2;
- function  util_get_runtime (p_start timestamp) return varchar2;
 procedure check_context_availability;
 procedure clear_all_context;
 procedure clear_context ( p_client_identifier varchar2 );
@@ -1228,7 +1447,7 @@ begin
   if logging_enabled (c_info) and g_timers.exists(v_label) then
     create_log_entry (
       p_level   => c_info,
-      p_message => v_label || ': ' || util_get_runtime (g_timers(v_label)) );
+      p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
   end if;
   g_timers.delete(v_label);
 end;
@@ -1241,7 +1460,7 @@ is
   v_return varchar2(20);
 begin
   if g_timers.exists(v_label) then
-    v_return :=  util_get_runtime (g_timers(v_label));
+    v_return :=  get_runtime (g_timers(v_label));
   end if;
   g_timers.delete(v_label);
   return v_return;
@@ -1447,6 +1666,15 @@ end;
 
 --------------------------------------------------------------------------------
 
+function get_runtime (p_start timestamp) return varchar2 is
+  v_runtime varchar2(32);
+begin
+  v_runtime := to_char(localtimestamp - p_start);
+  return substr(v_runtime, instr(v_runtime,':')-2, 15);
+end get_runtime;
+
+--------------------------------------------------------------------------------
+
 function get_constraint_message (p_constraint_name varchar2) return console_constraint_messages.message%type result_cache is
 v_message console_constraint_messages.message%type;
 begin
@@ -1564,15 +1792,6 @@ $end
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function util_get_runtime (p_start timestamp) return varchar2 is
-  v_runtime varchar2(32);
-begin
-  v_runtime := to_char(localtimestamp - p_start);
-  return substr(v_runtime, instr(v_runtime,':')-2, 15);
-end util_get_runtime;
-
---------------------------------------------------------------------------------
-
 function util_normalize_label (p_label varchar2) return varchar2 is
 begin
   return coalesce(substrb(p_label, 1, c_identifier_length), c_default_label);
@@ -1669,7 +1888,7 @@ function to_bool (
 return boolean is
 begin
   return
-    case when upper(p_string) in ('Y', 'YES', '1', 'TRUE')
+    case when upper(trim(p_string)) in ('Y', 'YES', '1', 'TRUE')
       then true
       else false
     end;

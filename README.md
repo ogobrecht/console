@@ -39,8 +39,8 @@ usage.
   - [ ] `console.table` (level 3=info)
   - [ ] `console.count`
   - [ ] `console.count_end` (level 3=info)
-  - [ ] `console.time`
-  - [ ] `console.time_end` (level 3=info)
+  - [X] `console.time`
+  - [X] `console.time_end` (level 3=info)
   - [X] `console.assert` (level 1=error, if failed)
   - [X] `console.clear`
 - Additional methods:
