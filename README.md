@@ -37,8 +37,8 @@ usage.
   - [X] `console.debug` (level 4=verbose)
   - [X] `console.trace` (level 3=info)
   - [ ] `console.table` (level 3=info)
-  - [ ] `console.count`
-  - [ ] `console.count_end` (level 3=info)
+  - [x] `console.count`
+  - [x] `console.count_end` (level 3=info)
   - [X] `console.time`
   - [X] `console.time_end` (level 3=info)
   - [X] `console.assert` (level 1=error, if failed)

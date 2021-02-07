@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.8.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.9.0'                                ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -191,29 +191,46 @@ procedure time (
 Starts a new timer. Call `console.time_end([label]) to stop the timer and get or
 log the elapsed time.
 
-EXAMPLE
+EXAMPLE 1
 
 ```sql
+--Set you own session in logging mode (defaults: level 3[info] for the next 60 minutes).
+exec console.init;
+
 begin
   console.time('myLabel');
 
-  --do your stuff
+  --Do your stuff here.
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
 
-  console.time_end('myLabel'); --this is logging your time
+  --Log the time (if log level >= 3:info).
+  console.time_end('myLabel');
 end;
 {{/}}
+
+--Stop logging mode of your own session.
+exec console.stop;
 ```
 
+EXAMPLE 2
+
 ```sql
-declare my_runtime interval hour to second;
+set serveroutput on
+
+declare
+  v_my_label constant varchar2(20) := 'My label: ';
 begin
-  console.time('myLabel');
+  console.time(v_my_label);
 
-  --do your stuff
+  --do your stuff here
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
 
-  my_runtime := console.time_end('myLabel'); --this is returning your time (no logging)
-
-  --do something with your time
+  --Return the runtime (no logging, therefore log level does not matter).
+  dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
 end;
 {{/}}
 ```
@@ -224,6 +241,68 @@ procedure time_end (
   p_label varchar2 default null );
 
 function time_end (
+  p_label varchar2 default null )
+return varchar2;
+
+--------------------------------------------------------------------------------
+
+procedure count (
+  p_label varchar2 default null );
+/**
+
+Starts a new counter. Call `console.count_end([label]) to stop the counter and get or
+log the count value.
+
+EXAMPLE 1
+
+```sql
+--Set you own session in logging mode (defaults: level 3=info for the next 60 minutes).
+exec console.init;
+
+begin
+  --Do your stuff here.
+  for i in 1 .. 1000 loop
+    if mod(i, 3) = 0 then
+      console.count('myLabel');
+    end if;
+  end loop;
+
+  --Log your count value (if log level >= 3:info).
+  console.count_end('myLabel');
+end;
+{{/}}
+
+--Stop logging mode of your own session.
+exec console.stop;
+```
+
+EXAMPLE 2
+
+```sql
+set serveroutput on
+
+declare
+  v_my_label constant varchar2(20) := 'My label: ';
+begin
+  --do your stuff here
+  for i in 1 .. 1000 loop
+    if mod(i, 3) = 0 then
+      console.count(v_my_label);
+    end if;
+  end loop;
+
+  --Return your count value (no logging, therefore log level does not matter).
+  dbms_output.put_line(v_my_label || console.count_end(v_my_label) );
+end;
+{{/}}
+```
+
+**/
+
+procedure count_end (
+  p_label varchar2 default null );
+
+function count_end (
   p_label varchar2 default null )
 return varchar2;
 

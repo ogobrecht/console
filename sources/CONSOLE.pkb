@@ -59,7 +59,9 @@ g_conf_cgi_env                boolean;
 g_conf_console_env            boolean;
 
 type tab_timers is table of timestamp index by t_identifier;
+type tab_counters is table of pls_integer index by t_identifier;
 g_timers tab_timers;
+g_counters tab_counters;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -347,35 +349,85 @@ procedure time (
   p_label varchar2 default null )
 is
 begin
-  g_timers (util_normalize_label(p_label)) := localtimestamp;
-end;
+  g_timers(util_normalize_label(p_label)) := localtimestamp;
+end time;
 
 procedure time_end (
   p_label varchar2 default null )
 is
-  v_label t_identifier := util_normalize_label(p_label);
+  v_label t_identifier;
 begin
-  if logging_enabled (c_info) and g_timers.exists(v_label) then
-    create_log_entry (
-      p_level   => c_info,
-      p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
+  v_label := util_normalize_label(p_label);
+  if g_timers.exists(v_label) then
+    if logging_enabled (c_info) then
+      create_log_entry (
+        p_level   => c_info,
+        p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
+    end if;
+    g_timers.delete(v_label);
   end if;
-  g_timers.delete(v_label);
-end;
+end time_end;
 
 function time_end (
   p_label varchar2 default null )
 return varchar2
 is
-  v_label t_identifier := util_normalize_label(p_label);
-  v_return varchar2(20);
+  v_label   t_identifier;
+  v_runtime varchar2(20);
 begin
+  v_label := util_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    v_return :=  get_runtime (g_timers(v_label));
+    v_runtime :=  get_runtime(g_timers(v_label));
+    g_timers.delete(v_label);
   end if;
-  g_timers.delete(v_label);
-  return v_return;
-end;
+  return v_runtime;
+end time_end;
+
+--------------------------------------------------------------------------------
+
+procedure count (
+  p_label varchar2 default null )
+is
+  v_label t_identifier;
+begin
+  v_label := util_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    g_counters(v_label) := g_counters(v_label) + 1;
+  else
+    g_counters(v_label) := 1;
+  end if;
+end count;
+
+procedure count_end (
+  p_label varchar2 default null )
+is
+  v_label t_identifier;
+begin
+  v_label := util_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    if logging_enabled (c_info) then
+      create_log_entry (
+        p_level   => c_info,
+        p_message => v_label || ': ' || to_char(g_counters(v_label)) );
+    end if;
+    g_counters.delete(v_label);
+  end if;
+end count_end;
+
+function count_end (
+  p_label varchar2 default null )
+return varchar2
+is
+  v_label   t_identifier;
+  v_counter pls_integer;
+begin
+  v_label := util_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    v_counter := g_counters(v_label);
+    g_counters.delete(v_label);
+  end if;
+  return to_char(v_counter);
+end count_end;
 
 
 --------------------------------------------------------------------------------
