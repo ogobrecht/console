@@ -26,10 +26,10 @@ usage.
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   This means, the same method names are provided, the parameters differs a
   little bit to fit our needs in PL/SQL. Not all methods making sense in a
-  PL/SQL instrumentation tool and therefore these six are not implemented:
-  countReset (instead we have count_end and we ignore the line number, where the
-  count occurred), dir, dirxml, group, groupCollapsed, groupEnd. For the two
-  \*_end methods we use snake case instead of camel case for readability:
+  PL/SQL instrumentation tool and therefore these six are not implemented: dir,
+  dirxml, group, groupCollapsed, groupEnd and countReset (instead we have
+  count_end and we ignore the line number, where the count occurred). For the
+  two \*_end methods we use snake case instead of camel case for readability:
   - [X] `console.error` (level 1=error)
   - [X] `console.warn` (level 2=warning)
   - [X] `console.info` (level 3=info)
@@ -47,14 +47,9 @@ usage.
   - [X] `console.permanent` (level 0=permanent): Log permanent messages like
     installation or upgrade notes with the level zero, which are not deleted
     when the purge job clears the log table.
-  - [X] `console.apex_error_handling`: Log internal APEX errors (also see the
-    [APEX
+  - [X] `console.apex_error_handling`: Log internal APEX errors (only available,
+    if APEX is installed, also see the [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
-  - [X] `extract_constraint_name`: Extracts a constraint name out of an error
-    message (see APEX docs above for example APEX error handling function)
-  - [X] `get_constraint_message`: Gets an user friendly message from the table
-    CONSOLE_CONSTRAINT_MESSAGES by the constraint name (yes, this table is for
-    you...)
   - [X] `console.action` & `console.module`: Aliases for
     dbms_application_info.set_action and set_module to be friendly to the DBA
     and monitoring teams. The module is usually set by the application (for

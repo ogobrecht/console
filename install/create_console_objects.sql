@@ -268,7 +268,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.9.2'                                ;
+c_version constant varchar2 ( 10 byte ) := '0.10.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -693,30 +693,6 @@ reimplement an own function and use that instead.
 **/
 
 $end
-
---------------------------------------------------------------------------------
-
-function extract_constraint_name ( p_sqlerrm varchar2 ) return varchar2;
-/**
-
-Exracts the constraint name out of a SQL error message.
-
-Used to find user friendly error messages for violated constraints in the table
-CONSOLE_CONSTRAINT_MESSAGES.
-
-**/
-
---------------------------------------------------------------------------------
-
-function get_constraint_message ( p_constraint_name varchar2 )
-return console_constraint_messages.message%type result_cache;
-/**
-
-Returns a user friendly error message for a constraint name.
-
-The messages are looked up from the table CONSOLE_CONSTRAINT_MESSAGES.
-
-**/
 
 --------------------------------------------------------------------------------
 
@@ -1481,6 +1457,23 @@ is
   v_reference_id    number;
   v_constraint_name varchar2(255);
   v_message         clob;
+  --
+  function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
+  begin
+    return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
+  end;
+  --
+  procedure create_apex_lang_message ( p_constraint_name varchar2 ) is
+    pragma autonomous_transaction;
+  begin
+    apex_lang.create_message(
+      p_application_id => v('APP_ID'),
+      p_name           => p_constraint_name,
+      p_language       => apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'),
+      p_message_text   => 'FIXME: Create message for constraint ' || p_constraint_name);
+    commit;
+  end;
+  --
 begin
   v_result := apex_error.init_error_result (p_error => p_error);
 
@@ -1543,7 +1536,12 @@ begin
     -- If we don't find the constraint in our lookup table we fallback to
     -- the original ORA error message.
     if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
-      v_result.message := get_constraint_message( extract_constraint_name( p_error.ora_sqlerrm ));
+      v_constraint_name :=  extract_constraint_name(p_error.ora_sqlerrm);
+      v_result.message := apex_lang.message( v_constraint_name );
+      if v_result.message = v_constraint_name then
+        --Idea by Roel Hartman: https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html
+        create_apex_lang_message (v_constraint_name);
+      end if;
     end if;
 
     -- If an ORA error has been raised, for example a raise_application_error(-20xxx, '...')
@@ -1568,28 +1566,6 @@ begin
 end apex_error_handling;
 
 $end
-
---------------------------------------------------------------------------------
-
-function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
-begin
-  return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
-end;
-
---------------------------------------------------------------------------------
-
-function get_constraint_message (p_constraint_name varchar2) return console_constraint_messages.message%type result_cache is
-v_message console_constraint_messages.message%type;
-begin
-  for i in (
-    select message
-      from console_constraint_messages
-     where constraint_name = p_constraint_name )
-  loop
-    v_message := i.message;
-  end loop;
-  return v_message;
-end;
 
 --------------------------------------------------------------------------------
 
