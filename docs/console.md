@@ -17,7 +17,11 @@ Oracle Instrumentation Console
 - [Procedure assert](#assert)
 - [Procedure trace](#trace)
 - [Procedure count](#count)
+- [Procedure count_end](#count_end)
+- [Function count_end](#count_end)
 - [Procedure time](#time)
+- [Procedure time_end](#time_end)
+- [Function time_end](#time_end)
 - [Procedure clear](#clear)
 - [Function apex_error_handling](#apex_error_handling)
 - [Function extract_constraint_name](#extract_constraint_name)
@@ -107,7 +111,7 @@ on cleanup.
 SIGNATURE
 
 ```sql
-procedure permanent (p_message clob);
+procedure permanent ( p_message clob );
 ```
 
 
@@ -308,10 +312,24 @@ procedure trace (
 <h2><a id="count"></a>Procedure count</h2>
 <!--------------------------------------->
 
-Starts a new counter. Call `console.count_end([label]) to stop the counter and get or
-log the count value.
+Starts a new counter with a value of one or adds one to an existent counter.
 
-EXAMPLE 1
+Call `console.count_end('yourLabel')` to stop the counter and get or log the count
+value.
+
+SIGNATURE
+
+```sql
+procedure count ( p_label varchar2 default null );
+```
+
+
+<h2><a id="count_end"></a>Procedure count_end</h2>
+<!----------------------------------------------->
+
+Stops a counter and logs the result, if current log level >= 3 (info).
+
+EXAMPLE
 
 ```sql
 --Set you own session in logging mode (defaults: level 3=info for the next 60 minutes).
@@ -325,7 +343,7 @@ begin
     end if;
   end loop;
 
-  --Log your count value (if log level >= 3:info).
+  --Log your count value.
   console.count_end('myLabel');
 end;
 /
@@ -334,7 +352,21 @@ end;
 exec console.stop;
 ```
 
-EXAMPLE 2
+SIGNATURE
+
+```sql
+procedure count_end ( p_label varchar2 default null );
+```
+
+
+<h2><a id="count_end"></a>Function count_end</h2>
+<!---------------------------------------------->
+
+Stops a counter and returns the result.
+
+Does not depend on a log level, can be used anywhere to count things.
+
+EXAMPLE
 
 ```sql
 set serveroutput on
@@ -349,7 +381,7 @@ begin
     end if;
   end loop;
 
-  --Return your count value (no logging, therefore log level does not matter).
+  --Return your count value.
   dbms_output.put_line(v_my_label || console.count_end(v_my_label) );
 end;
 /
@@ -358,21 +390,34 @@ end;
 SIGNATURE
 
 ```sql
-procedure count (
-  p_label varchar2 default null );
+function count_end ( p_label varchar2 default null ) return varchar2;
 ```
 
 
 <h2><a id="time"></a>Procedure time</h2>
 <!------------------------------------->
 
-Starts a new timer. Call `console.time_end([label]) to stop the timer and get or
-log the elapsed time.
+Starts a new timer.
 
-EXAMPLE 1
+Call `console.time_end('yourLabel')` to stop the timer and get or log the elapsed
+time.
+
+SIGNATURE
 
 ```sql
---Set you own session in logging mode (defaults: level 3[info] for the next 60 minutes).
+procedure time ( p_label varchar2 default null );
+```
+
+
+<h2><a id="time_end"></a>Procedure time_end</h2>
+<!--------------------------------------------->
+
+Stops a timer and logs the result, if current log level >= 3 (info).
+
+EXAMPLE
+
+```sql
+--Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
 exec console.init;
 
 begin
@@ -383,7 +428,7 @@ begin
     null;
   end loop;
 
-  --Log the time (if log level >= 3:info).
+  --Log the time.
   console.time_end('myLabel');
 end;
 /
@@ -392,7 +437,21 @@ end;
 exec console.stop;
 ```
 
-EXAMPLE 2
+SIGNATURE
+
+```sql
+procedure time_end ( p_label varchar2 default null );
+```
+
+
+<h2><a id="time_end"></a>Function time_end</h2>
+<!-------------------------------------------->
+
+Stops a timer and returns the result.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+EXAMPLE
 
 ```sql
 set serveroutput on
@@ -407,7 +466,7 @@ begin
     null;
   end loop;
 
-  --Return the runtime (no logging, therefore log level does not matter).
+  --Return the runtime.
   dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
 end;
 /
@@ -416,8 +475,7 @@ end;
 SIGNATURE
 
 ```sql
-procedure time (
-  p_label varchar2 default null );
+function time_end ( p_label varchar2 default null ) return varchar2;
 ```
 
 
@@ -438,9 +496,7 @@ MANAGING LOGGING MODES OF SESSIONS.
 SIGNATURE
 
 ```sql
-procedure clear (
-  p_client_identifier varchar2 default my_client_identifier -- client_identifier or unique_session_id
-);
+procedure clear ( p_client_identifier varchar2 default my_client_identifier );
 ```
 
 
@@ -464,8 +520,7 @@ reimplement an own function and use that instead.
 SIGNATURE
 
 ```sql
-function apex_error_handling (
-  p_error in apex_error.t_error )
+function apex_error_handling ( p_error in apex_error.t_error )
 return apex_error.t_error_result;
 ```
 
@@ -495,8 +550,7 @@ The messages are looked up from the table CONSOLE_CONSTRAINT_MESSAGES.
 SIGNATURE
 
 ```sql
-function get_constraint_message (
-  p_constraint_name varchar2 )
+function get_constraint_message ( p_constraint_name varchar2 )
 return console_constraint_messages.message%type result_cache;
 ```
 
@@ -534,9 +588,7 @@ end;
 SIGNATURE
 
 ```sql
-procedure action (
-  p_action varchar2
-);
+procedure action ( p_action varchar2 );
 ```
 
 
