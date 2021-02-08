@@ -30,10 +30,11 @@ Feedback and help is welcome.*
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   This means, the same method names are provided, the parameters differs a
   little bit to fit our needs in PL/SQL. Not all methods making sense in a
-  PL/SQL instrumentation tool and therefore these six are not implemented: dir,
-  dirxml, group, groupCollapsed, groupEnd and countReset (instead we have
-  count_end and we ignore the line number, where the count occurred). For the
-  two \*_end methods we use snake case instead of camel case for readability:
+  PL/SQL instrumentation tool (we have no direct screen) and therefore these six
+  are not implemented: dir, dirxml, group, groupCollapsed, groupEnd and
+  countReset (instead we have count_end and we ignore the line number, where the
+  count occurred). For the two \*_end methods we use snake case instead of camel
+  case for readability:
   - [X] `console.error` (level 1=error)
   - [X] `console.warn` (level 2=warning)
   - [X] `console.info` (level 3=info)
@@ -46,7 +47,7 @@ Feedback and help is welcome.*
   - [x] `console.count_end` (level 3=info)
   - [X] `console.time`
   - [X] `console.time_end` (level 3=info)
-  - [X] `console.clear`
+  - [ ] `console.clear`
 - Additional methods:
   - [X] `console.permanent` (level 0=permanent): Log permanent messages like
     installation or upgrade notes with the level zero, which are not deleted
@@ -106,14 +107,14 @@ steps:
 2. Optional: Create a context
     - For performance reasons this is recommended, but it will work without a context
     - Start SQL*Plus and connect to a privileged user
-    - Run `@install/create_context.sql "CONSOLE_INSTALL_SCHEMA"`
+    - Run `@install/create_context.sql "YOUR_CONSOLE_INSTALL_SCHEMA"`
     - Maybe your DBA needs to do that for you once
 3. Optional: Grant rights to client schema
     - When installed in a central tools schema you may want to grant execute
       rights on the package and select rights on the views to public or other
       schemas
     - Start SQL*Plus and connect to your CONSOLE install schema
-    - Run `@install/grant_rights.sql "CLIENT_SCHEMA"`
+    - Run `@install/grant_rights.sql "YOUR_CLIENT_SCHEMA"`
 4. Optional: Create synonyms in client schema(s)
     - When you want to use it in another schema you may want to create synonyms
       there or public ones for easier access
@@ -133,7 +134,7 @@ As with the installation the uninstallation is splitted into multiple steps:
     - Run `@uninstall/drop_console_objects.sql`
 2. Drop the context (if you have one)
     - Start SQL*Plus and connect to a privileged user
-    - Run `@uninstall/drop_context.sql "CONSOLE_INSTALL_SCHEMA"`
+    - Run `@uninstall/drop_context.sql "YOUR_CONSOLE_INSTALL_SCHEMA"`
     - Maybe your DBA needs to do that for you
 3. Drop synonyms in client schemas
     - You know, if you created synonyms and how they were named...
