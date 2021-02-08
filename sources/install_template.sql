@@ -10,7 +10,6 @@ whenever sqlerror exit sql.sqlcode rollback
 prompt ORACLE INSTRUMENTATION CONSOLE: CREATE DATABASE OBJECTS
 prompt - Project page https://github.com/ogobrecht/console
 @set_ccflags.sql
-@CONSOLE_CONSTRAINT_MESSAGES.sql
 @CONSOLE_LEVELS.sql
 @CONSOLE_SESSIONS.sql
 @CONSOLE_LOGS.sql

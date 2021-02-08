@@ -42,7 +42,7 @@ begin
     select 'drop table ' || table_name || ' cascade constraints' as ddl,
            table_name
       from user_tables
-     where table_name in ('CONSOLE_LOGS','CONSOLE_SESSIONS', 'CONSOLE_LEVELS', 'CONSOLE_CONSTRAINT_MESSAGES') )
+     where table_name in ('CONSOLE_LOGS', 'CONSOLE_SESSIONS', 'CONSOLE_LEVELS') )
   loop
     execute immediate 'select count(*) from ' || i.table_name ||
       case when i.table_name = 'CONSOLE_LOGS'
@@ -50,7 +50,7 @@ begin
         else null
       end
       into v_count;
-    if i.table_name in ('CONSOLE_LOGS','CONSOLE_CONSTRAINT_MESSAGES') and v_count > 0 then
+    if i.table_name = 'CONSOLE_LOGS' and v_count > 0 then
       dbms_output.put_line(
         '- NOTE: ' || i.table_name ||
         ' contains important user data - please review and drop it by youself (' ||
