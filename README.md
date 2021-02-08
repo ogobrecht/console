@@ -55,6 +55,8 @@ Feedback and help is welcome.*
   - [X] `console.apex_error_handling`: Log internal APEX errors (only available,
     if APEX is installed, also see the [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
+  - [ ] `console.apex_plugin_render` & `console.apex_plugin_ajax`: Methods for
+    the APEX plugin (only available, if APEX is installed).
   - [X] `console.action` & `console.module`: Aliases for
     dbms_application_info.set_action and set_module to be friendly to the DBA
     and monitoring teams. The module is usually set by the application (for
@@ -67,7 +69,12 @@ Feedback and help is welcome.*
   - [X] `console.my_log_level`
   - [X] `console.context_available_yn`
   - [X] `console.version`
-- Additional methods used by console internally, which might also helpful for you:
+  - [ ] `console.view_status`
+  - [ ] `console.view_cached_log_entries`
+  - [ ] `console.view_counters`
+  - [ ] `console.view_timers`
+- Additional methods used by console internally, which might also helpful for
+  you:
   - [X] `console.to_bool`
   - [X] `console.to_yn`
   - [X] `console.get_runtime`
@@ -78,7 +85,8 @@ For a more detailed overview of the public API methods please see the [docs for 
 
 - [ ] API compatibility with the JavaScript console (with exceptions)
 - [ ] APEX plug-in to be able to track client side browser errors
-- [ ] Something else? Let us discuss your ideas - simply [open an issue](https://github.com/ogobrecht/console/issues/new) ...
+- [ ] Something else? Let us discuss your ideas - simply [open an
+  issue](https://github.com/ogobrecht/console/issues/new) ...
 
 ## Dependencies
 
@@ -105,7 +113,8 @@ steps:
     - User needs the rights to create packages, tables and views
     - Do this step on every new release of CONSOLE
 2. Optional: Create a context
-    - For performance reasons this is recommended, but it will work without a context
+    - For performance reasons this is recommended, but it will work without a
+      context
     - Start SQL*Plus and connect to a privileged user
     - Run `@install/create_context.sql "YOUR_CONSOLE_INSTALL_SCHEMA"`
     - Maybe your DBA needs to do that for you once
