@@ -33,6 +33,7 @@ Oracle Instrumentation Console
 - [Function to_bool](#to_bool)
 - [Function to_yn](#to_yn)
 - [Function get_runtime](#get_runtime)
+- [Function get_runtime_seconds](#get_runtime_seconds)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -51,7 +52,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.10.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.11.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -71,7 +72,7 @@ Returns the current session identifier of the own session. This information is c
 package variable and determined on package initialization.
 
 ```sql
-select console.context_available_yn from dual;
+select console.my_client_identifier from dual;
 ```
 
 SIGNATURE
@@ -88,7 +89,7 @@ Returns the current log level of the own session. This information is cached in 
 package variable for performance reasons and reevaluated every 10 seconds.
 
 ```sql
-select console.context_available_yn from dual;
+select console.my_log_level from dual;
 ```
 
 SIGNATURE
@@ -252,7 +253,8 @@ procedure debug (
 <h2><a id="assert"></a>Procedure assert</h2>
 <!----------------------------------------->
 
-If the given expression evaluates to false, an error is raised with the given message.
+If the given expression evaluates to false, an error is raised with the given
+message.
 
 EXAMPLE
 
@@ -328,7 +330,7 @@ Stops a counter and logs the result, if current log level >= 3 (info).
 EXAMPLE
 
 ```sql
---Set you own session in logging mode (defaults: level 3=info for the next 60 minutes).
+--Set your own session in logging mode (defaults: level 3=info for the next 60 minutes).
 exec console.init;
 
 begin
@@ -765,6 +767,35 @@ SIGNATURE
 
 ```sql
 function  get_runtime ( p_start timestamp ) return varchar2;
+```
+
+
+<h2><a id="get_runtime_seconds"></a>Function get_runtime_seconds</h2>
+<!------------------------------------------------------------------>
+
+Subtracts the start `localtimestamp` from the current `localtimestamp` and
+returns the exracted seconds.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line (
+    'Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)) );
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+function get_runtime_seconds ( p_start timestamp ) return number;
 ```
 
 

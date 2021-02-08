@@ -241,7 +241,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.10.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.11.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -279,7 +279,7 @@ Returns the current session identifier of the own session. This information is c
 package variable and determined on package initialization.
 
 ```sql
-select console.context_available_yn from dual;
+select console.my_client_identifier from dual;
 ```
 
 **/
@@ -293,7 +293,7 @@ Returns the current log level of the own session. This information is cached in 
 package variable for performance reasons and reevaluated every 10 seconds.
 
 ```sql
-select console.context_available_yn from dual;
+select console.my_log_level from dual;
 ```
 
 **/
@@ -434,7 +434,8 @@ procedure assert (
 );
 /**
 
-If the given expression evaluates to false, an error is raised with the given message.
+If the given expression evaluates to false, an error is raised with the given
+message.
 
 EXAMPLE
 
@@ -496,7 +497,7 @@ Stops a counter and logs the result, if current log level >= 3 (info).
 EXAMPLE
 
 ```sql
---Set you own session in logging mode (defaults: level 3=info for the next 60 minutes).
+--Set your own session in logging mode (defaults: level 3=info for the next 60 minutes).
 exec console.init;
 
 begin
@@ -897,6 +898,32 @@ end;
 
 **/
 
+--------------------------------------------------------------------------------
+
+function get_runtime_seconds ( p_start timestamp ) return number;
+/**
+
+Subtracts the start `localtimestamp` from the current `localtimestamp` and
+returns the exracted seconds.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line (
+    'Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)) );
+end;
+{{/}}
+```
+
+**/
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
@@ -1280,6 +1307,30 @@ begin
     raise_application_error(-20777, 'Assertion failed: ' || p_message, true);
   end if;
 end assert;
+
+--------------------------------------------------------------------------------
+
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 )
+is
+  v_data_cursor       sys_refcursor := p_data_cursor;
+  v_cursor_id         integer;
+  --
+  procedure close_cursor ( p_cursor_id in out integer ) is
+  begin
+    if dbms_sql.is_open(p_cursor_id) then
+      dbms_sql.close_cursor(p_cursor_id);
+    end if;
+  exception
+    when invalid_cursor then null;
+  end close_cursor;
+  --
+begin
+  v_cursor_id := dbms_sql.to_cursor_number(v_data_cursor);
+end;
 
 --------------------------------------------------------------------------------
 
@@ -1729,12 +1780,19 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_runtime (p_start timestamp) return varchar2 is
+function get_runtime ( p_start timestamp ) return varchar2 is
   v_runtime varchar2(32);
 begin
   v_runtime := to_char(localtimestamp - p_start);
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
 end get_runtime;
+
+--------------------------------------------------------------------------------
+
+function get_runtime_seconds ( p_start timestamp ) return number is
+begin
+  return extract(second from (localtimestamp - p_start));
+end get_runtime_seconds;
 
 
 --------------------------------------------------------------------------------

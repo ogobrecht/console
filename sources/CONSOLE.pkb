@@ -333,6 +333,30 @@ end assert;
 
 --------------------------------------------------------------------------------
 
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 )
+is
+  v_data_cursor       sys_refcursor := p_data_cursor;
+  v_cursor_id         integer;
+  --
+  procedure close_cursor ( p_cursor_id in out integer ) is
+  begin
+    if dbms_sql.is_open(p_cursor_id) then
+      dbms_sql.close_cursor(p_cursor_id);
+    end if;
+  exception
+    when invalid_cursor then null;
+  end close_cursor;
+  --
+begin
+  v_cursor_id := dbms_sql.to_cursor_number(v_data_cursor);
+end;
+
+--------------------------------------------------------------------------------
+
 procedure trace (
   p_message         clob     default null  ,
   p_trace           boolean  default true  ,
@@ -779,12 +803,19 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_runtime (p_start timestamp) return varchar2 is
+function get_runtime ( p_start timestamp ) return varchar2 is
   v_runtime varchar2(32);
 begin
   v_runtime := to_char(localtimestamp - p_start);
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
 end get_runtime;
+
+--------------------------------------------------------------------------------
+
+function get_runtime_seconds ( p_start timestamp ) return number is
+begin
+  return extract(second from (localtimestamp - p_start));
+end get_runtime_seconds;
 
 
 --------------------------------------------------------------------------------

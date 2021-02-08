@@ -28,20 +28,20 @@ Feedback and help is welcome.*
     identifier, console is setting one for you).
 - Mostly API compatible with the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
-  This means, the same method names are provided, the parameters differs a
-  little bit to fit our needs in PL/SQL. Not all methods making sense in a
-  PL/SQL instrumentation tool (we have no direct screen) and therefore these six
-  are not implemented: dir, dirxml, group, groupCollapsed, groupEnd and
-  countReset (instead we have count_end and we ignore the line number, where the
-  count occurred). For the two \*_end methods we use snake case instead of camel
-  case for readability:
+  This means, the same method names are provided (except table, as this is a
+  keyword in PL/SQL). The parameters differs a little bit to fit our needs in
+  PL/SQL. Not all methods making sense in a PL/SQL instrumentation tool (we have
+  no direct screen) and therefore these six are not implemented: dir, dirxml,
+  group, groupCollapsed, groupEnd and countReset (instead we have count_end and
+  we ignore the line number, where the count occurred). For the two \*_end
+  methods we use snake case instead of camel case for readability:
   - [X] `console.error` (level 1=error)
   - [X] `console.warn` (level 2=warning)
   - [X] `console.info` (level 3=info)
   - [X] `console.log` (level 3=info)
   - [X] `console.debug` (level 4=verbose)
   - [X] `console.assert` (level 1=error, if failed)
-  - [ ] `console.table` (level 3=info)
+  - [ ] `console.table#` (level 3=info)
   - [X] `console.trace` (level 3=info)
   - [x] `console.count`
   - [x] `console.count_end` (level 3=info)
