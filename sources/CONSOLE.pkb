@@ -96,7 +96,7 @@ function utl_create_log_entry (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return console_logs.log_id%type;
+return integer;
 procedure utl_create_log_entry (
   p_level           integer,
   p_message         clob     default null  ,
@@ -135,8 +135,8 @@ procedure permanent (
 is
 begin
   utl_create_log_entry (
-    p_level      => c_permanent ,
-    p_message    => p_message   );
+    p_level   => c_permanent ,
+    p_message => p_message   );
 end permanent;
 
 --------------------------------------------------------------------------------
@@ -1061,7 +1061,7 @@ function utl_create_log_entry (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return console_logs.log_id%type
+return integer
 is
   pragma autonomous_transaction;
   v_row console_logs%rowtype;
