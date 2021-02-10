@@ -241,7 +241,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.11.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.12.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -924,6 +924,27 @@ end;
 
 **/
 
+function  get_scope return varchar2;
+/**
+
+Get the current scope (method, line number) from the call stack.
+
+Is used internally by console to automatically provide the scope attribute for a
+log entry.
+
+**/
+
+function  get_call_stack return varchar2;
+/**
+
+Get the current call stack (and error stack/backtrace, if available).
+
+Is used internally by console to provide the call stack for a log entry when
+requested by the logging method (which is the default for the methods error and
+trace).
+
+**/
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
@@ -931,8 +952,6 @@ end;
 
 $if $$utils_public $then
 
-function  utl_get_call_stack return varchar2;
-function  utl_get_scope return varchar2;
 function  utl_logging_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -1049,8 +1068,6 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
-function  utl_get_call_stack return varchar2;
-function  utl_get_scope return varchar2;
 function  utl_logging_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -1799,7 +1816,7 @@ end get_runtime_seconds;
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function utl_get_call_stack return varchar2
+function get_call_stack return varchar2
 is
   v_return     vc_max;
   v_subprogram vc_max;
@@ -1831,7 +1848,7 @@ begin
 
   if utl_call_stack.dynamic_depth > 0 then
     v_return := v_return || '- CALL STACK' || chr(10);
-    --ignore 1, is always this function (utl_get_call_stack) itself
+    --ignore 1, is always this function (get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
@@ -1851,16 +1868,16 @@ begin
   end if;
 
   return v_return;
-end utl_get_call_stack;
+end get_call_stack;
 
 --------------------------------------------------------------------------------
 
-function utl_get_scope return varchar2 is
+function get_scope return varchar2 is
   v_return     vc_max;
   v_subprogram vc_max;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (utl_get_call_stack) itself
+    --ignore 1, is always this function (get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
@@ -1879,7 +1896,7 @@ begin
     end loop;
   end if;
   return v_return;
-end utl_get_scope;
+end get_scope;
 
 --------------------------------------------------------------------------------
 
@@ -2043,24 +2060,28 @@ is
   pragma autonomous_transaction;
   v_row console_logs%rowtype;
 begin
-  v_row.scope := case
-    when p_user_scope is not null then substrb(p_user_scope, 1, 256)
-    else substrb(utl_get_scope, 1, 256)
+  v_row.scope :=
+    case
+      when p_user_scope is not null then substrb(p_user_scope, 1, 256)
+      else substrb(get_scope, 1, 256)
     end;
-  v_row.message := case
-    when p_message is not null then p_message
-    when sqlcode != 0 then sqlerrm
-    else null
+  v_row.message :=
+    case
+      when p_message is not null then p_message
+      when sqlcode != 0 then sqlerrm
+      else null
     end;
-  v_row.error_code := case
-    when p_user_error_code is not null then p_user_error_code
-    when sqlcode != 0 then sqlcode
-    else null
+  v_row.error_code :=
+    case
+      when p_user_error_code is not null then p_user_error_code
+      when sqlcode != 0 then sqlcode
+      else null
     end;
-  v_row.call_stack := case
-    when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
-    when p_trace then substrb(utl_get_call_stack, 1, 4000)
-    else null
+  v_row.call_stack :=
+    case
+      when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
+      when p_trace then substrb(get_call_stack, 1, 4000)
+      else null
     end;
   if p_apex_env then
     null; --FIXME implement

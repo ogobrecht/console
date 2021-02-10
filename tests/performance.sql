@@ -79,7 +79,7 @@ begin
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    v_scope := console.utl_get_scope;
+    v_scope := console.get_scope;
   end loop;
   v_rt_console_scope := console.get_runtime_seconds(v_start);
   --
@@ -95,6 +95,7 @@ begin
   dbms_output.put_line( '- get_scope   : ' || trim(to_char(v_rt_console_scope, '0.000000')) || ' seconds' );
 end;
 /
+prompt - get_scope is how long it takes us to get the scope from the call stack (not so long...)
 
 
 --prompt

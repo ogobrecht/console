@@ -34,6 +34,8 @@ Oracle Instrumentation Console
 - [Function to_yn](#to_yn)
 - [Function get_runtime](#get_runtime)
 - [Function get_runtime_seconds](#get_runtime_seconds)
+- [Function get_scope](#get_scope)
+- [Function get_call_stack](#get_call_stack)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -52,7 +54,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.11.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.12.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -796,6 +798,37 @@ SIGNATURE
 
 ```sql
 function get_runtime_seconds ( p_start timestamp ) return number;
+```
+
+
+<h2><a id="get_scope"></a>Function get_scope</h2>
+<!---------------------------------------------->
+
+Get the current scope (method, line number) from the call stack.
+
+Is used internally by console to automatically provide the scope attribute for a
+log entry.
+
+SIGNATURE
+
+```sql
+function  get_scope return varchar2;
+```
+
+
+<h2><a id="get_call_stack"></a>Function get_call_stack</h2>
+<!-------------------------------------------------------->
+
+Get the current call stack (and error stack/backtrace, if available).
+
+Is used internally by console to provide the call stack for a log entry when
+requested by the logging method (which is the default for the methods error and
+trace).
+
+SIGNATURE
+
+```sql
+function  get_call_stack return varchar2;
 ```
 
 
