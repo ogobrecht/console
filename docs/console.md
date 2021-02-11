@@ -30,12 +30,15 @@ Oracle Instrumentation Console
 - [Procedure stop](#stop)
 - [Function context_available_yn](#context_available_yn)
 - [Function version](#version)
+- [Function to_html](#to_html)
 - [Function to_bool](#to_bool)
 - [Function to_yn](#to_yn)
 - [Function get_runtime](#get_runtime)
 - [Function get_runtime_seconds](#get_runtime_seconds)
 - [Function get_scope](#get_scope)
 - [Function get_call_stack](#get_call_stack)
+- [Procedure clob_append](#clob_append)
+- [Procedure clob_flush_cache](#clob_flush_cache)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -54,7 +57,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.12.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.13.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -713,6 +716,65 @@ function version return varchar2;
 ```
 
 
+<h2><a id="to_html"></a>Function to_html</h2>
+<!------------------------------------------>
+
+Helper to convert a cursor to a HTML table.
+
+Note: As this helper is designed to work always it does not check your log
+level. And if it would check, it would not help for the opening of the cursor,
+which is done before. To save work for your database in cases where you are not
+logging you should check the log level before open the cursor. Please see the
+examples below.
+
+EXAMPLES 1 - Open cursor in advance
+
+```sql
+declare
+  v_dataset sys_refcursor;
+begin
+  -- Your business logic here.
+
+  -- Debug code
+  if console.my_log_level >= console.c_info then
+    open v_dataset for select * from user_tables;
+    console.info(console.to_html(v_dataset));
+  end if;
+end;
+/
+```
+
+EXAMPLES 2 - Open cursor in for loop
+
+```sql
+begin
+  -- Your business logic here.
+
+  -- Debug code
+  if console.my_log_level >= console.c_info then
+    for i in (
+      select console.to_html(cursor(select * from user_tables)) as html
+        from dual )
+    loop
+      console.info(i.html);
+    end loop;
+  end if;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+function to_html (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 )
+return clob;
+```
+
+
 <h2><a id="to_bool"></a>Function to_bool</h2>
 <!------------------------------------------>
 
@@ -829,6 +891,59 @@ SIGNATURE
 
 ```sql
 function  get_call_stack return varchar2;
+```
+
+
+<h2><a id="clob_append"></a>Procedure clob_append</h2>
+<!--------------------------------------------------->
+
+High performance clob concatenation. Also see clob_flush_cache below.
+
+Is used internally by console for the table method (and other things). Do not
+forget a final flush cache call when you use it in your own code.
+
+EXAMPLE
+
+```sql
+set serveroutput on feedback off
+declare
+  v_start  timestamp := localtimestamp;
+  v_clob   clob;
+  v_cache  varchar2(32767 char);
+begin
+  for i in 1..100000 loop
+    console.clob_append(v_clob, v_cache, 'a');
+  end loop;
+  console.clob_flush_cache(v_clob, v_cache);
+  dbms_output.put_line('Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)));
+  dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure clob_append (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 ,
+  p_text  in            varchar2 );
+```
+
+
+<h2><a id="clob_flush_cache"></a>Procedure clob_flush_cache</h2>
+<!------------------------------------------------------------->
+
+Flushes finally the cache in a high performance clob concatenation.
+
+Also see clob_append above.
+
+SIGNATURE
+
+```sql
+procedure clob_flush_cache (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 );
 ```
 
 

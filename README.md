@@ -28,20 +28,19 @@ Feedback and help is welcome.*
     identifier, console is setting one for you).
 - Mostly API compatible with the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
-  This means, the same method names are provided (except table, as this is a
-  keyword in PL/SQL). The parameters differs a little bit to fit our needs in
-  PL/SQL. Not all methods making sense in a PL/SQL instrumentation tool (we have
-  no direct screen) and therefore these six are not implemented: dir, dirxml,
-  group, groupCollapsed, groupEnd and countReset (instead we have count_end and
-  we ignore the line number, where the count occurred). For the two \*_end
-  methods we use snake case instead of camel case for readability:
+  This means, the same method names are provided. The parameters differs a
+  little bit to fit our needs in PL/SQL. Not all methods making sense in a
+  PL/SQL instrumentation tool (we have no direct screen) and therefore these
+  seven are not implemented: dir, dirxml, group, groupCollapsed, groupEnd, table
+  (as a helper you can use instead to_html) and countReset (instead we have
+  count_end and we ignore the line number, where the count occurred). For the
+  two \*_end methods we use snake case instead of camel case for readability:
   - [X] `console.error` (level 1=error)
   - [X] `console.warn` (level 2=warning)
   - [X] `console.info` (level 3=info)
   - [X] `console.log` (level 3=info)
   - [X] `console.debug` (level 4=verbose)
   - [X] `console.assert` (level 1=error, if failed)
-  - [ ] `console.table#` (level 3=info)
   - [X] `console.trace` (level 3=info)
   - [x] `console.count`
   - [x] `console.count_end` (level 3=info)
@@ -73,11 +72,23 @@ Feedback and help is welcome.*
   - [ ] `console.view_cached_log_entries`
   - [ ] `console.view_counters`
   - [ ] `console.view_timers`
-- Additional methods used by console internally, which might also helpful for
-  you:
+- Additional methods (mostly used by console internally) which might also
+  helpful for you:
+  - [X] `console.to_html`
   - [X] `console.to_bool`
   - [X] `console.to_yn`
   - [X] `console.get_runtime`
+  - [X] `console.get_runtime_second`
+  - [X] `console.get_scope`
+  - [X] `console.get_call_stack`
+  - [X] `console.clob_append`
+  - [X] `console.clob_flush_cache`
+
+- Views for the logging entries of the table console_logs:
+  - [ ] `console_logs`
+  - [ ] `console_logs_last_10_minutes`
+  - [ ] `console_logs_last_hour`
+  - [ ] `console_logs_last_24_hours`
 
 For a more detailed overview of the public API methods please see the [docs for the package console](docs/console.md).
 

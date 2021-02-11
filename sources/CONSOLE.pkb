@@ -10,32 +10,65 @@ pragma exception_init (insufficient_privileges, -1031);
 c_identifier_length   constant pls_integer := 128;
 subtype t_identifier  is varchar2 (c_identifier_length char);
 
-c_tab                constant varchar2 ( 1 byte) := chr(9);
-c_cr                 constant varchar2 ( 1 byte) := chr(13);
-c_lf                 constant varchar2 ( 1 byte) := chr(10);
-c_lflf               constant varchar2 ( 2 byte) := chr(10) || chr(10);
-c_crlf               constant varchar2 ( 2 byte) := chr(13) || chr(10);
-c_sep                constant varchar2 ( 1 byte) := ',';
-c_at                 constant varchar2 ( 1 byte) := '@';
-c_hash               constant varchar2 ( 1 byte) := '#';
-c_slash              constant varchar2 ( 1 byte) := '/';
-c_default_label      constant varchar2 (64 byte) := 'Default';
-c_anon_block_ora     constant varchar2 (20 byte) := '__anonymous_block';
-c_anonymous_block    constant varchar2 (20 byte) := 'anonymous_block';
-c_client_id_prefix   constant varchar2 ( 6 byte) := '{o,o} ';
-c_console_pkg_name   constant varchar2 (60 byte) := upper($$plsql_unit) || '.';
-c_ctx_namespace      constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
-c_ctx_test_attribute constant varchar2 (15 byte) := 'TEST';
-c_ctx_date_format    constant varchar2 (16 byte) := 'yyyymmddhh24miss';
-c_ctx_log_level      constant varchar2 (15 byte) := 'LOG_LEVEL';
-c_ctx_end_date       constant varchar2 (15 byte) := 'END_DATE';
-c_ctx_cache_size     constant varchar2 (15 byte) := 'CACHE_SIZE';
-c_ctx_cache_duration constant varchar2 (15 byte) := 'CACHE_DURATION';
-c_ctx_user_env       constant varchar2 (15 byte) := 'USER_ENV';
-c_ctx_apex_env       constant varchar2 (15 byte) := 'APEX_ENV';
-c_ctx_cgi_env        constant varchar2 (15 byte) := 'CGI_ENV';
-c_ctx_console_env    constant varchar2 (15 byte) := 'CONSOLE_ENV';
-c_vc_max_size        constant pls_integer        := 32767;
+c_tab                          constant varchar2 ( 1 byte) := chr(9);
+c_cr                           constant varchar2 ( 1 byte) := chr(13);
+c_lf                           constant varchar2 ( 1 byte) := chr(10);
+c_lflf                         constant varchar2 ( 2 byte) := chr(10) || chr(10);
+c_crlf                         constant varchar2 ( 2 byte) := chr(13) || chr(10);
+c_sep                          constant varchar2 ( 1 byte) := ',';
+c_at                           constant varchar2 ( 1 byte) := '@';
+c_hash                         constant varchar2 ( 1 byte) := '#';
+c_slash                        constant varchar2 ( 1 byte) := '/';
+c_ampersand                    constant varchar2 ( 1 byte) := chr(26);
+c_html_ampersand               constant varchar2 ( 5 byte) := chr(26) || 'amp;';
+c_html_less_then               constant varchar2 ( 4 byte) := chr(26) || 'lt;';
+c_html_greater_then            constant varchar2 ( 4 byte) := chr(26) || 'gt;';
+c_default_label                constant varchar2 (64 byte) := 'Default';
+c_anon_block_ora               constant varchar2 (20 byte) := '__anonymous_block';
+c_anonymous_block              constant varchar2 (20 byte) := 'anonymous_block';
+c_client_id_prefix             constant varchar2 ( 6 byte) := '{o,o} ';
+c_console_pkg_name             constant varchar2 (60 byte) := upper($$plsql_unit) || '.';
+c_ctx_namespace                constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
+c_ctx_test_attribute           constant varchar2 (15 byte) := 'TEST';
+c_ctx_date_format              constant varchar2 (16 byte) := 'yyyymmddhh24miss';
+c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
+c_ctx_end_date                 constant varchar2 (15 byte) := 'END_DATE';
+c_ctx_cache_size               constant varchar2 (15 byte) := 'CACHE_SIZE';
+c_ctx_cache_duration           constant varchar2 (15 byte) := 'CACHE_DURATION';
+c_ctx_user_env                 constant varchar2 (15 byte) := 'USER_ENV';
+c_ctx_apex_env                 constant varchar2 (15 byte) := 'APEX_ENV';
+c_ctx_cgi_env                  constant varchar2 (15 byte) := 'CGI_ENV';
+c_ctx_console_env              constant varchar2 (15 byte) := 'CONSOLE_ENV';
+c_vc_max_size                  constant pls_integer        := 32767;
+
+-- numeric type identfiers
+c_number                       constant pls_integer := 2;   -- float
+c_binary_float                 constant pls_integer := 100;
+c_binary_double                constant pls_integer := 101;
+-- string type identfiers
+c_char                         constant pls_integer := 96;  -- nchar
+c_varchar2                     constant pls_integer := 1;   -- nvarchar2
+c_long                         constant pls_integer := 8;
+c_clob                         constant pls_integer := 112; -- nclob
+c_xmltype                      constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
+c_rowid                        constant pls_integer := 69;
+c_urowid                       constant pls_integer := 208;
+-- binary type identfiers
+c_raw                          constant pls_integer := 23;
+c_long_raw                     constant pls_integer := 24;
+c_blob                         constant pls_integer := 113;
+c_bfile                        constant pls_integer := 114;
+-- date type identfiers
+c_date                         constant pls_integer := 12;
+c_timestamp                    constant pls_integer := 180;
+c_timestamp_tz                 constant pls_integer := 181;
+c_timestamp_ltz                constant pls_integer := 231;
+-- interval type identfiers
+c_interval_year_to_month       constant pls_integer := 182;
+c_interval_day_to_second       constant pls_integer := 183;
+-- cursor type identfiers
+c_ref                          constant pls_integer := 111;
+c_ref_cursor                   constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
 subtype vc16    is varchar2 (   16 char);
 subtype vc32    is varchar2 (   32 char);
@@ -83,7 +116,7 @@ procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
 --
 function utl_create_log_entry (
-  p_level           integer,
+  p_level           integer                ,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
@@ -96,7 +129,7 @@ function utl_create_log_entry (
   p_user_call_stack varchar2 default null  )
 return integer;
 procedure utl_create_log_entry (
-  p_level           integer,
+  p_level           integer                ,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
@@ -328,30 +361,6 @@ begin
     raise_application_error(-20777, 'Assertion failed: ' || p_message, true);
   end if;
 end assert;
-
---------------------------------------------------------------------------------
-
-procedure table# (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 )
-is
-  v_data_cursor       sys_refcursor := p_data_cursor;
-  v_cursor_id         integer;
-  --
-  procedure close_cursor ( p_cursor_id in out integer ) is
-  begin
-    if dbms_sql.is_open(p_cursor_id) then
-      dbms_sql.close_cursor(p_cursor_id);
-    end if;
-  exception
-    when invalid_cursor then null;
-  end close_cursor;
-  --
-begin
-  v_cursor_id := dbms_sql.to_cursor_number(v_data_cursor);
-end;
 
 --------------------------------------------------------------------------------
 
@@ -779,6 +788,142 @@ end;
 
 --------------------------------------------------------------------------------
 
+function to_html (
+  p_data_cursor        sys_refcursor         ,
+  p_comment            varchar2 default null ,
+  p_max_rows           integer  default 100  ,
+  p_max_column_length  integer  default 1000 )
+return clob is
+  v_data_cursor        sys_refcursor := p_data_cursor;
+  v_cursor_id          integer;
+  v_clob               clob;
+  v_cache              varchar2 (32767 char);
+  v_data_count         pls_integer := 0;
+  v_col_count          pls_integer;
+  v_desc_tab           dbms_sql.desc_tab3;
+  v_buffer_varchar2    varchar2(32767 char);
+  v_buffer_clob        clob;
+  v_buffer_xmltype     xmltype;
+  v_buffer_long        long;
+  v_buffer_long_length pls_integer;
+  --
+  procedure close_cursor ( p_cursor_id in out integer ) is
+  begin
+    if dbms_sql.is_open(p_cursor_id) then
+      dbms_sql.close_cursor(p_cursor_id);
+    end if;
+  exception
+    when invalid_cursor then null;
+  end close_cursor;
+  --
+  function escape ( p_text varchar2 ) return varchar2 is
+  begin
+    return replace(replace(replace(p_text,
+      c_ampersand, c_html_ampersand    ),
+      '<'        , c_html_less_then    ),
+      '>'        , c_html_greater_then );
+  end;
+  --
+  procedure describe_columns is
+  begin
+    dbms_sql.describe_columns3(v_cursor_id, v_col_count, v_desc_tab);
+    for i in 1..v_col_count loop
+      if v_desc_tab(i).col_type = c_clob then
+        dbms_sql.define_column(v_cursor_id, i, v_buffer_clob);
+      elsif v_desc_tab(i).col_type = c_xmltype then
+        dbms_sql.define_column(v_cursor_id, i, v_buffer_xmltype);
+      elsif v_desc_tab(i).col_type = c_long then
+        dbms_sql.define_column_long(v_cursor_id, i);
+      elsif v_desc_tab(i).col_type in (c_raw, c_long_raw, c_blob, c_bfile) then
+        null; --> we ignore binary data types
+      else
+        dbms_sql.define_column(v_cursor_id, i, v_buffer_varchar2, p_max_column_length);
+      end if;
+    end loop;
+  end describe_columns;
+  --
+  procedure create_header is
+  begin
+    clob_append(v_clob, v_cache, '<tr>' || c_lf);
+    for i in 1..v_col_count loop
+      clob_append(v_clob, v_cache, '<th id="' || lower(v_desc_tab(i).col_name) || '">'
+      || initcap(replace(v_desc_tab(i).col_name, '_', ' ')) || '</th>' || c_lf);
+    end loop;
+    clob_append(v_clob, v_cache, '</tr>' || c_lf);
+  end create_header;
+  --
+  procedure create_data is
+  begin
+    loop
+      exit when dbms_sql.fetch_rows(v_cursor_id) = 0 or v_data_count = p_max_rows;
+      v_data_count := v_data_count + 1;
+      clob_append(v_clob, v_cache, '<tr><!-- begin row ' || to_char(v_data_count) || ' -->' || c_lf);
+
+      for i in 1..v_col_count loop
+        clob_append(v_clob, v_cache, '<td headers="' || lower(v_desc_tab(i).col_name) || '">');
+
+        if v_desc_tab(i).col_type = c_clob then
+          dbms_sql.column_value(v_cursor_id, i, v_buffer_clob);
+          clob_append(
+            v_clob,
+            v_cache,
+            escape(substr(v_buffer_clob, 1, p_max_column_length))
+            || case when length(v_buffer_clob) > p_max_column_length then '...' end
+          );
+
+        elsif v_desc_tab(i).col_type = c_xmltype then
+          dbms_sql.column_value(v_cursor_id, i, v_buffer_xmltype);
+          if v_buffer_xmltype is not null then
+            v_buffer_clob := v_buffer_xmltype.getclobval();
+            clob_append(
+              v_clob,
+              v_cache,
+              escape(substr(v_buffer_clob, 1, p_max_column_length))
+              || case when length(v_buffer_clob) > p_max_column_length then '...' end
+            );
+          end if;
+
+        elsif v_desc_tab(i).col_type = c_long then
+          dbms_sql.column_value_long(v_cursor_id, i, p_max_column_length, 0, v_buffer_varchar2, v_buffer_long_length);
+            clob_append(
+              v_clob,
+              v_cache,
+              escape(v_buffer_varchar2)
+              || case when v_buffer_long_length > p_max_column_length then '...' end
+            );
+
+        elsif v_desc_tab(i).col_type in (c_raw, c_long_raw, c_blob, c_bfile) then
+          clob_append(v_clob, v_cache, 'Binary data type skipped - not supported for HTML');
+
+        else
+          dbms_sql.column_value(v_cursor_id, i, v_buffer_varchar2);
+          clob_append(v_clob, v_cache, escape(v_buffer_varchar2));
+        end if;
+
+        clob_append(v_clob, v_cache, '</td>' || c_lf);
+      end loop;
+
+      clob_append(v_clob, v_cache, '</tr><!-- end row ' || to_char(v_data_count) || ' -->' || c_lf);
+    end loop;
+  end create_data;
+  --
+begin
+  v_cursor_id := dbms_sql.to_cursor_number(v_data_cursor);
+  describe_columns;
+  if p_comment is not null then
+    clob_append(v_clob, v_cache, escape(p_comment) || c_lflf);
+  end if;
+  clob_append(v_clob, v_cache, '<table>' || c_lf);
+  create_header;
+  create_data;
+  clob_append(v_clob, v_cache, '</table>' || c_lf);
+  clob_flush_cache(v_clob, v_cache);
+  close_cursor(v_cursor_id);
+  return v_clob;
+end to_html;
+
+--------------------------------------------------------------------------------
+
 function to_bool (
   p_string varchar2 )
 return boolean is
@@ -815,9 +960,34 @@ begin
   return extract(second from (localtimestamp - p_start));
 end get_runtime_seconds;
 
-
 --------------------------------------------------------------------------------
--- PRIVATE HELPER METHODS
+
+function get_scope return varchar2 is
+  v_return     vc_max;
+  v_subprogram vc_max;
+begin
+  if utl_call_stack.dynamic_depth > 0 then
+    --ignore 1, is always this function (get_call_stack) itself
+    for i in 2 .. utl_call_stack.dynamic_depth
+    loop
+      --the replace changes `__anonymous_block` to `anonymous_block`
+      v_subprogram := replace (
+        utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) ),
+        c_anon_block_ora,
+        c_anonymous_block);
+      --exclude console package from the call stack
+      if instr ( upper(v_subprogram), c_console_pkg_name ) = 0 then
+        v_return := v_return
+          || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
+          || v_subprogram || ', line ' || utl_call_stack.unit_line(i)
+          || chr(10);
+      end if;
+      exit when v_return is not null;
+    end loop;
+  end if;
+  return v_return;
+end get_scope;
+
 --------------------------------------------------------------------------------
 
 function get_call_stack return varchar2
@@ -876,32 +1046,43 @@ end get_call_stack;
 
 --------------------------------------------------------------------------------
 
-function get_scope return varchar2 is
-  v_return     vc_max;
-  v_subprogram vc_max;
+procedure clob_append (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 ,
+  p_text  in            varchar2 )
+is
 begin
-  if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_call_stack) itself
-    for i in 2 .. utl_call_stack.dynamic_depth
-    loop
-      --the replace changes `__anonymous_block` to `anonymous_block`
-      v_subprogram := replace (
-        utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) ),
-        c_anon_block_ora,
-        c_anonymous_block);
-      --exclude console package from the call stack
-      if instr ( upper(v_subprogram), c_console_pkg_name ) = 0 then
-        v_return := v_return
-          || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || v_subprogram || ', line ' || utl_call_stack.unit_line(i)
-          || chr(10);
-      end if;
-      exit when v_return is not null;
-    end loop;
-  end if;
-  return v_return;
-end get_scope;
+  p_cache := p_cache || p_text;
+exception
+  when value_error then
+    if p_clob is null then
+      p_clob := p_cache;
+    else
+      dbms_lob.writeappend(p_clob, length(p_cache), p_cache);
+    end if;
+    p_cache := p_text;
+end clob_append;
 
+--------------------------------------------------------------------------------
+
+procedure clob_flush_cache (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 )
+is
+begin
+  if p_cache is not null then
+    if p_clob is null then
+      p_clob := p_cache;
+    else
+      dbms_lob.writeappend(p_clob, length(p_cache), p_cache);
+    end if;
+    p_cache := null;
+  end if;
+end clob_flush_cache;
+
+
+--------------------------------------------------------------------------------
+-- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
 function utl_logging_enabled (
@@ -1048,7 +1229,7 @@ end utl_set_client_identifier;
 --------------------------------------------------------------------------------
 
 function utl_create_log_entry (
-  p_level           integer,
+  p_level           integer                ,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
@@ -1062,40 +1243,52 @@ function utl_create_log_entry (
 return integer
 is
   pragma autonomous_transaction;
-  v_row console_logs%rowtype;
+  v_row           console_logs%rowtype;
+  v_message_cache varchar2(32767);
 begin
   v_row.scope :=
     case
       when p_user_scope is not null then substrb(p_user_scope, 1, 256)
       else substrb(get_scope, 1, 256)
     end;
+
+  -- This is the very first (possible) assignment to the message row variable,
+  -- so we can do it without our message_append method, especially as we might
+  -- have a clob in the parameter p_message. Doing it this way we do not need a
+  -- message_append method which can work with a clob.
   v_row.message :=
     case
       when p_message is not null then p_message
       when sqlcode != 0 then sqlerrm
       else null
     end;
+
   v_row.error_code :=
     case
       when p_user_error_code is not null then p_user_error_code
       when sqlcode != 0 then sqlcode
       else null
     end;
+
   v_row.call_stack :=
     case
       when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
       when p_trace then substrb(get_call_stack, 1, 4000)
       else null
     end;
+
   if p_apex_env then
     null; --FIXME implement
   end if;
+
   if p_cgi_env then
     null; --FIXME implement
   end if;
+
   if p_console_env then
     null; --FIXME implement
   end if;
+
   if p_user_env then
     null; --FIXME implement
   end if;
@@ -1114,11 +1307,12 @@ begin
 
   insert into console_logs values v_row returning log_id into v_row.log_id;
   commit;
+
   return v_row.log_id;
 end utl_create_log_entry;
 
 procedure utl_create_log_entry (
-  p_level           integer,
+  p_level           integer                ,
   p_message         clob     default null  ,
   p_trace           boolean  default false ,
   p_apex_env        boolean  default false ,
