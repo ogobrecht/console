@@ -5,6 +5,17 @@ Oracle Instrumentation Console
 ==============================
 
 - [Package console](#console)
+- [Function level_permanent](#level_permanent)
+- [Function level_error](#level_error)
+- [Function level_warning](#level_warning)
+- [Function level_info](#level_info)
+- [Function level_verbose](#level_verbose)
+- [Function level_is_warning](#level_is_warning)
+- [Function level_is_info](#level_is_info)
+- [Function level_is_verbose](#level_is_verbose)
+- [Function level_is_warning_yn](#level_is_warning_yn)
+- [Function level_is_info_yn](#level_is_info_yn)
+- [Function level_is_verbose_yn](#level_is_verbose_yn)
 - [Function my_client_identifier](#my_client_identifier)
 - [Function my_log_level](#my_log_level)
 - [Procedure permanent](#permanent)
@@ -15,6 +26,7 @@ Oracle Instrumentation Console
 - [Procedure log](#log)
 - [Procedure debug](#debug)
 - [Procedure assert](#assert)
+- [Procedure table#](#table)
 - [Procedure trace](#trace)
 - [Procedure count](#count)
 - [Procedure count_end](#count_end)
@@ -28,7 +40,8 @@ Oracle Instrumentation Console
 - [Procedure module](#module)
 - [Procedure init](#init)
 - [Procedure stop](#stop)
-- [Function context_available_yn](#context_available_yn)
+- [Function context_is_available](#context_is_available)
+- [Function context_is_available_yn](#context_is_available_yn)
 - [Function version](#version)
 - [Function to_html](#to_html)
 - [Function to_bool](#to_bool)
@@ -57,16 +70,148 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.13.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_permanent constant pls_integer := 0 ;
-c_error     constant pls_integer := 1 ;
-c_warning   constant pls_integer := 2 ;
-c_info      constant pls_integer := 3 ;
-c_verbose   constant pls_integer := 4 ;
+c_level_permanent constant pls_integer := 0 ;
+c_level_error     constant pls_integer := 1 ;
+c_level_warning   constant pls_integer := 2 ;
+c_level_info      constant pls_integer := 3 ;
+c_level_verbose   constant pls_integer := 4 ;
+```
+
+
+<h2><a id="level_permanent"></a>Function level_permanent</h2>
+<!---------------------------------------------------------->
+
+Returns the number code for the level 0 permanent.
+
+SIGNATURE
+
+```sql
+function level_permanent return integer;
+```
+
+
+<h2><a id="level_error"></a>Function level_error</h2>
+<!-------------------------------------------------->
+
+Returns the number code for the level 1 error.
+
+SIGNATURE
+
+```sql
+function level_error     return integer;
+```
+
+
+<h2><a id="level_warning"></a>Function level_warning</h2>
+<!------------------------------------------------------>
+
+Returns the number code for the level 2 warning.
+
+SIGNATURE
+
+```sql
+function level_warning   return integer;
+```
+
+
+<h2><a id="level_info"></a>Function level_info</h2>
+<!------------------------------------------------>
+
+Returns the number code for the level 3 info.
+
+SIGNATURE
+
+```sql
+function level_info      return integer;
+```
+
+
+<h2><a id="level_verbose"></a>Function level_verbose</h2>
+<!------------------------------------------------------>
+
+Returns the number code for the level 4 verbose.
+
+SIGNATURE
+
+```sql
+function level_verbose   return integer;
+```
+
+
+<h2><a id="level_is_warning"></a>Function level_is_warning</h2>
+<!------------------------------------------------------------>
+
+Returns true when the level is greater than or equal warning, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_warning return boolean;
+```
+
+
+<h2><a id="level_is_info"></a>Function level_is_info</h2>
+<!------------------------------------------------------>
+
+Returns true when the level is greater than or equal info, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_info    return boolean;
+```
+
+
+<h2><a id="level_is_verbose"></a>Function level_is_verbose</h2>
+<!------------------------------------------------------------>
+
+Returns true when the level is greater than or equal verbose, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_verbose return boolean;
+```
+
+
+<h2><a id="level_is_warning_yn"></a>Function level_is_warning_yn</h2>
+<!------------------------------------------------------------------>
+
+Returns 'Y' when the level is greater than or equal warning, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_warning_yn return varchar2;
+```
+
+
+<h2><a id="level_is_info_yn"></a>Function level_is_info_yn</h2>
+<!------------------------------------------------------------>
+
+Returns 'Y' when the level is greater than or equal info, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_info_yn    return varchar2;
+```
+
+
+<h2><a id="level_is_verbose_yn"></a>Function level_is_verbose_yn</h2>
+<!------------------------------------------------------------------>
+
+Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_verbose_yn return varchar2;
 ```
 
 
@@ -287,6 +432,53 @@ procedure assert (
   p_expression boolean,
   p_message    varchar2
 );
+```
+
+
+<h2><a id="table"></a>Procedure table#</h2>
+<!---------------------------------------->
+
+Logs a cursor as a HTML table with the level 3 (info).
+
+Using a cursor for the table method is very flexible, but opening a cursor can
+produce unnecessary work for your system when you are not in the log level info.
+Therefore please check your current log level before you open the cursor.
+
+EXAMPLE
+
+```sql
+declare
+  v_dataset sys_refcursor;
+begin
+  -- Your business logic here...
+
+  -- Debug code
+  if console.level_is_info then
+    open v_dataset for
+      select table_name,
+             tablespace_name,
+             logging,
+             num_rows,
+             last_analyzed,
+             partitioned,
+             has_identity
+        from user_tables;
+    console.table#(v_dataset);
+  end if;
+
+  -- Your business logic here...
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 );
 ```
 
 
@@ -613,7 +805,7 @@ exec console.init;
 exec console.init(4, 15);
 
 -- Using a constant for the level
-exec console.init(console.c_verbose, 90);
+exec console.init(console.c_level_verbose, 90);
 
 -- Debug an APEX session...
 exec console.init('APEX:8805903776765', 4, 90);
@@ -625,7 +817,7 @@ exec console.init('APEX:8805903776765');
 begin
   console.init(
     p_client_identifier => 'APEX:8805903776765',
-    p_log_level         => console.c_verbose,
+    p_log_level         => console.c_level_verbose,
     p_log_duration      => 15
   );
 end;
@@ -637,7 +829,7 @@ SIGNATURE
 ```sql
 procedure init (
   p_client_identifier varchar2                , -- The client identifier provided by the application or console itself.
-  p_log_level         integer  default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_log_level         integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
   p_log_duration      integer  default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
   p_cache_duration    integer  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
@@ -676,26 +868,46 @@ procedure stop (
 ```
 
 
-<h2><a id="context_available_yn"></a>Function context_available_yn</h2>
+<h2><a id="context_is_available"></a>Function context_is_available</h2>
 <!-------------------------------------------------------------------->
 
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-If the global context is not available we simulate it by using a package
-variable. In this case you can only set your own session in logging mode with a
-level of 2 (warning) or higher, because other sessions are not able to read the
-package variable value in your session - this works only with a global
-accessible context.
+Checks the availability of the global context. Returns true, if available and
+false if not.
 
 ```sql
-select console.context_available_yn from dual;
+begin
+  if not console.context_is_available then
+    dbms_output.put_line('I need to speak with my DBA :-(');
+  end if;
+end;
+/
 ```
 
 SIGNATURE
 
 ```sql
-function context_available_yn return varchar2;
+function context_is_available return boolean;
+```
+
+
+<h2><a id="context_is_available_yn"></a>Function context_is_available_yn</h2>
+<!-------------------------------------------------------------------------->
+
+Checks the availability of the global context. Returns `Y`, if available and `N`
+if not.
+
+```sql
+select case when console.context_is_available_yn = 'N'
+         then 'I need to speak with my DBA :-('
+         else 'We have a global context :-)'
+       end as "Test context availability"
+  from dual;
+```
+
+SIGNATURE
+
+```sql
+function context_is_available_yn return varchar2;
 ```
 
 
@@ -723,8 +935,8 @@ Helper to convert a cursor to a HTML table.
 
 Note: As this helper is designed to work always it does not check your log
 level. And if it would check, it would not help for the opening of the cursor,
-which is done before. To save work for your database in cases where you are not
-logging you should check the log level before open the cursor. Please see the
+which is done before. To save work for your database in cases you are not in
+logging mode you should check the log level before open the cursor. Please see the
 examples below.
 
 EXAMPLES 1 - Open cursor in advance
@@ -736,7 +948,7 @@ begin
   -- Your business logic here.
 
   -- Debug code
-  if console.my_log_level >= console.c_info then
+  if console.level_is_info then
     open v_dataset for select * from user_tables;
     console.info(console.to_html(v_dataset));
   end if;
@@ -751,7 +963,7 @@ begin
   -- Your business logic here.
 
   -- Debug code
-  if console.my_log_level >= console.c_info then
+  if console.my_log_level >= console.c_level_info then
     for i in (
       select console.to_html(cursor(select * from user_tables)) as html
         from dual )

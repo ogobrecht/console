@@ -241,17 +241,16 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.13.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_permanent constant pls_integer := 0 ;
-c_error     constant pls_integer := 1 ;
-c_warning   constant pls_integer := 2 ;
-c_info      constant pls_integer := 3 ;
-c_verbose   constant pls_integer := 4 ;
-
+c_level_permanent constant pls_integer := 0 ;
+c_level_error     constant pls_integer := 1 ;
+c_level_warning   constant pls_integer := 2 ;
+c_level_info      constant pls_integer := 3 ;
+c_level_verbose   constant pls_integer := 4 ;
 
 /**
 
@@ -271,6 +270,19 @@ GitHub](https://github.com/ogobrecht/console).
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
+
+function level_permanent return integer; /** Returns the number code for the level 0 permanent. **/
+function level_error     return integer; /** Returns the number code for the level 1 error.     **/
+function level_warning   return integer; /** Returns the number code for the level 2 warning.   **/
+function level_info      return integer; /** Returns the number code for the level 3 info.      **/
+function level_verbose   return integer; /** Returns the number code for the level 4 verbose.   **/
+
+function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
+function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
+function level_is_verbose return boolean; /** Returns true when the level is greater than or equal verbose, otherwise false. **/
+function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
+function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
+function level_is_verbose_yn return varchar2; /** Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'. **/
 
 function my_client_identifier return varchar2;
 /**
@@ -452,6 +464,49 @@ exception
   when others then
     console.error;
     raise;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 );
+/**
+
+Logs a cursor as a HTML table with the level 3 (info).
+
+Using a cursor for the table method is very flexible, but opening a cursor can
+produce unnecessary work for your system when you are not in the log level info.
+Therefore please check your current log level before you open the cursor.
+
+EXAMPLE
+
+```sql
+declare
+  v_dataset sys_refcursor;
+begin
+  -- Your business logic here...
+
+  -- Debug code
+  if console.level_is_info then
+    open v_dataset for
+      select table_name,
+             tablespace_name,
+             logging,
+             num_rows,
+             last_analyzed,
+             partitioned,
+             has_identity
+        from user_tables;
+    console.table#(v_dataset);
+  end if;
+
+  -- Your business logic here...
 end;
 {{/}}
 ```
@@ -726,7 +781,7 @@ to only set the action attribute with the `action` (see below).
 
 procedure init (
   p_client_identifier varchar2                , -- The client identifier provided by the application or console itself.
-  p_log_level         integer  default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_log_level         integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
   p_log_duration      integer  default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
   p_cache_duration    integer  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
@@ -759,7 +814,7 @@ exec console.init;
 exec console.init(4, 15);
 
 -- Using a constant for the level
-exec console.init(console.c_verbose, 90);
+exec console.init(console.c_level_verbose, 90);
 
 -- Debug an APEX session...
 exec console.init('APEX:8805903776765', 4, 90);
@@ -771,7 +826,7 @@ exec console.init('APEX:8805903776765');
 begin
   console.init(
     p_client_identifier => 'APEX:8805903776765',
-    p_log_level         => console.c_verbose,
+    p_log_level         => console.c_level_verbose,
     p_log_duration      => 15
   );
 end;
@@ -781,7 +836,7 @@ end;
 **/
 
 procedure init (
-  p_log_level      integer default c_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_log_level      integer default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
   p_log_duration   integer default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size     integer default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
   p_cache_duration integer default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
@@ -815,20 +870,37 @@ MANAGING LOGGING MODES OF SESSIONS.
 
 --------------------------------------------------------------------------------
 
-function context_available_yn return varchar2;
+function context_is_available return boolean;
+/**
+
+Checks the availability of the global context. Returns true, if available and
+false if not.
+
+```sql
+begin
+  if not console.context_is_available then
+    dbms_output.put_line('I need to speak with my DBA :-(');
+  end if;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function context_is_available_yn return varchar2;
 /**
 
 Checks the availability of the global context. Returns `Y`, if available and `N`
 if not.
 
-If the global context is not available we simulate it by using a package
-variable. In this case you can only set your own session in logging mode with a
-level of 2 (warning) or higher, because other sessions are not able to read the
-package variable value in your session - this works only with a global
-accessible context.
-
 ```sql
-select console.context_available_yn from dual;
+select case when console.context_is_available_yn = 'N'
+         then 'I need to speak with my DBA :-('
+         else 'We have a global context :-)'
+       end as "Test context availability"
+  from dual;
 ```
 
 **/
@@ -862,8 +934,8 @@ Helper to convert a cursor to a HTML table.
 
 Note: As this helper is designed to work always it does not check your log
 level. And if it would check, it would not help for the opening of the cursor,
-which is done before. To save work for your database in cases where you are not
-logging you should check the log level before open the cursor. Please see the
+which is done before. To save work for your database in cases you are not in
+logging mode you should check the log level before open the cursor. Please see the
 examples below.
 
 EXAMPLES 1 - Open cursor in advance
@@ -875,7 +947,7 @@ begin
   -- Your business logic here.
 
   -- Debug code
-  if console.my_log_level >= console.c_info then
+  if console.level_is_info then
     open v_dataset for select * from user_tables;
     console.info(console.to_html(v_dataset));
   end if;
@@ -890,7 +962,7 @@ begin
   -- Your business logic here.
 
   -- Debug code
-  if console.my_log_level >= console.c_info then
+  if console.my_log_level >= console.c_level_info then
     for i in (
       select console.to_html(cursor(select * from user_tables)) as html
         from dual )
@@ -1241,6 +1313,22 @@ $end
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
+function level_permanent return integer is begin return c_level_permanent; end;
+function level_error     return integer is begin return c_level_error    ; end;
+function level_warning   return integer is begin return c_level_warning  ; end;
+function level_info      return integer is begin return c_level_info     ; end;
+function level_verbose   return integer is begin return c_level_verbose  ; end;
+
+function level_is_warning return boolean is begin return g_conf_log_level >= c_level_warning ; end;
+function level_is_info    return boolean is begin return g_conf_log_level >= c_level_info    ; end;
+function level_is_verbose return boolean is begin return g_conf_log_level >= c_level_verbose ; end;
+
+function level_is_warning_yn return varchar2 is begin return case when g_conf_log_level >= c_level_warning then 'Y' else 'N' end; end;
+function level_is_info_yn    return varchar2 is begin return case when g_conf_log_level >= c_level_info    then 'Y' else 'N' end; end;
+function level_is_verbose_yn return varchar2 is begin return case when g_conf_log_level >= c_level_verbose then 'Y' else 'N' end; end;
+
+--------------------------------------------------------------------------------
+
 function my_client_identifier return varchar2 is
 begin
   return g_conf_client_identifier;
@@ -1260,8 +1348,8 @@ procedure permanent (
 is
 begin
   utl_create_log_entry (
-    p_level   => c_permanent ,
-    p_message => p_message   );
+    p_level   => c_level_permanent ,
+    p_message => p_message           );
 end permanent;
 
 --------------------------------------------------------------------------------
@@ -1280,7 +1368,7 @@ procedure error (
 is
 begin
   utl_create_log_entry (
-    p_level           => c_error           ,
+    p_level           => c_level_error   ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
     p_apex_env        => p_apex_env        ,
@@ -1307,7 +1395,7 @@ function error (
 return integer is
 begin
   return utl_create_log_entry (
-    p_level           => c_error           ,
+    p_level           => c_level_error   ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
     p_apex_env        => p_apex_env        ,
@@ -1335,9 +1423,9 @@ procedure warn (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_warning) then
+  if utl_logging_enabled (c_level_warning) then
     utl_create_log_entry (
-      p_level           => c_warning         ,
+      p_level           => c_level_warning ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -1366,9 +1454,9 @@ procedure info (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_info) then
+  if utl_logging_enabled (c_level_info) then
     utl_create_log_entry (
-      p_level           => c_info            ,
+      p_level           => c_level_info    ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -1397,9 +1485,9 @@ procedure log (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_info) then
+  if utl_logging_enabled (c_level_info) then
     utl_create_log_entry (
-      p_level           => c_info            ,
+      p_level           => c_level_info    ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -1428,9 +1516,9 @@ procedure debug (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_verbose) then
+  if utl_logging_enabled (c_level_verbose) then
     utl_create_log_entry (
-      p_level           => c_verbose         ,
+      p_level           => c_level_verbose ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -1456,6 +1544,27 @@ begin
   end if;
 end assert;
 
+
+--------------------------------------------------------------------------------
+
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 )
+is
+begin
+  if utl_logging_enabled (c_level_info) then
+    utl_create_log_entry (
+      p_level   => c_level_info,
+      p_message => to_html (
+        p_data_cursor       => p_data_cursor       ,
+        p_comment           => p_comment           ,
+        p_max_rows          => p_max_rows          ,
+        p_max_column_length => p_max_column_length ) );
+  end if;
+end table#;
+
 --------------------------------------------------------------------------------
 
 procedure trace (
@@ -1471,9 +1580,9 @@ procedure trace (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_info) then
+  if utl_logging_enabled (c_level_info) then
     utl_create_log_entry (
-      p_level           => c_info            ,
+      p_level           => c_level_info    ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -1509,9 +1618,9 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    if utl_logging_enabled (c_info) then
+    if utl_logging_enabled (c_level_info) then
       utl_create_log_entry (
-        p_level   => c_info,
+        p_level   => c_level_info,
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
     end if;
     g_counters.delete(v_label);
@@ -1553,9 +1662,9 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    if utl_logging_enabled (c_info) then
+    if utl_logging_enabled (c_level_info) then
       utl_create_log_entry (
-        p_level   => c_info,
+        p_level   => c_level_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
     end if;
     g_timers.delete(v_label);
@@ -1739,15 +1848,15 @@ end module;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2                ,
-  p_log_level         integer  default c_info ,
-  p_log_duration      integer  default 60     ,
-  p_cache_size        integer  default 0      ,
-  p_cache_duration    integer  default 10     ,
-  p_user_env          boolean  default false  ,
-  p_apex_env          boolean  default false  ,
-  p_cgi_env           boolean  default false  ,
-  p_console_env       boolean  default false  )
+  p_client_identifier varchar2                        ,
+  p_log_level         integer  default c_level_info ,
+  p_log_duration      integer  default 60             ,
+  p_cache_size        integer  default 0              ,
+  p_cache_duration    integer  default 10             ,
+  p_user_env          boolean  default false          ,
+  p_apex_env          boolean  default false          ,
+  p_cgi_env           boolean  default false          ,
+  p_console_env       boolean  default false          )
 is
   pragma autonomous_transaction;
   v_row         console_sessions%rowtype;
@@ -1823,14 +1932,14 @@ begin
 end init;
 
 procedure init (
-  p_log_level      integer default c_info ,
-  p_log_duration   integer default 60     ,
-  p_cache_size     integer default 0      ,
-  p_cache_duration integer default 10     ,
-  p_user_env       boolean default false  ,
-  p_apex_env       boolean default false  ,
-  p_cgi_env        boolean default false  ,
-  p_console_env    boolean default false  )
+  p_log_level      integer default c_level_info ,
+  p_log_duration   integer default 60             ,
+  p_cache_size     integer default 0              ,
+  p_cache_duration integer default 10             ,
+  p_user_env       boolean default false          ,
+  p_apex_env       boolean default false          ,
+  p_cgi_env        boolean default false          ,
+  p_console_env    boolean default false          )
 is
 begin
   init (
@@ -1868,7 +1977,14 @@ end;
 
 --------------------------------------------------------------------------------
 
-function context_available_yn return varchar2 is
+function context_is_available return boolean is
+begin
+  return g_conf_context_available;
+end;
+
+--------------------------------------------------------------------------------
+
+function context_is_available_yn return varchar2 is
 begin
   return to_yn(g_conf_context_available);
 end;
@@ -1938,12 +2054,12 @@ return clob is
   --
   procedure create_header is
   begin
-    clob_append(v_clob, v_cache, '<tr>' || c_lf);
+    clob_append(v_clob, v_cache, c_lf || '<tr><!--- header -->' || c_lf);
     for i in 1..v_col_count loop
       clob_append(v_clob, v_cache, '<th id="' || lower(v_desc_tab(i).col_name) || '">'
       || initcap(replace(v_desc_tab(i).col_name, '_', ' ')) || '</th>' || c_lf);
     end loop;
-    clob_append(v_clob, v_cache, '</tr>' || c_lf);
+    clob_append(v_clob, v_cache, '</tr><!-- header -->' || c_lf);
   end create_header;
   --
   procedure create_data is
@@ -1951,7 +2067,7 @@ return clob is
     loop
       exit when dbms_sql.fetch_rows(v_cursor_id) = 0 or v_data_count = p_max_rows;
       v_data_count := v_data_count + 1;
-      clob_append(v_clob, v_cache, '<tr><!-- begin row ' || to_char(v_data_count) || ' -->' || c_lf);
+      clob_append(v_clob, v_cache, c_lf || '<tr><!--- row ' || to_char(v_data_count) || ' -->' || c_lf);
 
       for i in 1..v_col_count loop
         clob_append(v_clob, v_cache, '<td headers="' || lower(v_desc_tab(i).col_name) || '">');
@@ -1997,7 +2113,7 @@ return clob is
         clob_append(v_clob, v_cache, '</td>' || c_lf);
       end loop;
 
-      clob_append(v_clob, v_cache, '</tr><!-- end row ' || to_char(v_data_count) || ' -->' || c_lf);
+      clob_append(v_clob, v_cache, '</tr><!-- row ' || to_char(v_data_count) || ' -->' || c_lf);
     end loop;
   end create_data;
   --
@@ -2010,7 +2126,7 @@ begin
   clob_append(v_clob, v_cache, '<table>' || c_lf);
   create_header;
   create_data;
-  clob_append(v_clob, v_cache, '</table>' || c_lf);
+  clob_append(v_clob, v_cache, c_lf || '</table>' || c_lf);
   clob_flush_cache(v_clob, v_cache);
   close_cursor(v_cursor_id);
   return v_clob;
@@ -2447,7 +2563,7 @@ end console;
 -- check for errors in package console and for existing context
 declare
   v_count                pls_integer;
-  v_context_available_yn varchar2(1 byte);
+  v_context_is_available_yn varchar2(1 byte);
 begin
   select count(*)
     into v_count
@@ -2456,15 +2572,15 @@ begin
   if v_count > 0 then
     dbms_output.put_line('- Package CONSOLE has errors :-(');
   else
-    execute immediate 'select console.context_available_yn from dual' into v_context_available_yn;
-    if v_context_available_yn = 'Y' then
+    execute immediate 'select console.context_is_available_yn from dual' into v_context_is_available_yn;
+    if v_context_is_available_yn = 'Y' then
       dbms_output.put_line('- Context available :-)');
     else
       dbms_output.put_line('- CONTEXT NOT AVAILABLE :-(');
       dbms_output.put_line('-  | No worries - you can still start with the instrumentation of your code.');
       dbms_output.put_line('-  | Until you have a context, console uses a table as the config storage for the sessions.');
       dbms_output.put_line('-  | When you (or your DBA) have the context created then simply reconnect and check the availability:');
-      dbms_output.put_line('-  | select console.context_available_yn from dual;');
+      dbms_output.put_line('-  | select console.context_is_available_yn from dual;');
     end if;
   end if;
 end;
@@ -2486,7 +2602,7 @@ select name || case when type like '%BODY' then ' body' end as "Name",
 prompt
 declare
   v_count                pls_integer;
-  v_context_available_yn varchar2( 1 byte);
+  v_context_is_available_yn varchar2( 1 byte);
   v_console_version      varchar2(10 byte);
 begin
   select count(*)

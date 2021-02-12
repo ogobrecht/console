@@ -30,59 +30,68 @@ Feedback and help is welcome.*
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   This means, the same method names are provided. The parameters differs a
   little bit to fit our needs in PL/SQL. Not all methods making sense in a
-  PL/SQL instrumentation tool (we have no direct screen) and therefore these
-  seven are not implemented: dir, dirxml, group, groupCollapsed, groupEnd, table
-  (as a helper you can use instead to_html) and countReset (instead we have
-  count_end and we ignore the line number, where the count occurred). For the
-  two \*_end methods we use snake case instead of camel case for readability:
-  - [X] `console.error` (level 1=error)
-  - [X] `console.warn` (level 2=warning)
-  - [X] `console.info` (level 3=info)
-  - [X] `console.log` (level 3=info)
-  - [X] `console.debug` (level 4=verbose)
-  - [X] `console.assert` (level 1=error, if failed)
-  - [X] `console.trace` (level 3=info)
-  - [x] `console.count`
-  - [x] `console.count_end` (level 3=info)
-  - [X] `console.time`
-  - [X] `console.time_end` (level 3=info)
-  - [ ] `console.clear`
+  PL/SQL instrumentation tool (we have no direct screen) and therefore these six
+  are not implemented: dir, dirxml, group, groupCollapsed, groupEnd and
+  countReset (instead we have count_end and we ignore the line number, where the
+  count occurred). For the two \*_end methods we use snake case instead of camel
+  case for readability:
+  - [X] [console.error](docs/console.md#error) (level 1=error)
+  - [X] [console.warn](docs/console.md#warn) (level 2=warning)
+  - [X] [console.info](docs/console.md#info) (level 3=info)
+  - [X] [console.log](docs/console.md#log) (level 3=info)
+  - [X] [console.debug](docs/console.md#debug) (level 4=verbose)
+  - [X] [console.assert](docs/console.md#assert) (level 1=error, if failed)
+  - [X] [console.table#](docs/console.md#table) (level 3=info)
+  - [X] [console.trace](docs/console.md#trace) (level 3=info)
+  - [x] [console.count](docs/console.md#count)
+  - [x] [console.count_end](docs/console.md#count_end) (level 3=info)
+  - [X] [console.time](docs/console.md#time)
+  - [X] [console.time_end](docs/console.md#time_end) (level 3=info)
+  - [ ] [console.clear](docs/console.md#clear)
 - Additional methods:
-  - [X] `console.permanent` (level 0=permanent): Log permanent messages like
-    installation or upgrade notes with the level zero, which are not deleted
-    when the purge job clears the log table.
-  - [X] `console.apex_error_handling`: Log internal APEX errors (only available,
-    if APEX is installed, also see the [APEX
+  - [X] [console.permanent](docs/console.md#permanent) (level 0=permanent): Log
+    permanent messages like installation or upgrade notes with the level zero,
+    which are not deleted when the purge job clears the log table.
+  - [X] [console.apex_error_handling](docs/console.md#apex_error_handling): Log
+    internal APEX errors (only available, if APEX is installed, also see the
+    [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
-  - [ ] `console.apex_plugin_render` & `console.apex_plugin_ajax`: Methods for
-    the APEX plugin (only available, if APEX is installed).
-  - [X] `console.action` & `console.module`: Aliases for
+  - [ ] [console.apex_plugin_render](docs/console.md#apex_plugin_render) &
+    [apex_plugin_ajax](docs/console.md#apex_plugin_ajax): Methods for the APEX
+    plugin (only available, if APEX is installed).
+  - [X] [console.action](docs/console.md#action) &
+    [module](docs/console.md#module): Aliases for
     dbms_application_info.set_action and set_module to be friendly to the DBA
     and monitoring teams. The module is usually set by the application (for
     example APEX is setting the module, and often also the action).
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
-  - [X] `console.init`
-  - [X] `console.stop`
-  - [X] `console.my_client_identifier`
-  - [X] `console.my_log_level`
-  - [X] `console.context_available_yn`
-  - [X] `console.version`
+  - [X] [console.init](docs/console.md#init) & [stop](docs/console.md#stop)
+  - [X] [console.my_client_identifier](docs/console.md#my_client_identifier) &
+    [my_log_level](docs/console.md#my_log_level)
+  - [X] [console.context_is_available](docs/console.md#context_is_available) &
+    [context_is_available_yn](docs/console.md#context_is_available_yn)
+  - [X] [console.level_is_warning](docs/console.md#level_is_warning) &
+    [level_is_warning_yn](docs/console.md#level_is_warning_yn)
+  - [X] [console.level_is_info](docs/console.md#level_is_info) &
+    [level_is_info_yn](docs/console.md#level_is_info_yn)
+  - [X] [console.level_is_verbose](docs/console.md#level_is_verbose) &
+    [level_is_verbose_yn](docs/console.md#level_is_verbose_yn)
+  - [X] [console.version](docs/console.md#version)
   - [ ] `console.view_status`
   - [ ] `console.view_cached_log_entries`
-  - [ ] `console.view_counters`
-  - [ ] `console.view_timers`
+  - [ ] `console.view_counters` & `console.view_timers`
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
-  - [X] `console.to_html`
-  - [X] `console.to_bool`
-  - [X] `console.to_yn`
-  - [X] `console.get_runtime`
-  - [X] `console.get_runtime_second`
-  - [X] `console.get_scope`
-  - [X] `console.get_call_stack`
-  - [X] `console.clob_append`
-  - [X] `console.clob_flush_cache`
+  - [X] [console.to_yn](docs/console.md#to_yn) &
+    [to_bool](docs/console.md#to_bool)
+  - [X] [console.to_html](docs/console.md#to_html)
+  - [X] [console.get_runtime](docs/console.md#get_runtime) &
+    [get_runtime_second](docs/console.md#get_runtime_second)
+  - [X] [console.get_scope](docs/console.md#get_scope) &
+    [get_call_stack](docs/console.md#get_call_stack)
+  - [X] [console.clob_append](docs/console.md#clob_append) &
+    [clob_flush_cache](docs/console.md#clob_flush_cache)
 
 - Views for the logging entries of the table console_logs:
   - [ ] `console_logs`
@@ -90,7 +99,8 @@ Feedback and help is welcome.*
   - [ ] `console_logs_last_hour`
   - [ ] `console_logs_last_24_hours`
 
-For a more detailed overview of the public API methods please see the [docs for the package console](docs/console.md).
+For a more detailed overview of the public API methods please see the [docs for
+the package console](docs/console.md).
 
 ## Roadmap
 

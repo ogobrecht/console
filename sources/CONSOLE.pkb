@@ -147,6 +147,22 @@ $end
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
+function level_permanent return integer is begin return c_level_permanent; end;
+function level_error     return integer is begin return c_level_error    ; end;
+function level_warning   return integer is begin return c_level_warning  ; end;
+function level_info      return integer is begin return c_level_info     ; end;
+function level_verbose   return integer is begin return c_level_verbose  ; end;
+
+function level_is_warning return boolean is begin return g_conf_log_level >= c_level_warning ; end;
+function level_is_info    return boolean is begin return g_conf_log_level >= c_level_info    ; end;
+function level_is_verbose return boolean is begin return g_conf_log_level >= c_level_verbose ; end;
+
+function level_is_warning_yn return varchar2 is begin return case when g_conf_log_level >= c_level_warning then 'Y' else 'N' end; end;
+function level_is_info_yn    return varchar2 is begin return case when g_conf_log_level >= c_level_info    then 'Y' else 'N' end; end;
+function level_is_verbose_yn return varchar2 is begin return case when g_conf_log_level >= c_level_verbose then 'Y' else 'N' end; end;
+
+--------------------------------------------------------------------------------
+
 function my_client_identifier return varchar2 is
 begin
   return g_conf_client_identifier;
@@ -166,8 +182,8 @@ procedure permanent (
 is
 begin
   utl_create_log_entry (
-    p_level   => c_permanent ,
-    p_message => p_message   );
+    p_level   => c_level_permanent ,
+    p_message => p_message           );
 end permanent;
 
 --------------------------------------------------------------------------------
@@ -186,7 +202,7 @@ procedure error (
 is
 begin
   utl_create_log_entry (
-    p_level           => c_error           ,
+    p_level           => c_level_error   ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
     p_apex_env        => p_apex_env        ,
@@ -213,7 +229,7 @@ function error (
 return integer is
 begin
   return utl_create_log_entry (
-    p_level           => c_error           ,
+    p_level           => c_level_error   ,
     p_message         => p_message         ,
     p_trace           => p_trace           ,
     p_apex_env        => p_apex_env        ,
@@ -241,9 +257,9 @@ procedure warn (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_warning) then
+  if utl_logging_enabled (c_level_warning) then
     utl_create_log_entry (
-      p_level           => c_warning         ,
+      p_level           => c_level_warning ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -272,9 +288,9 @@ procedure info (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_info) then
+  if utl_logging_enabled (c_level_info) then
     utl_create_log_entry (
-      p_level           => c_info            ,
+      p_level           => c_level_info    ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -303,9 +319,9 @@ procedure log (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_info) then
+  if utl_logging_enabled (c_level_info) then
     utl_create_log_entry (
-      p_level           => c_info            ,
+      p_level           => c_level_info    ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -334,9 +350,9 @@ procedure debug (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_verbose) then
+  if utl_logging_enabled (c_level_verbose) then
     utl_create_log_entry (
-      p_level           => c_verbose         ,
+      p_level           => c_level_verbose ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -362,6 +378,27 @@ begin
   end if;
 end assert;
 
+
+--------------------------------------------------------------------------------
+
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 )
+is
+begin
+  if utl_logging_enabled (c_level_info) then
+    utl_create_log_entry (
+      p_level   => c_level_info,
+      p_message => to_html (
+        p_data_cursor       => p_data_cursor       ,
+        p_comment           => p_comment           ,
+        p_max_rows          => p_max_rows          ,
+        p_max_column_length => p_max_column_length ) );
+  end if;
+end table#;
+
 --------------------------------------------------------------------------------
 
 procedure trace (
@@ -377,9 +414,9 @@ procedure trace (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_info) then
+  if utl_logging_enabled (c_level_info) then
     utl_create_log_entry (
-      p_level           => c_info            ,
+      p_level           => c_level_info    ,
       p_message         => p_message         ,
       p_trace           => p_trace           ,
       p_apex_env        => p_apex_env        ,
@@ -415,9 +452,9 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    if utl_logging_enabled (c_info) then
+    if utl_logging_enabled (c_level_info) then
       utl_create_log_entry (
-        p_level   => c_info,
+        p_level   => c_level_info,
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
     end if;
     g_counters.delete(v_label);
@@ -459,9 +496,9 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    if utl_logging_enabled (c_info) then
+    if utl_logging_enabled (c_level_info) then
       utl_create_log_entry (
-        p_level   => c_info,
+        p_level   => c_level_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
     end if;
     g_timers.delete(v_label);
@@ -645,15 +682,15 @@ end module;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2                ,
-  p_log_level         integer  default c_info ,
-  p_log_duration      integer  default 60     ,
-  p_cache_size        integer  default 0      ,
-  p_cache_duration    integer  default 10     ,
-  p_user_env          boolean  default false  ,
-  p_apex_env          boolean  default false  ,
-  p_cgi_env           boolean  default false  ,
-  p_console_env       boolean  default false  )
+  p_client_identifier varchar2                        ,
+  p_log_level         integer  default c_level_info ,
+  p_log_duration      integer  default 60             ,
+  p_cache_size        integer  default 0              ,
+  p_cache_duration    integer  default 10             ,
+  p_user_env          boolean  default false          ,
+  p_apex_env          boolean  default false          ,
+  p_cgi_env           boolean  default false          ,
+  p_console_env       boolean  default false          )
 is
   pragma autonomous_transaction;
   v_row         console_sessions%rowtype;
@@ -729,14 +766,14 @@ begin
 end init;
 
 procedure init (
-  p_log_level      integer default c_info ,
-  p_log_duration   integer default 60     ,
-  p_cache_size     integer default 0      ,
-  p_cache_duration integer default 10     ,
-  p_user_env       boolean default false  ,
-  p_apex_env       boolean default false  ,
-  p_cgi_env        boolean default false  ,
-  p_console_env    boolean default false  )
+  p_log_level      integer default c_level_info ,
+  p_log_duration   integer default 60             ,
+  p_cache_size     integer default 0              ,
+  p_cache_duration integer default 10             ,
+  p_user_env       boolean default false          ,
+  p_apex_env       boolean default false          ,
+  p_cgi_env        boolean default false          ,
+  p_console_env    boolean default false          )
 is
 begin
   init (
@@ -774,7 +811,14 @@ end;
 
 --------------------------------------------------------------------------------
 
-function context_available_yn return varchar2 is
+function context_is_available return boolean is
+begin
+  return g_conf_context_available;
+end;
+
+--------------------------------------------------------------------------------
+
+function context_is_available_yn return varchar2 is
 begin
   return to_yn(g_conf_context_available);
 end;
@@ -844,12 +888,12 @@ return clob is
   --
   procedure create_header is
   begin
-    clob_append(v_clob, v_cache, '<tr>' || c_lf);
+    clob_append(v_clob, v_cache, c_lf || '<tr><!--- header -->' || c_lf);
     for i in 1..v_col_count loop
       clob_append(v_clob, v_cache, '<th id="' || lower(v_desc_tab(i).col_name) || '">'
       || initcap(replace(v_desc_tab(i).col_name, '_', ' ')) || '</th>' || c_lf);
     end loop;
-    clob_append(v_clob, v_cache, '</tr>' || c_lf);
+    clob_append(v_clob, v_cache, '</tr><!-- header -->' || c_lf);
   end create_header;
   --
   procedure create_data is
@@ -857,7 +901,7 @@ return clob is
     loop
       exit when dbms_sql.fetch_rows(v_cursor_id) = 0 or v_data_count = p_max_rows;
       v_data_count := v_data_count + 1;
-      clob_append(v_clob, v_cache, '<tr><!-- begin row ' || to_char(v_data_count) || ' -->' || c_lf);
+      clob_append(v_clob, v_cache, c_lf || '<tr><!--- row ' || to_char(v_data_count) || ' -->' || c_lf);
 
       for i in 1..v_col_count loop
         clob_append(v_clob, v_cache, '<td headers="' || lower(v_desc_tab(i).col_name) || '">');
@@ -903,7 +947,7 @@ return clob is
         clob_append(v_clob, v_cache, '</td>' || c_lf);
       end loop;
 
-      clob_append(v_clob, v_cache, '</tr><!-- end row ' || to_char(v_data_count) || ' -->' || c_lf);
+      clob_append(v_clob, v_cache, '</tr><!-- row ' || to_char(v_data_count) || ' -->' || c_lf);
     end loop;
   end create_data;
   --
@@ -916,7 +960,7 @@ begin
   clob_append(v_clob, v_cache, '<table>' || c_lf);
   create_header;
   create_data;
-  clob_append(v_clob, v_cache, '</table>' || c_lf);
+  clob_append(v_clob, v_cache, c_lf || '</table>' || c_lf);
   clob_flush_cache(v_clob, v_cache);
   close_cursor(v_cursor_id);
   return v_clob;
