@@ -80,14 +80,14 @@ Feedback and help is welcome.*
   - [X] [console.version](docs/console.md#version)
   - [ ] `console.view_status`
   - [ ] `console.view_cached_log_entries`
-  - [ ] `console.view_counters` & `console.view_timers`
+  - [ ] `console.view_counters` & `view_timers`
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
   - [X] [console.to_yn](docs/console.md#to_yn) &
     [to_bool](docs/console.md#to_bool)
   - [X] [console.to_html](docs/console.md#to_html)
   - [X] [console.get_runtime](docs/console.md#get_runtime) &
-    [get_runtime_second](docs/console.md#get_runtime_second)
+    [get_runtime_seconds](docs/console.md#get_runtime_seconds)
   - [X] [console.get_scope](docs/console.md#get_scope) &
     [get_call_stack](docs/console.md#get_call_stack)
   - [X] [console.clob_append](docs/console.md#clob_append) &
