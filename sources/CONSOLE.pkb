@@ -105,7 +105,7 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
-function  utl_logging_enabled ( p_level integer ) return boolean;
+function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 procedure utl_check_context_availability;
@@ -145,22 +145,6 @@ $end
 
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
---------------------------------------------------------------------------------
-
-function level_permanent return integer is begin return c_level_permanent; end;
-function level_error     return integer is begin return c_level_error    ; end;
-function level_warning   return integer is begin return c_level_warning  ; end;
-function level_info      return integer is begin return c_level_info     ; end;
-function level_verbose   return integer is begin return c_level_verbose  ; end;
-
-function level_is_warning return boolean is begin return g_conf_log_level >= c_level_warning ; end;
-function level_is_info    return boolean is begin return g_conf_log_level >= c_level_info    ; end;
-function level_is_verbose return boolean is begin return g_conf_log_level >= c_level_verbose ; end;
-
-function level_is_warning_yn return varchar2 is begin return case when g_conf_log_level >= c_level_warning then 'Y' else 'N' end; end;
-function level_is_info_yn    return varchar2 is begin return case when g_conf_log_level >= c_level_info    then 'Y' else 'N' end; end;
-function level_is_verbose_yn return varchar2 is begin return case when g_conf_log_level >= c_level_verbose then 'Y' else 'N' end; end;
-
 --------------------------------------------------------------------------------
 
 function my_client_identifier return varchar2 is
@@ -257,7 +241,7 @@ procedure warn (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_warning) then
+  if utl_logging_is_enabled (c_level_warning) then
     utl_create_log_entry (
       p_level           => c_level_warning ,
       p_message         => p_message         ,
@@ -288,7 +272,7 @@ procedure info (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
@@ -319,7 +303,7 @@ procedure log (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
@@ -350,7 +334,7 @@ procedure debug (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_verbose) then
+  if utl_logging_is_enabled (c_level_verbose) then
     utl_create_log_entry (
       p_level           => c_level_verbose ,
       p_message         => p_message         ,
@@ -388,7 +372,7 @@ procedure table# (
   p_max_column_length integer  default 1000 )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level   => c_level_info,
       p_message => to_html (
@@ -414,7 +398,7 @@ procedure trace (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
@@ -452,7 +436,7 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    if utl_logging_enabled (c_level_info) then
+    if utl_logging_is_enabled (c_level_info) then
       utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
@@ -496,7 +480,7 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    if utl_logging_enabled (c_level_info) then
+    if utl_logging_is_enabled (c_level_info) then
       utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
@@ -532,6 +516,22 @@ is
 begin
   null; -- FIXME implement
 end;
+
+--------------------------------------------------------------------------------
+
+function level_permanent return integer is begin return c_level_permanent; end;
+function level_error     return integer is begin return c_level_error    ; end;
+function level_warning   return integer is begin return c_level_warning  ; end;
+function level_info      return integer is begin return c_level_info     ; end;
+function level_verbose   return integer is begin return c_level_verbose  ; end;
+
+function level_is_warning return boolean is begin return utl_logging_is_enabled(c_level_warning); end;
+function level_is_info    return boolean is begin return utl_logging_is_enabled(c_level_info   ); end;
+function level_is_verbose return boolean is begin return utl_logging_is_enabled(c_level_verbose); end;
+
+function level_is_warning_yn return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_warning)); end;
+function level_is_info_yn    return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_info   )); end;
+function level_is_verbose_yn return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_verbose)); end;
 
 
 --------------------------------------------------------------------------------
@@ -1129,7 +1129,7 @@ end clob_flush_cache;
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function utl_logging_enabled (
+function utl_logging_is_enabled (
   p_level integer )
 return boolean is
 begin
@@ -1137,7 +1137,7 @@ begin
     utl_load_session_configuration;
   end if;
   return g_conf_log_level >= p_level or sqlcode != 0;
-end utl_logging_enabled;
+end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
 

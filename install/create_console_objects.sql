@@ -241,7 +241,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.1'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -271,19 +271,6 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
-function level_permanent return integer; /** Returns the number code for the level 0 permanent. **/
-function level_error     return integer; /** Returns the number code for the level 1 error.     **/
-function level_warning   return integer; /** Returns the number code for the level 2 warning.   **/
-function level_info      return integer; /** Returns the number code for the level 3 info.      **/
-function level_verbose   return integer; /** Returns the number code for the level 4 verbose.   **/
-
-function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
-function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
-function level_is_verbose return boolean; /** Returns true when the level is greater than or equal verbose, otherwise false. **/
-function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
-function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
-function level_is_verbose_yn return varchar2; /** Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'. **/
-
 function my_client_identifier return varchar2;
 /**
 
@@ -308,9 +295,9 @@ package variable for performance reasons and reevaluated every 10 seconds.
 select console.my_log_level from dual;
 ```
 
-**/
-
 --------------------------------------------------------------------------------
+
+**/
 
 procedure permanent ( p_message clob );
 /**
@@ -693,6 +680,21 @@ DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
 MANAGING LOGGING MODES OF SESSIONS.
 
 **/
+
+--------------------------------------------------------------------------------
+
+function level_permanent return integer; /** Returns the number code for the level 0 permanent. **/
+function level_error     return integer; /** Returns the number code for the level 1 error.     **/
+function level_warning   return integer; /** Returns the number code for the level 2 warning.   **/
+function level_info      return integer; /** Returns the number code for the level 3 info.      **/
+function level_verbose   return integer; /** Returns the number code for the level 4 verbose.   **/
+
+function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
+function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
+function level_is_verbose return boolean; /** Returns true when the level is greater than or equal verbose, otherwise false. **/
+function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
+function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
+function level_is_verbose_yn return varchar2; /** Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'. **/
 
 
 --------------------------------------------------------------------------------
@@ -1122,7 +1124,7 @@ Also see clob_append above.
 
 $if $$utils_public $then
 
-function  utl_logging_enabled ( p_level integer ) return boolean;
+function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 procedure utl_check_context_availability;
@@ -1271,7 +1273,7 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
-function  utl_logging_enabled ( p_level integer ) return boolean;
+function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 procedure utl_check_context_availability;
@@ -1311,22 +1313,6 @@ $end
 
 --------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
---------------------------------------------------------------------------------
-
-function level_permanent return integer is begin return c_level_permanent; end;
-function level_error     return integer is begin return c_level_error    ; end;
-function level_warning   return integer is begin return c_level_warning  ; end;
-function level_info      return integer is begin return c_level_info     ; end;
-function level_verbose   return integer is begin return c_level_verbose  ; end;
-
-function level_is_warning return boolean is begin return g_conf_log_level >= c_level_warning ; end;
-function level_is_info    return boolean is begin return g_conf_log_level >= c_level_info    ; end;
-function level_is_verbose return boolean is begin return g_conf_log_level >= c_level_verbose ; end;
-
-function level_is_warning_yn return varchar2 is begin return case when g_conf_log_level >= c_level_warning then 'Y' else 'N' end; end;
-function level_is_info_yn    return varchar2 is begin return case when g_conf_log_level >= c_level_info    then 'Y' else 'N' end; end;
-function level_is_verbose_yn return varchar2 is begin return case when g_conf_log_level >= c_level_verbose then 'Y' else 'N' end; end;
-
 --------------------------------------------------------------------------------
 
 function my_client_identifier return varchar2 is
@@ -1423,7 +1409,7 @@ procedure warn (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_warning) then
+  if utl_logging_is_enabled (c_level_warning) then
     utl_create_log_entry (
       p_level           => c_level_warning ,
       p_message         => p_message         ,
@@ -1454,7 +1440,7 @@ procedure info (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
@@ -1485,7 +1471,7 @@ procedure log (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
@@ -1516,7 +1502,7 @@ procedure debug (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_verbose) then
+  if utl_logging_is_enabled (c_level_verbose) then
     utl_create_log_entry (
       p_level           => c_level_verbose ,
       p_message         => p_message         ,
@@ -1554,7 +1540,7 @@ procedure table# (
   p_max_column_length integer  default 1000 )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level   => c_level_info,
       p_message => to_html (
@@ -1580,7 +1566,7 @@ procedure trace (
   p_user_call_stack varchar2 default null  )
 is
 begin
-  if utl_logging_enabled (c_level_info) then
+  if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
@@ -1618,7 +1604,7 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    if utl_logging_enabled (c_level_info) then
+    if utl_logging_is_enabled (c_level_info) then
       utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
@@ -1662,7 +1648,7 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    if utl_logging_enabled (c_level_info) then
+    if utl_logging_is_enabled (c_level_info) then
       utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
@@ -1698,6 +1684,22 @@ is
 begin
   null; -- FIXME implement
 end;
+
+--------------------------------------------------------------------------------
+
+function level_permanent return integer is begin return c_level_permanent; end;
+function level_error     return integer is begin return c_level_error    ; end;
+function level_warning   return integer is begin return c_level_warning  ; end;
+function level_info      return integer is begin return c_level_info     ; end;
+function level_verbose   return integer is begin return c_level_verbose  ; end;
+
+function level_is_warning return boolean is begin return utl_logging_is_enabled(c_level_warning); end;
+function level_is_info    return boolean is begin return utl_logging_is_enabled(c_level_info   ); end;
+function level_is_verbose return boolean is begin return utl_logging_is_enabled(c_level_verbose); end;
+
+function level_is_warning_yn return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_warning)); end;
+function level_is_info_yn    return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_info   )); end;
+function level_is_verbose_yn return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_verbose)); end;
 
 
 --------------------------------------------------------------------------------
@@ -2295,7 +2297,7 @@ end clob_flush_cache;
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function utl_logging_enabled (
+function utl_logging_is_enabled (
   p_level integer )
 return boolean is
 begin
@@ -2303,7 +2305,7 @@ begin
     utl_load_session_configuration;
   end if;
   return g_conf_log_level >= p_level or sqlcode != 0;
-end utl_logging_enabled;
+end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
 

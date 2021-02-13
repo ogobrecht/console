@@ -62,26 +62,19 @@ end;
 /
 
 prompt
-prompt 1000 LOG CALLS IN LEVEL INFO (how many time you loose by do logging)
+prompt 1.000 LOG CALLS IN LEVEL INFO (how many time you loose by do logging)
 declare
-  v_iterator         pls_integer := 1000;
-  v_start            timestamp;
-  v_scope            varchar2(1000);
-  v_rt_logger        number;
-  v_rt_console_scope number;
-  v_rt_console       number;
+  v_iterator   pls_integer := 1000;
+  v_start      timestamp;
+  v_scope      varchar2(1000);
+  v_rt_logger  number;
+  v_rt_console number;
 begin
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     logger.log('test');
   end loop;
   v_rt_logger := console.get_runtime_seconds(v_start);
-  --
-  v_start := localtimestamp;
-  for i in 1 .. v_iterator loop
-    v_scope := console.get_scope;
-  end loop;
-  v_rt_console_scope := console.get_runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
@@ -92,10 +85,26 @@ begin
   dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
   dbms_output.put_line( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
-  dbms_output.put_line( '- get_scope   : ' || trim(to_char(v_rt_console_scope, '0.000000')) || ' seconds' );
 end;
 /
-prompt - get_scope is how long it takes us to get the scope from the call stack (not so long...)
+
+prompt
+prompt 1.000 GET_SCOPE CALLS (how many time you loose by fetching the scope from the call stack)
+declare
+  v_iterator pls_integer := 1000;
+  v_start    timestamp;
+  v_scope    varchar2(1000);
+  v_rt_scope number;
+begin
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_scope := console.get_scope;
+  end loop;
+  v_rt_scope := console.get_runtime_seconds(v_start);
+  --
+  dbms_output.put_line( '- get_scope   : ' || trim(to_char(v_rt_scope, '0.000000')) || ' seconds' );
+end;
+/
 
 
 --prompt

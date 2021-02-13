@@ -5,17 +5,6 @@ Oracle Instrumentation Console
 ==============================
 
 - [Package console](#console)
-- [Function level_permanent](#level_permanent)
-- [Function level_error](#level_error)
-- [Function level_warning](#level_warning)
-- [Function level_info](#level_info)
-- [Function level_verbose](#level_verbose)
-- [Function level_is_warning](#level_is_warning)
-- [Function level_is_info](#level_is_info)
-- [Function level_is_verbose](#level_is_verbose)
-- [Function level_is_warning_yn](#level_is_warning_yn)
-- [Function level_is_info_yn](#level_is_info_yn)
-- [Function level_is_verbose_yn](#level_is_verbose_yn)
 - [Function my_client_identifier](#my_client_identifier)
 - [Function my_log_level](#my_log_level)
 - [Procedure permanent](#permanent)
@@ -35,6 +24,17 @@ Oracle Instrumentation Console
 - [Procedure time_end](#time_end)
 - [Function time_end](#time_end)
 - [Procedure clear](#clear)
+- [Function level_permanent](#level_permanent)
+- [Function level_error](#level_error)
+- [Function level_warning](#level_warning)
+- [Function level_info](#level_info)
+- [Function level_verbose](#level_verbose)
+- [Function level_is_warning](#level_is_warning)
+- [Function level_is_info](#level_is_info)
+- [Function level_is_verbose](#level_is_verbose)
+- [Function level_is_warning_yn](#level_is_warning_yn)
+- [Function level_is_info_yn](#level_is_info_yn)
+- [Function level_is_verbose_yn](#level_is_verbose_yn)
 - [Function apex_error_handling](#apex_error_handling)
 - [Procedure action](#action)
 - [Procedure module](#module)
@@ -70,7 +70,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.1'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -80,138 +80,6 @@ c_level_error     constant pls_integer := 1 ;
 c_level_warning   constant pls_integer := 2 ;
 c_level_info      constant pls_integer := 3 ;
 c_level_verbose   constant pls_integer := 4 ;
-```
-
-
-<h2><a id="level_permanent"></a>Function level_permanent</h2>
-<!---------------------------------------------------------->
-
-Returns the number code for the level 0 permanent.
-
-SIGNATURE
-
-```sql
-function level_permanent return integer;
-```
-
-
-<h2><a id="level_error"></a>Function level_error</h2>
-<!-------------------------------------------------->
-
-Returns the number code for the level 1 error.
-
-SIGNATURE
-
-```sql
-function level_error     return integer;
-```
-
-
-<h2><a id="level_warning"></a>Function level_warning</h2>
-<!------------------------------------------------------>
-
-Returns the number code for the level 2 warning.
-
-SIGNATURE
-
-```sql
-function level_warning   return integer;
-```
-
-
-<h2><a id="level_info"></a>Function level_info</h2>
-<!------------------------------------------------>
-
-Returns the number code for the level 3 info.
-
-SIGNATURE
-
-```sql
-function level_info      return integer;
-```
-
-
-<h2><a id="level_verbose"></a>Function level_verbose</h2>
-<!------------------------------------------------------>
-
-Returns the number code for the level 4 verbose.
-
-SIGNATURE
-
-```sql
-function level_verbose   return integer;
-```
-
-
-<h2><a id="level_is_warning"></a>Function level_is_warning</h2>
-<!------------------------------------------------------------>
-
-Returns true when the level is greater than or equal warning, otherwise false.
-
-SIGNATURE
-
-```sql
-function level_is_warning return boolean;
-```
-
-
-<h2><a id="level_is_info"></a>Function level_is_info</h2>
-<!------------------------------------------------------>
-
-Returns true when the level is greater than or equal info, otherwise false.
-
-SIGNATURE
-
-```sql
-function level_is_info    return boolean;
-```
-
-
-<h2><a id="level_is_verbose"></a>Function level_is_verbose</h2>
-<!------------------------------------------------------------>
-
-Returns true when the level is greater than or equal verbose, otherwise false.
-
-SIGNATURE
-
-```sql
-function level_is_verbose return boolean;
-```
-
-
-<h2><a id="level_is_warning_yn"></a>Function level_is_warning_yn</h2>
-<!------------------------------------------------------------------>
-
-Returns 'Y' when the level is greater than or equal warning, otherwise 'N'.
-
-SIGNATURE
-
-```sql
-function level_is_warning_yn return varchar2;
-```
-
-
-<h2><a id="level_is_info_yn"></a>Function level_is_info_yn</h2>
-<!------------------------------------------------------------>
-
-Returns 'Y' when the level is greater than or equal info, otherwise 'N'.
-
-SIGNATURE
-
-```sql
-function level_is_info_yn    return varchar2;
-```
-
-
-<h2><a id="level_is_verbose_yn"></a>Function level_is_verbose_yn</h2>
-<!------------------------------------------------------------------>
-
-Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'.
-
-SIGNATURE
-
-```sql
-function level_is_verbose_yn return varchar2;
 ```
 
 
@@ -241,6 +109,8 @@ package variable for performance reasons and reevaluated every 10 seconds.
 ```sql
 select console.my_log_level from dual;
 ```
+
+--------------------------------------------------------------------------------
 
 SIGNATURE
 
@@ -692,6 +562,138 @@ SIGNATURE
 
 ```sql
 procedure clear ( p_client_identifier varchar2 default my_client_identifier );
+```
+
+
+<h2><a id="level_permanent"></a>Function level_permanent</h2>
+<!---------------------------------------------------------->
+
+Returns the number code for the level 0 permanent.
+
+SIGNATURE
+
+```sql
+function level_permanent return integer;
+```
+
+
+<h2><a id="level_error"></a>Function level_error</h2>
+<!-------------------------------------------------->
+
+Returns the number code for the level 1 error.
+
+SIGNATURE
+
+```sql
+function level_error     return integer;
+```
+
+
+<h2><a id="level_warning"></a>Function level_warning</h2>
+<!------------------------------------------------------>
+
+Returns the number code for the level 2 warning.
+
+SIGNATURE
+
+```sql
+function level_warning   return integer;
+```
+
+
+<h2><a id="level_info"></a>Function level_info</h2>
+<!------------------------------------------------>
+
+Returns the number code for the level 3 info.
+
+SIGNATURE
+
+```sql
+function level_info      return integer;
+```
+
+
+<h2><a id="level_verbose"></a>Function level_verbose</h2>
+<!------------------------------------------------------>
+
+Returns the number code for the level 4 verbose.
+
+SIGNATURE
+
+```sql
+function level_verbose   return integer;
+```
+
+
+<h2><a id="level_is_warning"></a>Function level_is_warning</h2>
+<!------------------------------------------------------------>
+
+Returns true when the level is greater than or equal warning, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_warning return boolean;
+```
+
+
+<h2><a id="level_is_info"></a>Function level_is_info</h2>
+<!------------------------------------------------------>
+
+Returns true when the level is greater than or equal info, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_info    return boolean;
+```
+
+
+<h2><a id="level_is_verbose"></a>Function level_is_verbose</h2>
+<!------------------------------------------------------------>
+
+Returns true when the level is greater than or equal verbose, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_verbose return boolean;
+```
+
+
+<h2><a id="level_is_warning_yn"></a>Function level_is_warning_yn</h2>
+<!------------------------------------------------------------------>
+
+Returns 'Y' when the level is greater than or equal warning, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_warning_yn return varchar2;
+```
+
+
+<h2><a id="level_is_info_yn"></a>Function level_is_info_yn</h2>
+<!------------------------------------------------------------>
+
+Returns 'Y' when the level is greater than or equal info, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_info_yn    return varchar2;
+```
+
+
+<h2><a id="level_is_verbose_yn"></a>Function level_is_verbose_yn</h2>
+<!------------------------------------------------------------------>
+
+Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_verbose_yn return varchar2;
 ```
 
 

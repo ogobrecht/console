@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.1'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -31,19 +31,6 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
-function level_permanent return integer; /** Returns the number code for the level 0 permanent. **/
-function level_error     return integer; /** Returns the number code for the level 1 error.     **/
-function level_warning   return integer; /** Returns the number code for the level 2 warning.   **/
-function level_info      return integer; /** Returns the number code for the level 3 info.      **/
-function level_verbose   return integer; /** Returns the number code for the level 4 verbose.   **/
-
-function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
-function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
-function level_is_verbose return boolean; /** Returns true when the level is greater than or equal verbose, otherwise false. **/
-function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
-function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
-function level_is_verbose_yn return varchar2; /** Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'. **/
-
 function my_client_identifier return varchar2;
 /**
 
@@ -68,9 +55,9 @@ package variable for performance reasons and reevaluated every 10 seconds.
 select console.my_log_level from dual;
 ```
 
-**/
-
 --------------------------------------------------------------------------------
+
+**/
 
 procedure permanent ( p_message clob );
 /**
@@ -453,6 +440,21 @@ DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
 MANAGING LOGGING MODES OF SESSIONS.
 
 **/
+
+--------------------------------------------------------------------------------
+
+function level_permanent return integer; /** Returns the number code for the level 0 permanent. **/
+function level_error     return integer; /** Returns the number code for the level 1 error.     **/
+function level_warning   return integer; /** Returns the number code for the level 2 warning.   **/
+function level_info      return integer; /** Returns the number code for the level 3 info.      **/
+function level_verbose   return integer; /** Returns the number code for the level 4 verbose.   **/
+
+function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
+function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
+function level_is_verbose return boolean; /** Returns true when the level is greater than or equal verbose, otherwise false. **/
+function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
+function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
+function level_is_verbose_yn return varchar2; /** Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'. **/
 
 
 --------------------------------------------------------------------------------
@@ -882,7 +884,7 @@ Also see clob_append above.
 
 $if $$utils_public $then
 
-function  utl_logging_enabled ( p_level integer ) return boolean;
+function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
 procedure utl_check_context_availability;
