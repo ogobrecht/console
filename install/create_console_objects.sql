@@ -1115,6 +1115,21 @@ end;
 
 **/
 
+procedure clob_append (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 ,
+  p_text  in            clob     );
+/**
+
+High performance clob concatenation.
+
+Overloaded method for appending a clob. Also see clob_append above with p_text
+beeing a varchar2 parameter and clob_flush_cache below.
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure clob_flush_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 );
@@ -1125,6 +1140,7 @@ Flushes finally the cache in a high performance clob concatenation.
 Also see clob_append above.
 
 **/
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
@@ -2304,6 +2320,24 @@ end clob_append;
 
 --------------------------------------------------------------------------------
 
+procedure clob_append (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 ,
+  p_text  in            clob     )
+is
+begin
+  if p_text is not null then
+    clob_flush_cache (p_clob, p_cache);
+    if p_clob is null then
+      p_clob := p_text;
+    else
+      dbms_lob.writeappend(p_clob, length(p_text), p_text);
+    end if;
+  end if;
+end;
+
+--------------------------------------------------------------------------------
+
 procedure clob_flush_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 )
@@ -2494,9 +2528,7 @@ begin
     end;
 
   -- This is the very first (possible) assignment to the row.message variable,
-  -- so we can do it without our message_append method, especially as we might
-  -- have a clob in the parameter p_message. Doing it this way we do not need a
-  -- message_append method which can work with a clob.
+  -- so we can do it without our clob_append method.
   v_row.message :=
     case
       when p_message is not null then p_message

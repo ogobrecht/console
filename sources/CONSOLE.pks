@@ -871,6 +871,21 @@ end;
 
 **/
 
+procedure clob_append (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 ,
+  p_text  in            clob     );
+/**
+
+High performance clob concatenation.
+
+Overloaded method for appending a clob. Also see clob_append above with p_text
+beeing a varchar2 parameter and clob_flush_cache below.
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure clob_flush_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 );
@@ -881,6 +896,7 @@ Flushes finally the cache in a high performance clob concatenation.
 Also see clob_append above.
 
 **/
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)

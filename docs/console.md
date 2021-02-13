@@ -51,6 +51,7 @@ Oracle Instrumentation Console
 - [Function get_scope](#get_scope)
 - [Function get_call_stack](#get_call_stack)
 - [Procedure clob_append](#clob_append)
+- [Procedure clob_append](#clob_append)
 - [Procedure clob_flush_cache](#clob_flush_cache)
 
 
@@ -1145,6 +1146,24 @@ procedure clob_append (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 ,
   p_text  in            varchar2 );
+```
+
+
+<h2><a id="clob_append"></a>Procedure clob_append</h2>
+<!--------------------------------------------------->
+
+High performance clob concatenation.
+
+Overloaded method for appending a clob. Also see clob_append above with p_text
+beeing a varchar2 parameter and clob_flush_cache below.
+
+SIGNATURE
+
+```sql
+procedure clob_append (
+  p_clob  in out nocopy clob     ,
+  p_cache in out nocopy varchar2 ,
+  p_text  in            clob     );
 ```
 
 
