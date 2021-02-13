@@ -35,6 +35,7 @@ c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
 c_ctx_end_date                 constant varchar2 (15 byte) := 'END_DATE';
 c_ctx_cache_size               constant varchar2 (15 byte) := 'CACHE_SIZE';
 c_ctx_cache_duration           constant varchar2 (15 byte) := 'CACHE_DURATION';
+c_ctx_trace                    constant varchar2 (15 byte) := 'TRACE';
 c_ctx_user_env                 constant varchar2 (15 byte) := 'USER_ENV';
 c_ctx_apex_env                 constant varchar2 (15 byte) := 'APEX_ENV';
 c_ctx_cgi_env                  constant varchar2 (15 byte) := 'CGI_ENV';
@@ -85,10 +86,10 @@ g_conf_context_available      boolean;
 g_conf_cache_valid_until_date date;
 g_conf_client_identifier      varchar2 (64 byte);
 g_conf_log_level              pls_integer;
-g_conf_start_date             date;
 g_conf_end_date               date;
 g_conf_cache_size             integer;
 g_conf_cache_duration         integer;
+g_conf_trace                  boolean;
 g_conf_user_env               boolean;
 g_conf_apex_env               boolean;
 g_conf_cgi_env                boolean;
@@ -376,7 +377,7 @@ begin
   if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level   => c_level_info,
-      p_message => to_html (
+      p_message => to_html_table (
         p_data_cursor       => p_data_cursor       ,
         p_comment           => p_comment           ,
         p_include_row_num   => p_include_row_num   ,
@@ -684,15 +685,16 @@ end module;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2                        ,
+  p_client_identifier varchar2                      ,
   p_log_level         integer  default c_level_info ,
-  p_log_duration      integer  default 60             ,
-  p_cache_size        integer  default 0              ,
-  p_cache_duration    integer  default 10             ,
-  p_user_env          boolean  default false          ,
-  p_apex_env          boolean  default false          ,
-  p_cgi_env           boolean  default false          ,
-  p_console_env       boolean  default false          )
+  p_log_duration      integer  default 60           ,
+  p_cache_size        integer  default 0            ,
+  p_cache_duration    integer  default 10           ,
+  p_trace             boolean  default false        ,
+  p_user_env          boolean  default false        ,
+  p_apex_env          boolean  default false        ,
+  p_cgi_env           boolean  default false        ,
+  p_console_env       boolean  default false        )
 is
   pragma autonomous_transaction;
   v_row         console_sessions%rowtype;
@@ -721,6 +723,7 @@ begin
   assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
   assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).'  );
   assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).'   );
+  assert ( p_trace          is not null,        'Trace needs to be true or false (not null).'              );
   assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
   assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
   assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
@@ -732,6 +735,7 @@ begin
   v_row.end_date          := localtimestamp + 1/24/60 * p_log_duration;
   v_row.cache_size        := p_cache_size;
   v_row.cache_duration    := p_cache_duration;
+  v_row.trace             := to_yn ( p_trace       );
   v_row.user_env          := to_yn ( p_user_env    );
   v_row.apex_env          := to_yn ( p_apex_env    );
   v_row.cgi_env           := to_yn ( p_cgi_env     );
@@ -752,6 +756,7 @@ begin
     set_context ( c_ctx_end_date       , to_char ( v_row.end_date       , c_ctx_date_format ) , p_client_identifier );
     set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size     )                     , p_client_identifier );
     set_context ( c_ctx_cache_duration , to_char ( v_row.cache_duration )                     , p_client_identifier );
+    set_context ( c_ctx_trace          , to_char ( v_row.trace          )                     , p_client_identifier );
     set_context ( c_ctx_user_env       , to_char ( v_row.user_env       )                     , p_client_identifier );
     set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env       )                     , p_client_identifier );
     set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env        )                     , p_client_identifier );
@@ -773,6 +778,7 @@ procedure init (
   p_log_duration   integer default 60             ,
   p_cache_size     integer default 0              ,
   p_cache_duration integer default 10             ,
+  p_trace          boolean default false          ,
   p_user_env       boolean default false          ,
   p_apex_env       boolean default false          ,
   p_cgi_env        boolean default false          ,
@@ -835,7 +841,29 @@ end;
 
 --------------------------------------------------------------------------------
 
-function to_html (
+function to_yn (
+  p_bool boolean )
+return varchar2 is
+begin
+  return case when p_bool then 'Y' else 'N' end;
+end;
+
+--------------------------------------------------------------------------------
+
+function to_bool (
+  p_string varchar2 )
+return boolean is
+begin
+  return
+    case when upper(trim(p_string)) in ('Y', 'YES', '1', 'TRUE')
+      then true
+      else false
+    end;
+end;
+
+--------------------------------------------------------------------------------
+
+function to_html_table (
   p_data_cursor       sys_refcursor         ,
   p_comment           varchar2 default null ,
   p_include_row_num   boolean  default true ,
@@ -972,29 +1000,7 @@ begin
   clob_flush_cache(v_clob, v_cache);
   close_cursor(v_cursor_id);
   return v_clob;
-end to_html;
-
---------------------------------------------------------------------------------
-
-function to_bool (
-  p_string varchar2 )
-return boolean is
-begin
-  return
-    case when upper(trim(p_string)) in ('Y', 'YES', '1', 'TRUE')
-      then true
-      else false
-    end;
-end;
-
---------------------------------------------------------------------------------
-
-function to_yn (
-  p_bool boolean )
-return varchar2 is
-begin
-  return case when p_bool then 'Y' else 'N' end;
-end;
+end to_html_table;
 
 --------------------------------------------------------------------------------
 
@@ -1008,8 +1014,13 @@ end get_runtime;
 --------------------------------------------------------------------------------
 
 function get_runtime_seconds ( p_start timestamp ) return number is
+  v_runtime interval day to second;
 begin
-  return extract(second from (localtimestamp - p_start));
+  v_runtime := localtimestamp - p_start;
+  return
+    extract(hour from v_runtime) * 3600 +
+    extract(minute from v_runtime) * 60 +
+    extract(second from v_runtime);
 end get_runtime_seconds;
 
 --------------------------------------------------------------------------------
@@ -1226,6 +1237,7 @@ begin
     g_conf_log_level      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level      ) );
     g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
     g_conf_cache_duration := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_duration ) );
+    g_conf_trace          := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_trace          ) );
     g_conf_user_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env       ) );
     g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
     g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
@@ -1237,6 +1249,7 @@ begin
     g_conf_log_level      :=           v_row.log_level       ;
     g_conf_cache_size     :=           v_row.cache_size      ;
     g_conf_cache_duration :=           v_row.cache_duration  ;
+    g_conf_trace          := to_bool ( v_row.trace          );
     g_conf_user_env       := to_bool ( v_row.user_env       );
     g_conf_apex_env       := to_bool ( v_row.apex_env       );
     g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
@@ -1304,7 +1317,7 @@ begin
       else substrb(get_scope, 1, 256)
     end;
 
-  -- This is the very first (possible) assignment to the message row variable,
+  -- This is the very first (possible) assignment to the row.message variable,
   -- so we can do it without our message_append method, especially as we might
   -- have a clob in the parameter p_message. Doing it this way we do not need a
   -- message_append method which can work with a clob.

@@ -43,9 +43,9 @@ Oracle Instrumentation Console
 - [Function context_is_available](#context_is_available)
 - [Function context_is_available_yn](#context_is_available_yn)
 - [Function version](#version)
-- [Function to_html](#to_html)
-- [Function to_bool](#to_bool)
 - [Function to_yn](#to_yn)
+- [Function to_bool](#to_bool)
+- [Function to_html_table](#to_html_table)
 - [Function get_runtime](#get_runtime)
 - [Function get_runtime_seconds](#get_runtime_seconds)
 - [Function get_scope](#get_scope)
@@ -70,7 +70,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.3'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.4'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -831,15 +831,16 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_client_identifier varchar2                , -- The client identifier provided by the application or console itself.
+  p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
   p_log_level         integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration      integer  default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        integer  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
-  p_cache_duration    integer  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_user_env          boolean  default false  , -- Should the user environment be included.
-  p_apex_env          boolean  default false  , -- Should the APEX environment be included.
-  p_cgi_env           boolean  default false  , -- Should the CGI environment be included.
-  p_console_env       boolean  default false    -- Should the console environment be included.
+  p_log_duration      integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
+  p_cache_duration    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
+  p_trace             boolean  default false        , -- Should the call stack be included.
+  p_user_env          boolean  default false        , -- Should the user environment be included.
+  p_apex_env          boolean  default false        , -- Should the APEX environment be included.
+  p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
+  p_console_env       boolean  default false          -- Should the console environment be included.
 );
 ```
 
@@ -931,8 +932,37 @@ function version return varchar2;
 ```
 
 
-<h2><a id="to_html"></a>Function to_html</h2>
+<h2><a id="to_yn"></a>Function to_yn</h2>
+<!-------------------------------------->
+
+Converts a boolean value to a string.
+
+Returns `Y` when the input is true and `N` if the input is false or null.
+
+SIGNATURE
+
+```sql
+function to_yn ( p_bool boolean ) return varchar2;
+```
+
+
+<h2><a id="to_bool"></a>Function to_bool</h2>
 <!------------------------------------------>
+
+Converts a string to a boolean value.
+
+Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
+all other cases (also on null) false is returned.
+
+SIGNATURE
+
+```sql
+function to_bool ( p_string varchar2 ) return boolean;
+```
+
+
+<h2><a id="to_html_table"></a>Function to_html_table</h2>
+<!------------------------------------------------------>
 
 Helper to convert a cursor to a HTML table.
 
@@ -953,7 +983,7 @@ begin
   -- Debug code
   if console.level_is_info then
     open v_dataset for select * from user_tables;
-    console.info(console.to_html(v_dataset));
+    console.info(console.to_html_table(v_dataset));
   end if;
 end;
 /
@@ -968,7 +998,7 @@ begin
   -- Debug code
   if console.my_log_level >= console.c_level_info then
     for i in (
-      select console.to_html(cursor(select * from user_tables)) as html
+      select console.to_html_table(cursor(select * from user_tables)) as html
         from dual )
     loop
       console.info(i.html);
@@ -981,42 +1011,13 @@ end;
 SIGNATURE
 
 ```sql
-function to_html (
+function to_html_table (
   p_data_cursor       sys_refcursor         ,
   p_comment           varchar2 default null ,
   p_include_row_num   boolean  default true ,
   p_max_rows          integer  default 100  ,
   p_max_column_length integer  default 1000 )
 return clob;
-```
-
-
-<h2><a id="to_bool"></a>Function to_bool</h2>
-<!------------------------------------------>
-
-Converts a string to a boolean value.
-
-Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
-all other cases (also on null) false is returned.
-
-SIGNATURE
-
-```sql
-function to_bool ( p_string varchar2 ) return boolean;
-```
-
-
-<h2><a id="to_yn"></a>Function to_yn</h2>
-<!-------------------------------------->
-
-Converts a boolean value to a string.
-
-Returns `Y` when the input is true and `N` if the input is false or null.
-
-SIGNATURE
-
-```sql
-function to_yn ( p_bool boolean ) return varchar2;
 ```
 
 

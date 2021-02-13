@@ -59,19 +59,19 @@ begin
   logger.set_level(logger.g_debug);
   console.init;
   for i in 1 .. 10 loop
-    logger.log ('test');
-    console.log ('test');
+    logger.log ('warm up ' || to_char(i));
+    console.log ('warm up ' || to_char(i));
   end loop;
   -- test logger
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    logger.log('test');
+    logger.log('test ' || to_char(i));
   end loop;
   v_rt_logger := console.get_runtime_seconds(v_start);
   -- test console
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    console.log('test');
+    console.log('test ' || to_char(i));
   end loop;
   v_rt_console := console.get_runtime_seconds(v_start);
   -- print results

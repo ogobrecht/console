@@ -118,6 +118,7 @@ begin
         end_date           date                not null  ,
         cache_size         number   ( 4,0)     not null  ,
         cache_duration     number   ( 2,0)     not null  ,
+        trace              varchar2 ( 1 byte)  not null  ,
         user_env           varchar2 ( 1 byte)  not null  ,
         apex_env           varchar2 ( 1 byte)  not null  ,
         cgi_env            varchar2 ( 1 byte)  not null  ,
@@ -148,6 +149,7 @@ comment on column console_sessions.start_date        is 'The logging start date 
 comment on column console_sessions.end_date          is 'The logging end date for the nominated client identifier.';
 comment on column console_sessions.cache_duration    is 'The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Defaults to 10.';
 comment on column console_sessions.cache_size        is 'The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.';
+comment on column console_sessions.trace             is 'Should the call_stack be included.';
 comment on column console_sessions.user_env          is 'Should the user environment be included.';
 comment on column console_sessions.apex_env          is 'Should the APEX environment be included.';
 comment on column console_sessions.cgi_env           is 'Should the CGI environment be included.';
@@ -243,7 +245,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.3'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.4'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -785,15 +787,16 @@ to only set the action attribute with the `action` (see below).
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2                , -- The client identifier provided by the application or console itself.
+  p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
   p_log_level         integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration      integer  default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        integer  default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
-  p_cache_duration    integer  default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_user_env          boolean  default false  , -- Should the user environment be included.
-  p_apex_env          boolean  default false  , -- Should the APEX environment be included.
-  p_cgi_env           boolean  default false  , -- Should the CGI environment be included.
-  p_console_env       boolean  default false    -- Should the console environment be included.
+  p_log_duration      integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
+  p_cache_duration    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
+  p_trace             boolean  default false        , -- Should the call stack be included.
+  p_user_env          boolean  default false        , -- Should the user environment be included.
+  p_apex_env          boolean  default false        , -- Should the APEX environment be included.
+  p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
+  p_console_env       boolean  default false          -- Should the console environment be included.
 );
 /**
 
@@ -842,13 +845,14 @@ end;
 
 procedure init (
   p_log_level      integer default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration   integer default 60     , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size     integer default 0      , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
-  p_cache_duration integer default 10     , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_user_env       boolean default false  , -- Should the user environment be included.
-  p_apex_env       boolean default false  , -- Should the APEX environment be included.
-  p_cgi_env        boolean default false  , -- Should the CGI environment be included.
-  p_console_env    boolean default false    -- Should the console environment be included.
+  p_log_duration   integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size     integer default 0            , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
+  p_cache_duration integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
+  p_trace          boolean default false        , -- Should the call stack be included.
+  p_user_env       boolean default false        , -- Should the user environment be included.
+  p_apex_env       boolean default false        , -- Should the APEX environment be included.
+  p_cgi_env        boolean default false        , -- Should the CGI environment be included.
+  p_console_env    boolean default false          -- Should the console environment be included.
 );
 
 procedure exit (
@@ -927,7 +931,30 @@ select console.version from dual;
 
 --------------------------------------------------------------------------------
 
-function to_html (
+function to_yn ( p_bool boolean ) return varchar2;
+/**
+
+Converts a boolean value to a string.
+
+Returns `Y` when the input is true and `N` if the input is false or null.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_bool ( p_string varchar2 ) return boolean;
+/**
+
+Converts a string to a boolean value.
+
+Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
+all other cases (also on null) false is returned.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_html_table (
   p_data_cursor       sys_refcursor         ,
   p_comment           varchar2 default null ,
   p_include_row_num   boolean  default true ,
@@ -955,7 +982,7 @@ begin
   -- Debug code
   if console.level_is_info then
     open v_dataset for select * from user_tables;
-    console.info(console.to_html(v_dataset));
+    console.info(console.to_html_table(v_dataset));
   end if;
 end;
 {{/}}
@@ -970,7 +997,7 @@ begin
   -- Debug code
   if console.my_log_level >= console.c_level_info then
     for i in (
-      select console.to_html(cursor(select * from user_tables)) as html
+      select console.to_html_table(cursor(select * from user_tables)) as html
         from dual )
     loop
       console.info(i.html);
@@ -979,29 +1006,6 @@ begin
 end;
 {{/}}
 ```
-
-**/
-
---------------------------------------------------------------------------------
-
-function to_bool ( p_string varchar2 ) return boolean;
-/**
-
-Converts a string to a boolean value.
-
-Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
-all other cases (also on null) false is returned.
-
-**/
-
---------------------------------------------------------------------------------
-
-function to_yn ( p_bool boolean ) return varchar2;
-/**
-
-Converts a boolean value to a string.
-
-Returns `Y` when the input is true and `N` if the input is false or null.
 
 **/
 
@@ -1207,6 +1211,7 @@ c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
 c_ctx_end_date                 constant varchar2 (15 byte) := 'END_DATE';
 c_ctx_cache_size               constant varchar2 (15 byte) := 'CACHE_SIZE';
 c_ctx_cache_duration           constant varchar2 (15 byte) := 'CACHE_DURATION';
+c_ctx_trace                    constant varchar2 (15 byte) := 'TRACE';
 c_ctx_user_env                 constant varchar2 (15 byte) := 'USER_ENV';
 c_ctx_apex_env                 constant varchar2 (15 byte) := 'APEX_ENV';
 c_ctx_cgi_env                  constant varchar2 (15 byte) := 'CGI_ENV';
@@ -1257,10 +1262,10 @@ g_conf_context_available      boolean;
 g_conf_cache_valid_until_date date;
 g_conf_client_identifier      varchar2 (64 byte);
 g_conf_log_level              pls_integer;
-g_conf_start_date             date;
 g_conf_end_date               date;
 g_conf_cache_size             integer;
 g_conf_cache_duration         integer;
+g_conf_trace                  boolean;
 g_conf_user_env               boolean;
 g_conf_apex_env               boolean;
 g_conf_cgi_env                boolean;
@@ -1548,7 +1553,7 @@ begin
   if utl_logging_is_enabled (c_level_info) then
     utl_create_log_entry (
       p_level   => c_level_info,
-      p_message => to_html (
+      p_message => to_html_table (
         p_data_cursor       => p_data_cursor       ,
         p_comment           => p_comment           ,
         p_include_row_num   => p_include_row_num   ,
@@ -1856,15 +1861,16 @@ end module;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2                        ,
+  p_client_identifier varchar2                      ,
   p_log_level         integer  default c_level_info ,
-  p_log_duration      integer  default 60             ,
-  p_cache_size        integer  default 0              ,
-  p_cache_duration    integer  default 10             ,
-  p_user_env          boolean  default false          ,
-  p_apex_env          boolean  default false          ,
-  p_cgi_env           boolean  default false          ,
-  p_console_env       boolean  default false          )
+  p_log_duration      integer  default 60           ,
+  p_cache_size        integer  default 0            ,
+  p_cache_duration    integer  default 10           ,
+  p_trace             boolean  default false        ,
+  p_user_env          boolean  default false        ,
+  p_apex_env          boolean  default false        ,
+  p_cgi_env           boolean  default false        ,
+  p_console_env       boolean  default false        )
 is
   pragma autonomous_transaction;
   v_row         console_sessions%rowtype;
@@ -1893,6 +1899,7 @@ begin
   assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
   assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).'  );
   assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).'   );
+  assert ( p_trace          is not null,        'Trace needs to be true or false (not null).'              );
   assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
   assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
   assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
@@ -1904,6 +1911,7 @@ begin
   v_row.end_date          := localtimestamp + 1/24/60 * p_log_duration;
   v_row.cache_size        := p_cache_size;
   v_row.cache_duration    := p_cache_duration;
+  v_row.trace             := to_yn ( p_trace       );
   v_row.user_env          := to_yn ( p_user_env    );
   v_row.apex_env          := to_yn ( p_apex_env    );
   v_row.cgi_env           := to_yn ( p_cgi_env     );
@@ -1924,6 +1932,7 @@ begin
     set_context ( c_ctx_end_date       , to_char ( v_row.end_date       , c_ctx_date_format ) , p_client_identifier );
     set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size     )                     , p_client_identifier );
     set_context ( c_ctx_cache_duration , to_char ( v_row.cache_duration )                     , p_client_identifier );
+    set_context ( c_ctx_trace          , to_char ( v_row.trace          )                     , p_client_identifier );
     set_context ( c_ctx_user_env       , to_char ( v_row.user_env       )                     , p_client_identifier );
     set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env       )                     , p_client_identifier );
     set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env        )                     , p_client_identifier );
@@ -1945,6 +1954,7 @@ procedure init (
   p_log_duration   integer default 60             ,
   p_cache_size     integer default 0              ,
   p_cache_duration integer default 10             ,
+  p_trace          boolean default false          ,
   p_user_env       boolean default false          ,
   p_apex_env       boolean default false          ,
   p_cgi_env        boolean default false          ,
@@ -2007,7 +2017,29 @@ end;
 
 --------------------------------------------------------------------------------
 
-function to_html (
+function to_yn (
+  p_bool boolean )
+return varchar2 is
+begin
+  return case when p_bool then 'Y' else 'N' end;
+end;
+
+--------------------------------------------------------------------------------
+
+function to_bool (
+  p_string varchar2 )
+return boolean is
+begin
+  return
+    case when upper(trim(p_string)) in ('Y', 'YES', '1', 'TRUE')
+      then true
+      else false
+    end;
+end;
+
+--------------------------------------------------------------------------------
+
+function to_html_table (
   p_data_cursor       sys_refcursor         ,
   p_comment           varchar2 default null ,
   p_include_row_num   boolean  default true ,
@@ -2144,29 +2176,7 @@ begin
   clob_flush_cache(v_clob, v_cache);
   close_cursor(v_cursor_id);
   return v_clob;
-end to_html;
-
---------------------------------------------------------------------------------
-
-function to_bool (
-  p_string varchar2 )
-return boolean is
-begin
-  return
-    case when upper(trim(p_string)) in ('Y', 'YES', '1', 'TRUE')
-      then true
-      else false
-    end;
-end;
-
---------------------------------------------------------------------------------
-
-function to_yn (
-  p_bool boolean )
-return varchar2 is
-begin
-  return case when p_bool then 'Y' else 'N' end;
-end;
+end to_html_table;
 
 --------------------------------------------------------------------------------
 
@@ -2180,8 +2190,13 @@ end get_runtime;
 --------------------------------------------------------------------------------
 
 function get_runtime_seconds ( p_start timestamp ) return number is
+  v_runtime interval day to second;
 begin
-  return extract(second from (localtimestamp - p_start));
+  v_runtime := localtimestamp - p_start;
+  return
+    extract(hour from v_runtime) * 3600 +
+    extract(minute from v_runtime) * 60 +
+    extract(second from v_runtime);
 end get_runtime_seconds;
 
 --------------------------------------------------------------------------------
@@ -2398,6 +2413,7 @@ begin
     g_conf_log_level      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level      ) );
     g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
     g_conf_cache_duration := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_duration ) );
+    g_conf_trace          := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_trace          ) );
     g_conf_user_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env       ) );
     g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
     g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
@@ -2409,6 +2425,7 @@ begin
     g_conf_log_level      :=           v_row.log_level       ;
     g_conf_cache_size     :=           v_row.cache_size      ;
     g_conf_cache_duration :=           v_row.cache_duration  ;
+    g_conf_trace          := to_bool ( v_row.trace          );
     g_conf_user_env       := to_bool ( v_row.user_env       );
     g_conf_apex_env       := to_bool ( v_row.apex_env       );
     g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
@@ -2476,7 +2493,7 @@ begin
       else substrb(get_scope, 1, 256)
     end;
 
-  -- This is the very first (possible) assignment to the message row variable,
+  -- This is the very first (possible) assignment to the row.message variable,
   -- so we can do it without our message_append method, especially as we might
   -- have a clob in the parameter p_message. Doing it this way we do not need a
   -- message_append method which can work with a clob.
