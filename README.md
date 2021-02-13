@@ -34,7 +34,7 @@ Feedback and help is welcome.*
   are not implemented: dir, dirxml, group, groupCollapsed, groupEnd and
   countReset (instead we have count_end and we ignore the line number, where the
   count occurred). For the two \*_end methods we use snake case instead of camel
-  case for readability:
+  case for readability. As table is a keyword in SQL we named our method table#:
   - [X] [console.error](docs/console.md#error) (level 1=error)
   - [X] [console.warn](docs/console.md#warn) (level 2=warning)
   - [X] [console.info](docs/console.md#info) (level 3=info)

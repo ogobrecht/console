@@ -368,6 +368,7 @@ end assert;
 procedure table# (
   p_data_cursor       sys_refcursor         ,
   p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
   p_max_rows          integer  default 100  ,
   p_max_column_length integer  default 1000 )
 is
@@ -378,6 +379,7 @@ begin
       p_message => to_html (
         p_data_cursor       => p_data_cursor       ,
         p_comment           => p_comment           ,
+        p_include_row_num   => p_include_row_num   ,
         p_max_rows          => p_max_rows          ,
         p_max_column_length => p_max_column_length ) );
   end if;
@@ -833,10 +835,11 @@ end;
 --------------------------------------------------------------------------------
 
 function to_html (
-  p_data_cursor        sys_refcursor         ,
-  p_comment            varchar2 default null ,
-  p_max_rows           integer  default 100  ,
-  p_max_column_length  integer  default 1000 )
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 )
 return clob is
   v_data_cursor        sys_refcursor := p_data_cursor;
   v_cursor_id          integer;
@@ -889,6 +892,9 @@ return clob is
   procedure create_header is
   begin
     clob_append(v_clob, v_cache, c_lf || '<tr><!--- header -->' || c_lf);
+    if p_include_row_num then
+      clob_append(v_clob, v_cache, '<th id="row_num">Row#</th>' || c_lf);
+    end if;
     for i in 1..v_col_count loop
       clob_append(v_clob, v_cache, '<th id="' || lower(v_desc_tab(i).col_name) || '">'
       || initcap(replace(v_desc_tab(i).col_name, '_', ' ')) || '</th>' || c_lf);
@@ -902,10 +908,12 @@ return clob is
       exit when dbms_sql.fetch_rows(v_cursor_id) = 0 or v_data_count = p_max_rows;
       v_data_count := v_data_count + 1;
       clob_append(v_clob, v_cache, c_lf || '<tr><!--- row ' || to_char(v_data_count) || ' -->' || c_lf);
-
+      if p_include_row_num then
+        clob_append(v_clob, v_cache, '<td headers="row_num">' || to_char(v_data_count) || '</td>' || c_lf);
+      end if;
       for i in 1..v_col_count loop
         clob_append(v_clob, v_cache, '<td headers="' || lower(v_desc_tab(i).col_name) || '">');
-
+        --
         if v_desc_tab(i).col_type = c_clob then
           dbms_sql.column_value(v_cursor_id, i, v_buffer_clob);
           clob_append(
@@ -914,7 +922,7 @@ return clob is
             escape(substr(v_buffer_clob, 1, p_max_column_length))
             || case when length(v_buffer_clob) > p_max_column_length then '...' end
           );
-
+        --
         elsif v_desc_tab(i).col_type = c_xmltype then
           dbms_sql.column_value(v_cursor_id, i, v_buffer_xmltype);
           if v_buffer_xmltype is not null then
@@ -926,7 +934,7 @@ return clob is
               || case when length(v_buffer_clob) > p_max_column_length then '...' end
             );
           end if;
-
+        --
         elsif v_desc_tab(i).col_type = c_long then
           dbms_sql.column_value_long(v_cursor_id, i, p_max_column_length, 0, v_buffer_varchar2, v_buffer_long_length);
             clob_append(
@@ -935,18 +943,17 @@ return clob is
               escape(v_buffer_varchar2)
               || case when v_buffer_long_length > p_max_column_length then '...' end
             );
-
+        --
         elsif v_desc_tab(i).col_type in (c_raw, c_long_raw, c_blob, c_bfile) then
           clob_append(v_clob, v_cache, 'Binary data type skipped - not supported for HTML');
-
+        --
         else
           dbms_sql.column_value(v_cursor_id, i, v_buffer_varchar2);
           clob_append(v_clob, v_cache, escape(v_buffer_varchar2));
         end if;
-
+        --
         clob_append(v_clob, v_cache, '</td>' || c_lf);
       end loop;
-
       clob_append(v_clob, v_cache, '</tr><!-- row ' || to_char(v_data_count) || ' -->' || c_lf);
     end loop;
   end create_data;

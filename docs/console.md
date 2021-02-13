@@ -70,7 +70,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.2'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -347,6 +347,7 @@ SIGNATURE
 procedure table# (
   p_data_cursor       sys_refcursor         ,
   p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
   p_max_rows          integer  default 100  ,
   p_max_column_length integer  default 1000 );
 ```
@@ -983,6 +984,7 @@ SIGNATURE
 function to_html (
   p_data_cursor       sys_refcursor         ,
   p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
   p_max_rows          integer  default 100  ,
   p_max_column_length integer  default 1000 )
 return clob;
