@@ -66,7 +66,7 @@ Feedback and help is welcome.*
     example APEX is setting the module, and often also the action).
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
-  - [X] [console.init](docs/console.md#init) & [stop](docs/console.md#stop)
+  - [X] [console.init](docs/console.md#init) & [exit](docs/console.md#exit)
   - [X] [console.my_client_identifier](docs/console.md#my_client_identifier) &
     [my_log_level](docs/console.md#my_log_level)
   - [X] [console.context_is_available](docs/console.md#context_is_available) &

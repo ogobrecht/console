@@ -39,7 +39,7 @@ Oracle Instrumentation Console
 - [Procedure action](#action)
 - [Procedure module](#module)
 - [Procedure init](#init)
-- [Procedure stop](#stop)
+- [Procedure exit](#exit)
 - [Function context_is_available](#context_is_available)
 - [Function context_is_available_yn](#context_is_available_yn)
 - [Function version](#version)
@@ -70,7 +70,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.2'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.3'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -415,7 +415,7 @@ end;
 /
 
 --Stop logging mode of your own session.
-exec console.stop;
+exec console.exit;
 ```
 
 SIGNATURE
@@ -500,7 +500,7 @@ end;
 /
 
 --Stop logging mode of your own session.
-exec console.stop;
+exec console.exit;
 ```
 
 SIGNATURE
@@ -844,7 +844,7 @@ procedure init (
 ```
 
 
-<h2><a id="stop"></a>Procedure stop</h2>
+<h2><a id="exit"></a>Procedure exit</h2>
 <!------------------------------------->
 
 Stops the logging for a specific session.
@@ -865,7 +865,7 @@ MANAGING LOGGING MODES OF SESSIONS.
 SIGNATURE
 
 ```sql
-procedure stop (
+procedure exit (
   p_client_identifier varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
 );
 ```

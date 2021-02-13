@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.2'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.3'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -317,7 +317,7 @@ end;
 {{/}}
 
 --Stop logging mode of your own session.
-exec console.stop;
+exec console.exit;
 ```
 
 **/
@@ -389,7 +389,7 @@ end;
 {{/}}
 
 --Stop logging mode of your own session.
-exec console.stop;
+exec console.exit;
 ```
 
 **/
@@ -609,7 +609,7 @@ procedure init (
   p_console_env    boolean default false    -- Should the console environment be included.
 );
 
-procedure stop (
+procedure exit (
   p_client_identifier varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
 );
 /**

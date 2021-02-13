@@ -37,6 +37,7 @@ begin
         apex_env           varchar2 ( 1 byte)  not null  ,
         cgi_env            varchar2 ( 1 byte)  not null  ,
         console_env        varchar2 ( 1 byte)  not null  ,
+        init_by            varchar2 (64 byte)            ,
         --
         constraint  console_sessions_pk   primary key  (client_identifier)                    ,
         constraint  console_sessions_fk   foreign key  (log_level) references console_levels  ,
@@ -66,6 +67,7 @@ comment on column console_sessions.user_env          is 'Should the user environ
 comment on column console_sessions.apex_env          is 'Should the APEX environment be included.';
 comment on column console_sessions.cgi_env           is 'Should the CGI environment be included.';
 comment on column console_sessions.console_env       is 'Should the console environment be included.';
+comment on column console_sessions.init_by           is 'The OS user who initiated the logging.';
 
 
 

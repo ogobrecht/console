@@ -46,21 +46,6 @@ begin
 end;
 /
 
---configure logger
-exec logger.set_level(logger.g_debug);
-
---configure console
-exec console.init;
-
---warm up logger and console
-begin
-  for i in 1 .. 10 loop
-    logger.log ('test');
-    console.log ('test');
-  end loop;
-end;
-/
-
 prompt
 prompt 1.000 LOG CALLS IN LEVEL INFO (how many time you loose by do logging)
 declare
@@ -70,21 +55,32 @@ declare
   v_rt_logger  number;
   v_rt_console number;
 begin
+  --configure and warm up logger and console
+  logger.set_level(logger.g_debug);
+  console.init;
+  for i in 1 .. 10 loop
+    logger.log ('test');
+    console.log ('test');
+  end loop;
+  -- test logger
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     logger.log('test');
   end loop;
   v_rt_logger := console.get_runtime_seconds(v_start);
-  --
+  -- test console
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     console.log('test');
   end loop;
   v_rt_console := console.get_runtime_seconds(v_start);
-  --
+  -- print results
   dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
   dbms_output.put_line( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
+  --configure logger and console
+  logger.set_level(logger.g_error);
+  console.exit;
 end;
 /
 

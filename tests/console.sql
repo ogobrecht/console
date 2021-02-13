@@ -6,7 +6,7 @@ whenever sqlerror exit sql.sqlcode rollback
 prompt TEST CONSOLE
 prompt - Test different levels
 begin
-  console.init(p_log_level => 4);
+  console.init(p_log_level => console.c_level_verbose);
   console.time;
   console.time      ('Test CONSOLE');
   console.permanent ('permanent');
@@ -20,7 +20,7 @@ begin
   console.log       ('stopping now');
   console.time_end;
   console.log       (console.time_end('Test CONSOLE'));
-  console.stop;
+  console.exit;
   raise_application_error(-20000, 'Test exception');
 exception
   when others then

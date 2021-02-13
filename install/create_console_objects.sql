@@ -122,6 +122,7 @@ begin
         apex_env           varchar2 ( 1 byte)  not null  ,
         cgi_env            varchar2 ( 1 byte)  not null  ,
         console_env        varchar2 ( 1 byte)  not null  ,
+        init_by            varchar2 (64 byte)            ,
         --
         constraint  console_sessions_pk   primary key  (client_identifier)                    ,
         constraint  console_sessions_fk   foreign key  (log_level) references console_levels  ,
@@ -151,6 +152,7 @@ comment on column console_sessions.user_env          is 'Should the user environ
 comment on column console_sessions.apex_env          is 'Should the APEX environment be included.';
 comment on column console_sessions.cgi_env           is 'Should the CGI environment be included.';
 comment on column console_sessions.console_env       is 'Should the console environment be included.';
+comment on column console_sessions.init_by           is 'The OS user who initiated the logging.';
 
 
 
@@ -241,7 +243,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.2'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.3'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -557,7 +559,7 @@ end;
 {{/}}
 
 --Stop logging mode of your own session.
-exec console.stop;
+exec console.exit;
 ```
 
 **/
@@ -629,7 +631,7 @@ end;
 {{/}}
 
 --Stop logging mode of your own session.
-exec console.stop;
+exec console.exit;
 ```
 
 **/
@@ -849,7 +851,7 @@ procedure init (
   p_console_env    boolean default false    -- Should the console environment be included.
 );
 
-procedure stop (
+procedure exit (
   p_client_identifier varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
 );
 /**
@@ -1906,6 +1908,7 @@ begin
   v_row.apex_env          := to_yn ( p_apex_env    );
   v_row.cgi_env           := to_yn ( p_cgi_env     );
   v_row.console_env       := to_yn ( p_console_env );
+  v_row.init_by           := substrb ( sys_context('USERENV', 'OS_USER'), 1, 64 );
   --
   select count(*) into v_count from console_sessions where client_identifier = p_client_identifier;
   if v_count = 0 then
@@ -1962,7 +1965,7 @@ end init;
 
 --------------------------------------------------------------------------------
 
-procedure stop (
+procedure exit (
   p_client_identifier varchar2 default my_client_identifier )
 is
   pragma autonomous_transaction;

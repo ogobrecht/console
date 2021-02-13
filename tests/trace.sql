@@ -78,4 +78,6 @@ exception
 end;
 /
 
+exec console.exit;
+
 prompt - FINISHED

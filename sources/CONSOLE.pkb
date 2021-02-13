@@ -736,6 +736,7 @@ begin
   v_row.apex_env          := to_yn ( p_apex_env    );
   v_row.cgi_env           := to_yn ( p_cgi_env     );
   v_row.console_env       := to_yn ( p_console_env );
+  v_row.init_by           := substrb ( sys_context('USERENV', 'OS_USER'), 1, 64 );
   --
   select count(*) into v_count from console_sessions where client_identifier = p_client_identifier;
   if v_count = 0 then
@@ -792,7 +793,7 @@ end init;
 
 --------------------------------------------------------------------------------
 
-procedure stop (
+procedure exit (
   p_client_identifier varchar2 default my_client_identifier )
 is
   pragma autonomous_transaction;
