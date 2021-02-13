@@ -50,6 +50,8 @@ Oracle Instrumentation Console
 - [Function get_runtime_seconds](#get_runtime_seconds)
 - [Function get_scope](#get_scope)
 - [Function get_call_stack](#get_call_stack)
+- [Function get_cgi_env](#get_cgi_env)
+- [Function get_user_env](#get_user_env)
 - [Procedure clob_append](#clob_append)
 - [Procedure clob_append](#clob_append)
 - [Procedure clob_flush_cache](#clob_flush_cache)
@@ -1102,13 +1104,43 @@ function  get_scope return varchar2;
 Get the current call stack (and error stack/backtrace, if available).
 
 Is used internally by console to provide the call stack for a log entry when
-requested by the logging method (which is the default for the methods error and
+requested by one of the logging methods (which is the default for error and
 trace).
 
 SIGNATURE
 
 ```sql
 function  get_call_stack return varchar2;
+```
+
+
+<h2><a id="get_cgi_env"></a>Function get_cgi_env</h2>
+<!-------------------------------------------------->
+
+Get the current CGI environment.
+
+Is used internally by console to provide the CGI environment for a log entry
+when requested by one of the logging methods.
+
+SIGNATURE
+
+```sql
+function get_cgi_env return varchar2;
+```
+
+
+<h2><a id="get_user_env"></a>Function get_user_env</h2>
+<!---------------------------------------------------->
+
+Get the current user environment.
+
+Is used internally by console to provide the user environment for a log entry
+when requested by one of the logging methods.
+
+SIGNATURE
+
+```sql
+function get_user_env return varchar2;
 ```
 
 

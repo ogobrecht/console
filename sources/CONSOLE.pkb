@@ -106,6 +106,8 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
+function  utl_md_tab_key_value_header return varchar2;
+function  utl_md_tab_key_value_data (p_key varchar2, p_value varchar2) return varchar2;
 function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -1109,6 +1111,113 @@ end get_call_stack;
 
 --------------------------------------------------------------------------------
 
+function get_cgi_env return varchar2
+is
+  v_return vc_max;
+begin
+  v_return := '## CGI Environment' || c_lflf || utl_md_tab_key_value_header;
+  for i in 1 .. nvl(owa.num_cgi_vars, 0) loop
+    v_return := v_return ||
+      utl_md_tab_key_value_data(
+        p_key   => owa.cgi_var_name(i) ,
+        p_value => owa.cgi_var_val (i) );
+  end loop;
+  v_return := v_return || c_lflf;
+  return v_return;
+exception
+  when value_error then
+    --> we simply return here what we already have and forget about the rest...
+    return v_return;
+end get_cgi_env;
+
+--------------------------------------------------------------------------------
+
+function get_user_env return varchar2
+is
+  v_return vc_max;
+  invalid_user_env_key exception;
+  pragma exception_init(invalid_user_env_key, -2003);
+  --
+  procedure append_row (p_key varchar2) is
+  begin
+    v_return := v_return || utl_md_tab_key_value_data(
+      p_key   => p_key                         ,
+      p_value => sys_context('USERENV', p_key) );
+  exception
+    when invalid_user_env_key then
+      null;
+  end append_row;
+  --
+begin
+  v_return := '## User Environment' || c_lflf || utl_md_tab_key_value_header;
+  --
+  append_row('NLS_CALENDAR');
+  append_row('NLS_CURRENCY');
+  append_row('NLS_DATE_FORMAT');
+  append_row('NLS_DATE_LANGUAGE');
+  append_row('NLS_SORT');
+  append_row('NLS_TERRITORY');
+  append_row('LANG');
+  append_row('LANGUAGE');
+  --
+  append_row('CURRENT_SCHEMA');
+  append_row('SESSION_USER');
+  append_row('OS_USER');
+  append_row('CLIENT_IDENTIFIER');
+  append_row('CLIENT_INFO');
+  append_row('IP_ADDRESS');
+  append_row('HOST');
+  append_row('TERMINAL');
+  --
+  append_row('AUTHENTICATED_IDENTITY');
+  append_row('AUTHENTICATION_DATA');
+  append_row('AUTHENTICATION_METHOD');
+  append_row('ENTERPRISE_IDENTITY');
+  append_row('POLICY_INVOKER');
+  append_row('PROXY_ENTERPRISE_IDENTITY');
+  append_row('PROXY_GLOBAL_UID');
+  append_row('PROXY_USER');
+  append_row('PROXY_USERID');
+  append_row('IDENTIFICATION_TYPE');
+  append_row('ISDBA');
+  --
+  append_row('DB_DOMAIN');
+  append_row('DB_NAME');
+  append_row('DB_UNIQUE_NAME');
+  append_row('INSTANCE');
+  append_row('INSTANCE_NAME');
+  append_row('SERVER_HOST');
+  append_row('SERVICE_NAME');
+  --
+  append_row('ACTION');
+  append_row('AUDITED_CURSORID');
+  append_row('BG_JOB_ID');
+  append_row('CURRENT_BIND');
+  append_row('CURRENT_SCHEMAID');
+  append_row('CURRENT_SQL');
+  append_row('CURRENT_SQLn');
+  append_row('CURRENT_SQL_LENGTH');
+  append_row('ENTRYID');
+  append_row('FG_JOB_ID');
+  append_row('GLOBAL_CONTEXT_MEMORY');
+  append_row('GLOBAL_UID');
+  append_row('MODULE');
+  append_row('NETWORK_PROTOCOL');
+  append_row('SESSION_USERID');
+  append_row('SESSIONID');
+  append_row('SID');
+  append_row('STATEMENTID');
+  --
+  v_return := v_return || c_lflf;
+  return v_return;
+exception
+  when value_error then
+    --> we simply return here what we already have and forget about the rest...
+    return v_return;
+end get_user_env;
+
+--------------------------------------------------------------------------------
+
 procedure clob_append (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 ,
@@ -1164,6 +1273,28 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
+--------------------------------------------------------------------------------
+
+function  utl_md_tab_key_value_header return varchar2
+is
+begin
+  return
+    '| Key                            | Value                                              |' || c_lf ||
+    '|--------------------------------|----------------------------------------------------|' || c_lf;
+end;
+
+--------------------------------------------------------------------------------
+
+function  utl_md_tab_key_value_data (
+  p_key varchar2,
+  p_value varchar2)
+return varchar2 is
+begin
+  return '| ' ||
+    case when nvl(length(p_key),   0) < 30 then rpad(nvl(p_key  ,' '), 30, ' ') else p_key   end || ' | ' ||
+    case when nvl(length(p_value), 0) < 50 then rpad(nvl(p_value,' '), 50, ' ') else p_value end || ' |'  || c_lf;
+end;
+
 --------------------------------------------------------------------------------
 
 function utl_logging_is_enabled (
@@ -1326,8 +1457,8 @@ function utl_create_log_entry (
 return integer
 is
   pragma autonomous_transaction;
-  v_row           console_logs%rowtype;
-  v_message_cache varchar2(32767);
+  v_row   console_logs%rowtype;
+  v_cache vc_max;
 begin
   v_row.scope :=
     case
@@ -1339,8 +1470,8 @@ begin
   -- so we can do it without our clob_append method.
   v_row.message :=
     case
-      when p_message is not null then p_message
-      when sqlcode != 0 then sqlerrm
+      when p_message is not null then p_message || c_lflf
+      when sqlcode != 0 then sqlerrm || c_lflf
       else null
     end;
 
@@ -1362,17 +1493,19 @@ begin
     null; --FIXME implement
   end if;
 
-  if p_cgi_env then
-    null; --FIXME implement
+  if p_cgi_env or g_conf_cgi_env then
+    clob_append(v_row.message, v_cache, get_cgi_env);
   end if;
 
   if p_console_env then
     null; --FIXME implement
   end if;
 
-  if p_user_env then
-    null; --FIXME implement
+  if p_user_env or g_conf_user_env then
+    clob_append(v_row.message, v_cache, get_user_env);
   end if;
+
+  clob_flush_cache(v_row.message, v_cache);
 
   v_row.log_level         := p_level;
   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );

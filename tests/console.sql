@@ -17,7 +17,8 @@ begin
   console.debug     ('debug');
   console.trace     ('who is calling us?');
   console.trace     ();
-  console.log       ('stopping now');
+  console.log       (p_cgi_env => true);
+  console.log       (p_user_env => true);
   console.time_end;
   console.log       (console.time_end('Test CONSOLE'));
   console.exit;

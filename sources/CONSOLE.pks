@@ -818,6 +818,8 @@ end;
 
 **/
 
+--------------------------------------------------------------------------------
+
 function  get_scope return varchar2;
 /**
 
@@ -828,17 +830,44 @@ log entry.
 
 **/
 
+--------------------------------------------------------------------------------
+
 function  get_call_stack return varchar2;
 /**
 
 Get the current call stack (and error stack/backtrace, if available).
 
 Is used internally by console to provide the call stack for a log entry when
-requested by the logging method (which is the default for the methods error and
+requested by one of the logging methods (which is the default for error and
 trace).
 
 **/
 
+--------------------------------------------------------------------------------
+
+function get_cgi_env return varchar2;
+/**
+
+Get the current CGI environment.
+
+Is used internally by console to provide the CGI environment for a log entry
+when requested by one of the logging methods.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_user_env return varchar2;
+/**
+
+Get the current user environment.
+
+Is used internally by console to provide the user environment for a log entry
+when requested by one of the logging methods.
+
+**/
+
+--------------------------------------------------------------------------------
 procedure clob_append (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 ,
@@ -884,8 +913,6 @@ beeing a varchar2 parameter and clob_flush_cache below.
 
 **/
 
---------------------------------------------------------------------------------
-
 procedure clob_flush_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 );
@@ -904,6 +931,8 @@ Also see clob_append above.
 
 $if $$utils_public $then
 
+function  utl_md_tab_key_value_header return varchar2;
+function  utl_md_tab_key_value_data (p_key varchar2, p_value varchar2) return varchar2;
 function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
