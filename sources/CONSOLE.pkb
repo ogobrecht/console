@@ -30,9 +30,9 @@ c_client_id_prefix             constant varchar2 ( 6 byte) := '{o,o} ';
 c_console_pkg_name             constant varchar2 (60 byte) := upper($$plsql_unit) || '.';
 c_ctx_namespace                constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute           constant varchar2 (15 byte) := 'TEST';
-c_ctx_date_format              constant varchar2 (16 byte) := 'yyyymmddhh24miss';
+c_ctx_date_format              constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
 c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
-c_ctx_end_date                 constant varchar2 (15 byte) := 'END_DATE';
+c_ctx_exit_sysdate             constant varchar2 (15 byte) := 'EXIT_SYSDATE';
 c_ctx_cache_size               constant varchar2 (15 byte) := 'CACHE_SIZE';
 c_ctx_cache_duration           constant varchar2 (15 byte) := 'CACHE_DURATION';
 c_ctx_trace                    constant varchar2 (15 byte) := 'TRACE';
@@ -83,10 +83,10 @@ subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
 g_conf_context_available      boolean;
-g_conf_cache_valid_until_date date;
+g_conf_cache_valid_sysdate date;
 g_conf_client_identifier      varchar2 (64 byte);
 g_conf_log_level              pls_integer;
-g_conf_end_date               date;
+g_conf_exit_sysdate           date;
 g_conf_cache_size             integer;
 g_conf_cache_duration         integer;
 g_conf_trace                  boolean;
@@ -729,10 +729,11 @@ begin
   assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
   assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).'        );
   --
+  v_row.init_by           := substrb ( sys_context('USERENV', 'OS_USER'), 1, 64 );
+  v_row.init_sysdate      := sysdate;
+  v_row.exit_sysdate      := sysdate + 1/24/60 * p_log_duration;
   v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
   v_row.log_level         := p_log_level;
-  v_row.start_date        := localtimestamp;
-  v_row.end_date          := localtimestamp + 1/24/60 * p_log_duration;
   v_row.cache_size        := p_cache_size;
   v_row.cache_duration    := p_cache_duration;
   v_row.trace             := to_yn ( p_trace       );
@@ -740,7 +741,6 @@ begin
   v_row.apex_env          := to_yn ( p_apex_env    );
   v_row.cgi_env           := to_yn ( p_cgi_env     );
   v_row.console_env       := to_yn ( p_console_env );
-  v_row.init_by           := substrb ( sys_context('USERENV', 'OS_USER'), 1, 64 );
   --
   select count(*) into v_count from console_sessions where client_identifier = p_client_identifier;
   if v_count = 0 then
@@ -752,15 +752,15 @@ begin
   commit;
   --
   if g_conf_context_available then
-    set_context ( c_ctx_log_level      , to_char ( v_row.log_level      )                     , p_client_identifier );
-    set_context ( c_ctx_end_date       , to_char ( v_row.end_date       , c_ctx_date_format ) , p_client_identifier );
-    set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size     )                     , p_client_identifier );
-    set_context ( c_ctx_cache_duration , to_char ( v_row.cache_duration )                     , p_client_identifier );
-    set_context ( c_ctx_trace          , to_char ( v_row.trace          )                     , p_client_identifier );
-    set_context ( c_ctx_user_env       , to_char ( v_row.user_env       )                     , p_client_identifier );
-    set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env       )                     , p_client_identifier );
-    set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env        )                     , p_client_identifier );
-    set_context ( c_ctx_console_env    , to_char ( v_row.console_env    )                     , p_client_identifier );
+    set_context ( c_ctx_log_level      , to_char ( v_row.log_level                       ) , p_client_identifier );
+    set_context ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
+    set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
+    set_context ( c_ctx_cache_duration , to_char ( v_row.cache_duration                  ) , p_client_identifier );
+    set_context ( c_ctx_trace          , to_char ( v_row.trace                           ) , p_client_identifier );
+    set_context ( c_ctx_user_env       , to_char ( v_row.user_env                        ) , p_client_identifier );
+    set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env                        ) , p_client_identifier );
+    set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env                         ) , p_client_identifier );
+    set_context ( c_ctx_console_env    , to_char ( v_row.console_env                     ) , p_client_identifier );
   end if;
 
   -- If we want to monitor our own session, wee need to load the configuration
@@ -1268,6 +1268,38 @@ end get_user_env;
 
 --------------------------------------------------------------------------------
 
+function get_console_env return varchar2
+is
+  v_return vc_max;
+  --
+  procedure append_row (p_key varchar2, p_value varchar2) is
+  begin
+    v_return := v_return || to_md_tab_data(p_key, p_value);
+  end append_row;
+  --
+begin
+  v_return := '## Console Environment' || c_lflf || to_md_tab_header;
+  --
+  append_row('g_conf_context_available',     to_yn( g_conf_context_available                      ) );
+  append_row('g_conf_client_identifier',            g_conf_client_identifier                        );
+  append_row('g_conf_log_level',           to_char( g_conf_log_level                              ) );
+  append_row('g_conf_exit_sysdate',        to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
+  append_row('g_conf_cache_valid_sysdate', to_char( g_conf_cache_valid_sysdate, c_ctx_date_format ) );
+  append_row('g_conf_cache_size',          to_char( g_conf_cache_size                             ) );
+  append_row('g_conf_cache_duration',      to_char( g_conf_cache_duration                         ) );
+  append_row('g_conf_trace',                 to_yn( g_conf_trace                                  ) );
+  append_row('g_conf_user_env',              to_yn( g_conf_user_env                               ) );
+  append_row('g_conf_apex_env',              to_yn( g_conf_apex_env                               ) );
+  append_row('g_conf_cgi_env',               to_yn( g_conf_cgi_env                                ) );
+  append_row('g_conf_console_env',           to_yn( g_conf_console_env                            ) );
+  --
+  v_return := v_return || c_lflf;
+  --
+  return v_return;
+end get_console_env;
+
+--------------------------------------------------------------------------------
+
 procedure clob_append (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 ,
@@ -1329,7 +1361,7 @@ function utl_logging_is_enabled (
   p_level integer )
 return boolean is
 begin
-  if g_conf_cache_valid_until_date < sysdate then
+  if g_conf_cache_valid_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
   return g_conf_log_level >= p_level or sqlcode != 0;
@@ -1355,15 +1387,14 @@ function utl_read_row_from_sessions (
 return console_sessions%rowtype result_cache is
   v_row console_sessions%rowtype;
 begin
-  for i in (
-    select *
-      from console_sessions
-     where client_identifier = p_client_identifier
-       and end_date >= sysdate)
-  loop
-    v_row := i;
-  end loop;
+  select *
+    into v_row
+    from console_sessions
+   where client_identifier = p_client_identifier;
   return v_row;
+exception
+  when no_data_found then
+    return v_row;
 end utl_read_row_from_sessions;
 
 --------------------------------------------------------------------------------
@@ -1408,9 +1439,24 @@ end;
 
 procedure utl_load_session_configuration is
   v_row console_sessions%rowtype;
-begin
-  if g_conf_context_available then
-    g_conf_end_date       := to_date   ( sys_context ( c_ctx_namespace, c_ctx_end_date       ) , c_ctx_date_format );
+  --
+  procedure set_default_config is
+  begin
+    --We have no real conf until now, so we fake 24 hours.
+    --Conf will be reevaluated at least every 10 seconds.
+    g_conf_exit_sysdate   := sysdate + 1;
+    g_conf_log_level      := 1;
+    g_conf_cache_size     := 0;
+    g_conf_cache_duration := 10;
+    g_conf_trace          := false;
+    g_conf_user_env       := false;
+    g_conf_apex_env       := false;
+    g_conf_cgi_env        := false;
+    g_conf_console_env    := false;
+  end set_default_config;
+  --
+  procedure load_config_from_context is
+  begin
     g_conf_log_level      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level      ) );
     g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
     g_conf_cache_duration := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_duration ) );
@@ -1419,10 +1465,10 @@ begin
     g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
     g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
     g_conf_console_env    := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env    ) );
-  else
-    v_row := utl_read_row_from_sessions (g_conf_client_identifier);
-    --
-    g_conf_end_date       :=           v_row.end_date        ;
+  end load_config_from_context;
+  --
+  procedure load_config_from_table_row is
+  begin
     g_conf_log_level      :=           v_row.log_level       ;
     g_conf_cache_size     :=           v_row.cache_size      ;
     g_conf_cache_duration :=           v_row.cache_duration  ;
@@ -1431,29 +1477,34 @@ begin
     g_conf_apex_env       := to_bool ( v_row.apex_env       );
     g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
     g_conf_console_env    := to_bool ( v_row.console_env    );
+  end load_config_from_table_row;
+  --
+begin
+  if g_conf_context_available then
+
+    g_conf_exit_sysdate := to_date(sys_context(c_ctx_namespace, c_ctx_exit_sysdate), c_ctx_date_format);
+    if g_conf_exit_sysdate is null then
+      set_default_config;
+    elsif g_conf_exit_sysdate < sysdate then
+      utl_clear_context(g_conf_client_identifier);
+      set_default_config;
+    else
+      load_config_from_context;
+    end if;
+
+  else
+
+    v_row := utl_read_row_from_sessions(g_conf_client_identifier);
+    g_conf_exit_sysdate := v_row.exit_sysdate;
+    if g_conf_exit_sysdate is null or g_conf_exit_sysdate < sysdate then
+      set_default_config;
+    else
+      load_config_from_table_row;
+    end if;
+
   end if;
 
-  --handle nulls
-  if g_conf_end_date is null then
-     --We have no real conf until now, so we fake 24 hours.
-     --Conf will be rechecked at least every 10 seconds.
-    g_conf_end_date := sysdate + 1;
-  elsif g_conf_end_date < sysdate then
-    utl_clear_context(g_conf_client_identifier);
-  end if;
-  g_conf_cache_valid_until_date := least(g_conf_end_date, sysdate + 1/24/60/60*10);
-  --
-  if g_conf_log_level is null then
-    g_conf_log_level := 1;
-  end if;
-  --
-  if g_conf_cache_size is null then
-    g_conf_cache_size := 0;
-  end if;
-  --
-  if g_conf_cache_duration is null then
-    g_conf_cache_duration := 10;
-  end if;
+  g_conf_cache_valid_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60*10);
 
 end utl_load_session_configuration;
 
@@ -1525,8 +1576,8 @@ begin
     clob_append(v_row.message, v_cache, get_cgi_env);
   end if;
 
-  if p_console_env then
-    null; --FIXME implement
+  if p_console_env or g_conf_console_env then
+    clob_append(v_row.message, v_cache, get_console_env);
   end if;
 
   if p_user_env or g_conf_user_env then

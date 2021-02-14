@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.15.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.15.1'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -903,6 +903,18 @@ function get_user_env return varchar2;
 Get the current user environment.
 
 Is used internally by console to provide the user environment for a log entry
+when requested by one of the logging methods.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_console_env return varchar2;
+/**
+
+Get the current console environment.
+
+Is used internally by console to provide the console environment for a log entry
 when requested by one of the logging methods.
 
 **/

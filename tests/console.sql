@@ -19,9 +19,10 @@ begin
   console.trace     ();
   console.log       (p_cgi_env => true);
   console.log       (p_user_env => true);
+  console.log       (p_console_env => true);
   console.time_end;
   console.log       (console.time_end('Test CONSOLE'));
-  console.exit;
+  --console.exit;
   raise_application_error(-20000, 'Test exception');
 exception
   when others then

@@ -87,6 +87,8 @@ Feedback and help is welcome.*
   - [X] [console.to_yn](docs/console.md#to_yn) &
     [to_bool](docs/console.md#to_bool)
   - [X] [console.to_html_table](docs/console.md#to_html_table)
+  - [X] [console.to_md_tab_header](docs/console.md#to_md_tab_header) &
+    [to_md_tab_data](docs/console.md#to_md_tab_data)
   - [X] [console.get_runtime](docs/console.md#get_runtime) &
     [get_runtime_seconds](docs/console.md#get_runtime_seconds)
   - [X] [console.get_scope](docs/console.md#get_scope) &
