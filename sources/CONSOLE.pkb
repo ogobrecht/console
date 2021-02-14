@@ -116,13 +116,6 @@ procedure utl_flush_log_cache;
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
 --
-function  utl_md_tab_key_value_header return varchar2;
-function  utl_md_tab_key_value_data (
-  p_key varchar2,
-  p_value varchar2,
-  p_max_value_length integer default 1000)
-return varchar2;
---
 function utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
@@ -1011,6 +1004,37 @@ end to_html_table;
 
 --------------------------------------------------------------------------------
 
+function to_md_tab_header (
+  p_key   varchar2 default 'Attribute' ,
+  p_value varchar2 default 'Value'     )
+return varchar2 is
+begin
+  return '| ' ||
+    case when nvl(length(p_key),   0) < 30 then rpad(nvl(p_key  ,' '), 30, ' ') else p_key   end || ' | ' ||
+    case when nvl(length(p_value), 0) < 43 then rpad(nvl(p_value,' '), 43, ' ') else p_value end || ' |'  || c_lf ||
+    '| ------------------------------ | ------------------------------------------- |' || c_lf;
+end;
+
+--------------------------------------------------------------------------------
+
+function to_md_tab_data (
+  p_key              varchar2              ,
+  p_value            varchar2              ,
+  p_value_max_length integer  default 1000 )
+return varchar2 is
+  v_value vc_max;
+begin
+  v_value := replace(replace(replace(substr(p_value, 1, p_value_max_length),
+    c_crlf, ' '),
+    c_lf,   ' '),
+    c_cr,   ' ');
+  return '| ' ||
+    case when nvl(length(p_key),   0) < 30 then rpad(nvl(p_key  ,' '), 30, ' ') else p_key   end || ' | ' ||
+    case when nvl(length(p_value), 0) < 43 then rpad(nvl(p_value,' '), 43, ' ') else p_value end || ' |'  || c_lf;
+end;
+
+--------------------------------------------------------------------------------
+
 function get_runtime ( p_start timestamp ) return varchar2 is
   v_runtime varchar2(32);
 begin
@@ -1120,10 +1144,10 @@ function get_cgi_env return varchar2
 is
   v_return vc_max;
 begin
-  v_return := '## CGI Environment' || c_lflf || utl_md_tab_key_value_header;
+  v_return := '## CGI Environment' || c_lflf || to_md_tab_header;
   for i in 1 .. nvl(owa.num_cgi_vars, 0) loop
     v_return := v_return ||
-      utl_md_tab_key_value_data(
+      to_md_tab_data(
         p_key   => owa.cgi_var_name(i) ,
         p_value => owa.cgi_var_val (i) );
   end loop;
@@ -1145,17 +1169,17 @@ is
   --
   procedure append_row (p_key varchar2) is
   begin
-    v_return := v_return || utl_md_tab_key_value_data(
+    v_return := v_return || to_md_tab_data(
       p_key              => p_key                         ,
       p_value            => sys_context('USERENV', p_key) ,
-      p_max_value_length => 4000); --> we do this for the CURRENT_SQL attribute, which can have up to 4000 bytes
+      p_value_max_length => 4000); --> we do this for the CURRENT_SQL attribute, which can have up to 4000 bytes
   exception
     when invalid_user_env_key then
       null;
   end append_row;
   --
 begin
-  v_return := '## User Environment' || c_lflf || utl_md_tab_key_value_header;
+  v_return := '## User Environment' || c_lflf || to_md_tab_header;
   --
   append_row('ACTION');
   append_row('AUDITED_CURSORID');
@@ -1233,8 +1257,8 @@ begin
   append_row('UNIFIED_AUDIT_SESSIONID');
   --
   v_return := v_return || c_lf ||
-    'We tried to show documented attributes from Oracle 19c. On older databases not' || c_lf ||
-    'existing attributes are simply omitted.' || c_lflf;
+    'We tried to show [documented attributes from Oracle 19c](https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SYS_CONTEXT.html#GUID-B9934A5D-D97B-4E51-B01B-80C76A5BD086).' || c_lf ||
+    'On older databases not existing attributes are simply omitted.' || c_lflf;
   return v_return;
 exception
   when value_error then
@@ -1299,34 +1323,6 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
---------------------------------------------------------------------------------
-
-function  utl_md_tab_key_value_header return varchar2
-is
-begin
-  return
-    '| Key                            | Value                                       |' || c_lf ||
-    '| ------------------------------ | ------------------------------------------- |' || c_lf;
-end;
-
---------------------------------------------------------------------------------
-
-function  utl_md_tab_key_value_data (
-  p_key              varchar2,
-  p_value            varchar2,
-  p_max_value_length integer default 1000)
-return varchar2 is
-  v_value vc_max;
-begin
-  v_value := replace(replace(replace(substr(p_value, 1, p_max_value_length),
-    c_crlf, ' '),
-    c_lf,   ' '),
-    c_cr,   ' ');
-  return '| ' ||
-    case when nvl(length(p_key),   0) < 30 then rpad(nvl(p_key  ,' '), 30, ' ') else p_key   end || ' | ' ||
-    case when nvl(length(p_value), 0) < 43 then rpad(nvl(p_value,' '), 43, ' ') else p_value end || ' |'  || c_lf;
-end;
-
 --------------------------------------------------------------------------------
 
 function utl_logging_is_enabled (

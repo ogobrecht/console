@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.5'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.15.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -767,6 +767,46 @@ end;
 
 --------------------------------------------------------------------------------
 
+function to_md_tab_header (
+  p_key              varchar2 default 'Attribute' ,
+  p_value            varchar2 default 'Value'     )
+return varchar2;
+/**
+
+Converts the given key and value strings to a Markdown table header.
+
+`to_md_tab_header` will return the following Markdown table header:
+
+```md
+| Attribute                      | Value                                       |
+| ------------------------------ | ------------------------------------------- |
+```
+
+**/
+
+function to_md_tab_data (
+  p_key              varchar2              ,
+  p_value            varchar2              ,
+  p_value_max_length integer  default 1000 )
+return varchar2;
+/**
+
+Converts the given key and value strings to a Markdown table data row.
+
+EXAMPLE
+
+`to_md_tab_header('CLIENT_IDENTIFIER', '{o,o} 4C8E71DF0001')` will return the
+following Markdown table row:
+
+```md
+| CLIENT_IDENTIFIER              | {o,o} 4C8E71DF0001                          |
+
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
 function  get_runtime ( p_start timestamp ) return varchar2;
 /**
 
@@ -940,13 +980,6 @@ procedure utl_clear_context ( p_client_identifier varchar2 );
 procedure utl_flush_log_cache;
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
---
-function  utl_md_tab_key_value_header return varchar2;
-function  utl_md_tab_key_value_data (
-  p_key varchar2,
-  p_value varchar2,
-  p_max_value_length integer default 1000)
-return varchar2;
 --
 function utl_create_log_entry (
   p_level           integer                ,

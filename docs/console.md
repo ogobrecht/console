@@ -46,6 +46,8 @@ Oracle Instrumentation Console
 - [Function to_yn](#to_yn)
 - [Function to_bool](#to_bool)
 - [Function to_html_table](#to_html_table)
+- [Function to_md_tab_header](#to_md_tab_header)
+- [Function to_md_tab_data](#to_md_tab_data)
 - [Function get_runtime](#get_runtime)
 - [Function get_runtime_seconds](#get_runtime_seconds)
 - [Function get_scope](#get_scope)
@@ -73,7 +75,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.5'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.15.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1021,6 +1023,54 @@ function to_html_table (
   p_max_rows          integer  default 100  ,
   p_max_column_length integer  default 1000 )
 return clob;
+```
+
+
+<h2><a id="to_md_tab_header"></a>Function to_md_tab_header</h2>
+<!------------------------------------------------------------>
+
+Converts the given key and value strings to a Markdown table header.
+
+`to_md_tab_header` will return the following Markdown table header:
+
+```md
+| Attribute                      | Value                                       |
+| ------------------------------ | ------------------------------------------- |
+```
+
+SIGNATURE
+
+```sql
+function to_md_tab_header (
+  p_key              varchar2 default 'Attribute' ,
+  p_value            varchar2 default 'Value'     )
+return varchar2;
+```
+
+
+<h2><a id="to_md_tab_data"></a>Function to_md_tab_data</h2>
+<!-------------------------------------------------------->
+
+Converts the given key and value strings to a Markdown table data row.
+
+EXAMPLE
+
+`to_md_tab_header('CLIENT_IDENTIFIER', '{o,o} 4C8E71DF0001')` will return the
+following Markdown table row:
+
+```md
+| CLIENT_IDENTIFIER              | {o,o} 4C8E71DF0001                          |
+
+```
+
+SIGNATURE
+
+```sql
+function to_md_tab_data (
+  p_key              varchar2              ,
+  p_value            varchar2              ,
+  p_value_max_length integer  default 1000 )
+return varchar2;
 ```
 
 
