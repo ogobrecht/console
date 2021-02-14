@@ -10,8 +10,8 @@ Feedback and help is welcome.*
 ## Easy to install
 
 - Works with or without a context.
-- Has a single installation script (can be installed and tested on
-  apex.oracle.com via "SQL Workshop > SQL Scripts").
+- Has a single installation script (can be installed on apex.oracle.com via "SQL
+  Workshop > SQL Scripts").
 - If you cannot wait to test it out: Open SQLcl, connect to your desired install
     schema and call
     `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`.
@@ -67,7 +67,7 @@ Feedback and help is welcome.*
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
   - [X] [console.init](docs/console.md#init) & [exit](docs/console.md#exit) the
-    logging mode for a specific client identifier
+    logging mode for a specific session by the client identifier
   - [X] [console.my_client_identifier](docs/console.md#my_client_identifier) &
     [my_log_level](docs/console.md#my_log_level)
   - [X] [console.context_is_available](docs/console.md#context_is_available) &

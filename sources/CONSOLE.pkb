@@ -106,8 +106,6 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
-function  utl_md_tab_key_value_header return varchar2;
-function  utl_md_tab_key_value_data (p_key varchar2, p_value varchar2) return varchar2;
 function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -117,6 +115,13 @@ procedure utl_clear_context ( p_client_identifier varchar2 );
 procedure utl_flush_log_cache;
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
+--
+function  utl_md_tab_key_value_header return varchar2;
+function  utl_md_tab_key_value_data (
+  p_key varchar2,
+  p_value varchar2,
+  p_max_value_length integer default 1000)
+return varchar2;
 --
 function utl_create_log_entry (
   p_level           integer                ,
@@ -1141,8 +1146,9 @@ is
   procedure append_row (p_key varchar2) is
   begin
     v_return := v_return || utl_md_tab_key_value_data(
-      p_key   => p_key                         ,
-      p_value => sys_context('USERENV', p_key) );
+      p_key              => p_key                         ,
+      p_value            => sys_context('USERENV', p_key) ,
+      p_max_value_length => 4000); --> we do this for the CURRENT_SQL attribute, which can have up to 4000 bytes
   exception
     when invalid_user_env_key then
       null;
@@ -1151,64 +1157,84 @@ is
 begin
   v_return := '## User Environment' || c_lflf || utl_md_tab_key_value_header;
   --
+  append_row('ACTION');
+  append_row('AUDITED_CURSORID');
+  append_row('AUTHENTICATED_IDENTITY');
+  append_row('AUTHENTICATION_DATA');
+  append_row('AUTHENTICATION_METHOD');
+  append_row('BG_JOB_ID');
+  append_row('CDB_DOMAIN');
+  append_row('CDB_NAME');
+  append_row('CLIENT_IDENTIFIER');
+  append_row('CLIENT_INFO');
+  append_row('CLIENT_PROGRAM_NAME');
+  append_row('CON_ID');
+  append_row('CON_NAME');
+  append_row('CURRENT_BIND');
+  append_row('CURRENT_EDITION_ID');
+  append_row('CURRENT_EDITION_NAME');
+  append_row('CURRENT_SCHEMA');
+  append_row('CURRENT_SCHEMAID');
+  append_row('CURRENT_SQL_LENGTH');
+  append_row('CURRENT_SQL');
+  append_row('CURRENT_USER');
+  append_row('CURRENT_USERID');
+  append_row('DATABASE_ROLE');
+  append_row('DB_DOMAIN');
+  append_row('DB_NAME');
+  append_row('DB_SUPPLEMENTAL_LOG_LEVEL');
+  append_row('DB_UNIQUE_NAME');
+  append_row('DBLINK_INFO');
+  append_row('ENTERPRISE_IDENTITY');
+  append_row('ENTRYID');
+  append_row('FG_JOB_ID');
+  append_row('GLOBAL_CONTEXT_MEMORY');
+  append_row('GLOBAL_UID');
+  append_row('HOST');
+  append_row('IDENTIFICATION_TYPE');
+  append_row('INSTANCE_NAME');
+  append_row('INSTANCE');
+  append_row('IP_ADDRESS');
+  append_row('IS_APPLICATION_PDB');
+  append_row('IS_APPLICATION_ROOT');
+  append_row('IS_APPLY_SERVER');
+  append_row('IS_DG_ROLLING_UPGRADE');
+  append_row('ISDBA');
+  append_row('LANG');
+  append_row('LANGUAGE');
+  append_row('LDAP_SERVER_TYPE');
+  append_row('MODULE');
+  append_row('NETWORK_PROTOCOL');
   append_row('NLS_CALENDAR');
   append_row('NLS_CURRENCY');
   append_row('NLS_DATE_FORMAT');
   append_row('NLS_DATE_LANGUAGE');
   append_row('NLS_SORT');
   append_row('NLS_TERRITORY');
-  append_row('LANG');
-  append_row('LANGUAGE');
-  --
-  append_row('CURRENT_SCHEMA');
-  append_row('SESSION_USER');
+  append_row('ORACLE_HOME');
   append_row('OS_USER');
-  append_row('CLIENT_IDENTIFIER');
-  append_row('CLIENT_INFO');
-  append_row('IP_ADDRESS');
-  append_row('HOST');
-  append_row('TERMINAL');
-  --
-  append_row('AUTHENTICATED_IDENTITY');
-  append_row('AUTHENTICATION_DATA');
-  append_row('AUTHENTICATION_METHOD');
-  append_row('ENTERPRISE_IDENTITY');
+  append_row('PLATFORM_SLASH');
   append_row('POLICY_INVOKER');
   append_row('PROXY_ENTERPRISE_IDENTITY');
-  append_row('PROXY_GLOBAL_UID');
   append_row('PROXY_USER');
   append_row('PROXY_USERID');
-  append_row('IDENTIFICATION_TYPE');
-  append_row('ISDBA');
-  --
-  append_row('DB_DOMAIN');
-  append_row('DB_NAME');
-  append_row('DB_UNIQUE_NAME');
-  append_row('INSTANCE');
-  append_row('INSTANCE_NAME');
+  append_row('SCHEDULER_JOB');
   append_row('SERVER_HOST');
   append_row('SERVICE_NAME');
-  --
-  append_row('ACTION');
-  append_row('AUDITED_CURSORID');
-  append_row('BG_JOB_ID');
-  append_row('CURRENT_BIND');
-  append_row('CURRENT_SCHEMAID');
-  append_row('CURRENT_SQL');
-  append_row('CURRENT_SQLn');
-  append_row('CURRENT_SQL_LENGTH');
-  append_row('ENTRYID');
-  append_row('FG_JOB_ID');
-  append_row('GLOBAL_CONTEXT_MEMORY');
-  append_row('GLOBAL_UID');
-  append_row('MODULE');
-  append_row('NETWORK_PROTOCOL');
+  append_row('SESSION_DEFAULT_COLLATION');
+  append_row('SESSION_EDITION_ID');
+  append_row('SESSION_EDITION_NAME');
+  append_row('SESSION_USER');
   append_row('SESSION_USERID');
   append_row('SESSIONID');
   append_row('SID');
   append_row('STATEMENTID');
+  append_row('TERMINAL');
+  append_row('UNIFIED_AUDIT_SESSIONID');
   --
-  v_return := v_return || c_lflf;
+  v_return := v_return || c_lf ||
+    'We tried to show documented attributes from Oracle 19c. On older databases not' || c_lf ||
+    'existing attributes are simply omitted.' || c_lflf;
   return v_return;
 exception
   when value_error then
@@ -1279,20 +1305,26 @@ function  utl_md_tab_key_value_header return varchar2
 is
 begin
   return
-    '| Key                            | Value                                              |' || c_lf ||
-    '|--------------------------------|----------------------------------------------------|' || c_lf;
+    '| Key                            | Value                                       |' || c_lf ||
+    '| ------------------------------ | ------------------------------------------- |' || c_lf;
 end;
 
 --------------------------------------------------------------------------------
 
 function  utl_md_tab_key_value_data (
-  p_key varchar2,
-  p_value varchar2)
+  p_key              varchar2,
+  p_value            varchar2,
+  p_max_value_length integer default 1000)
 return varchar2 is
+  v_value vc_max;
 begin
+  v_value := replace(replace(replace(substr(p_value, 1, p_max_value_length),
+    c_crlf, ' '),
+    c_lf,   ' '),
+    c_cr,   ' ');
   return '| ' ||
     case when nvl(length(p_key),   0) < 30 then rpad(nvl(p_key  ,' '), 30, ' ') else p_key   end || ' | ' ||
-    case when nvl(length(p_value), 0) < 50 then rpad(nvl(p_value,' '), 50, ' ') else p_value end || ' |'  || c_lf;
+    case when nvl(length(p_value), 0) < 43 then rpad(nvl(p_value,' '), 43, ' ') else p_value end || ' |'  || c_lf;
 end;
 
 --------------------------------------------------------------------------------

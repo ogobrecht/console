@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.14.4'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.14.5'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -931,8 +931,6 @@ Also see clob_append above.
 
 $if $$utils_public $then
 
-function  utl_md_tab_key_value_header return varchar2;
-function  utl_md_tab_key_value_data (p_key varchar2, p_value varchar2) return varchar2;
 function  utl_logging_is_enabled ( p_level integer ) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
@@ -942,6 +940,13 @@ procedure utl_clear_context ( p_client_identifier varchar2 );
 procedure utl_flush_log_cache;
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
+--
+function  utl_md_tab_key_value_header return varchar2;
+function  utl_md_tab_key_value_data (
+  p_key varchar2,
+  p_value varchar2,
+  p_max_value_length integer default 1000)
+return varchar2;
 --
 function utl_create_log_entry (
   p_level           integer                ,
