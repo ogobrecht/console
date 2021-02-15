@@ -52,6 +52,7 @@ Oracle Instrumentation Console
 - [Function get_runtime_seconds](#get_runtime_seconds)
 - [Function get_scope](#get_scope)
 - [Function get_call_stack](#get_call_stack)
+- [Function get_apex_env](#get_apex_env)
 - [Function get_cgi_env](#get_cgi_env)
 - [Function get_user_env](#get_user_env)
 - [Function get_console_env](#get_console_env)
@@ -76,7 +77,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.15.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.16.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -148,7 +149,7 @@ SIGNATURE
 ```sql
 procedure error (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -175,7 +176,7 @@ SIGNATURE
 ```sql
 function error (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -198,7 +199,7 @@ SIGNATURE
 ```sql
 procedure warn (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -220,7 +221,7 @@ SIGNATURE
 ```sql
 procedure info (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -242,7 +243,7 @@ SIGNATURE
 ```sql
 procedure log(
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -264,7 +265,7 @@ SIGNATURE
 ```sql
 procedure debug (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -369,7 +370,7 @@ SIGNATURE
 ```sql
 procedure trace (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -842,7 +843,7 @@ procedure init (
   p_log_duration      integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
   p_cache_duration    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_trace             boolean  default false        , -- Should the call stack be included.
+  p_call_stack        boolean  default false        , -- Should the call stack be included.
   p_user_env          boolean  default false        , -- Should the user environment be included.
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.
   p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
@@ -1162,6 +1163,21 @@ SIGNATURE
 
 ```sql
 function  get_call_stack return varchar2;
+```
+
+
+<h2><a id="get_apex_env"></a>Function get_apex_env</h2>
+<!---------------------------------------------------->
+
+Get the current APEX environment.
+
+Is used internally by console to provide the APEX environment for a log entry
+when requested by one of the logging methods.
+
+SIGNATURE
+
+```sql
+function get_apex_env return clob;
 ```
 
 

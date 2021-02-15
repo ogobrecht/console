@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.15.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.16.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -71,7 +71,7 @@ on cleanup.
 
 procedure error (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -88,7 +88,7 @@ Log a message with the level 1 (error).
 
 function error (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -113,7 +113,7 @@ function](https://docs.oracle.com/en/database/oracle/application-express/20.2/ae
 
 procedure warn (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -132,7 +132,7 @@ Log a message with the level 2 (warning).
 
 procedure info (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -151,7 +151,7 @@ Log a message with the level 3 (info).
 
 procedure log(
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -170,7 +170,7 @@ Log a message with the level 3 (info).
 
 procedure debug (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -265,7 +265,7 @@ end;
 
 procedure trace (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -548,7 +548,7 @@ procedure init (
   p_log_duration      integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
   p_cache_duration    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_trace             boolean  default false        , -- Should the call stack be included.
+  p_call_stack        boolean  default false        , -- Should the call stack be included.
   p_user_env          boolean  default false        , -- Should the user environment be included.
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.
   p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
@@ -604,7 +604,7 @@ procedure init (
   p_log_duration   integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size     integer default 0            , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
   p_cache_duration integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
-  p_trace          boolean default false        , -- Should the call stack be included.
+  p_call_stack     boolean default false        , -- Should the call stack be included.
   p_user_env       boolean default false        , -- Should the user environment be included.
   p_apex_env       boolean default false        , -- Should the APEX environment be included.
   p_cgi_env        boolean default false        , -- Should the CGI environment be included.
@@ -885,6 +885,18 @@ trace).
 
 --------------------------------------------------------------------------------
 
+function get_apex_env return clob;
+/**
+
+Get the current APEX environment.
+
+Is used internally by console to provide the APEX environment for a log entry
+when requested by one of the logging methods.
+
+**/
+
+--------------------------------------------------------------------------------
+
 function get_cgi_env return varchar2;
 /**
 
@@ -983,12 +995,13 @@ Also see clob_append above.
 
 $if $$utils_public $then
 
-function  utl_logging_is_enabled ( p_level integer ) return boolean;
+function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
+function  utl_logging_is_enabled (p_level integer) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
-function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
+function  utl_read_row_from_sessions (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
-procedure utl_clear_context ( p_client_identifier varchar2 );
+procedure utl_clear_context (p_client_identifier varchar2);
 procedure utl_flush_log_cache;
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
@@ -996,7 +1009,7 @@ procedure utl_set_client_identifier;
 function utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -1009,7 +1022,7 @@ return integer;
 procedure utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,

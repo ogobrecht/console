@@ -107,12 +107,13 @@ g_counters tab_counters;
 
 $if not $$utils_public $then
 
-function  utl_logging_is_enabled ( p_level integer ) return boolean;
+function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
+function  utl_logging_is_enabled (p_level integer) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
-function  utl_read_row_from_sessions ( p_client_identifier varchar2 ) return console_sessions%rowtype result_cache;
+function  utl_read_row_from_sessions (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
-procedure utl_clear_context ( p_client_identifier varchar2 );
+procedure utl_clear_context (p_client_identifier varchar2);
 procedure utl_flush_log_cache;
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
@@ -120,7 +121,7 @@ procedure utl_set_client_identifier;
 function utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -133,7 +134,7 @@ return integer;
 procedure utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -176,7 +177,7 @@ end permanent;
 
 procedure error (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -190,7 +191,7 @@ begin
   utl_create_log_entry (
     p_level           => c_level_error   ,
     p_message         => p_message         ,
-    p_trace           => p_trace           ,
+    p_call_stack      => p_call_stack      ,
     p_apex_env        => p_apex_env        ,
     p_cgi_env         => p_cgi_env         ,
     p_console_env     => p_console_env     ,
@@ -203,7 +204,7 @@ end error;
 
 function error (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -217,7 +218,7 @@ begin
   return utl_create_log_entry (
     p_level           => c_level_error   ,
     p_message         => p_message         ,
-    p_trace           => p_trace           ,
+    p_call_stack      => p_call_stack      ,
     p_apex_env        => p_apex_env        ,
     p_cgi_env         => p_cgi_env         ,
     p_console_env     => p_console_env     ,
@@ -232,7 +233,7 @@ end;
 
 procedure warn (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -247,7 +248,7 @@ begin
     utl_create_log_entry (
       p_level           => c_level_warning ,
       p_message         => p_message         ,
-      p_trace           => p_trace           ,
+      p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
       p_console_env     => p_console_env     ,
@@ -263,7 +264,7 @@ end warn;
 
 procedure info (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -278,7 +279,7 @@ begin
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
-      p_trace           => p_trace           ,
+      p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
       p_console_env     => p_console_env     ,
@@ -294,7 +295,7 @@ end info;
 
 procedure log (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -309,7 +310,7 @@ begin
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
-      p_trace           => p_trace           ,
+      p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
       p_console_env     => p_console_env     ,
@@ -325,7 +326,7 @@ end log;
 
 procedure debug (
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -340,7 +341,7 @@ begin
     utl_create_log_entry (
       p_level           => c_level_verbose ,
       p_message         => p_message         ,
-      p_trace           => p_trace           ,
+      p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
       p_console_env     => p_console_env     ,
@@ -391,7 +392,7 @@ end table#;
 
 procedure trace (
   p_message         clob     default null  ,
-  p_trace           boolean  default true  ,
+  p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -406,7 +407,7 @@ begin
     utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
-      p_trace           => p_trace           ,
+      p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
       p_console_env     => p_console_env     ,
@@ -591,7 +592,7 @@ begin
         --FIXME what about other attributes like p_error.component?
       v_reference_id := error (
         p_message         => v_message               ,
-        p_trace           => false                   ,
+        p_call_stack      => false                   ,
         p_user_error_code => p_error.ora_sqlcode     ,
         p_user_call_stack => p_error.error_backtrace );
       -- Change the message to the generic error message which doesn't expose
@@ -691,7 +692,7 @@ procedure init (
   p_log_duration      integer  default 60           ,
   p_cache_size        integer  default 0            ,
   p_cache_duration    integer  default 10           ,
-  p_trace             boolean  default false        ,
+  p_call_stack        boolean  default false        ,
   p_user_env          boolean  default false        ,
   p_apex_env          boolean  default false        ,
   p_cgi_env           boolean  default false        ,
@@ -724,7 +725,7 @@ begin
   assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
   assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).'  );
   assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).'   );
-  assert ( p_trace          is not null,        'Trace needs to be true or false (not null).'              );
+  assert ( p_call_stack     is not null,        'Trace needs to be true or false (not null).'              );
   assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
   assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
   assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
@@ -739,7 +740,7 @@ begin
   v_row.log_level         := p_log_level;
   v_row.cache_size        := p_cache_size;
   v_row.cache_duration    := p_cache_duration;
-  v_row.trace             := to_yn ( p_trace       );
+  v_row.trace             := to_yn ( p_call_stack  );
   v_row.user_env          := to_yn ( p_user_env    );
   v_row.apex_env          := to_yn ( p_apex_env    );
   v_row.cgi_env           := to_yn ( p_cgi_env     );
@@ -781,7 +782,7 @@ procedure init (
   p_log_duration   integer default 60             ,
   p_cache_size     integer default 0              ,
   p_cache_duration integer default 10             ,
-  p_trace          boolean default false          ,
+  p_call_stack     boolean default false          ,
   p_user_env       boolean default false          ,
   p_apex_env       boolean default false          ,
   p_cgi_env        boolean default false          ,
@@ -1007,14 +1008,29 @@ end to_html_table;
 
 --------------------------------------------------------------------------------
 
+function utl_escape_md_tab_text (p_text varchar2) return varchar2 is
+begin
+  return replace(replace(replace(replace(p_text,
+    c_crlf,   ' '),
+    c_lf,     ' '),
+    c_cr,     ' '),
+    '|', '&#124;');
+end;
+
+--------------------------------------------------------------------------------
+
 function to_md_tab_header (
   p_key   varchar2 default 'Attribute' ,
   p_value varchar2 default 'Value'     )
 return varchar2 is
+  v_key   vc_max;
+  v_value vc_max;
 begin
+  v_key   := utl_escape_md_tab_text(p_key);
+  v_value := utl_escape_md_tab_text(p_value);
   return '| ' ||
-    case when nvl(length(p_key),   0) < 30 then rpad(nvl(p_key  ,' '), 30, ' ') else p_key   end || ' | ' ||
-    case when nvl(length(p_value), 0) < 43 then rpad(nvl(p_value,' '), 43, ' ') else p_value end || ' |'  || c_lf ||
+    case when nvl(length(v_key),   0) < 30 then rpad(nvl(v_key  ,' '), 30, ' ') else v_key   end || ' | ' ||
+    case when nvl(length(v_value), 0) < 43 then rpad(nvl(v_value,' '), 43, ' ') else v_value end || ' |'  || c_lf ||
     '| ------------------------------ | ------------------------------------------- |' || c_lf;
 end;
 
@@ -1025,15 +1041,14 @@ function to_md_tab_data (
   p_value            varchar2              ,
   p_value_max_length integer  default 1000 )
 return varchar2 is
+  v_key   vc_max;
   v_value vc_max;
 begin
-  v_value := replace(replace(replace(substr(p_value, 1, p_value_max_length),
-    c_crlf, ' '),
-    c_lf,   ' '),
-    c_cr,   ' ');
+  v_key   := utl_escape_md_tab_text(p_key);
+  v_value := utl_escape_md_tab_text(substr(p_value, 1, p_value_max_length));
   return '| ' ||
-    case when nvl(length(p_key),   0) < 30 then rpad(nvl(p_key  ,' '), 30, ' ') else p_key   end || ' | ' ||
-    case when nvl(length(p_value), 0) < 43 then rpad(nvl(p_value,' '), 43, ' ') else p_value end || ' |'  || c_lf;
+    case when nvl(length(v_key),   0) < 30 then rpad(nvl(v_key  ,' '), 30, ' ') else v_key   end || ' | ' ||
+    case when nvl(length(v_value), 0) < 43 then rpad(nvl(v_value,' '), 43, ' ') else v_value end || ' |'  || c_lf;
 end;
 
 --------------------------------------------------------------------------------
@@ -1143,6 +1158,70 @@ end get_call_stack;
 
 --------------------------------------------------------------------------------
 
+function get_apex_env return clob
+is
+  v_clob        clob;
+  v_cache       vc_max;
+  v_value       vc_max;
+  v_app_id      pls_integer;
+  v_app_page_id pls_integer;
+  v_app_session pls_integer;
+  --
+begin
+  $if not $$apex_installed $then
+  null;
+  $else
+
+  --https://jeffkemponoracle.com/2015/11/apex-5-application-context/
+  --https://joelkallman.blogspot.com/2016/09/correlating-apex-sessions-to-database.html
+  --sys_context('APEX$SESSION','APP_USER')
+  --sys_context('APEX$SESSION','WORKSPACE_ID')
+  v_app_id      :=           v(                 'APP_ID'      );
+  v_app_page_id :=           v(                 'APP_PAGE_ID' );
+  v_app_session := sys_context( 'APEX$SESSION', 'APP_SESSION' );
+
+  clob_append(v_clob, v_cache, '## APEX Environment' || c_lflf);
+
+  clob_append(v_clob, v_cache, '### Application Items - APP_ID ' || v_app_id || c_lflf || to_md_tab_header);
+  for i in (
+    select item_name
+      from apex_application_items
+    where application_id = v_app_id )
+  loop
+    v_value := v(i.item_name);
+    if v_value is not null or g_conf_log_level = c_level_verbose then
+      clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
+    end if;
+  end loop;
+  clob_append(v_clob, v_cache, c_lf);
+
+  clob_append(v_clob, v_cache, '### Page Items' ||
+    case when g_conf_log_level < c_level_verbose then ' - APP_PAGE_ID ' || v_app_page_id end ||
+    c_lflf || to_md_tab_header);
+  for i in (
+    select item_name
+      from apex_application_page_items
+    where application_id = v_app_id
+      and page_id        = case when (select console.my_log_level from dual) = (select console.level_verbose from dual)
+                              then page_id
+                              else v_app_page_id
+                            end )
+  loop
+    v_value := v(i.item_name);
+    if v_value is not null or g_conf_log_level = c_level_verbose then
+      clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
+    end if;
+  end loop;
+  clob_append(v_clob, v_cache, c_lf);
+
+  clob_flush_cache(v_clob, v_cache);
+
+  $end
+  return v_clob;
+end get_apex_env;
+
+--------------------------------------------------------------------------------
+
 function get_cgi_env return varchar2
 is
   v_return vc_max;
@@ -1161,6 +1240,63 @@ exception
     --> we simply return here what we already have and forget about the rest...
     return v_return;
 end get_cgi_env;
+
+--------------------------------------------------------------------------------
+
+function get_console_env return varchar2
+is
+  v_return vc_max;
+  v_index t_identifier;
+  --
+  procedure append_row (p_key varchar2, p_value varchar2) is
+  begin
+    v_return := v_return || to_md_tab_data(p_key, p_value);
+  end append_row;
+  --
+begin
+  v_return := '## Console Environment' || c_lflf || to_md_tab_header;
+  append_row('g_conf_re_evaluate_sysdate',  to_char( g_conf_re_evaluate_sysdate, c_ctx_date_format ) );
+  append_row('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
+  append_row('g_conf_context_is_available',   to_yn( g_conf_context_is_available                   ) );
+  append_row('g_conf_client_identifier',             g_conf_client_identifier                        );
+  append_row('g_conf_log_level',            to_char( g_conf_log_level                              ) );
+  append_row('g_conf_cache_size',           to_char( g_conf_cache_size                             ) );
+  append_row('g_conf_cache_duration',       to_char( g_conf_cache_duration                         ) );
+  append_row('g_conf_trace',                  to_yn( g_conf_trace                                  ) );
+  append_row('g_conf_user_env',               to_yn( g_conf_user_env                               ) );
+  append_row('g_conf_apex_env',               to_yn( g_conf_apex_env                               ) );
+  append_row('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                ) );
+  append_row('g_conf_console_env',            to_yn( g_conf_console_env                            ) );
+  v_return := v_return || c_lf;
+
+  if g_timers.count > 0 then
+    v_return := v_return || '### Running Timers' || c_lflf || to_md_tab_header('Label', 'Start Time (localtimestamp)');
+    v_index := g_timers.first;
+    loop
+      exit when v_index is null;
+      append_row(v_index, to_char(g_timers(v_index), c_timestamp_format));
+      v_index := g_timers.next(v_index);
+    end loop;
+    v_return := v_return || c_lf;
+  end if;
+
+  if g_counters.count > 0 then
+    v_return := v_return || '### Running Counters' || c_lflf || to_md_tab_header('Label', 'Current Count');
+    v_index := g_counters.first;
+    loop
+      exit when v_index is null;
+      append_row(v_index, to_char(g_counters(v_index)));
+      v_index := g_counters.next(v_index);
+    end loop;
+    v_return := v_return || c_lf;
+  end if;
+
+  return v_return;
+exception
+  when value_error then
+    --> we simply return here what we already have and forget about the rest...
+    return v_return;
+end get_console_env;
 
 --------------------------------------------------------------------------------
 
@@ -1268,78 +1404,6 @@ exception
     --> we simply return here what we already have and forget about the rest...
     return v_return;
 end get_user_env;
-
---------------------------------------------------------------------------------
-
-function get_console_env return varchar2
-is
-  v_return vc_max;
-  v_index t_identifier;
-  --
-  procedure append_row (p_key varchar2, p_value varchar2) is
-  begin
-    v_return := v_return || to_md_tab_data(p_key, p_value);
-  end append_row;
-  --
-begin
-  v_return := '## Console Environment' || c_lflf || to_md_tab_header;
-  append_row('g_conf_re_evaluate_sysdate',  to_char( g_conf_re_evaluate_sysdate, c_ctx_date_format ) );
-  append_row('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
-  append_row('g_conf_context_is_available',   to_yn( g_conf_context_is_available                   ) );
-  append_row('g_conf_client_identifier',             g_conf_client_identifier                        );
-  append_row('g_conf_log_level',            to_char( g_conf_log_level                              ) );
-  append_row('g_conf_cache_size',           to_char( g_conf_cache_size                             ) );
-  append_row('g_conf_cache_duration',       to_char( g_conf_cache_duration                         ) );
-  append_row('g_conf_trace',                  to_yn( g_conf_trace                                  ) );
-  append_row('g_conf_user_env',               to_yn( g_conf_user_env                               ) );
-  append_row('g_conf_apex_env',               to_yn( g_conf_apex_env                               ) );
-  append_row('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                ) );
-  append_row('g_conf_console_env',            to_yn( g_conf_console_env                            ) );
-  v_return := v_return || c_lf;
-
-  if g_timers.count > 0 then
-    v_return := v_return || '### Running Timers' || c_lflf || to_md_tab_header('Label', 'Start Time (localtimestamp)');
-    v_index := g_timers.first;
-    loop
-      exit when v_index is null;
-      append_row(v_index, to_char(g_timers(v_index), c_timestamp_format));
-      v_index := g_timers.next(v_index);
-    end loop;
-    v_return := v_return || c_lf;
-  end if;
-
-  if g_counters.count > 0 then
-    v_return := v_return || '### Running Counters' || c_lflf || to_md_tab_header('Label', 'Current Count');
-    v_index := g_counters.first;
-    loop
-      exit when v_index is null;
-      append_row(v_index, to_char(g_counters(v_index)));
-      v_index := g_counters.next(v_index);
-    end loop;
-    v_return := v_return || c_lf;
-  end if;
-
-  return v_return;
-end get_console_env;
-
---------------------------------------------------------------------------------
-
-function get_apex_env return clob
-is
-  v_clob  clob;
-  v_cache vc_max;
-  --
-begin
-  $if not $$apex_installed $then
-  null;
-  $else
-
-  clob_append(v_clob, v_cache, '## APEX Environment' || c_lflf || to_md_tab_header);
-  clob_append(v_clob, v_cache, to_md_tab_data('test', 'test'));
-
-  $end
-  return v_clob;
-end get_apex_env;
 
 --------------------------------------------------------------------------------
 
@@ -1567,7 +1631,7 @@ end utl_set_client_identifier;
 function utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -1607,12 +1671,12 @@ begin
   v_row.call_stack :=
     case
       when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
-      when p_trace then substrb(get_call_stack, 1, 4000)
+      when p_call_stack then substrb(get_call_stack, 1, 4000)
       else null
     end;
 
-  if p_apex_env then
-    null; --FIXME implement
+  if p_apex_env or g_conf_apex_env then
+    clob_append(v_row.message, v_cache, get_apex_env);
   end if;
 
   if p_cgi_env or g_conf_cgi_env then
@@ -1650,7 +1714,7 @@ end utl_create_log_entry;
 procedure utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
-  p_trace           boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -1665,7 +1729,7 @@ begin
   v_log_id := utl_create_log_entry (
     p_level           => p_level           ,
     p_message         => p_message         ,
-    p_trace           => p_trace           ,
+    p_call_stack      => p_call_stack      ,
     p_apex_env        => p_apex_env        ,
     p_cgi_env         => p_cgi_env         ,
     p_console_env     => p_console_env     ,

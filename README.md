@@ -94,8 +94,10 @@ is welcome.*
     [get_runtime_seconds](docs/console.md#get_runtime_seconds)
   - [X] [console.get_scope](docs/console.md#get_scope) &
     [get_call_stack](docs/console.md#get_call_stack)
-  - [X] [console.get_cgi_env](docs/console.md#get_cgi_env)
-  - [X] [console.get_user_env](docs/console.md#get_user_env)
+  - [X] [console.get_apex_env](docs/console.md#get_apex_env) &
+    [get_cgi_env](docs/console.md#get_cgi_env) &
+    [get_console_env](docs/console.md#get_console_env) &
+    [get_user_env](docs/console.md#get_user_env)
   - [X] [console.clob_append](docs/console.md#clob_append) &
     [clob_flush_cache](docs/console.md#clob_flush_cache)
 
