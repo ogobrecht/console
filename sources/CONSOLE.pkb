@@ -593,6 +593,7 @@ begin
       v_reference_id := error (
         p_message         => v_message               ,
         p_call_stack      => false                   ,
+        p_apex_env        => true                    ,
         p_user_error_code => p_error.ora_sqlcode     ,
         p_user_call_stack => p_error.error_backtrace );
       -- Change the message to the generic error message which doesn't expose
