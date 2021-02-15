@@ -23,6 +23,7 @@ c_ampersand                    constant varchar2 ( 1 byte) := chr(26);
 c_html_ampersand               constant varchar2 ( 5 byte) := chr(26) || 'amp;';
 c_html_less_then               constant varchar2 ( 4 byte) := chr(26) || 'lt;';
 c_html_greater_then            constant varchar2 ( 4 byte) := chr(26) || 'gt;';
+c_timestamp_format             constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
 c_default_label                constant varchar2 (64 byte) := 'Default';
 c_anon_block_ora               constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block              constant varchar2 (20 byte) := 'anonymous_block';
@@ -82,18 +83,18 @@ subtype vc2000  is varchar2 ( 2000 char);
 subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
-g_conf_context_available      boolean;
-g_conf_cache_valid_sysdate date;
-g_conf_client_identifier      varchar2 (64 byte);
-g_conf_log_level              pls_integer;
-g_conf_exit_sysdate           date;
-g_conf_cache_size             integer;
-g_conf_cache_duration         integer;
-g_conf_trace                  boolean;
-g_conf_user_env               boolean;
-g_conf_apex_env               boolean;
-g_conf_cgi_env                boolean;
-g_conf_console_env            boolean;
+g_conf_re_evaluate_sysdate  date;
+g_conf_exit_sysdate         date;
+g_conf_context_is_available boolean;
+g_conf_client_identifier    varchar2 (64 byte);
+g_conf_log_level            pls_integer;
+g_conf_cache_size           integer;
+g_conf_cache_duration       integer;
+g_conf_trace                boolean;
+g_conf_user_env             boolean;
+g_conf_apex_env             boolean;
+g_conf_cgi_env              boolean;
+g_conf_console_env          boolean;
 
 type tab_timers is table of timestamp index by t_identifier;
 type tab_counters is table of pls_integer index by t_identifier;
@@ -713,7 +714,7 @@ is
       client_id => p_client_identifier );
   exception
     when insufficient_privileges then
-      error ( 'Context not available, package var g_conf_context_available tells us it is ?!?' );
+      error ( 'Context not available, package var g_conf_context_is_available tells us it is ?!?' );
   end;
   --
 begin
@@ -729,7 +730,9 @@ begin
   assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
   assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).'        );
   --
-  v_row.init_by           := substrb ( sys_context('USERENV', 'OS_USER'), 1, 64 );
+  v_row.init_by           := substrb( coalesce(
+                              sys_context('USERENV', 'OS_USER'),
+                              sys_context('USERENV', 'SESSION_USER') ), 1, 64 );
   v_row.init_sysdate      := sysdate;
   v_row.exit_sysdate      := sysdate + 1/24/60 * p_log_duration;
   v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
@@ -751,7 +754,7 @@ begin
   end if;
   commit;
   --
-  if g_conf_context_available then
+  if g_conf_context_is_available then
     set_context ( c_ctx_log_level      , to_char ( v_row.log_level                       ) , p_client_identifier );
     set_context ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
     set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
@@ -822,14 +825,14 @@ end;
 
 function context_is_available return boolean is
 begin
-  return g_conf_context_available;
+  return g_conf_context_is_available;
 end;
 
 --------------------------------------------------------------------------------
 
 function context_is_available_yn return varchar2 is
 begin
-  return to_yn(g_conf_context_available);
+  return to_yn(g_conf_context_is_available);
 end;
 
 --------------------------------------------------------------------------------
@@ -1271,6 +1274,7 @@ end get_user_env;
 function get_console_env return varchar2
 is
   v_return vc_max;
+  v_index t_identifier;
   --
   procedure append_row (p_key varchar2, p_value varchar2) is
   begin
@@ -1279,24 +1283,63 @@ is
   --
 begin
   v_return := '## Console Environment' || c_lflf || to_md_tab_header;
-  --
-  append_row('g_conf_context_available',     to_yn( g_conf_context_available                      ) );
-  append_row('g_conf_client_identifier',            g_conf_client_identifier                        );
-  append_row('g_conf_log_level',           to_char( g_conf_log_level                              ) );
-  append_row('g_conf_exit_sysdate',        to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
-  append_row('g_conf_cache_valid_sysdate', to_char( g_conf_cache_valid_sysdate, c_ctx_date_format ) );
-  append_row('g_conf_cache_size',          to_char( g_conf_cache_size                             ) );
-  append_row('g_conf_cache_duration',      to_char( g_conf_cache_duration                         ) );
-  append_row('g_conf_trace',                 to_yn( g_conf_trace                                  ) );
-  append_row('g_conf_user_env',              to_yn( g_conf_user_env                               ) );
-  append_row('g_conf_apex_env',              to_yn( g_conf_apex_env                               ) );
-  append_row('g_conf_cgi_env',               to_yn( g_conf_cgi_env                                ) );
-  append_row('g_conf_console_env',           to_yn( g_conf_console_env                            ) );
-  --
-  v_return := v_return || c_lflf;
-  --
+  append_row('g_conf_re_evaluate_sysdate',  to_char( g_conf_re_evaluate_sysdate, c_ctx_date_format ) );
+  append_row('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
+  append_row('g_conf_context_is_available',   to_yn( g_conf_context_is_available                   ) );
+  append_row('g_conf_client_identifier',             g_conf_client_identifier                        );
+  append_row('g_conf_log_level',            to_char( g_conf_log_level                              ) );
+  append_row('g_conf_cache_size',           to_char( g_conf_cache_size                             ) );
+  append_row('g_conf_cache_duration',       to_char( g_conf_cache_duration                         ) );
+  append_row('g_conf_trace',                  to_yn( g_conf_trace                                  ) );
+  append_row('g_conf_user_env',               to_yn( g_conf_user_env                               ) );
+  append_row('g_conf_apex_env',               to_yn( g_conf_apex_env                               ) );
+  append_row('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                ) );
+  append_row('g_conf_console_env',            to_yn( g_conf_console_env                            ) );
+  v_return := v_return || c_lf;
+
+  if g_timers.count > 0 then
+    v_return := v_return || '### Running Timers' || c_lflf || to_md_tab_header('Label', 'Start Time (localtimestamp)');
+    v_index := g_timers.first;
+    loop
+      exit when v_index is null;
+      append_row(v_index, to_char(g_timers(v_index), c_timestamp_format));
+      v_index := g_timers.next(v_index);
+    end loop;
+    v_return := v_return || c_lf;
+  end if;
+
+  if g_counters.count > 0 then
+    v_return := v_return || '### Running Counters' || c_lflf || to_md_tab_header('Label', 'Current Count');
+    v_index := g_counters.first;
+    loop
+      exit when v_index is null;
+      append_row(v_index, to_char(g_counters(v_index)));
+      v_index := g_counters.next(v_index);
+    end loop;
+    v_return := v_return || c_lf;
+  end if;
+
   return v_return;
 end get_console_env;
+
+--------------------------------------------------------------------------------
+
+function get_apex_env return clob
+is
+  v_clob  clob;
+  v_cache vc_max;
+  --
+begin
+  $if not $$apex_installed $then
+  null;
+  $else
+
+  clob_append(v_clob, v_cache, '## APEX Environment' || c_lflf || to_md_tab_header);
+  clob_append(v_clob, v_cache, to_md_tab_data('test', 'test'));
+
+  $end
+  return v_clob;
+end get_apex_env;
 
 --------------------------------------------------------------------------------
 
@@ -1361,7 +1404,7 @@ function utl_logging_is_enabled (
   p_level integer )
 return boolean is
 begin
-  if g_conf_cache_valid_sysdate < sysdate then
+  if g_conf_re_evaluate_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
   return g_conf_log_level >= p_level or sqlcode != 0;
@@ -1402,17 +1445,17 @@ end utl_read_row_from_sessions;
 procedure utl_check_context_availability is
 begin
   sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
-  g_conf_context_available := true;
+  g_conf_context_is_available := true;
 exception
   when insufficient_privileges then
-    g_conf_context_available := false;
+    g_conf_context_is_available := false;
 end utl_check_context_availability;
 
 --------------------------------------------------------------------------------
 
 procedure utl_clear_all_context is
 begin
-  if g_conf_context_available then
+  if g_conf_context_is_available then
     sys.dbms_session.clear_all_context(c_ctx_namespace);
   end if;
 end utl_clear_all_context;
@@ -1423,7 +1466,7 @@ procedure utl_clear_context (
   p_client_identifier varchar2 )
 is
 begin
-  if g_conf_context_available then
+  if g_conf_context_is_available then
     sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
   end if;
 end utl_clear_context;
@@ -1443,7 +1486,7 @@ procedure utl_load_session_configuration is
   procedure set_default_config is
   begin
     --We have no real conf until now, so we fake 24 hours.
-    --Conf will be reevaluated at least every 10 seconds.
+    --Conf will be re-evaluated at least every 10 seconds.
     g_conf_exit_sysdate   := sysdate + 1;
     g_conf_log_level      := 1;
     g_conf_cache_size     := 0;
@@ -1480,7 +1523,7 @@ procedure utl_load_session_configuration is
   end load_config_from_table_row;
   --
 begin
-  if g_conf_context_available then
+  if g_conf_context_is_available then
 
     g_conf_exit_sysdate := to_date(sys_context(c_ctx_namespace, c_ctx_exit_sysdate), c_ctx_date_format);
     if g_conf_exit_sysdate is null then
@@ -1504,7 +1547,7 @@ begin
 
   end if;
 
-  g_conf_cache_valid_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60*10);
+  g_conf_re_evaluate_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60*10);
 
 end utl_load_session_configuration;
 

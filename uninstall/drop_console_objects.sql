@@ -44,22 +44,23 @@ begin
       from user_tables
      where table_name in ('CONSOLE_LOGS', 'CONSOLE_SESSIONS', 'CONSOLE_LEVELS') )
   loop
-    execute immediate 'select count(*) from ' || i.table_name ||
-      case when i.table_name = 'CONSOLE_LOGS'
-        then q'{ where log_level = 0 and message not like '{o,o} CONSOLE%' }'
-        else null
-      end
-      into v_count;
-    if i.table_name = 'CONSOLE_LOGS' and v_count > 0 then
-      dbms_output.put_line(
-        '- NOTE: ' || i.table_name ||
-        ' contains important user data - please review and drop it by youself (' ||
-        i.ddl || ')');
-    else
+    --> FIXME: Do the following check, when we have a stable version available
+    --execute immediate 'select count(*) from ' || i.table_name ||
+    --  case when i.table_name = 'CONSOLE_LOGS'
+    --    then q'{ where log_level = 0 and message not like '{o,o} CONSOLE%' }'
+    --    else null
+    --  end
+    --  into v_count;
+    --if i.table_name = 'CONSOLE_LOGS' and v_count > 0 then
+    --  dbms_output.put_line(
+    --    '- NOTE: ' || i.table_name ||
+    --    ' contains important user data - please review and drop it by youself (' ||
+    --    i.ddl || ')');
+    --else
       dbms_output.put_line('- ' || i.ddl);
       execute immediate i.ddl;
       v_object_count := v_object_count + 1;
-    end if;
+    --end if;
   end loop;
 
   dbms_output.put_line('- ' || v_object_count || ' object' || case when v_object_count != 1 then 's' end || ' dropped');

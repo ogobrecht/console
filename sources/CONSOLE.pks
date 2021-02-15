@@ -49,7 +49,7 @@ function my_log_level return integer;
 /**
 
 Returns the current log level of the own session. This information is cached in a
-package variable for performance reasons and reevaluated every 10 seconds.
+package variable for performance reasons and re-evaluated every 10 seconds.
 
 ```sql
 select console.my_log_level from dual;

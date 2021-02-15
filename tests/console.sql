@@ -8,7 +8,11 @@ prompt - Test different levels
 begin
   console.init(p_log_level => console.c_level_verbose);
   console.time;
-  console.time      ('Test CONSOLE');
+  console.time      ('Test time');
+  console.count;
+  console.count;
+  console.count;
+  console.count     ('Test count');
   console.permanent ('permanent');
   console.error     ('error');
   console.warn      ('warn');

@@ -4,8 +4,9 @@ An instrumentation tool for Oracle developers focused on easy installation and
 usage.
 
 *This is currently beta and in heavy development. Therefore I do not update the
-[changelog](docs/changelog.md) until we have a stable version available.
-Feedback and help is welcome.*
+[changelog](docs/changelog.md) until we have a stable version available. Also,
+you should uninstall console before you install a new version. Feedback and help
+is welcome.*
 
 ## Easy to install
 
