@@ -77,7 +77,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.16.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.17.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1069,9 +1069,10 @@ SIGNATURE
 
 ```sql
 function to_md_tab_data (
-  p_key              varchar2              ,
-  p_value            varchar2              ,
-  p_value_max_length integer  default 1000 )
+  p_key              varchar2               ,
+  p_value            varchar2               ,
+  p_value_max_length integer  default 1000  ,
+  p_show_null_values boolean  default false )
 return varchar2;
 ```
 

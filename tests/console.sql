@@ -7,9 +7,9 @@ prompt TEST CONSOLE
 prompt - Test different levels
 begin
   console.init(p_log_level => console.c_level_info);
-  apex_session.attach(100,64,52913255546);
+  --apex_session.attach(100,64,12793951927384);
   console.log('APEX Page 64', p_apex_env => true);
-  apex_session.attach(100,200,52913255546);
+  --apex_session.attach(100,200,12793951927384);
   console.log('APEX Page 200', p_apex_env => true);
   console.init(p_log_level => console.c_level_verbose);
   console.time;
@@ -30,6 +30,7 @@ begin
   console.log       (p_user_env => true);
   console.log       (p_console_env => true);
   console.log       (p_apex_env => true);
+  console.log       (p_apex_env => true, p_cgi_env => true, p_console_env => true, p_user_env => true);
   console.time_end;
   console.log       (console.time_end('Test CONSOLE'));
   console.exit;

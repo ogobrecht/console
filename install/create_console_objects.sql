@@ -98,7 +98,7 @@ begin
         log_level          number   ( 1,0)     not null  ,
         cache_size         number   ( 4,0)     not null  ,
         cache_duration     number   ( 2,0)     not null  ,
-        trace              varchar2 ( 1 byte)  not null  ,
+        call_stack         varchar2 ( 1 byte)  not null  ,
         user_env           varchar2 ( 1 byte)  not null  ,
         apex_env           varchar2 ( 1 byte)  not null  ,
         cgi_env            varchar2 ( 1 byte)  not null  ,
@@ -127,7 +127,7 @@ comment on column console_sessions.client_identifier is 'The client identifier p
 comment on column console_sessions.log_level         is 'The defined log level. Any session not listed here has the default log level of 1 (error).';
 comment on column console_sessions.cache_duration    is 'The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Defaults to 10.';
 comment on column console_sessions.cache_size        is 'The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.';
-comment on column console_sessions.trace             is 'Should the call_stack be included.';
+comment on column console_sessions.call_stack        is 'Should the call_stack be included.';
 comment on column console_sessions.user_env          is 'Should the user environment be included.';
 comment on column console_sessions.apex_env          is 'Should the APEX environment be included.';
 comment on column console_sessions.cgi_env           is 'Should the CGI environment be included.';
@@ -222,7 +222,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.16.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.17.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1006,9 +1006,10 @@ Converts the given key and value strings to a Markdown table header.
 **/
 
 function to_md_tab_data (
-  p_key              varchar2              ,
-  p_value            varchar2              ,
-  p_value_max_length integer  default 1000 )
+  p_key              varchar2               ,
+  p_value            varchar2               ,
+  p_value_max_length integer  default 1000  ,
+  p_show_null_values boolean  default false )
 return varchar2;
 /**
 
@@ -1297,7 +1298,7 @@ c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
 c_ctx_exit_sysdate             constant varchar2 (15 byte) := 'EXIT_SYSDATE';
 c_ctx_cache_size               constant varchar2 (15 byte) := 'CACHE_SIZE';
 c_ctx_cache_duration           constant varchar2 (15 byte) := 'CACHE_DURATION';
-c_ctx_trace                    constant varchar2 (15 byte) := 'TRACE';
+c_ctx_call_stack               constant varchar2 (15 byte) := 'CALL_STACK';
 c_ctx_user_env                 constant varchar2 (15 byte) := 'USER_ENV';
 c_ctx_apex_env                 constant varchar2 (15 byte) := 'APEX_ENV';
 c_ctx_cgi_env                  constant varchar2 (15 byte) := 'CGI_ENV';
@@ -1351,7 +1352,7 @@ g_conf_client_identifier    varchar2 (64 byte);
 g_conf_log_level            pls_integer;
 g_conf_cache_size           integer;
 g_conf_cache_duration       integer;
-g_conf_trace                boolean;
+g_conf_call_stack           boolean;
 g_conf_user_env             boolean;
 g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
@@ -1987,7 +1988,7 @@ begin
   assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
   assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).'  );
   assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).'   );
-  assert ( p_call_stack     is not null,        'Trace needs to be true or false (not null).'              );
+  assert ( p_call_stack     is not null,        'Call stack needs to be true or false (not null).'         );
   assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
   assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
   assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
@@ -2002,7 +2003,7 @@ begin
   v_row.log_level         := p_log_level;
   v_row.cache_size        := p_cache_size;
   v_row.cache_duration    := p_cache_duration;
-  v_row.trace             := to_yn ( p_call_stack  );
+  v_row.call_stack        := to_yn ( p_call_stack  );
   v_row.user_env          := to_yn ( p_user_env    );
   v_row.apex_env          := to_yn ( p_apex_env    );
   v_row.cgi_env           := to_yn ( p_cgi_env     );
@@ -2022,7 +2023,7 @@ begin
     set_context ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
     set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
     set_context ( c_ctx_cache_duration , to_char ( v_row.cache_duration                  ) , p_client_identifier );
-    set_context ( c_ctx_trace          , to_char ( v_row.trace                           ) , p_client_identifier );
+    set_context ( c_ctx_call_stack     , to_char ( v_row.call_stack                      ) , p_client_identifier );
     set_context ( c_ctx_user_env       , to_char ( v_row.user_env                        ) , p_client_identifier );
     set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env                        ) , p_client_identifier );
     set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env                         ) , p_client_identifier );
@@ -2270,17 +2271,6 @@ end to_html_table;
 
 --------------------------------------------------------------------------------
 
-function utl_escape_md_tab_text (p_text varchar2) return varchar2 is
-begin
-  return replace(replace(replace(replace(p_text,
-    c_crlf,   ' '),
-    c_lf,     ' '),
-    c_cr,     ' '),
-    '|', '&#124;');
-end;
-
---------------------------------------------------------------------------------
-
 function to_md_tab_header (
   p_key   varchar2 default 'Attribute' ,
   p_value varchar2 default 'Value'     )
@@ -2299,18 +2289,23 @@ end;
 --------------------------------------------------------------------------------
 
 function to_md_tab_data (
-  p_key              varchar2              ,
-  p_value            varchar2              ,
-  p_value_max_length integer  default 1000 )
+  p_key              varchar2               ,
+  p_value            varchar2               ,
+  p_value_max_length integer  default 1000  ,
+  p_show_null_values boolean  default false )
 return varchar2 is
   v_key   vc_max;
   v_value vc_max;
 begin
-  v_key   := utl_escape_md_tab_text(p_key);
-  v_value := utl_escape_md_tab_text(substr(p_value, 1, p_value_max_length));
-  return '| ' ||
-    case when nvl(length(v_key),   0) < 30 then rpad(nvl(v_key  ,' '), 30, ' ') else v_key   end || ' | ' ||
-    case when nvl(length(v_value), 0) < 43 then rpad(nvl(v_value,' '), 43, ' ') else v_value end || ' |'  || c_lf;
+  if p_value is null and not p_show_null_values then
+    return null;
+  else
+    v_key   := utl_escape_md_tab_text(p_key);
+    v_value := utl_escape_md_tab_text(substr(p_value, 1, p_value_max_length));
+    return '| ' ||
+      case when nvl(length(v_key),   0) < 30 then rpad(nvl(v_key  ,' '), 30, ' ') else v_key   end || ' | ' ||
+      case when nvl(length(v_value), 0) < 43 then rpad(nvl(v_value,' '), 43, ' ') else v_value end || ' |'  || c_lf;
+  end if;
 end;
 
 --------------------------------------------------------------------------------
@@ -2415,7 +2410,7 @@ begin
     end loop;
   end if;
 
-  return v_return;
+  return v_return || chr(10);
 end get_call_stack;
 
 --------------------------------------------------------------------------------
@@ -2451,9 +2446,7 @@ begin
     where application_id = v_app_id )
   loop
     v_value := v(i.item_name);
-    if v_value is not null or g_conf_log_level = c_level_verbose then
-      clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
-    end if;
+    clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
   end loop;
   clob_append(v_clob, v_cache, c_lf);
 
@@ -2470,9 +2463,7 @@ begin
                             end )
   loop
     v_value := v(i.item_name);
-    if v_value is not null or g_conf_log_level = c_level_verbose then
-      clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
-    end if;
+    clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
   end loop;
   clob_append(v_clob, v_cache, c_lf);
 
@@ -2495,7 +2486,7 @@ begin
         p_key   => owa.cgi_var_name(i) ,
         p_value => owa.cgi_var_val (i) );
   end loop;
-  v_return := v_return || c_lflf;
+  v_return := v_return || c_lf;
   return v_return;
 exception
   when value_error then
@@ -2512,7 +2503,7 @@ is
   --
   procedure append_row (p_key varchar2, p_value varchar2) is
   begin
-    v_return := v_return || to_md_tab_data(p_key, p_value);
+    v_return := v_return || to_md_tab_data(p_key, p_value, p_show_null_values => true);
   end append_row;
   --
 begin
@@ -2524,7 +2515,7 @@ begin
   append_row('g_conf_log_level',            to_char( g_conf_log_level                              ) );
   append_row('g_conf_cache_size',           to_char( g_conf_cache_size                             ) );
   append_row('g_conf_cache_duration',       to_char( g_conf_cache_duration                         ) );
-  append_row('g_conf_trace',                  to_yn( g_conf_trace                                  ) );
+  append_row('g_conf_call_stack',             to_yn( g_conf_call_stack                             ) );
   append_row('g_conf_user_env',               to_yn( g_conf_user_env                               ) );
   append_row('g_conf_apex_env',               to_yn( g_conf_apex_env                               ) );
   append_row('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                ) );
@@ -2726,6 +2717,17 @@ end clob_flush_cache;
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
+function utl_escape_md_tab_text (p_text varchar2) return varchar2 is
+begin
+  return replace(replace(replace(replace(p_text,
+    c_crlf,   ' '),
+    c_lf,     ' '),
+    c_cr,     ' '),
+    '|', '&#124;');
+end;
+
+--------------------------------------------------------------------------------
+
 function utl_logging_is_enabled (
   p_level integer )
 return boolean is
@@ -2817,7 +2819,7 @@ procedure utl_load_session_configuration is
     g_conf_log_level      := 1;
     g_conf_cache_size     := 0;
     g_conf_cache_duration := 10;
-    g_conf_trace          := false;
+    g_conf_call_stack     := false;
     g_conf_user_env       := false;
     g_conf_apex_env       := false;
     g_conf_cgi_env        := false;
@@ -2829,7 +2831,7 @@ procedure utl_load_session_configuration is
     g_conf_log_level      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level      ) );
     g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
     g_conf_cache_duration := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_duration ) );
-    g_conf_trace          := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_trace          ) );
+    g_conf_call_stack     := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_call_stack     ) );
     g_conf_user_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env       ) );
     g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
     g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
@@ -2841,7 +2843,7 @@ procedure utl_load_session_configuration is
     g_conf_log_level      :=           v_row.log_level       ;
     g_conf_cache_size     :=           v_row.cache_size      ;
     g_conf_cache_duration :=           v_row.cache_duration  ;
-    g_conf_trace          := to_bool ( v_row.trace          );
+    g_conf_call_stack     := to_bool ( v_row.call_stack     );
     g_conf_user_env       := to_bool ( v_row.user_env       );
     g_conf_apex_env       := to_bool ( v_row.apex_env       );
     g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
