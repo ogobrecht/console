@@ -28,7 +28,7 @@ c_default_label                constant varchar2 (64 byte) := 'Default';
 c_anon_block_ora               constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block              constant varchar2 (20 byte) := 'anonymous_block';
 c_client_id_prefix             constant varchar2 ( 6 byte) := '{o,o} ';
-c_console_pkg_name             constant varchar2 (60 byte) := upper($$plsql_unit) || '.';
+c_console_pkg_name             constant varchar2 (60 byte) := $$plsql_unit || '.';
 c_ctx_namespace                constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute           constant varchar2 (15 byte) := 'TEST';
 c_ctx_date_format              constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
@@ -1177,7 +1177,10 @@ begin
 
   clob_append(v_clob, v_cache, '## APEX Environment' || c_lflf);
 
-  clob_append(v_clob, v_cache, '### Application Items - APP_ID ' || v_app_id || c_lflf || to_md_tab_header);
+  clob_append(v_clob, v_cache,
+    '### Application Items' ||
+    case when v_app_id is not null then ' - APP_ID ' || v_app_id end ||
+    c_lflf || to_md_tab_header('Item Name'));
   for i in (
     select item_name
       from apex_application_items
@@ -1188,9 +1191,10 @@ begin
   end loop;
   clob_append(v_clob, v_cache, c_lf);
 
-  clob_append(v_clob, v_cache, '### Page Items' ||
-    case when g_conf_log_level < c_level_verbose then ' - APP_PAGE_ID ' || v_app_page_id end ||
-    c_lflf || to_md_tab_header);
+  clob_append(v_clob, v_cache,
+    '### Page Items' ||
+    case when g_conf_log_level < c_level_verbose and v_app_page_id is not null then ' - APP_PAGE_ID ' || v_app_page_id end ||
+    c_lflf || to_md_tab_header('Item Name'));
   for i in (
     select item_name
       from apex_application_page_items
