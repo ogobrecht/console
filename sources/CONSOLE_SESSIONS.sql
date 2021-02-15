@@ -13,7 +13,7 @@ begin
         log_level          number   ( 1,0)     not null  ,
         cache_size         number   ( 4,0)     not null  ,
         cache_duration     number   ( 2,0)     not null  ,
-        trace              varchar2 ( 1 byte)  not null  ,
+        call_stack         varchar2 ( 1 byte)  not null  ,
         user_env           varchar2 ( 1 byte)  not null  ,
         apex_env           varchar2 ( 1 byte)  not null  ,
         cgi_env            varchar2 ( 1 byte)  not null  ,
@@ -42,7 +42,7 @@ comment on column console_sessions.client_identifier is 'The client identifier p
 comment on column console_sessions.log_level         is 'The defined log level. Any session not listed here has the default log level of 1 (error).';
 comment on column console_sessions.cache_duration    is 'The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Defaults to 10.';
 comment on column console_sessions.cache_size        is 'The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.';
-comment on column console_sessions.trace             is 'Should the call_stack be included.';
+comment on column console_sessions.call_stack        is 'Should the call_stack be included.';
 comment on column console_sessions.user_env          is 'Should the user environment be included.';
 comment on column console_sessions.apex_env          is 'Should the APEX environment be included.';
 comment on column console_sessions.cgi_env           is 'Should the CGI environment be included.';
