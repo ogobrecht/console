@@ -587,7 +587,7 @@ begin
       -- v_reference_id as reference#
       v_message :=
         case when p_error.message is not null then p_error.message || c_lf end ||
-        case when p_error.additional_info is not null then p_error.message || c_lf end ||
+        case when p_error.additional_info is not null then p_error.additional_info || c_lf end ||
         case when p_error.error_statement is not null then p_error.error_statement || c_lf end;
         --FIXME what about other attributes like p_error.component?
       v_reference_id := error (
@@ -600,7 +600,7 @@ begin
       -- any sensitive information.
       v_result.message := 'An unexpected internal application error has occurred. ' ||
                           'Please get in contact with your Oracle APEX support team and provide ' ||
-                          'reference# ' || to_char(v_reference_id, '999G999G999G999G990') ||
+                          'reference# ' || to_char(v_reference_id) ||
                           ' for further investigation.';
       v_result.additional_info := null;
     end if;
