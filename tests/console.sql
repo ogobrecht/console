@@ -4,7 +4,7 @@ set serveroutput on
 whenever sqlerror exit sql.sqlcode rollback
 
 prompt TEST CONSOLE
-prompt - Test different levels
+prompt - some basic testing, unit tests will follow later...
 begin
   console.init(p_log_level => console.c_level_info);
   --apex_session.attach(100,64,12793951927384);

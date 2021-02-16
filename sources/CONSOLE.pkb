@@ -553,6 +553,7 @@ is
   v_reference_id    number;
   v_constraint_name varchar2(255);
   v_message         clob;
+  v_app_id          pls_integer;
   --
   function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
   begin
@@ -563,7 +564,7 @@ is
     pragma autonomous_transaction;
   begin
     apex_lang.create_message(
-      p_application_id => v('APP_ID'),
+      p_application_id => v_app_id,
       p_name           => p_constraint_name,
       p_language       => apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'),
       p_message_text   => 'FIXME: Create message for constraint ' || p_constraint_name);
@@ -571,6 +572,7 @@ is
   end;
   --
 begin
+  v_app_id := v('APP_ID');
   v_result := apex_error.init_error_result (p_error => p_error);
 
   -- If it's an internal error raised by APEX, like an invalid statement or
@@ -598,10 +600,28 @@ begin
         p_user_call_stack => p_error.error_backtrace );
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
-      v_result.message := 'An unexpected internal application error has occurred. ' ||
-                          'Please get in contact with your Oracle APEX support team and provide ' ||
-                          'reference# ' || to_char(v_reference_id) ||
-                          ' for further investigation.';
+      v_result.message :=
+        $if $$apex_fun $then
+        replace(replace(q'[<pre>
+
+                \|||/
+                (o o)
+    ,-------ooO--(_)------------.
+    | Ooops, there was an ERROR |
+    | Application ID: #APP_ID## |
+    | Log ID: #LOG_ID########## |
+    '----------------Ooo--------'
+               |__|__|
+                || ||
+               ooO Ooo
+
+</pre>]', '#APP_ID##', rpad(v_app_id, 9, ' ')),
+          '#LOG_ID##########', rpad(to_char(v_reference_id), 17, ' ')) ||
+        $end
+        'An unexpected internal application error has occurred. ' ||
+        'Please get in contact with your Oracle APEX support team and provide ' ||
+        '"Application ID ' || to_char(v_app_id) || '" and "Log ID ' ||
+         to_char(v_reference_id) || '" for further investigation.';
       v_result.additional_info := null;
     end if;
   else
