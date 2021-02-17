@@ -114,7 +114,7 @@ the package console](docs/console.md).
 
 ## Roadmap
 
-- [ ] API compatibility with the JavaScript console (with exceptions)
+- [X] API compatibility with the JavaScript console (with exceptions)
 - [ ] APEX plug-in to be able to track client side browser errors
 - [ ] Something else? Let us discuss your ideas - simply [open an
   issue](https://github.com/ogobrecht/console/issues/new) ...
