@@ -83,7 +83,6 @@ is welcome.*
   - [X] [console.view_log_cache](docs/console.md#view_log_cache) &
     [flush_log_cache](docs/console.md#flush_log_cache)
   - [ ] `console.view_status`
-  - [ ] `console.view_cached_log_entries`
   - [ ] `console.view_counters` & `view_timers`
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
