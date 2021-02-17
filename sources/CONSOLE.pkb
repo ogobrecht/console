@@ -100,6 +100,7 @@ type tab_timers is table of timestamp index by t_identifier;
 type tab_counters is table of pls_integer index by t_identifier;
 g_timers tab_timers;
 g_counters tab_counters;
+g_console_logs tab_console_logs := new tab_console_logs();
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -114,7 +115,6 @@ function  utl_read_row_from_sessions (p_client_identifier varchar2) return conso
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
 procedure utl_clear_context (p_client_identifier varchar2);
-procedure utl_flush_log_cache;
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
 --
@@ -519,7 +519,7 @@ procedure clear (
   p_client_identifier varchar2 default my_client_identifier )
 is
 begin
-  null; -- FIXME implement
+  g_console_logs.delete;
 end;
 
 --------------------------------------------------------------------------------
@@ -744,8 +744,8 @@ begin
                                                 'Level 1 (error) and 0 (permanent) are always logged '     ||
                                                 'without a call to the init method.'                       );
   assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
-  assert ( p_cache_size     between 0 and  100, 'Cache size needs to be between 1 and 100 (log entries).'  );
-  assert ( p_cache_duration between 1 and   10, 'Cache duration needs to be between 1 and 10 (seconds).'   );
+  assert ( p_cache_size     between 0 and 1000, 'Cache size needs to be between 1 and 1000 (log entries).' );
+  assert ( p_cache_duration between 1 and   60, 'Cache duration needs to be between 1 and 60 (seconds).'   );
   assert ( p_call_stack     is not null,        'Call stack needs to be true or false (not null).'         );
   assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
   assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
@@ -839,7 +839,7 @@ begin
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     utl_load_session_configuration;
-    utl_flush_log_cache;
+    flush_log_cache;
   end if;
 end;
 
@@ -1022,7 +1022,7 @@ begin
   create_header;
   create_data;
   clob_append(v_clob, v_cache, c_lf || '</table>' || c_lf);
-  clob_flush_cache(v_clob, v_cache);
+  flush_clob_cache(v_clob, v_cache);
   close_cursor(v_cursor_id);
   return v_clob;
 end to_html_table;
@@ -1229,7 +1229,7 @@ begin
   end loop;
   clob_append(v_clob, v_cache, c_lf);
 
-  clob_flush_cache(v_clob, v_cache);
+  flush_clob_cache(v_clob, v_cache);
 
   $end
   return v_clob;
@@ -1448,7 +1448,7 @@ procedure clob_append (
 is
 begin
   if p_text is not null then
-    clob_flush_cache (p_clob, p_cache);
+    flush_clob_cache(p_clob, p_cache);
     if p_clob is null then
       p_clob := p_text;
     else
@@ -1459,7 +1459,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure clob_flush_cache (
+procedure flush_clob_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 )
 is
@@ -1472,8 +1472,29 @@ begin
     end if;
     p_cache := null;
   end if;
-end clob_flush_cache;
+end flush_clob_cache;
 
+--------------------------------------------------------------------------------
+
+procedure flush_log_cache is
+  pragma autonomous_transaction;
+begin
+  if g_console_logs.count > 0 then
+    forall i in 1 .. g_console_logs.count
+      insert into console_logs values g_console_logs(i);
+    commit;
+    g_console_logs.delete;
+  end if;
+end flush_log_cache;
+
+--------------------------------------------------------------------------------
+
+function view_log_cache return tab_console_logs pipelined is
+begin
+  for i in reverse 1 .. g_console_logs.count loop
+    pipe row(g_console_logs(i));
+  end loop;
+end view_log_cache;
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
@@ -1560,13 +1581,6 @@ begin
     sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
   end if;
 end utl_clear_context;
-
---------------------------------------------------------------------------------
-
-procedure utl_flush_log_cache is
-begin
-  null; --FIXME implement
-end;
 
 --------------------------------------------------------------------------------
 
@@ -1717,8 +1731,9 @@ begin
     clob_append(v_row.message, v_cache, get_user_env);
   end if;
 
-  clob_flush_cache(v_row.message, v_cache);
+  flush_clob_cache(v_row.message, v_cache);
 
+  v_row.log_time          := systimestamp;
   v_row.log_level         := p_level;
   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
   v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
@@ -1729,10 +1744,17 @@ begin
   v_row.host              := substrb ( sys_context ( 'USERENV', 'HOST'              ), 1, 64 );
   v_row.os_user           := substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 );
   v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
-  v_row.log_time          := systimestamp;
 
-  insert into console_logs values v_row returning log_id into v_row.log_id;
-  commit;
+  if g_conf_cache_size > 0 and p_level > c_level_error and sqlcode = 0 then
+    g_console_logs.extend;
+    g_console_logs(g_console_logs.count) := v_row;
+  else
+    if g_conf_cache_size > 0 then
+      flush_log_cache;
+    end if;
+    insert into console_logs values v_row returning log_id into v_row.log_id;
+    commit;
+  end if;
 
   return v_row.log_id;
 end utl_create_log_entry;

@@ -58,7 +58,9 @@ Oracle Instrumentation Console
 - [Function get_console_env](#get_console_env)
 - [Procedure clob_append](#clob_append)
 - [Procedure clob_append](#clob_append)
-- [Procedure clob_flush_cache](#clob_flush_cache)
+- [Procedure flush_clob_cache](#flush_clob_cache)
+- [Procedure flush_log_cache](#flush_log_cache)
+- [Function view_log_cache](#view_log_cache)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -77,7 +79,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.17.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.18.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -561,7 +563,7 @@ This procedure is useful when you have initialized your own session with a cache
 size greater then zero (for example 1000) and you take a look at the log entries
 with the pipelined function `console.view_log_cache` during development. By
 clearing the cache you can avoid spoiling your CONSOLE_LOGS table with entries
-you dont need longer.
+you do not need anymore.
 
 DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
 MANAGING LOGGING MODES OF SESSIONS.
@@ -841,8 +843,8 @@ procedure init (
   p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
   p_log_level         integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
   p_log_duration      integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX. Allowed values: 0 to 100 records.
-  p_cache_duration    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 10 seconds.
+  p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_cache_duration    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 60 seconds.
   p_call_stack        boolean  default false        , -- Should the call stack be included.
   p_user_env          boolean  default false        , -- Should the user environment be included.
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.
@@ -1230,7 +1232,7 @@ function get_console_env return varchar2;
 <h2><a id="clob_append"></a>Procedure clob_append</h2>
 <!--------------------------------------------------->
 
-High performance clob concatenation. Also see clob_flush_cache below.
+High performance clob concatenation. Also see flush_clob_cache below.
 
 Is used internally by console for the table method (and other things). Do not
 forget a final flush cache call when you use it in your own code.
@@ -1247,7 +1249,7 @@ begin
   for i in 1..100000 loop
     console.clob_append(v_clob, v_cache, 'a');
   end loop;
-  console.clob_flush_cache(v_clob, v_cache);
+  console.flush_clob_cache(v_clob, v_cache);
   dbms_output.put_line('Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)));
   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
 end;
@@ -1270,7 +1272,7 @@ procedure clob_append (
 High performance clob concatenation.
 
 Overloaded method for appending a clob. Also see clob_append above with p_text
-beeing a varchar2 parameter and clob_flush_cache below.
+beeing a varchar2 parameter and flush_clob_cache below.
 
 SIGNATURE
 
@@ -1282,7 +1284,7 @@ procedure clob_append (
 ```
 
 
-<h2><a id="clob_flush_cache"></a>Procedure clob_flush_cache</h2>
+<h2><a id="flush_clob_cache"></a>Procedure flush_clob_cache</h2>
 <!------------------------------------------------------------->
 
 Flushes finally the cache in a high performance clob concatenation.
@@ -1292,9 +1294,57 @@ Also see clob_append above.
 SIGNATURE
 
 ```sql
-procedure clob_flush_cache (
+procedure flush_clob_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 );
+```
+
+
+<h2><a id="flush_log_cache"></a>Procedure flush_log_cache</h2>
+<!----------------------------------------------------------->
+
+Flushes the log cache and writes down the entries to the log table.
+
+Also see clob_append above.
+
+SIGNATURE
+
+```sql
+procedure flush_log_cache;
+```
+
+
+<h2><a id="view_log_cache"></a>Function view_log_cache</h2>
+<!-------------------------------------------------------->
+
+View the content of the log cache.
+
+EXAMPLE
+
+```sql
+--init logging for own session
+exec console.init(
+  p_log_level      => c_level_verbose ,
+  p_log_duration   => 90              ,
+  p_cache_size     => 1000            ,
+  p_cache_duration => 30              );
+
+--test some business logic
+begin
+  --your code here;
+
+  console_log('test', p_user_env => true);
+end;
+/
+
+--check current log cache
+select * from console_logs.view_log_cache;
+```
+
+SIGNATURE
+
+```sql
+function view_log_cache return tab_console_logs pipelined;
 ```
 
 

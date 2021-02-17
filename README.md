@@ -48,7 +48,7 @@ is welcome.*
   - [x] [console.count_end](docs/console.md#count_end) (level 3=info)
   - [X] [console.time](docs/console.md#time)
   - [X] [console.time_end](docs/console.md#time_end) (level 3=info)
-  - [ ] [console.clear](docs/console.md#clear)
+  - [X] [console.clear](docs/console.md#clear)
 - Additional methods:
   - [X] [console.permanent](docs/console.md#permanent) (level 0=permanent): Log
     permanent messages like installation or upgrade notes with the level zero,
@@ -80,6 +80,8 @@ is welcome.*
   - [X] [console.level_is_verbose](docs/console.md#level_is_verbose) &
     [level_is_verbose_yn](docs/console.md#level_is_verbose_yn)
   - [X] [console.version](docs/console.md#version)
+  - [X] [console.view_log_cache](docs/console.md#view_log_cache) &
+    [flush_log_cache](docs/console.md#flush_log_cache)
   - [ ] `console.view_status`
   - [ ] `console.view_cached_log_entries`
   - [ ] `console.view_counters` & `view_timers`
@@ -99,7 +101,7 @@ is welcome.*
     [get_console_env](docs/console.md#get_console_env) &
     [get_user_env](docs/console.md#get_user_env)
   - [X] [console.clob_append](docs/console.md#clob_append) &
-    [clob_flush_cache](docs/console.md#clob_flush_cache)
+    [flush_clob_cache](docs/console.md#flush_clob_cache)
 
 - Views for the logging entries of the table console_logs:
   - [ ] `console_logs`

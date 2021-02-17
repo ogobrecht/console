@@ -57,7 +57,11 @@ declare
 begin
   --configure and warm up logger and console
   logger.set_level(logger.g_debug);
-  console.init;
+  console.init(
+    p_log_level      => console.c_level_info ,
+    p_log_duration   => 90                      ,
+    p_cache_size     => 100                     ,
+    p_cache_duration => 30                      );
   for i in 1 .. 10 loop
     logger.log ('warm up ' || to_char(i));
     console.log ('warm up ' || to_char(i));
@@ -73,6 +77,7 @@ begin
   for i in 1 .. v_iterator loop
     console.log('test ' || to_char(i));
   end loop;
+  console.flush_log_cache;
   v_rt_console := console.get_runtime_seconds(v_start);
   -- print results
   dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
