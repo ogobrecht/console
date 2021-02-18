@@ -5,9 +5,8 @@ fs.writeFileSync(
     '--DO NOT CHANGE THIS FILE - IT IS GENERATED WITH THE BUILD SCRIPT sources/build.js\n' +
     fs.readFileSync('sources/install_template.sql', 'utf8')
         .replace('@set_ccflags.sql',           function () { return fs.readFileSync('sources/set_ccflags.sql',           'utf8') })
-        .replace('@CONSOLE_LEVELS.sql',        function () { return fs.readFileSync('sources/CONSOLE_LEVELS.sql',        'utf8') })
-        .replace('@CONSOLE_SESSIONS.sql',      function () { return fs.readFileSync('sources/CONSOLE_SESSIONS.sql',      'utf8') })
         .replace('@CONSOLE_LOGS.sql',          function () { return fs.readFileSync('sources/CONSOLE_LOGS.sql',          'utf8') })
+        .replace('@CONSOLE_SESSIONS.sql',      function () { return fs.readFileSync('sources/CONSOLE_SESSIONS.sql',      'utf8') })
         .replace('@CONSOLE.pks',               function () { return fs.readFileSync('sources/CONSOLE.pks',               'utf8') })
         .replace('@CONSOLE.pkb',               function () { return fs.readFileSync('sources/CONSOLE.pkb',               'utf8') })
         .replace('@show_errors.sql',           function () { return fs.readFileSync('sources/show_errors.sql',           'utf8') })

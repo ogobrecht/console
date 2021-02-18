@@ -32,10 +32,10 @@ c_console_pkg_name             constant varchar2 (60 byte) := $$plsql_unit || '.
 c_ctx_namespace                constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute           constant varchar2 (15 byte) := 'TEST';
 c_ctx_date_format              constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
-c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
 c_ctx_exit_sysdate             constant varchar2 (15 byte) := 'EXIT_SYSDATE';
-c_ctx_cache_size               constant varchar2 (15 byte) := 'CACHE_SIZE';
-c_ctx_cache_duration           constant varchar2 (15 byte) := 'CACHE_DURATION';
+c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
+c_ctx_log_cache_size           constant varchar2 (15 byte) := 'LOG_CACHE_SIZE';
+c_ctx_conf_check_interval      constant varchar2 (20 byte) := 'CONF_CHECK_INTERVAL';
 c_ctx_call_stack               constant varchar2 (15 byte) := 'CALL_STACK';
 c_ctx_user_env                 constant varchar2 (15 byte) := 'USER_ENV';
 c_ctx_apex_env                 constant varchar2 (15 byte) := 'APEX_ENV';
@@ -88,8 +88,8 @@ g_conf_exit_sysdate         date;
 g_conf_context_is_available boolean;
 g_conf_client_identifier    varchar2 (64 byte);
 g_conf_log_level            pls_integer;
-g_conf_cache_size           integer;
-g_conf_cache_duration       integer;
+g_conf_log_cache_size       integer;
+g_conf_conf_check_interval  integer;
 g_conf_call_stack           boolean;
 g_conf_user_env             boolean;
 g_conf_apex_env             boolean;
@@ -708,16 +708,16 @@ end module;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2                      ,
-  p_log_level         integer  default c_level_info ,
-  p_log_duration      integer  default 60           ,
-  p_cache_size        integer  default 0            ,
-  p_cache_duration    integer  default 10           ,
-  p_call_stack        boolean  default false        ,
-  p_user_env          boolean  default false        ,
-  p_apex_env          boolean  default false        ,
-  p_cgi_env           boolean  default false        ,
-  p_console_env       boolean  default false        )
+  p_client_identifier    varchar2                      ,
+  p_log_level            integer  default c_level_info ,
+  p_log_duration         integer  default 60           ,
+  p_log_cache_size       integer  default 0            ,
+  p_conf_check_interval  integer  default 10           ,
+  p_call_stack           boolean  default false        ,
+  p_user_env             boolean  default false        ,
+  p_apex_env             boolean  default false        ,
+  p_cgi_env              boolean  default false        ,
+  p_console_env          boolean  default false        )
 is
   pragma autonomous_transaction;
   v_row         console_sessions%rowtype;
@@ -740,32 +740,32 @@ is
   end;
   --
 begin
-  assert ( p_log_level      in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). ' ||
-                                                'Level 1 (error) and 0 (permanent) are always logged '     ||
-                                                'without a call to the init method.'                       );
-  assert ( p_log_duration   between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
-  assert ( p_cache_size     between 0 and 1000, 'Cache size needs to be between 1 and 1000 (log entries).' );
-  assert ( p_cache_duration between 1 and   60, 'Cache duration needs to be between 1 and 60 (seconds).'   );
-  assert ( p_call_stack     is not null,        'Call stack needs to be true or false (not null).'         );
-  assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
-  assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
-  assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
-  assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).'        );
+  assert ( p_log_level           in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). ' ||
+                                                     'Level 1 (error) and 0 (permanent) are always logged '     ||
+                                                     'without a call to the init method.'                       );
+  assert ( p_log_duration        between 1 and 1440, 'Log duration needs to be between 1 and 1440 (minutes).'       );
+  assert ( p_log_cache_size      between 0 and 1000, 'Log cache size needs to be between 1 and 1000 (log entries).' );
+  assert ( p_conf_check_interval between 1 and   60, 'Cache duration needs to be between 1 and 60 (seconds).'   );
+  assert ( p_call_stack          is not null,        'Call stack needs to be true or false (not null).'         );
+  assert ( p_user_env            is not null,        'User env needs to be true or false (not null).'           );
+  assert ( p_apex_env            is not null,        'APEX env needs to be true or false (not null).'           );
+  assert ( p_cgi_env             is not null,        'CGI env needs to be true or false (not null).'            );
+  assert ( p_console_env         is not null,        'Console env needs to be true or false (not null).'        );
   --
-  v_row.init_by           := substrb( coalesce(
-                              sys_context('USERENV', 'OS_USER'),
-                              sys_context('USERENV', 'SESSION_USER') ), 1, 64 );
-  v_row.init_sysdate      := sysdate;
-  v_row.exit_sysdate      := sysdate + 1/24/60 * p_log_duration;
-  v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
-  v_row.log_level         := p_log_level;
-  v_row.cache_size        := p_cache_size;
-  v_row.cache_duration    := p_cache_duration;
-  v_row.call_stack        := to_yn ( p_call_stack  );
-  v_row.user_env          := to_yn ( p_user_env    );
-  v_row.apex_env          := to_yn ( p_apex_env    );
-  v_row.cgi_env           := to_yn ( p_cgi_env     );
-  v_row.console_env       := to_yn ( p_console_env );
+  v_row.init_by              := substrb( coalesce(
+                                 sys_context('USERENV', 'OS_USER'),
+                                 sys_context('USERENV', 'SESSION_USER') ), 1, 64 );
+  v_row.init_sysdate         := sysdate;
+  v_row.exit_sysdate         := sysdate + 1/24/60 * p_log_duration;
+  v_row.client_identifier    := substrb ( p_client_identifier, 1, 64 );
+  v_row.log_level            := p_log_level;
+  v_row.log_cache_size       := p_log_cache_size;
+  v_row.conf_check_interval  := p_conf_check_interval;
+  v_row.call_stack           := to_yn ( p_call_stack  );
+  v_row.user_env             := to_yn ( p_user_env    );
+  v_row.apex_env             := to_yn ( p_apex_env    );
+  v_row.cgi_env              := to_yn ( p_cgi_env     );
+  v_row.console_env          := to_yn ( p_console_env );
   --
   select count(*) into v_count from console_sessions where client_identifier = p_client_identifier;
   if v_count = 0 then
@@ -777,15 +777,15 @@ begin
   commit;
   --
   if g_conf_context_is_available then
-    set_context ( c_ctx_log_level      , to_char ( v_row.log_level                       ) , p_client_identifier );
-    set_context ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
-    set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
-    set_context ( c_ctx_cache_duration , to_char ( v_row.cache_duration                  ) , p_client_identifier );
-    set_context ( c_ctx_call_stack     , to_char ( v_row.call_stack                      ) , p_client_identifier );
-    set_context ( c_ctx_user_env       , to_char ( v_row.user_env                        ) , p_client_identifier );
-    set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env                        ) , p_client_identifier );
-    set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env                         ) , p_client_identifier );
-    set_context ( c_ctx_console_env    , to_char ( v_row.console_env                     ) , p_client_identifier );
+    set_context ( c_ctx_log_level           , to_char ( v_row.log_level                       ) , p_client_identifier );
+    set_context ( c_ctx_exit_sysdate        , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
+    set_context ( c_ctx_log_cache_size      , to_char ( v_row.log_cache_size                  ) , p_client_identifier );
+    set_context ( c_ctx_conf_check_interval , to_char ( v_row.conf_check_interval             ) , p_client_identifier );
+    set_context ( c_ctx_call_stack          , to_char ( v_row.call_stack                      ) , p_client_identifier );
+    set_context ( c_ctx_user_env            , to_char ( v_row.user_env                        ) , p_client_identifier );
+    set_context ( c_ctx_apex_env            , to_char ( v_row.apex_env                        ) , p_client_identifier );
+    set_context ( c_ctx_cgi_env             , to_char ( v_row.cgi_env                         ) , p_client_identifier );
+    set_context ( c_ctx_console_env         , to_char ( v_row.console_env                     ) , p_client_identifier );
   end if;
 
   -- If we want to monitor our own session, wee need to load the configuration
@@ -799,27 +799,27 @@ begin
 end init;
 
 procedure init (
-  p_log_level      integer default c_level_info ,
-  p_log_duration   integer default 60             ,
-  p_cache_size     integer default 0              ,
-  p_cache_duration integer default 10             ,
-  p_call_stack     boolean default false          ,
-  p_user_env       boolean default false          ,
-  p_apex_env       boolean default false          ,
-  p_cgi_env        boolean default false          ,
-  p_console_env    boolean default false          )
+  p_log_level           integer default c_level_info ,
+  p_log_duration        integer default 60             ,
+  p_log_cache_size      integer default 0              ,
+  p_conf_check_interval integer default 10             ,
+  p_call_stack          boolean default false          ,
+  p_user_env            boolean default false          ,
+  p_apex_env            boolean default false          ,
+  p_cgi_env             boolean default false          ,
+  p_console_env         boolean default false          )
 is
 begin
   init (
-    p_client_identifier => g_conf_client_identifier ,
-    p_log_level         => p_log_level              ,
-    p_log_duration      => p_log_duration           ,
-    p_cache_duration    => p_cache_duration         ,
-    p_cache_size        => p_cache_size             ,
-    p_user_env          => p_user_env               ,
-    p_apex_env          => p_apex_env               ,
-    p_cgi_env           => p_cgi_env                ,
-    p_console_env       => p_console_env            );
+    p_client_identifier   => g_conf_client_identifier ,
+    p_log_level           => p_log_level              ,
+    p_log_duration        => p_log_duration           ,
+    p_conf_check_interval => p_conf_check_interval    ,
+    p_log_cache_size      => p_log_cache_size         ,
+    p_user_env            => p_user_env               ,
+    p_apex_env            => p_apex_env               ,
+    p_cgi_env             => p_cgi_env                ,
+    p_console_env         => p_console_env            );
 end init;
 
 --------------------------------------------------------------------------------
@@ -1275,8 +1275,8 @@ begin
   append_row('g_conf_context_is_available',   to_yn( g_conf_context_is_available                   ) );
   append_row('g_conf_client_identifier',             g_conf_client_identifier                        );
   append_row('g_conf_log_level',            to_char( g_conf_log_level                              ) );
-  append_row('g_conf_cache_size',           to_char( g_conf_cache_size                             ) );
-  append_row('g_conf_cache_duration',       to_char( g_conf_cache_duration                         ) );
+  append_row('g_conf_log_cache_size',       to_char( g_conf_log_cache_size                         ) );
+  append_row('g_conf_conf_check_interval',  to_char( g_conf_conf_check_interval                    ) );
   append_row('g_conf_call_stack',             to_yn( g_conf_call_stack                             ) );
   append_row('g_conf_user_env',               to_yn( g_conf_user_env                               ) );
   append_row('g_conf_apex_env',               to_yn( g_conf_apex_env                               ) );
@@ -1497,6 +1497,29 @@ begin
 end view_log_cache;
 
 --------------------------------------------------------------------------------
+
+function view_last (p_log_rows integer default 100)
+return tab_console_logs pipelined is
+  v_count pls_integer := 0;
+  v_left  pls_integer;
+begin
+  for i in reverse 1 .. g_console_logs.count loop
+    exit when v_count > p_log_rows;
+    pipe row(g_console_logs(i));
+    v_count := v_count + 1;
+  end loop;
+  if v_count < p_log_rows then
+    v_left := p_log_rows - v_count;
+    for i in (select * from console_logs
+              order by log_systime desc
+              fetch first v_left rows only)
+    loop
+          pipe row(i);
+    end loop;
+  end if;
+end view_last;
+
+--------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
@@ -1591,39 +1614,39 @@ procedure utl_load_session_configuration is
   begin
     --We have no real conf until now, so we fake 24 hours.
     --Conf will be re-evaluated at least every 10 seconds.
-    g_conf_exit_sysdate   := sysdate + 1;
-    g_conf_log_level      := 1;
-    g_conf_cache_size     := 0;
-    g_conf_cache_duration := 10;
-    g_conf_call_stack     := false;
-    g_conf_user_env       := false;
-    g_conf_apex_env       := false;
-    g_conf_cgi_env        := false;
-    g_conf_console_env    := false;
+    g_conf_exit_sysdate        := sysdate + 1;
+    g_conf_log_level           := 1;
+    g_conf_log_cache_size      := 0;
+    g_conf_conf_check_interval := 10;
+    g_conf_call_stack          := false;
+    g_conf_user_env            := false;
+    g_conf_apex_env            := false;
+    g_conf_cgi_env             := false;
+    g_conf_console_env         := false;
   end set_default_config;
   --
   procedure load_config_from_context is
   begin
-    g_conf_log_level      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level      ) );
-    g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
-    g_conf_cache_duration := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_duration ) );
-    g_conf_call_stack     := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_call_stack     ) );
-    g_conf_user_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env       ) );
-    g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
-    g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
-    g_conf_console_env    := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env    ) );
+    g_conf_log_level           := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level           ) );
+    g_conf_log_cache_size      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_cache_size      ) );
+    g_conf_conf_check_interval := to_number ( sys_context ( c_ctx_namespace, c_ctx_conf_check_interval ) );
+    g_conf_call_stack          := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_call_stack          ) );
+    g_conf_user_env            := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env            ) );
+    g_conf_apex_env            := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env            ) );
+    g_conf_cgi_env             := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env             ) );
+    g_conf_console_env         := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env         ) );
   end load_config_from_context;
   --
   procedure load_config_from_table_row is
   begin
-    g_conf_log_level      :=           v_row.log_level       ;
-    g_conf_cache_size     :=           v_row.cache_size      ;
-    g_conf_cache_duration :=           v_row.cache_duration  ;
-    g_conf_call_stack     := to_bool ( v_row.call_stack     );
-    g_conf_user_env       := to_bool ( v_row.user_env       );
-    g_conf_apex_env       := to_bool ( v_row.apex_env       );
-    g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
-    g_conf_console_env    := to_bool ( v_row.console_env    );
+    g_conf_log_level           :=           v_row.log_level            ;
+    g_conf_log_cache_size      :=           v_row.log_cache_size       ;
+    g_conf_conf_check_interval :=           v_row.conf_check_interval  ;
+    g_conf_call_stack          := to_bool ( v_row.call_stack          );
+    g_conf_user_env            := to_bool ( v_row.user_env            );
+    g_conf_apex_env            := to_bool ( v_row.apex_env            );
+    g_conf_cgi_env             := to_bool ( v_row.cgi_env             );
+    g_conf_console_env         := to_bool ( v_row.console_env         );
   end load_config_from_table_row;
   --
 begin
@@ -1733,8 +1756,15 @@ begin
 
   flush_clob_cache(v_row.message, v_cache);
 
-  v_row.log_time          := systimestamp;
-  v_row.log_level         := p_level;
+  v_row.log_systime       := systimestamp;
+  v_row.level_id          := p_level;
+  v_row.level_name        :=  case p_level
+                                when 0 then 'Permanent'
+                                when 1 then 'Error'
+                                when 2 then 'Warning'
+                                when 3 then 'Info'
+                                when 4 then 'Verbose'
+                              end;
   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
   v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
   v_row.action            := substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 );
@@ -1745,11 +1775,11 @@ begin
   v_row.os_user           := substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 );
   v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
 
-  if g_conf_cache_size > 0 and p_level > c_level_error and sqlcode = 0 then
+  if g_conf_log_cache_size > 0 and p_level > c_level_error and sqlcode = 0 then
     g_console_logs.extend;
     g_console_logs(g_console_logs.count) := v_row;
   else
-    if g_conf_cache_size > 0 then
+    if g_conf_log_cache_size > 0 then
       flush_log_cache;
     end if;
     insert into console_logs values v_row returning log_id into v_row.log_id;

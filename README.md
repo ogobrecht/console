@@ -57,49 +57,50 @@ is welcome.*
     internal APEX errors (only available, if APEX is installed, also see the
     [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
-  - [ ] [console.apex_plugin_render](docs/console.md#apex_plugin_render) &
+  - [ ] [console.apex_plugin_render](docs/console.md#apex_plugin_render),
     [apex_plugin_ajax](docs/console.md#apex_plugin_ajax): Methods for the APEX
     plugin (only available, if APEX is installed).
-  - [X] [console.action](docs/console.md#action) &
+  - [X] [console.action](docs/console.md#action),
     [module](docs/console.md#module): Aliases for
     dbms_application_info.set_action and set_module to be friendly to the DBA
     and monitoring teams. The module is usually set by the application (for
     example APEX is setting the module, and often also the action).
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
-  - [X] [console.init](docs/console.md#init) & [exit](docs/console.md#exit) the
+  - [X] [console.init](docs/console.md#init),  [exit](docs/console.md#exit) the
     logging mode for a specific session by the client identifier
-  - [X] [console.my_client_identifier](docs/console.md#my_client_identifier) &
+  - [X] [console.my_client_identifier](docs/console.md#my_client_identifier),
     [my_log_level](docs/console.md#my_log_level)
-  - [X] [console.context_is_available](docs/console.md#context_is_available) &
+  - [X] [console.context_is_available](docs/console.md#context_is_available),
     [context_is_available_yn](docs/console.md#context_is_available_yn)
-  - [X] [console.level_is_warning](docs/console.md#level_is_warning) &
+  - [X] [console.level_is_warning](docs/console.md#level_is_warning),
     [level_is_warning_yn](docs/console.md#level_is_warning_yn)
-  - [X] [console.level_is_info](docs/console.md#level_is_info) &
+  - [X] [console.level_is_info](docs/console.md#level_is_info),
     [level_is_info_yn](docs/console.md#level_is_info_yn)
-  - [X] [console.level_is_verbose](docs/console.md#level_is_verbose) &
+  - [X] [console.level_is_verbose](docs/console.md#level_is_verbose),
     [level_is_verbose_yn](docs/console.md#level_is_verbose_yn)
   - [X] [console.version](docs/console.md#version)
-  - [X] [console.view_log_cache](docs/console.md#view_log_cache) &
+  - [X] [console.view_last](docs/console.md#view_last)
+  - [X] [console.view_log_cache](docs/console.md#view_log_cache),
     [flush_log_cache](docs/console.md#flush_log_cache)
   - [ ] `console.view_status`
-  - [ ] `console.view_counters` & `view_timers`
+  - [ ] `console.view_counters`,  `view_timers`
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
-  - [X] [console.to_yn](docs/console.md#to_yn) &
+  - [X] [console.to_yn](docs/console.md#to_yn),
     [to_bool](docs/console.md#to_bool)
   - [X] [console.to_html_table](docs/console.md#to_html_table)
-  - [X] [console.to_md_tab_header](docs/console.md#to_md_tab_header) &
+  - [X] [console.to_md_tab_header](docs/console.md#to_md_tab_header),
     [to_md_tab_data](docs/console.md#to_md_tab_data)
-  - [X] [console.get_runtime](docs/console.md#get_runtime) &
+  - [X] [console.get_runtime](docs/console.md#get_runtime),
     [get_runtime_seconds](docs/console.md#get_runtime_seconds)
-  - [X] [console.get_scope](docs/console.md#get_scope) &
+  - [X] [console.get_scope](docs/console.md#get_scope),
     [get_call_stack](docs/console.md#get_call_stack)
-  - [X] [console.get_apex_env](docs/console.md#get_apex_env) &
-    [get_cgi_env](docs/console.md#get_cgi_env) &
-    [get_console_env](docs/console.md#get_console_env) &
+  - [X] [console.get_apex_env](docs/console.md#get_apex_env),
+    [get_cgi_env](docs/console.md#get_cgi_env),
+    [get_console_env](docs/console.md#get_console_env),
     [get_user_env](docs/console.md#get_user_env)
-  - [X] [console.clob_append](docs/console.md#clob_append) &
+  - [X] [console.clob_append](docs/console.md#clob_append),
     [flush_clob_cache](docs/console.md#flush_clob_cache)
 
 - Views for the logging entries of the table console_logs:

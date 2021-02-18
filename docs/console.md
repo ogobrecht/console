@@ -61,6 +61,7 @@ Oracle Instrumentation Console
 - [Procedure flush_clob_cache](#flush_clob_cache)
 - [Procedure flush_log_cache](#flush_log_cache)
 - [Function view_log_cache](#view_log_cache)
+- [Function view_last](#view_last)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -79,7 +80,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.18.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.19.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -840,16 +841,16 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
-  p_log_level         integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration      integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_cache_duration    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Allowed values: 1 to 60 seconds.
-  p_call_stack        boolean  default false        , -- Should the call stack be included.
-  p_user_env          boolean  default false        , -- Should the user environment be included.
-  p_apex_env          boolean  default false        , -- Should the APEX environment be included.
-  p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
-  p_console_env       boolean  default false          -- Should the console environment be included.
+  p_client_identifier   varchar2                      , -- The client identifier provided by the application or console itself.
+  p_log_level           integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_log_duration        integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_log_cache_size      integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_conf_check_interval integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack          boolean  default false        , -- Should the call stack be included.
+  p_user_env            boolean  default false        , -- Should the user environment be included.
+  p_apex_env            boolean  default false        , -- Should the APEX environment be included.
+  p_cgi_env             boolean  default false        , -- Should the CGI environment be included.
+  p_console_env         boolean  default false          -- Should the console environment be included.
 );
 ```
 
@@ -1324,10 +1325,10 @@ EXAMPLE
 ```sql
 --init logging for own session
 exec console.init(
-  p_log_level      => c_level_verbose ,
-  p_log_duration   => 90              ,
-  p_cache_size     => 1000            ,
-  p_cache_duration => 30              );
+  p_log_level           => c_level_verbose ,
+  p_log_duration        => 90              ,
+  p_log_cache_size      => 1000            ,
+  p_conf_check_interval => 30              );
 
 --test some business logic
 begin
@@ -1338,13 +1339,48 @@ end;
 /
 
 --check current log cache
-select * from console_logs.view_log_cache;
+select * from table(console.view_log_cache);
 ```
 
 SIGNATURE
 
 ```sql
 function view_log_cache return tab_console_logs pipelined;
+```
+
+
+<h2><a id="view_last"></a>Function view_last</h2>
+<!---------------------------------------------->
+
+View the last log entries from the log cache and the log table (if not enough in
+the cache) in descending order.
+
+EXAMPLE
+
+```sql
+--init logging for own session
+exec console.init(
+  p_log_level           => c_level_verbose ,
+  p_log_duration        => 90              ,
+  p_log_cache_size      => 10              ,
+  p_conf_check_interval => 30              );
+
+--test some business logic
+begin
+  --your code here;
+
+  console_log('test', p_user_env => true);
+end;
+/
+
+--check current log cache
+select * from table(console.view_last(50));
+```
+
+SIGNATURE
+
+```sql
+function view_last (p_log_rows integer default 100) return tab_console_logs pipelined;
 ```
 
 

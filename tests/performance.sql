@@ -58,10 +58,10 @@ begin
   --configure and warm up logger and console
   logger.set_level(logger.g_debug);
   console.init(
-    p_log_level      => console.c_level_info ,
-    p_log_duration   => 90                      ,
-    p_cache_size     => 100                     ,
-    p_cache_duration => 30                      );
+    p_log_level           => console.c_level_info ,
+    p_log_duration        => 90                      ,
+    p_log_cache_size      => 0                       ,
+    p_conf_check_interval => 30                      );
   for i in 1 .. 10 loop
     logger.log ('warm up ' || to_char(i));
     console.log ('warm up ' || to_char(i));
