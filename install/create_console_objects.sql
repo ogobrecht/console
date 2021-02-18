@@ -180,7 +180,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.19.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.19.1'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -619,11 +619,11 @@ Clears the cached log entries (if any).
 
 This procedure is useful when you have initialized your own session with a cache
 size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_log_cache` during development. By
-clearing the cache you can avoid spoiling your CONSOLE_LOGS table with entries
-you do not need anymore.
+with the pipelined function `console.view_log_cache` or
+`console.view_last([numRows])` during development. By clearing the cache you can
+avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
 MANAGING LOGGING MODES OF SESSIONS.
 
 **/
@@ -750,7 +750,7 @@ truncated after 64 characters before using it.
 For easier usage there is an overloaded procedure available which uses always
 your own client identifier.
 
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
 MANAGING LOGGING MODES OF SESSIONS.
 
 EXAMPLES
@@ -814,7 +814,7 @@ Stopping the logging mode means also the cached log entries will be flushed to
 the logging table CONSOLE_LOGS. If you do not need the cached entries you can
 delete them in advance by calling the `clear` procedure.
 
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDET ONLY FOR
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
 MANAGING LOGGING MODES OF SESSIONS.
 
 **/
