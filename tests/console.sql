@@ -6,12 +6,12 @@ whenever sqlerror exit sql.sqlcode rollback
 prompt TEST CONSOLE
 prompt - some basic testing, unit tests will follow later...
 begin
-  console.init(p_log_level => console.c_level_info);
+  console.init(p_level => console.c_level_info);
   --apex_session.attach(100,64,12793951927384);
   console.log('APEX Page 64', p_apex_env => true);
   --apex_session.attach(100,200,12793951927384);
   console.log('APEX Page 200', p_apex_env => true);
-  console.init(p_log_level => console.c_level_verbose);
+  console.init(p_level => console.c_level_verbose);
   console.time;
   console.time      ('Test time');
   console.count;

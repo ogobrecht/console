@@ -7,7 +7,7 @@ set trimout on
 set trimspool on
 whenever sqlerror exit sql.sqlcode rollback
 
-prompt ORACLE INSTRUMENTATION CONSOLE: DROP CONSOLE OBJECTS
+prompt ORACLE INSTRUMENTATION CONSOLE: DROP DATABASE OBJECTS
 
 declare
   v_count        pls_integer;
@@ -43,8 +43,9 @@ begin
            table_name
       from user_tables
      where table_name in ('CONSOLE_LOGS', 'CONSOLE_SESSIONS', 'CONSOLE_LEVELS') )
+     -- FIXME: Remove obsolete CONSOLE_LEVELS, when we have a stable version.
   loop
-    --> FIXME: Do the following check, when we have a stable version available
+    --> FIXME: Do the following check, when we have a stable version available.
     --execute immediate 'select count(*) from ' || i.table_name ||
     --  case when i.table_name = 'CONSOLE_LOGS'
     --    then q'{ where log_level = 0 and message not like '{o,o} CONSOLE%' }'

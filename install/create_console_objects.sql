@@ -106,7 +106,7 @@ comment on column console_logs.log_systime       is 'Log systimestamp.';
 comment on column console_logs.level_id          is 'Level ID. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info) or 4 (verbose).';
 comment on column console_logs.level_name        is 'Level name. Can be Permanent, Error, Warning, Info or Verbose.';
 comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number). Couls also be an external scope provided by the user.';
-comment on column console_logs.message           is 'The log message itself and in case of an error or trace the call stack informaton.';
+comment on column console_logs.message           is 'The log message itself.';
 comment on column console_logs.error_code        is 'The error code. Is normally the SQLCODE, but could also be a user error code when log entry was coming from external (user interface, ETL preprocessing, whatever...)';
 comment on column console_logs.call_stack        is 'The call_stack and in case of an error also the error stack and error backtrace. Could also be an external call stack provided by the user.';
 comment on column console_logs.session_user      is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
@@ -130,26 +130,27 @@ begin
     dbms_output.put_line('- Table CONSOLE_SESSIONS not found, run creation command');
     execute immediate q'{
       create table console_sessions (
-        init_by              varchar2 (64 byte)            ,
-        init_sysdate         date                not null  ,
-        exit_sysdate         date                not null  ,
-        client_identifier    varchar2 (64 byte)  not null  ,
-        log_level            number   ( 1,0)     not null  ,
-        log_cache_size       number   ( 4,0)     not null  ,
-        conf_check_interval  number   ( 2,0)     not null  ,
-        call_stack           varchar2 ( 1 byte)  not null  ,
-        user_env             varchar2 ( 1 byte)  not null  ,
-        apex_env             varchar2 ( 1 byte)  not null  ,
-        cgi_env              varchar2 ( 1 byte)  not null  ,
-        console_env          varchar2 ( 1 byte)  not null  ,
+        init_by           varchar2 (64 byte)            ,
+        init_sysdate      date                not null  ,
+        exit_sysdate      date                not null  ,
+        client_identifier varchar2 (64 byte)  not null  ,
+        level_id          number   ( 1,0)     not null  ,
+        level_name        varchar2 (10 byte)  not null  ,
+        cache_size        number   ( 4,0)     not null  ,
+        check_interval    number   ( 2,0)     not null  ,
+        call_stack        varchar2 ( 1 byte)  not null  ,
+        user_env          varchar2 ( 1 byte)  not null  ,
+        apex_env          varchar2 ( 1 byte)  not null  ,
+        cgi_env           varchar2 ( 1 byte)  not null  ,
+        console_env       varchar2 ( 1 byte)  not null  ,
         --
-        constraint  console_sessions_pk   primary key ( client_identifier        )  ,
-        constraint  console_sessions_ck1  check       ( log_level in (0,1,2,3,4) )  ,
-        constraint  console_sessions_ck2  check       ( call_stack  in ('Y','N') )  ,
-        constraint  console_sessions_ck3  check       ( user_env    in ('Y','N') )  ,
-        constraint  console_sessions_ck4  check       ( apex_env    in ('Y','N') )  ,
-        constraint  console_sessions_ck5  check       ( cgi_env     in ('Y','N') )  ,
-        constraint  console_sessions_ck6  check       ( console_env in ('Y','N') )
+        constraint  console_sessions_pk   primary key ( client_identifier          )  ,
+        constraint  console_sessions_ck1  check       ( level_id    in (0,1,2,3,4) )  ,
+        constraint  console_sessions_ck2  check       ( call_stack  in ('Y','N')   )  ,
+        constraint  console_sessions_ck3  check       ( user_env    in ('Y','N')   )  ,
+        constraint  console_sessions_ck4  check       ( apex_env    in ('Y','N')   )  ,
+        constraint  console_sessions_ck5  check       ( cgi_env     in ('Y','N')   )  ,
+        constraint  console_sessions_ck6  check       ( console_env in ('Y','N')   )
       ) organization index
     }';
   else
@@ -159,19 +160,20 @@ begin
 end;
 /
 
-comment on table  console_sessions                      is 'Holds the sessions that are initialized for debugging. Used to manage the global context.';
-comment on column console_sessions.init_by              is 'The user who initiated the logging.';
-comment on column console_sessions.init_sysdate         is 'The logging start date for the nominated client identifier.';
-comment on column console_sessions.exit_sysdate         is 'The planned logging end date for the nominated client identifier.';
-comment on column console_sessions.client_identifier    is 'The client identifier provided by the application or console itself.';
-comment on column console_sessions.log_level            is 'The defined log level. Any session not listed here has the default log level of 1 (error).';
-comment on column console_sessions.conf_check_interval  is 'The number of seconds a session in logging mode looks for a changed configuration and flushes the cached log entries. Defaults to 10.';
-comment on column console_sessions.log_cache_size       is 'The number of log entries to cache before they are written down into the log table, if not already written by the end of the cache duration. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shered environments like APEX.';
-comment on column console_sessions.call_stack           is 'Should the call_stack be included.';
-comment on column console_sessions.user_env             is 'Should the user environment be included.';
-comment on column console_sessions.apex_env             is 'Should the APEX environment be included.';
-comment on column console_sessions.cgi_env              is 'Should the CGI environment be included.';
-comment on column console_sessions.console_env          is 'Should the console environment be included.';
+comment on table  console_sessions                     is 'Holds the sessions that are initialized for debugging. Used to manage the global context.';
+comment on column console_sessions.init_by             is 'The user who initiated the logging.';
+comment on column console_sessions.init_sysdate        is 'The logging start date for the nominated client identifier.';
+comment on column console_sessions.exit_sysdate        is 'The planned logging end date for the nominated client identifier.';
+comment on column console_sessions.client_identifier   is 'The client identifier provided by the application or console itself.';
+comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the default log level of 1 (error).';
+comment on column console_sessions.level_name          is 'The defined log level name. Any session not listed here has the default log level of Error.';
+comment on column console_sessions.check_interval is 'The number of seconds a session in logging mode looks for a changed configuration. Defaults to 10.';
+comment on column console_sessions.cache_size          is 'The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX.';
+comment on column console_sessions.call_stack          is 'Should the call_stack be included.';
+comment on column console_sessions.user_env            is 'Should the user environment be included.';
+comment on column console_sessions.apex_env            is 'Should the APEX environment be included.';
+comment on column console_sessions.cgi_env             is 'Should the CGI environment be included.';
+comment on column console_sessions.console_env         is 'Should the console environment be included.';
 
 
 
@@ -180,7 +182,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.19.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.20.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -210,7 +212,7 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type tab_console_logs is table of console_logs%rowtype;
+type tab_logs is table of console_logs%rowtype;
 
 
 --------------------------------------------------------------------------------
@@ -619,7 +621,7 @@ Clears the cached log entries (if any).
 
 This procedure is useful when you have initialized your own session with a cache
 size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_log_cache` or
+with the pipelined function `console.view_cache` or
 `console.view_last([numRows])` during development. By clearing the cache you can
 avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
@@ -729,16 +731,16 @@ to only set the action attribute with the `action` (see below).
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier   varchar2                      , -- The client identifier provided by the application or console itself.
-  p_log_level           integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration        integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_log_cache_size      integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_conf_check_interval integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack          boolean  default false        , -- Should the call stack be included.
-  p_user_env            boolean  default false        , -- Should the user environment be included.
-  p_apex_env            boolean  default false        , -- Should the APEX environment be included.
-  p_cgi_env             boolean  default false        , -- Should the CGI environment be included.
-  p_console_env         boolean  default false          -- Should the console environment be included.
+  p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
+  p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_duration          integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack        boolean  default false        , -- Should the call stack be included.
+  p_user_env          boolean  default false        , -- Should the user environment be included.
+  p_apex_env          boolean  default false        , -- Should the APEX environment be included.
+  p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
+  p_console_env       boolean  default false          -- Should the console environment be included.
 );
 /**
 
@@ -776,8 +778,8 @@ exec console.init('APEX:8805903776765');
 begin
   console.init(
     p_client_identifier => 'APEX:8805903776765',
-    p_log_level         => console.c_level_verbose,
-    p_log_duration      => 15
+    p_level             => console.c_level_verbose,
+    p_duration          => 15
   );
 end;
 {{/}}
@@ -786,15 +788,15 @@ end;
 **/
 
 procedure init (
-  p_log_level           integer default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
-  p_log_duration        integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_log_cache_size      integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_conf_check_interval integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack          boolean default false        , -- Should the call stack be included.
-  p_user_env            boolean default false        , -- Should the user environment be included.
-  p_apex_env            boolean default false        , -- Should the APEX environment be included.
-  p_cgi_env             boolean default false        , -- Should the CGI environment be included.
-  p_console_env         boolean default false          -- Should the console environment be included.
+  p_level          integer default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_duration       integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size     integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack     boolean default false        , -- Should the call stack be included.
+  p_user_env       boolean default false        , -- Should the user environment be included.
+  p_apex_env       boolean default false        , -- Should the APEX environment be included.
+  p_cgi_env        boolean default false        , -- Should the CGI environment be included.
+  p_console_env    boolean default false          -- Should the console environment be included.
 );
 
 procedure exit (
@@ -994,6 +996,16 @@ following Markdown table row:
 
 --------------------------------------------------------------------------------
 
+function get_level_name(p_level integer) return varchar2 deterministic;
+/*
+
+Returns the level name for a given level id and null, if the level is not
+between 0 and 4.
+
+*/
+
+--------------------------------------------------------------------------------
+
 function  get_runtime ( p_start timestamp ) return varchar2;
 /**
 
@@ -1125,7 +1137,7 @@ procedure clob_append (
   p_text  in            varchar2 );
 /**
 
-High performance clob concatenation. Also see flush_clob_cache below.
+High performance clob concatenation. Also see clob_flush_cache below.
 
 Is used internally by console for the table method (and other things). Do not
 forget a final flush cache call when you use it in your own code.
@@ -1142,7 +1154,7 @@ begin
   for i in 1..100000 loop
     console.clob_append(v_clob, v_cache, 'a');
   end loop;
-  console.flush_clob_cache(v_clob, v_cache);
+  console.clob_flush_cache(v_clob, v_cache);
   dbms_output.put_line('Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)));
   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
 end;
@@ -1160,11 +1172,11 @@ procedure clob_append (
 High performance clob concatenation.
 
 Overloaded method for appending a clob. Also see clob_append above with p_text
-beeing a varchar2 parameter and flush_clob_cache below.
+beeing a varchar2 parameter and clob_flush_cache below.
 
 **/
 
-procedure flush_clob_cache (
+procedure clob_flush_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 );
 /**
@@ -1177,7 +1189,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-procedure flush_log_cache;
+procedure flush_cache;
 /**
 
 Flushes the log cache and writes down the entries to the log table.
@@ -1188,7 +1200,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_log_cache return tab_console_logs pipelined;
+function view_cache return tab_logs pipelined;
 /**
 
 View the content of the log cache.
@@ -1198,10 +1210,10 @@ EXAMPLE
 ```sql
 --init logging for own session
 exec console.init(
-  p_log_level           => c_level_verbose ,
-  p_log_duration        => 90              ,
-  p_log_cache_size      => 1000            ,
-  p_conf_check_interval => 30              );
+  p_level          => c_level_verbose ,
+  p_duration       => 90              ,
+  p_cache_size     => 1000            ,
+  p_check_interval => 30              );
 
 --test some business logic
 begin
@@ -1212,28 +1224,30 @@ end;
 {{/}}
 
 --check current log cache
-select * from table(console.view_log_cache);
+select * from table(console.view_cache);
 ```
 
 **/
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows integer default 100) return tab_console_logs pipelined;
+function view_last (p_log_rows integer default 100) return tab_logs pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
 the cache) in descending order.
+
+The entries without a log_id are from the cache, the others from the log table.
 
 EXAMPLE
 
 ```sql
 --init logging for own session
 exec console.init(
-  p_log_level           => c_level_verbose ,
-  p_log_duration        => 90              ,
-  p_log_cache_size      => 10              ,
-  p_conf_check_interval => 30              );
+  p_level          => c_level_verbose ,
+  p_duration       => 90              ,
+  p_cache_size     => 10              ,
+  p_check_interval => 30              );
 
 --test some business logic
 begin
@@ -1310,67 +1324,67 @@ pragma exception_init (insufficient_privileges, -1031);
 c_identifier_length   constant pls_integer := 128;
 subtype t_identifier  is varchar2 (c_identifier_length char);
 
-c_tab                          constant varchar2 ( 1 byte) := chr(9);
-c_cr                           constant varchar2 ( 1 byte) := chr(13);
-c_lf                           constant varchar2 ( 1 byte) := chr(10);
-c_lflf                         constant varchar2 ( 2 byte) := chr(10) || chr(10);
-c_crlf                         constant varchar2 ( 2 byte) := chr(13) || chr(10);
-c_sep                          constant varchar2 ( 1 byte) := ',';
-c_at                           constant varchar2 ( 1 byte) := '@';
-c_hash                         constant varchar2 ( 1 byte) := '#';
-c_slash                        constant varchar2 ( 1 byte) := '/';
-c_ampersand                    constant varchar2 ( 1 byte) := chr(26);
-c_html_ampersand               constant varchar2 ( 5 byte) := chr(26) || 'amp;';
-c_html_less_then               constant varchar2 ( 4 byte) := chr(26) || 'lt;';
-c_html_greater_then            constant varchar2 ( 4 byte) := chr(26) || 'gt;';
-c_timestamp_format             constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
-c_default_label                constant varchar2 (64 byte) := 'Default';
-c_anon_block_ora               constant varchar2 (20 byte) := '__anonymous_block';
-c_anonymous_block              constant varchar2 (20 byte) := 'anonymous_block';
-c_client_id_prefix             constant varchar2 ( 6 byte) := '{o,o} ';
-c_console_pkg_name             constant varchar2 (60 byte) := $$plsql_unit || '.';
-c_ctx_namespace                constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
-c_ctx_test_attribute           constant varchar2 (15 byte) := 'TEST';
-c_ctx_date_format              constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
-c_ctx_exit_sysdate             constant varchar2 (15 byte) := 'EXIT_SYSDATE';
-c_ctx_log_level                constant varchar2 (15 byte) := 'LOG_LEVEL';
-c_ctx_log_cache_size           constant varchar2 (15 byte) := 'LOG_CACHE_SIZE';
-c_ctx_conf_check_interval      constant varchar2 (20 byte) := 'CONF_CHECK_INTERVAL';
-c_ctx_call_stack               constant varchar2 (15 byte) := 'CALL_STACK';
-c_ctx_user_env                 constant varchar2 (15 byte) := 'USER_ENV';
-c_ctx_apex_env                 constant varchar2 (15 byte) := 'APEX_ENV';
-c_ctx_cgi_env                  constant varchar2 (15 byte) := 'CGI_ENV';
-c_ctx_console_env              constant varchar2 (15 byte) := 'CONSOLE_ENV';
-c_vc_max_size                  constant pls_integer        := 32767;
+c_tab                     constant varchar2 ( 1 byte) := chr(9);
+c_cr                      constant varchar2 ( 1 byte) := chr(13);
+c_lf                      constant varchar2 ( 1 byte) := chr(10);
+c_lflf                    constant varchar2 ( 2 byte) := chr(10) || chr(10);
+c_crlf                    constant varchar2 ( 2 byte) := chr(13) || chr(10);
+c_sep                     constant varchar2 ( 1 byte) := ',';
+c_at                      constant varchar2 ( 1 byte) := '@';
+c_hash                    constant varchar2 ( 1 byte) := '#';
+c_slash                   constant varchar2 ( 1 byte) := '/';
+c_ampersand               constant varchar2 ( 1 byte) := chr(26);
+c_html_ampersand          constant varchar2 ( 5 byte) := chr(26) || 'amp;';
+c_html_less_then          constant varchar2 ( 4 byte) := chr(26) || 'lt;';
+c_html_greater_then       constant varchar2 ( 4 byte) := chr(26) || 'gt;';
+c_timestamp_format        constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
+c_default_label           constant varchar2 (10 byte) := 'Default';
+c_anon_block_ora          constant varchar2 (20 byte) := '__anonymous_block';
+c_anonymous_block         constant varchar2 (20 byte) := 'anonymous_block';
+c_client_id_prefix        constant varchar2 (10 byte) := '{o,o} ';
+c_console_pkg_name        constant varchar2 (30 byte) := $$plsql_unit || '.';
+c_ctx_namespace           constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
+c_ctx_test_attribute      constant varchar2 (15 byte) := 'TEST';
+c_ctx_date_format         constant varchar2 (30 byte) := 'yyyy-mm-dd hh24:mi:ss';
+c_ctx_exit_sysdate        constant varchar2 (15 byte) := 'EXIT_SYSDATE';
+c_ctx_level               constant varchar2 (15 byte) := 'LEVEL';
+c_ctx_cache_size          constant varchar2 (15 byte) := 'CACHE_SIZE';
+c_ctx_check_interval      constant varchar2 (15 byte) := 'CHECK_INTERVAL';
+c_ctx_call_stack          constant varchar2 (15 byte) := 'CALL_STACK';
+c_ctx_user_env            constant varchar2 (15 byte) := 'USER_ENV';
+c_ctx_apex_env            constant varchar2 (15 byte) := 'APEX_ENV';
+c_ctx_cgi_env             constant varchar2 (15 byte) := 'CGI_ENV';
+c_ctx_console_env         constant varchar2 (15 byte) := 'CONSOLE_ENV';
+c_vc_max_size             constant pls_integer        := 32767;
 
 -- numeric type identfiers
-c_number                       constant pls_integer := 2;   -- float
-c_binary_float                 constant pls_integer := 100;
-c_binary_double                constant pls_integer := 101;
+c_number                  constant pls_integer := 2;   -- float
+c_binary_float            constant pls_integer := 100;
+c_binary_double           constant pls_integer := 101;
 -- string type identfiers
-c_char                         constant pls_integer := 96;  -- nchar
-c_varchar2                     constant pls_integer := 1;   -- nvarchar2
-c_long                         constant pls_integer := 8;
-c_clob                         constant pls_integer := 112; -- nclob
-c_xmltype                      constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
-c_rowid                        constant pls_integer := 69;
-c_urowid                       constant pls_integer := 208;
+c_char                    constant pls_integer := 96;  -- nchar
+c_varchar2                constant pls_integer := 1;   -- nvarchar2
+c_long                    constant pls_integer := 8;
+c_clob                    constant pls_integer := 112; -- nclob
+c_xmltype                 constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
+c_rowid                   constant pls_integer := 69;
+c_urowid                  constant pls_integer := 208;
 -- binary type identfiers
-c_raw                          constant pls_integer := 23;
-c_long_raw                     constant pls_integer := 24;
-c_blob                         constant pls_integer := 113;
-c_bfile                        constant pls_integer := 114;
+c_raw                     constant pls_integer := 23;
+c_long_raw                constant pls_integer := 24;
+c_blob                    constant pls_integer := 113;
+c_bfile                   constant pls_integer := 114;
 -- date type identfiers
-c_date                         constant pls_integer := 12;
-c_timestamp                    constant pls_integer := 180;
-c_timestamp_tz                 constant pls_integer := 181;
-c_timestamp_ltz                constant pls_integer := 231;
+c_date                    constant pls_integer := 12;
+c_timestamp               constant pls_integer := 180;
+c_timestamp_tz            constant pls_integer := 181;
+c_timestamp_ltz           constant pls_integer := 231;
 -- interval type identfiers
-c_interval_year_to_month       constant pls_integer := 182;
-c_interval_day_to_second       constant pls_integer := 183;
+c_interval_year_to_month  constant pls_integer := 182;
+c_interval_day_to_second  constant pls_integer := 183;
 -- cursor type identfiers
-c_ref                          constant pls_integer := 111;
-c_ref_cursor                   constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
+c_ref                     constant pls_integer := 111;
+c_ref_cursor              constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
 subtype vc16    is varchar2 (   16 char);
 subtype vc32    is varchar2 (   32 char);
@@ -1383,13 +1397,13 @@ subtype vc2000  is varchar2 ( 2000 char);
 subtype vc4000  is varchar2 ( 4000 char);
 subtype vc_max  is varchar2 (32767 char);
 
-g_conf_re_evaluate_sysdate  date;
+g_conf_check_sysdate        date;
 g_conf_exit_sysdate         date;
 g_conf_context_is_available boolean;
 g_conf_client_identifier    varchar2 (64 byte);
-g_conf_log_level            pls_integer;
-g_conf_log_cache_size       integer;
-g_conf_conf_check_interval  integer;
+g_conf_level                pls_integer;
+g_conf_cache_size           integer;
+g_conf_check_interval       integer;
 g_conf_call_stack           boolean;
 g_conf_user_env             boolean;
 g_conf_apex_env             boolean;
@@ -1400,7 +1414,7 @@ type tab_timers is table of timestamp index by t_identifier;
 type tab_counters is table of pls_integer index by t_identifier;
 g_timers tab_timers;
 g_counters tab_counters;
-g_console_logs tab_console_logs := new tab_console_logs();
+g_logs tab_logs := new tab_logs();
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -1459,7 +1473,7 @@ end;
 
 function my_log_level return integer is
 begin
-  return g_conf_log_level;
+  return g_conf_level;
 end my_log_level;
 
 --------------------------------------------------------------------------------
@@ -1819,7 +1833,7 @@ procedure clear (
   p_client_identifier varchar2 default my_client_identifier )
 is
 begin
-  g_console_logs.delete;
+  g_logs.delete;
 end;
 
 --------------------------------------------------------------------------------
@@ -2008,16 +2022,16 @@ end module;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier    varchar2                      ,
-  p_log_level            integer  default c_level_info ,
-  p_log_duration         integer  default 60           ,
-  p_log_cache_size       integer  default 0            ,
-  p_conf_check_interval  integer  default 10           ,
-  p_call_stack           boolean  default false        ,
-  p_user_env             boolean  default false        ,
-  p_apex_env             boolean  default false        ,
-  p_cgi_env              boolean  default false        ,
-  p_console_env          boolean  default false        )
+  p_client_identifier varchar2                      ,
+  p_level             integer  default c_level_info ,
+  p_duration          integer  default 60           ,
+  p_cache_size        integer  default 0            ,
+  p_check_interval    integer  default 10           ,
+  p_call_stack        boolean  default false        ,
+  p_user_env          boolean  default false        ,
+  p_apex_env          boolean  default false        ,
+  p_cgi_env           boolean  default false        ,
+  p_console_env       boolean  default false        )
 is
   pragma autonomous_transaction;
   v_row         console_sessions%rowtype;
@@ -2040,32 +2054,33 @@ is
   end;
   --
 begin
-  assert ( p_log_level           in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). ' ||
-                                                     'Level 1 (error) and 0 (permanent) are always logged '     ||
-                                                     'without a call to the init method.'                       );
-  assert ( p_log_duration        between 1 and 1440, 'Log duration needs to be between 1 and 1440 (minutes).'       );
-  assert ( p_log_cache_size      between 0 and 1000, 'Log cache size needs to be between 1 and 1000 (log entries).' );
-  assert ( p_conf_check_interval between 1 and   60, 'Cache duration needs to be between 1 and 60 (seconds).'   );
-  assert ( p_call_stack          is not null,        'Call stack needs to be true or false (not null).'         );
-  assert ( p_user_env            is not null,        'User env needs to be true or false (not null).'           );
-  assert ( p_apex_env            is not null,        'APEX env needs to be true or false (not null).'           );
-  assert ( p_cgi_env             is not null,        'CGI env needs to be true or false (not null).'            );
-  assert ( p_console_env         is not null,        'Console env needs to be true or false (not null).'        );
+  assert ( p_level          in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). ' ||
+                                                'Level 1 (error) and 0 (permanent) are always logged '     ||
+                                                'without a call to the init method.'                       );
+  assert ( p_duration       between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
+  assert ( p_cache_size     between 0 and 1000, 'Cache size needs to be between 1 and 1000 (log entries).' );
+  assert ( p_check_interval between 1 and   60, 'Cache duration needs to be between 1 and 60 (seconds).'   );
+  assert ( p_call_stack     is not null,        'Call stack needs to be true or false (not null).'         );
+  assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
+  assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
+  assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
+  assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).'        );
   --
-  v_row.init_by              := substrb( coalesce(
-                                 sys_context('USERENV', 'OS_USER'),
-                                 sys_context('USERENV', 'SESSION_USER') ), 1, 64 );
-  v_row.init_sysdate         := sysdate;
-  v_row.exit_sysdate         := sysdate + 1/24/60 * p_log_duration;
-  v_row.client_identifier    := substrb ( p_client_identifier, 1, 64 );
-  v_row.log_level            := p_log_level;
-  v_row.log_cache_size       := p_log_cache_size;
-  v_row.conf_check_interval  := p_conf_check_interval;
-  v_row.call_stack           := to_yn ( p_call_stack  );
-  v_row.user_env             := to_yn ( p_user_env    );
-  v_row.apex_env             := to_yn ( p_apex_env    );
-  v_row.cgi_env              := to_yn ( p_cgi_env     );
-  v_row.console_env          := to_yn ( p_console_env );
+  v_row.init_by           := substrb(coalesce(
+                                sys_context('USERENV', 'OS_USER'),
+                                sys_context('USERENV', 'SESSION_USER') ), 1, 64 );
+  v_row.init_sysdate      := sysdate;
+  v_row.exit_sysdate      := sysdate + 1/24/60 * p_duration;
+  v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
+  v_row.level_id          := p_level;
+  v_row.level_name        := get_level_name(p_level);
+  v_row.cache_size        := p_cache_size;
+  v_row.check_interval    := p_check_interval;
+  v_row.call_stack        := to_yn ( p_call_stack  );
+  v_row.user_env          := to_yn ( p_user_env    );
+  v_row.apex_env          := to_yn ( p_apex_env    );
+  v_row.cgi_env           := to_yn ( p_cgi_env     );
+  v_row.console_env       := to_yn ( p_console_env );
   --
   select count(*) into v_count from console_sessions where client_identifier = p_client_identifier;
   if v_count = 0 then
@@ -2077,15 +2092,15 @@ begin
   commit;
   --
   if g_conf_context_is_available then
-    set_context ( c_ctx_log_level           , to_char ( v_row.log_level                       ) , p_client_identifier );
-    set_context ( c_ctx_exit_sysdate        , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
-    set_context ( c_ctx_log_cache_size      , to_char ( v_row.log_cache_size                  ) , p_client_identifier );
-    set_context ( c_ctx_conf_check_interval , to_char ( v_row.conf_check_interval             ) , p_client_identifier );
-    set_context ( c_ctx_call_stack          , to_char ( v_row.call_stack                      ) , p_client_identifier );
-    set_context ( c_ctx_user_env            , to_char ( v_row.user_env                        ) , p_client_identifier );
-    set_context ( c_ctx_apex_env            , to_char ( v_row.apex_env                        ) , p_client_identifier );
-    set_context ( c_ctx_cgi_env             , to_char ( v_row.cgi_env                         ) , p_client_identifier );
-    set_context ( c_ctx_console_env         , to_char ( v_row.console_env                     ) , p_client_identifier );
+    set_context ( c_ctx_level          , to_char ( v_row.level_id                        ) , p_client_identifier );
+    set_context ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
+    set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
+    set_context ( c_ctx_check_interval , to_char ( v_row.check_interval                  ) , p_client_identifier );
+    set_context ( c_ctx_call_stack     , to_char ( v_row.call_stack                      ) , p_client_identifier );
+    set_context ( c_ctx_user_env       , to_char ( v_row.user_env                        ) , p_client_identifier );
+    set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env                        ) , p_client_identifier );
+    set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env                         ) , p_client_identifier );
+    set_context ( c_ctx_console_env    , to_char ( v_row.console_env                     ) , p_client_identifier );
   end if;
 
   -- If we want to monitor our own session, wee need to load the configuration
@@ -2099,27 +2114,27 @@ begin
 end init;
 
 procedure init (
-  p_log_level           integer default c_level_info ,
-  p_log_duration        integer default 60             ,
-  p_log_cache_size      integer default 0              ,
-  p_conf_check_interval integer default 10             ,
-  p_call_stack          boolean default false          ,
-  p_user_env            boolean default false          ,
-  p_apex_env            boolean default false          ,
-  p_cgi_env             boolean default false          ,
-  p_console_env         boolean default false          )
+  p_level          integer default c_level_info ,
+  p_duration       integer default 60             ,
+  p_cache_size     integer default 0              ,
+  p_check_interval integer default 10             ,
+  p_call_stack     boolean default false          ,
+  p_user_env       boolean default false          ,
+  p_apex_env       boolean default false          ,
+  p_cgi_env        boolean default false          ,
+  p_console_env    boolean default false          )
 is
 begin
   init (
-    p_client_identifier   => g_conf_client_identifier ,
-    p_log_level           => p_log_level              ,
-    p_log_duration        => p_log_duration           ,
-    p_conf_check_interval => p_conf_check_interval    ,
-    p_log_cache_size      => p_log_cache_size         ,
-    p_user_env            => p_user_env               ,
-    p_apex_env            => p_apex_env               ,
-    p_cgi_env             => p_cgi_env                ,
-    p_console_env         => p_console_env            );
+    p_client_identifier => g_conf_client_identifier ,
+    p_level             => p_level                  ,
+    p_duration          => p_duration               ,
+    p_check_interval    => p_check_interval         ,
+    p_cache_size        => p_cache_size             ,
+    p_user_env          => p_user_env               ,
+    p_apex_env          => p_apex_env               ,
+    p_cgi_env           => p_cgi_env                ,
+    p_console_env       => p_console_env            );
 end init;
 
 --------------------------------------------------------------------------------
@@ -2139,7 +2154,7 @@ begin
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     utl_load_session_configuration;
-    flush_log_cache;
+    flush_cache;
   end if;
 end;
 
@@ -2322,7 +2337,7 @@ begin
   create_header;
   create_data;
   clob_append(v_clob, v_cache, c_lf || '</table>' || c_lf);
-  flush_clob_cache(v_clob, v_cache);
+  clob_flush_cache(v_clob, v_cache);
   close_cursor(v_cursor_id);
   return v_clob;
 end to_html_table;
@@ -2367,6 +2382,18 @@ begin
 end;
 
 --------------------------------------------------------------------------------
+
+function get_level_name(p_level integer) return varchar2 deterministic is
+begin
+  return case p_level
+    when 0 then 'Permanent'
+    when 1 then 'Error'
+    when 2 then 'Warning'
+    when 3 then 'Info'
+    when 4 then 'Verbose'
+    else null
+  end;
+end get_level_name;
 
 function get_runtime ( p_start timestamp ) return varchar2 is
   v_runtime varchar2(32);
@@ -2513,7 +2540,7 @@ begin
 
   clob_append(v_clob, v_cache,
     '### Page Items' ||
-    case when g_conf_log_level < c_level_verbose and v_app_page_id is not null then ' - APP_PAGE_ID ' || v_app_page_id end ||
+    case when g_conf_level < c_level_verbose and v_app_page_id is not null then ' - APP_PAGE_ID ' || v_app_page_id end ||
     c_lflf || to_md_tab_header('Item Name'));
   for i in (
     select item_name
@@ -2529,7 +2556,7 @@ begin
   end loop;
   clob_append(v_clob, v_cache, c_lf);
 
-  flush_clob_cache(v_clob, v_cache);
+  clob_flush_cache(v_clob, v_cache);
 
   $end
   return v_clob;
@@ -2570,13 +2597,13 @@ is
   --
 begin
   v_return := '## Console Environment' || c_lflf || to_md_tab_header;
-  append_row('g_conf_re_evaluate_sysdate',  to_char( g_conf_re_evaluate_sysdate, c_ctx_date_format ) );
+  append_row('g_conf_check_sysdate',        to_char( g_conf_check_sysdate,       c_ctx_date_format ) );
   append_row('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
   append_row('g_conf_context_is_available',   to_yn( g_conf_context_is_available                   ) );
   append_row('g_conf_client_identifier',             g_conf_client_identifier                        );
-  append_row('g_conf_log_level',            to_char( g_conf_log_level                              ) );
-  append_row('g_conf_log_cache_size',       to_char( g_conf_log_cache_size                         ) );
-  append_row('g_conf_conf_check_interval',  to_char( g_conf_conf_check_interval                    ) );
+  append_row('g_conf_level',                to_char( g_conf_level                                  ) );
+  append_row('g_conf_cache_size',           to_char( g_conf_cache_size                             ) );
+  append_row('g_conf_check_interval',       to_char( g_conf_check_interval                         ) );
   append_row('g_conf_call_stack',             to_yn( g_conf_call_stack                             ) );
   append_row('g_conf_user_env',               to_yn( g_conf_user_env                               ) );
   append_row('g_conf_apex_env',               to_yn( g_conf_apex_env                               ) );
@@ -2748,7 +2775,7 @@ procedure clob_append (
 is
 begin
   if p_text is not null then
-    flush_clob_cache(p_clob, p_cache);
+    clob_flush_cache(p_clob, p_cache);
     if p_clob is null then
       p_clob := p_text;
     else
@@ -2759,7 +2786,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure flush_clob_cache (
+procedure clob_flush_cache (
   p_clob  in out nocopy clob     ,
   p_cache in out nocopy varchar2 )
 is
@@ -2772,40 +2799,40 @@ begin
     end if;
     p_cache := null;
   end if;
-end flush_clob_cache;
+end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
-procedure flush_log_cache is
+procedure flush_cache is
   pragma autonomous_transaction;
 begin
-  if g_console_logs.count > 0 then
-    forall i in 1 .. g_console_logs.count
-      insert into console_logs values g_console_logs(i);
+  if g_logs.count > 0 then
+    forall i in 1 .. g_logs.count
+      insert into console_logs values g_logs(i);
     commit;
-    g_console_logs.delete;
+    g_logs.delete;
   end if;
-end flush_log_cache;
+end flush_cache;
 
 --------------------------------------------------------------------------------
 
-function view_log_cache return tab_console_logs pipelined is
+function view_cache return tab_logs pipelined is
 begin
-  for i in reverse 1 .. g_console_logs.count loop
-    pipe row(g_console_logs(i));
+  for i in reverse 1 .. g_logs.count loop
+    pipe row(g_logs(i));
   end loop;
-end view_log_cache;
+end view_cache;
 
 --------------------------------------------------------------------------------
 
 function view_last (p_log_rows integer default 100)
-return tab_console_logs pipelined is
+return tab_logs pipelined is
   v_count pls_integer := 0;
   v_left  pls_integer;
 begin
-  for i in reverse 1 .. g_console_logs.count loop
+  for i in reverse 1 .. g_logs.count loop
     exit when v_count > p_log_rows;
-    pipe row(g_console_logs(i));
+    pipe row(g_logs(i));
     v_count := v_count + 1;
   end loop;
   if v_count < p_log_rows then
@@ -2838,10 +2865,10 @@ function utl_logging_is_enabled (
   p_level integer )
 return boolean is
 begin
-  if g_conf_re_evaluate_sysdate < sysdate then
+  if g_conf_check_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
-  return g_conf_log_level >= p_level or sqlcode != 0;
+  return g_conf_level >= p_level or sqlcode != 0;
 end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
@@ -2914,39 +2941,39 @@ procedure utl_load_session_configuration is
   begin
     --We have no real conf until now, so we fake 24 hours.
     --Conf will be re-evaluated at least every 10 seconds.
-    g_conf_exit_sysdate        := sysdate + 1;
-    g_conf_log_level           := 1;
-    g_conf_log_cache_size      := 0;
-    g_conf_conf_check_interval := 10;
-    g_conf_call_stack          := false;
-    g_conf_user_env            := false;
-    g_conf_apex_env            := false;
-    g_conf_cgi_env             := false;
-    g_conf_console_env         := false;
+    g_conf_exit_sysdate   := sysdate + 1;
+    g_conf_level          := 1;
+    g_conf_cache_size     := 0;
+    g_conf_check_interval := 10;
+    g_conf_call_stack     := false;
+    g_conf_user_env       := false;
+    g_conf_apex_env       := false;
+    g_conf_cgi_env        := false;
+    g_conf_console_env    := false;
   end set_default_config;
   --
   procedure load_config_from_context is
   begin
-    g_conf_log_level           := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_level           ) );
-    g_conf_log_cache_size      := to_number ( sys_context ( c_ctx_namespace, c_ctx_log_cache_size      ) );
-    g_conf_conf_check_interval := to_number ( sys_context ( c_ctx_namespace, c_ctx_conf_check_interval ) );
-    g_conf_call_stack          := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_call_stack          ) );
-    g_conf_user_env            := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env            ) );
-    g_conf_apex_env            := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env            ) );
-    g_conf_cgi_env             := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env             ) );
-    g_conf_console_env         := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env         ) );
+    g_conf_level          := to_number ( sys_context ( c_ctx_namespace, c_ctx_level          ) );
+    g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
+    g_conf_check_interval := to_number ( sys_context ( c_ctx_namespace, c_ctx_check_interval ) );
+    g_conf_call_stack     := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_call_stack     ) );
+    g_conf_user_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env       ) );
+    g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
+    g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
+    g_conf_console_env    := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env    ) );
   end load_config_from_context;
   --
   procedure load_config_from_table_row is
   begin
-    g_conf_log_level           :=           v_row.log_level            ;
-    g_conf_log_cache_size      :=           v_row.log_cache_size       ;
-    g_conf_conf_check_interval :=           v_row.conf_check_interval  ;
-    g_conf_call_stack          := to_bool ( v_row.call_stack          );
-    g_conf_user_env            := to_bool ( v_row.user_env            );
-    g_conf_apex_env            := to_bool ( v_row.apex_env            );
-    g_conf_cgi_env             := to_bool ( v_row.cgi_env             );
-    g_conf_console_env         := to_bool ( v_row.console_env         );
+    g_conf_level          :=           v_row.level_id        ;
+    g_conf_cache_size     :=           v_row.cache_size      ;
+    g_conf_check_interval :=           v_row.check_interval  ;
+    g_conf_call_stack     := to_bool ( v_row.call_stack     );
+    g_conf_user_env       := to_bool ( v_row.user_env       );
+    g_conf_apex_env       := to_bool ( v_row.apex_env       );
+    g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
+    g_conf_console_env    := to_bool ( v_row.console_env    );
   end load_config_from_table_row;
   --
 begin
@@ -2974,7 +3001,7 @@ begin
 
   end if;
 
-  g_conf_re_evaluate_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60*10);
+  g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60*10);
 
 end utl_load_session_configuration;
 
@@ -3054,17 +3081,11 @@ begin
     clob_append(v_row.message, v_cache, get_user_env);
   end if;
 
-  flush_clob_cache(v_row.message, v_cache);
+  clob_flush_cache(v_row.message, v_cache);
 
   v_row.log_systime       := systimestamp;
   v_row.level_id          := p_level;
-  v_row.level_name        :=  case p_level
-                                when 0 then 'Permanent'
-                                when 1 then 'Error'
-                                when 2 then 'Warning'
-                                when 3 then 'Info'
-                                when 4 then 'Verbose'
-                              end;
+  v_row.level_name        := get_level_name(p_level);
   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
   v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
   v_row.action            := substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 );
@@ -3075,12 +3096,12 @@ begin
   v_row.os_user           := substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 );
   v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
 
-  if g_conf_log_cache_size > 0 and p_level > c_level_error and sqlcode = 0 then
-    g_console_logs.extend;
-    g_console_logs(g_console_logs.count) := v_row;
+  if g_conf_cache_size > 0 and p_level > c_level_error and sqlcode = 0 then
+    g_logs.extend;
+    g_logs(g_logs.count) := v_row;
   else
-    if g_conf_log_cache_size > 0 then
-      flush_log_cache;
+    if g_conf_cache_size > 0 then
+      flush_cache;
     end if;
     insert into console_logs values v_row returning log_id into v_row.log_id;
     commit;
