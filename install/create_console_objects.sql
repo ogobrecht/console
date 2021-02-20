@@ -182,7 +182,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.20.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.21.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -212,7 +212,11 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type tab_logs is table of console_logs%rowtype;
+type rec_key_value is record(
+  key    varchar2 ( 128 byte)  ,
+  value  varchar2 (1000 byte)  );
+type tab_key_value is table of rec_key_value;
+type tab_logs      is table of console_logs%rowtype;
 
 
 --------------------------------------------------------------------------------
@@ -1224,7 +1228,7 @@ end;
 {{/}}
 
 --check current log cache
-select * from table(console.view_cache);
+select * from console.view_cache();
 ```
 
 **/
@@ -1258,7 +1262,23 @@ end;
 {{/}}
 
 --check current log cache
-select * from table(console.view_last(50));
+select * from console.view_last(50);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function view_status return tab_key_value pipelined;
+/**
+
+View the current package status (config, number entries cache/timer/counter,
+version etc.).
+
+EXAMPLE
+
+```sql
+select * from console.view_status();
 ```
 
 **/
@@ -2845,6 +2865,29 @@ begin
     end loop;
   end if;
 end view_last;
+
+--------------------------------------------------------------------------------
+
+function view_status return tab_key_value pipelined is
+  v_row rec_key_value;
+begin
+  pipe row(new rec_key_value('g_conf_context_is_available',   to_yn( g_conf_context_is_available                           )) );
+  pipe row(new rec_key_value('g_conf_check_sysdate',        to_char( g_conf_check_sysdate,       c_ctx_date_format         )) );
+  pipe row(new rec_key_value('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format         )) );
+  pipe row(new rec_key_value('g_conf_client_identifier',             g_conf_client_identifier                               ) );
+  pipe row(new rec_key_value('g_conf_level',                to_char( g_conf_level||' ('||get_level_name(g_conf_level)||')' )) );
+  pipe row(new rec_key_value('g_conf_cache_size',           to_char( g_conf_cache_size                                     )) );
+  pipe row(new rec_key_value('g_conf_check_interval',       to_char( g_conf_check_interval                                 )) );
+  pipe row(new rec_key_value('g_conf_call_stack',             to_yn( g_conf_call_stack                                     )) );
+  pipe row(new rec_key_value('g_conf_user_env',               to_yn( g_conf_user_env                                       )) );
+  pipe row(new rec_key_value('g_conf_apex_env',               to_yn( g_conf_apex_env                                       )) );
+  pipe row(new rec_key_value('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                        )) );
+  pipe row(new rec_key_value('g_conf_console_env',            to_yn( g_conf_console_env                                    )) );
+  pipe row(new rec_key_value('c_version',                   to_char( c_version                                             )) );
+  pipe row(new rec_key_value('g_timers.count',              to_char( g_timers.count                                        )) );
+  pipe row(new rec_key_value('g_counters.count',            to_char( g_counters.count                                      )) );
+end view_status;
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS

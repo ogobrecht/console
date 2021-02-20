@@ -1533,6 +1533,29 @@ begin
 end view_last;
 
 --------------------------------------------------------------------------------
+
+function view_status return tab_key_value pipelined is
+  v_row rec_key_value;
+begin
+  pipe row(new rec_key_value('g_conf_context_is_available',   to_yn( g_conf_context_is_available                           )) );
+  pipe row(new rec_key_value('g_conf_check_sysdate',        to_char( g_conf_check_sysdate,       c_ctx_date_format         )) );
+  pipe row(new rec_key_value('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format         )) );
+  pipe row(new rec_key_value('g_conf_client_identifier',             g_conf_client_identifier                               ) );
+  pipe row(new rec_key_value('g_conf_level',                to_char( g_conf_level||' ('||get_level_name(g_conf_level)||')' )) );
+  pipe row(new rec_key_value('g_conf_cache_size',           to_char( g_conf_cache_size                                     )) );
+  pipe row(new rec_key_value('g_conf_check_interval',       to_char( g_conf_check_interval                                 )) );
+  pipe row(new rec_key_value('g_conf_call_stack',             to_yn( g_conf_call_stack                                     )) );
+  pipe row(new rec_key_value('g_conf_user_env',               to_yn( g_conf_user_env                                       )) );
+  pipe row(new rec_key_value('g_conf_apex_env',               to_yn( g_conf_apex_env                                       )) );
+  pipe row(new rec_key_value('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                        )) );
+  pipe row(new rec_key_value('g_conf_console_env',            to_yn( g_conf_console_env                                    )) );
+  pipe row(new rec_key_value('c_version',                   to_char( c_version                                             )) );
+  pipe row(new rec_key_value('g_timers.count',              to_char( g_timers.count                                        )) );
+  pipe row(new rec_key_value('g_counters.count',            to_char( g_counters.count                                      )) );
+end view_status;
+
+
+--------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 

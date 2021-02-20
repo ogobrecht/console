@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.20.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.21.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -31,7 +31,11 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type tab_logs is table of console_logs%rowtype;
+type rec_key_value is record(
+  key    varchar2 ( 128 byte)  ,
+  value  varchar2 (1000 byte)  );
+type tab_key_value is table of rec_key_value;
+type tab_logs      is table of console_logs%rowtype;
 
 
 --------------------------------------------------------------------------------
@@ -1043,7 +1047,7 @@ end;
 {{/}}
 
 --check current log cache
-select * from table(console.view_cache);
+select * from console.view_cache();
 ```
 
 **/
@@ -1077,7 +1081,23 @@ end;
 {{/}}
 
 --check current log cache
-select * from table(console.view_last(50));
+select * from console.view_last(50);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function view_status return tab_key_value pipelined;
+/**
+
+View the current package status (config, number entries cache/timer/counter,
+version etc.).
+
+EXAMPLE
+
+```sql
+select * from console.view_status();
 ```
 
 **/

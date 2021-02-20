@@ -80,11 +80,13 @@ is welcome.*
   - [X] [console.level_is_verbose](docs/console.md#level_is_verbose),
     [level_is_verbose_yn](docs/console.md#level_is_verbose_yn)
   - [X] [console.version](docs/console.md#version)
-  - [X] [console.view_last](docs/console.md#view_last)
+  - [X] [console.view_status](docs/console.md#view_status)
   - [X] [console.view_cache](docs/console.md#view_cache),
     [flush_cache](docs/console.md#flush_cache)
-  - [ ] `console.view_status`
-  - [ ] `console.view_counters`,  `view_timers`
+  - [X] [console.view_last](docs/console.md#view_last) - for me this is the
+    standard way: `select * from console.view_last(20)` is showing the last 20
+    entries in descending order from the cache AND the log table (if not enough
+    in the cache or disabled)
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
   - [X] [console.to_yn](docs/console.md#to_yn),
@@ -102,12 +104,6 @@ is welcome.*
     [get_user_env](docs/console.md#get_user_env)
   - [X] [console.clob_append](docs/console.md#clob_append),
     [clob_flush_cache](docs/console.md#clob_flush_cache)
-
-- Views for the logging entries of the table console_logs:
-  - [ ] `console_logs`
-  - [ ] `console_logs_last_10_minutes`
-  - [ ] `console_logs_last_hour`
-  - [ ] `console_logs_last_24_hours`
 
 For a more detailed overview of the public API methods please see the [docs for
 the package console](docs/console.md).

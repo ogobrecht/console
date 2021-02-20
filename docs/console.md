@@ -62,6 +62,7 @@ Oracle Instrumentation Console
 - [Procedure flush_cache](#flush_cache)
 - [Function view_cache](#view_cache)
 - [Function view_last](#view_last)
+- [Function view_status](#view_status)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -80,7 +81,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.20.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.21.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1339,7 +1340,7 @@ end;
 /
 
 --check current log cache
-select * from table(console.view_cache);
+select * from console.view_cache();
 ```
 
 SIGNATURE
@@ -1376,13 +1377,32 @@ end;
 /
 
 --check current log cache
-select * from table(console.view_last(50));
+select * from console.view_last(50);
 ```
 
 SIGNATURE
 
 ```sql
 function view_last (p_log_rows integer default 100) return tab_logs pipelined;
+```
+
+
+<h2><a id="view_status"></a>Function view_status</h2>
+<!-------------------------------------------------->
+
+View the current package status (config, number entries cache/timer/counter,
+version etc.).
+
+EXAMPLE
+
+```sql
+select * from console.view_status();
+```
+
+SIGNATURE
+
+```sql
+function view_status return tab_key_value pipelined;
 ```
 
 
