@@ -96,11 +96,15 @@ g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
 
-type tab_timers is table of timestamp index by t_identifier;
-type tab_counters is table of pls_integer index by t_identifier;
-g_timers tab_timers;
-g_counters tab_counters;
-g_logs tab_logs := new tab_logs();
+type tab_timers      is table of timestamp            index by t_identifier;
+type tab_counters    is table of pls_integer          index by t_identifier;
+type tab_saved_stack is table of varchar2 (1000 byte) index by binary_integer;
+
+g_timers         tab_timers;
+g_counters       tab_counters;
+g_log_cache      tab_logs := new tab_logs();
+g_saved_stack    tab_saved_stack;
+g_prev_error_msg varchar2 (1000 byte);
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -109,9 +113,11 @@ g_logs tab_logs := new tab_logs();
 $if not $$utils_public $then
 
 function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
+function  utl_get_error return varchar2;
 function  utl_logging_is_enabled (p_level integer) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function  utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
 procedure utl_clear_context (p_client_identifier varchar2);
@@ -227,7 +233,14 @@ begin
     p_user_scope      => p_user_scope      ,
     p_user_error_code => p_user_error_code ,
     p_user_call_stack => p_user_call_stack );
-end;
+end error;
+
+--------------------------------------------------------------------------------
+
+procedure error_save_stack is
+begin
+  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1000);
+end error_save_stack;
 
 --------------------------------------------------------------------------------
 
@@ -519,7 +532,7 @@ procedure clear (
   p_client_identifier varchar2 default my_client_identifier )
 is
 begin
-  g_logs.delete;
+  g_log_cache.delete;
 end;
 
 --------------------------------------------------------------------------------
@@ -1119,8 +1132,7 @@ begin
       if instr ( upper(v_subprogram), c_console_pkg_name ) = 0 then
         v_return := v_return
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || v_subprogram || ', line ' || utl_call_stack.unit_line(i)
-          || chr(10);
+          || v_subprogram || ', line ' || utl_call_stack.unit_line(i);
       end if;
       exit when v_return is not null;
     end loop;
@@ -1136,27 +1148,11 @@ is
   v_subprogram vc_max;
 begin
 
-  if utl_call_stack.error_depth > 0 then
-    v_return := v_return || '- ERROR STACK' || chr(10);
-    for i in 1 .. utl_call_stack.error_depth
+  if g_saved_stack.count > 0 then
+    v_return := v_return || '- SAVED ERROR STACK' || chr(10);
+    for i in 1 .. g_saved_stack.count
     loop
-      v_return := v_return
-        || '  - ORA-'
-        || trim(to_char(utl_call_stack.error_number(i), '00009')) || ' '
-        || utl_call_stack.error_msg(i)
-        || chr(10);
-    end loop;
-  end if;
-
-  if utl_call_stack.backtrace_depth > 0 then
-    v_return := v_return || '- ERROR BACKTRACE' || chr(10);
-    for i in 1 .. utl_call_stack.backtrace_depth
-    loop
-      v_return := v_return
-        || '  - '
-        || coalesce( utl_call_stack.backtrace_unit(i), c_anonymous_block )
-        || ', line ' || utl_call_stack.backtrace_line(i)
-        || chr (10);
+      v_return := v_return || '  - ' || g_saved_stack (i) || chr(10);
     end loop;
   end if;
 
@@ -1178,6 +1174,30 @@ begin
           || v_subprogram || ', line ' || utl_call_stack.unit_line(i)
           || chr(10);
       end if;
+    end loop;
+  end if;
+
+  if utl_call_stack.error_depth > 0 then
+    v_return := v_return || '- ERROR STACK' || chr(10);
+    for i in 1 .. utl_call_stack.error_depth
+    loop
+      v_return := v_return
+        || '  - ORA-'
+        || trim(to_char(utl_call_stack.error_number(i), '00009')) || ' '
+        || utl_replace_linebreaks(utl_call_stack.error_msg(i))
+        || chr(10);
+    end loop;
+  end if;
+
+  if utl_call_stack.backtrace_depth > 0 then
+    v_return := v_return || '- ERROR BACKTRACE' || chr(10);
+    for i in 1 .. utl_call_stack.backtrace_depth
+    loop
+      v_return := v_return
+        || '  - '
+        || coalesce( utl_call_stack.backtrace_unit(i), c_anonymous_block )
+        || ', line ' || utl_call_stack.backtrace_line(i)
+        || chr (10);
     end loop;
   end if;
 
@@ -1492,11 +1512,11 @@ end clob_flush_cache;
 procedure flush_cache is
   pragma autonomous_transaction;
 begin
-  if g_logs.count > 0 then
-    forall i in 1 .. g_logs.count
-      insert into console_logs values g_logs(i);
+  if g_log_cache.count > 0 then
+    forall i in 1 .. g_log_cache.count
+      insert into console_logs values g_log_cache(i);
     commit;
-    g_logs.delete;
+    g_log_cache.delete;
   end if;
 end flush_cache;
 
@@ -1504,8 +1524,8 @@ end flush_cache;
 
 function view_cache return tab_logs pipelined is
 begin
-  for i in reverse 1 .. g_logs.count loop
-    pipe row(g_logs(i));
+  for i in reverse 1 .. g_log_cache.count loop
+    pipe row(g_log_cache(i));
   end loop;
 end view_cache;
 
@@ -1516,9 +1536,9 @@ return tab_logs pipelined is
   v_count pls_integer := 0;
   v_left  pls_integer;
 begin
-  for i in reverse 1 .. g_logs.count loop
+  for i in reverse 1 .. g_log_cache.count loop
     exit when v_count > p_log_rows;
-    pipe row(g_logs(i));
+    pipe row(g_log_cache(i));
     v_count := v_count + 1;
   end loop;
   if v_count < p_log_rows then
@@ -1537,21 +1557,25 @@ end view_last;
 function view_status return tab_key_value pipelined is
   v_row rec_key_value;
 begin
-  pipe row(new rec_key_value('g_conf_context_is_available',   to_yn( g_conf_context_is_available                           )) );
-  pipe row(new rec_key_value('g_conf_check_sysdate',        to_char( g_conf_check_sysdate,       c_ctx_date_format         )) );
-  pipe row(new rec_key_value('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format         )) );
-  pipe row(new rec_key_value('g_conf_client_identifier',             g_conf_client_identifier                               ) );
-  pipe row(new rec_key_value('g_conf_level',                to_char( g_conf_level||' ('||get_level_name(g_conf_level)||')' )) );
-  pipe row(new rec_key_value('g_conf_cache_size',           to_char( g_conf_cache_size                                     )) );
-  pipe row(new rec_key_value('g_conf_check_interval',       to_char( g_conf_check_interval                                 )) );
-  pipe row(new rec_key_value('g_conf_call_stack',             to_yn( g_conf_call_stack                                     )) );
-  pipe row(new rec_key_value('g_conf_user_env',               to_yn( g_conf_user_env                                       )) );
-  pipe row(new rec_key_value('g_conf_apex_env',               to_yn( g_conf_apex_env                                       )) );
-  pipe row(new rec_key_value('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                        )) );
-  pipe row(new rec_key_value('g_conf_console_env',            to_yn( g_conf_console_env                                    )) );
-  pipe row(new rec_key_value('c_version',                   to_char( c_version                                             )) );
-  pipe row(new rec_key_value('g_timers.count',              to_char( g_timers.count                                        )) );
-  pipe row(new rec_key_value('g_counters.count',            to_char( g_counters.count                                      )) );
+  pipe row(new rec_key_value('c_version',                    to_char( c_version                                      )) );
+  pipe row(new rec_key_value('g_conf_context_is_available',    to_yn( g_conf_context_is_available                    )) );
+  pipe row(new rec_key_value('g_conf_check_sysdate',         to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
+  pipe row(new rec_key_value('g_conf_exit_sysdate',          to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
+  pipe row(new rec_key_value('g_conf_client_identifier',              g_conf_client_identifier                        ) );
+  pipe row(new rec_key_value('g_conf_level',                 to_char( g_conf_level                                   )) );
+  pipe row(new rec_key_value('get_level_name(g_conf_level)', to_char( get_level_name(g_conf_level)                   )) );
+  pipe row(new rec_key_value('g_conf_cache_size',            to_char( g_conf_cache_size                              )) );
+  pipe row(new rec_key_value('g_conf_check_interval',        to_char( g_conf_check_interval                          )) );
+  pipe row(new rec_key_value('g_conf_call_stack',              to_yn( g_conf_call_stack                              )) );
+  pipe row(new rec_key_value('g_conf_user_env',                to_yn( g_conf_user_env                                )) );
+  pipe row(new rec_key_value('g_conf_apex_env',                to_yn( g_conf_apex_env                                )) );
+  pipe row(new rec_key_value('g_conf_cgi_env',                 to_yn( g_conf_cgi_env                                 )) );
+  pipe row(new rec_key_value('g_conf_console_env',             to_yn( g_conf_console_env                             )) );
+  pipe row(new rec_key_value('g_counters.count',             to_char( g_counters.count                               )) );
+  pipe row(new rec_key_value('g_timers.count',               to_char( g_timers.count                                 )) );
+  pipe row(new rec_key_value('g_log_cache.count',            to_char( g_log_cache.count                              )) );
+  pipe row(new rec_key_value('g_saved_stack.count',          to_char( g_saved_stack.count                            )) );
+  pipe row(new rec_key_value('g_prev_error_msg',                      g_prev_error_msg                                ) );
 end view_status;
 
 
@@ -1567,6 +1591,28 @@ begin
     c_cr,     ' '),
     '|', '&#124;');
 end;
+
+--------------------------------------------------------------------------------
+
+function utl_get_error return varchar2 is
+  v_return vc_max;
+begin
+  if utl_call_stack.error_depth > 0 and utl_call_stack.backtrace_depth > 0 then
+    if utl_call_stack.error_number(1) != 6512 and utl_call_stack.error_msg(1) != coalesce(g_prev_error_msg, 'null') then
+      --Get the line number of the first entry and also the error message
+      v_return := ' (line ' || utl_call_stack.backtrace_line(1) ||
+        ', ORA-' || trim(to_char(utl_call_stack.error_number(1), '00009')) || ' ' ||
+        utl_replace_linebreaks(utl_call_stack.error_msg(1)) || ')';
+      --Set the new error message as the last error message.
+      g_prev_error_msg := utl_call_stack.error_msg(1);
+    else
+      --Get only the line number of the last entry
+      v_return := ' (line ' || utl_call_stack.backtrace_line(utl_call_stack.backtrace_depth) || ')';
+    end if;
+  end if;
+
+  return v_return;
+end utl_get_error;
 
 --------------------------------------------------------------------------------
 
@@ -1609,6 +1655,19 @@ exception
   when no_data_found then
     return v_row;
 end utl_read_row_from_sessions;
+
+--------------------------------------------------------------------------------
+
+function utl_replace_linebreaks (
+  p_text varchar2,
+  p_replace_with varchar2 default ' ')
+return varchar2 is
+begin
+  return replace(replace(replace(p_text,
+    c_crlf, p_replace_with),
+    c_lf,   p_replace_with),
+    c_cr,   p_replace_with);
+end;
 
 --------------------------------------------------------------------------------
 
@@ -1767,12 +1826,22 @@ begin
       else null
     end;
 
-  v_row.call_stack :=
-    case
-      when p_user_call_stack is not null then substrb(p_user_call_stack, 1, 4000)
-      when p_call_stack then substrb(get_call_stack, 1, 4000)
-      else null
-    end;
+
+  if p_user_call_stack is not null then
+    v_row.call_stack := substrb(p_user_call_stack, 1, 4000);
+  elsif p_call_stack then
+    --Save the last occured error (if any and if we called before
+    --error_save_stack) before we going to log the callstack.
+    if sqlcode != 0 and g_saved_stack.count > 0 then
+      error_save_stack;
+    end if;
+    v_row.call_stack := substrb(get_call_stack, 1, 4000);
+    if p_level = 1 then
+      --We finally logged the saved stack, so we need to reset it.
+      g_saved_stack.delete;
+      g_prev_error_msg := null;
+    end if;
+  end if;
 
   if p_apex_env or g_conf_apex_env then
     clob_append(v_row.message, v_cache, get_apex_env);
@@ -1806,8 +1875,8 @@ begin
   v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
 
   if g_conf_cache_size > 0 and p_level > c_level_error and sqlcode = 0 then
-    g_logs.extend;
-    g_logs(g_logs.count) := v_row;
+    g_log_cache.extend;
+    g_log_cache(g_log_cache.count) := v_row;
   else
     if g_conf_cache_size > 0 then
       flush_cache;

@@ -50,6 +50,12 @@ is welcome.*
   - [X] [console.time_end](docs/console.md#time_end) (level 3=info)
   - [X] [console.clear](docs/console.md#clear)
 - Additional methods:
+  - [X] [console.error_save_stack](docs/console.md#error_save_stack): does only
+    save the current scope in an internal stack until the `error` procedure is
+    called which outputs then the saved stack. This is possibly the most
+    powerful feature which can save you useless log entries from nested methods
+    - you need only to log in the outermost method of you logic and you don't
+    loose details. Also see `tests/save_stack.sql` for an example.
   - [X] [console.permanent](docs/console.md#permanent) (level 0=permanent): Log
     permanent messages like installation or upgrade notes with the level zero,
     which are not deleted when the purge job clears the log table.

@@ -10,6 +10,7 @@ Oracle Instrumentation Console
 - [Procedure permanent](#permanent)
 - [Procedure error](#error)
 - [Function error](#error)
+- [Procedure error_save_stack](#error_save_stack)
 - [Procedure warn](#warn)
 - [Procedure info](#info)
 - [Procedure log](#log)
@@ -81,7 +82,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.21.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.22.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -190,6 +191,30 @@ function error (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 return integer;
+```
+
+
+<h2><a id="error_save_stack"></a>Procedure error_save_stack</h2>
+<!------------------------------------------------------------->
+
+Saves the error stack, so that you are able to handle the error on the most
+outer point in your code without loosing detail information of the original
+error nested deeper in your code.
+
+With this method we try to prevent log spoiling  - if you use it right you can
+have ONE log entry for your errors with the saved details where the error
+occured.
+
+EXAMPLE
+
+```sql
+
+```
+
+SIGNATURE
+
+```sql
+procedure error_save_stack;
 ```
 
 

@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.21.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.22.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -119,6 +119,28 @@ error handling
 function](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
 
 **/
+
+--------------------------------------------------------------------------------
+
+procedure error_save_stack;
+/**
+
+Saves the error stack, so that you are able to handle the error on the most
+outer point in your code without loosing detail information of the original
+error nested deeper in your code.
+
+With this method we try to prevent log spoiling  - if you use it right you can
+have ONE log entry for your errors with the saved details where the error
+occured.
+
+EXAMPLE
+
+```sql
+
+```
+
+**/
+
 
 --------------------------------------------------------------------------------
 
@@ -1110,9 +1132,11 @@ select * from console.view_status();
 $if $$utils_public $then
 
 function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
+function  utl_get_error return varchar2;
 function  utl_logging_is_enabled (p_level integer) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
 function  utl_read_row_from_sessions (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function  utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
 procedure utl_clear_context (p_client_identifier varchar2);
