@@ -21,11 +21,11 @@ declare
   v_rt_logger  number;
   v_rt_console number;
 begin
-  --v_start := localtimestamp;
-  --for i in 1 .. v_iterator loop
-  --  null;
-  --end loop;
-  --v_rt_null := console.get_runtime_seconds(v_start);
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    null;
+  end loop;
+  v_rt_null := console.get_runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
@@ -39,10 +39,56 @@ begin
   end loop;
   v_rt_console := console.get_runtime_seconds(v_start);
   --
-  --dbms_output.put_line( '- empty loop  : ' || trim(to_char(v_rt_null,    '0.000000')) || ' seconds (it does not really matter)' );
+  dbms_output.put_line( '- empty loop  : ' || trim(to_char(v_rt_null,    '0.000000')) || ' seconds (it does not really matter)' );
   dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
   dbms_output.put_line( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
   dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
+end;
+/
+
+prompt
+prompt 100.000 COUNT CALLS IN LEVEL ERROR (how many time you loose by counting)
+declare
+  v_iterator pls_integer := 100000;
+  v_start    timestamp;
+  v_rt_log   number;
+  v_rt_count number;
+begin
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    console.log('test');
+  end loop;
+  v_rt_log := console.get_runtime_seconds(v_start);
+  --
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    console.count('test');
+  end loop;
+  v_rt_count := console.get_runtime_seconds(v_start);
+  dbms_output.put_line( '- count result  : ' || (to_char(console.count_end('test'))));
+  dbms_output.put_line( '- runtime log   : ' || trim(to_char(v_rt_log, '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- runtime count : ' || trim(to_char(v_rt_count, '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- factor        : ' || trim(to_char(v_rt_log/v_rt_count, '90.0')));
+end;
+/
+
+prompt
+prompt 100.000 TIME CALLS IN LEVEL ERROR (how many time you loose by measuring time)
+declare
+  v_iterator   pls_integer := 100000;
+  v_start      timestamp;
+  v_rt         number;
+  v_result     varchar2(100);
+begin
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    console.time('test');
+    --v_result := console.time_end('test');
+  end loop;
+  v_rt := console.get_runtime_seconds(v_start);
+  --dbms_output.put_line( '- last runtime    : ' || v_result);
+  dbms_output.put_line( '- runtime all     : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- per measurement : ' || trim(to_char(v_rt/1000, '0.000000')) || ' seconds' );
 end;
 /
 
@@ -59,9 +105,9 @@ begin
   logger.set_level(logger.g_debug);
   console.init(
     p_level          => console.c_level_info ,
-    p_duration       => 90                      ,
-    p_cache_size     => 0                       ,
-    p_check_interval => 30                      );
+    p_duration       => 90                   ,
+    p_cache_size     => 100                  ,
+    p_check_interval => 30                   );
   for i in 1 .. 10 loop
     logger.log ('warm up ' || to_char(i));
     console.log ('warm up ' || to_char(i));
@@ -103,7 +149,7 @@ begin
   end loop;
   v_rt_scope := console.get_runtime_seconds(v_start);
   --
-  dbms_output.put_line( '- get_scope   : ' || trim(to_char(v_rt_scope, '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- get_scope : ' || trim(to_char(v_rt_scope, '0.000000')) || ' seconds' );
 end;
 /
 
