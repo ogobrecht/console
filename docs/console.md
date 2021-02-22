@@ -122,8 +122,6 @@ package variable for performance reasons and re-evaluated every 10 seconds.
 select console.my_log_level from dual;
 ```
 
---------------------------------------------------------------------------------
-
 SIGNATURE
 
 ```sql
