@@ -394,6 +394,45 @@ prompt - FINISHED, selecting now the call stack from the last log entry...
 select call_stack from console_logs order by log_id desc fetch first row only;
 ```
 
+EXAMPLE OUTPUT
+
+```
+Call Stack
+------------------------------------------------------------------------------------------------------------------------
+{{#}}# Saved Error Stack
+
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 15 (line 12, ORA-06502 PL/SQL: numeric or value error)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 23 (line 20)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 31 (line 28)
+- PLAYGROUND.SOME_API.DO_STUFF, line 39 (line 32, ORA-01403 no data found)
+
+{{#}}# Call Stack
+
+- PLAYGROUND.SOME_API.DO_STUFF, line 39
+- anonymous_block, line 2
+
+{{#}}# Error Stack
+
+- ORA-01403 no data found
+- ORA-06512 at "PLAYGROUND.SOME_API", line 32
+- ORA-06502 PL/SQL: numeric or value error
+- ORA-06512 at "PLAYGROUND.SOME_API", line 24
+- ORA-06512 at "PLAYGROUND.SOME_API", line 16
+- ORA-06512 at "PLAYGROUND.SOME_API", line 12
+- ORA-06512 at "PLAYGROUND.SOME_API", line 20
+- ORA-06512 at "PLAYGROUND.SOME_API", line 28
+
+{{#}}# Error Backtrace
+
+- PLAYGROUND.SOME_API, line 32
+- PLAYGROUND.SOME_API, line 24
+- PLAYGROUND.SOME_API, line 16
+- PLAYGROUND.SOME_API, line 12
+- PLAYGROUND.SOME_API, line 20
+- PLAYGROUND.SOME_API, line 28
+- PLAYGROUND.SOME_API, line 36
+```
+
 **/
 
 
