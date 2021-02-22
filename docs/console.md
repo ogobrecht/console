@@ -82,7 +82,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.22.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.22.1'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -208,7 +208,81 @@ occured.
 EXAMPLE
 
 ```sql
+set define off
+set feedback off
+set serveroutput on
+set linesize 120
+set pagesize 40
+column call_stack heading "Call Stack" format a120
+whenever sqlerror exit sql.sqlcode rollback
 
+prompt TEST ERROR_SAVE_STACK
+
+prompt - compile package spec
+create or replace package some_api is
+  procedure do_stuff;
+end;
+/
+
+prompt - compile package body
+create or replace package body some_api is
+------------------------------------------------------------------------------
+    procedure do_stuff is
+    --------------------------------------
+        procedure sub1 is
+        --------------------------------------
+            procedure sub2 is
+            --------------------------------------
+                procedure sub3 is
+                begin
+                  --raise_application_error(-20999, 'Test error with' || chr(10) || 'line break.');
+                  raise value_error;
+                exception --sub3
+                  when others then
+                    console.error_save_stack;
+                    raise;
+                end;
+            --------------------------------------
+            begin
+              sub3;
+            exception --sub2
+              when others then
+                console.error_save_stack;
+                raise;
+            end;
+        --------------------------------------
+        begin
+          sub2;
+        exception --sub1
+          when others then
+            console.error_save_stack;
+            raise no_data_found;
+        end;
+    --------------------------------------
+    begin
+      sub1;
+    exception --do_stuff
+      when others then
+        console.error;
+        raise;
+    end;
+------------------------------------------------------------------------------
+end;
+/
+
+prompt - call the package
+begin
+  some_api.do_stuff;
+exception
+  when others then
+    null; --> I know, I know, never do that without a final raise...
+          --> But we want only test our logging without killing the script run...
+end;
+/
+
+prompt - FINISHED, selecting now the call stack from the last log entry...
+
+select call_stack from console_logs order by log_id desc fetch first row only;
 ```
 
 SIGNATURE

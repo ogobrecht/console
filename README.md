@@ -55,7 +55,7 @@ is welcome.*
     called which outputs then the saved stack. This is possibly the most
     powerful feature which can save you useless log entries from nested methods.
     You need only to call `console.error` in the outermost method of you logic
-    and you don't loose details. Also see `tests/save_stack.sql` for an example.
+    and you don't loose details.
   - [X] [console.permanent](docs/console.md#permanent) (level 0=permanent): Log
     permanent messages like installation or upgrade notes with the level zero,
     which are not deleted when the purge job clears the log table.
