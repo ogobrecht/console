@@ -1149,15 +1149,16 @@ is
 begin
 
   if g_saved_stack.count > 0 then
-    v_return := v_return || '- SAVED ERROR STACK' || chr(10);
+    v_return := v_return || '## Saved Error Stack' || c_lflf;
     for i in 1 .. g_saved_stack.count
     loop
-      v_return := v_return || '  - ' || g_saved_stack (i) || chr(10);
+      v_return := v_return || '- ' || g_saved_stack (i) || c_lf;
     end loop;
+    v_return := v_return || c_lf;
   end if;
 
   if utl_call_stack.dynamic_depth > 0 then
-    v_return := v_return || '- CALL STACK' || chr(10);
+    v_return := v_return || '## Call Stack' || c_lflf;
     --ignore 1, is always this function (get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
@@ -1169,36 +1170,36 @@ begin
       --exclude console package from the call stack
       if instr( upper(v_subprogram), c_console_pkg_name ) = 0 then
         v_return := v_return
-          || '  - '
+          || '- '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || v_subprogram || ', line ' || utl_call_stack.unit_line(i)
-          || chr(10);
+          || v_subprogram || ', line ' || utl_call_stack.unit_line(i) || c_lf;
       end if;
     end loop;
+    v_return := v_return || c_lf;
   end if;
 
   if utl_call_stack.error_depth > 0 then
-    v_return := v_return || '- ERROR STACK' || chr(10);
+    v_return := v_return || '## Error Stack' || c_lflf;
     for i in 1 .. utl_call_stack.error_depth
     loop
       v_return := v_return
-        || '  - ORA-'
+        || '- ORA-'
         || trim(to_char(utl_call_stack.error_number(i), '00009')) || ' '
-        || utl_replace_linebreaks(utl_call_stack.error_msg(i))
-        || chr(10);
+        || utl_replace_linebreaks(utl_call_stack.error_msg(i)) || c_lf;
     end loop;
+    v_return := v_return || c_lf;
   end if;
 
   if utl_call_stack.backtrace_depth > 0 then
-    v_return := v_return || '- ERROR BACKTRACE' || chr(10);
+    v_return := v_return || '## Error Backtrace' || c_lflf;
     for i in 1 .. utl_call_stack.backtrace_depth
     loop
       v_return := v_return
-        || '  - '
+        || '- '
         || coalesce( utl_call_stack.backtrace_unit(i), c_anonymous_block )
-        || ', line ' || utl_call_stack.backtrace_line(i)
-        || chr (10);
+        || ', line ' || utl_call_stack.backtrace_line(i) || c_lf;
     end loop;
+    v_return := v_return || c_lf;
   end if;
 
   return v_return || chr(10);
