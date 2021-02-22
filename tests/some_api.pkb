@@ -8,8 +8,8 @@ create or replace package body some_api is
             --------------------------------------
                 procedure sub3 is
                 begin
-                  --raise_application_error(-20999, 'Test error with' || chr(10) || 'line break.');
-                  raise value_error;
+                  raise_application_error(-20999, 'Test error with' || chr(10) || 'line break.');
+                  --raise value_error;
                 exception --sub3
                   when others then
                     console.error_save_stack;
