@@ -28,6 +28,7 @@ c_default_label           constant varchar2 (10 byte) := 'Default';
 c_anon_block_ora          constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block         constant varchar2 (20 byte) := 'anonymous_block';
 c_client_id_prefix        constant varchar2 (10 byte) := '{o,o} ';
+c_console_owner           constant varchar2 (30 byte) := user;
 c_console_pkg_name        constant varchar2 (30 byte) := $$plsql_unit || '.';
 c_ctx_namespace           constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
 c_ctx_test_attribute      constant varchar2 (15 byte) := 'TEST';
@@ -1578,6 +1579,34 @@ begin
   pipe row(new rec_key_value('g_saved_stack.count',          to_char( g_saved_stack.count                            )) );
   pipe row(new rec_key_value('g_prev_error_msg',                      g_prev_error_msg                                ) );
 end view_status;
+
+--------------------------------------------------------------------------------
+
+procedure purge (
+  p_min_level integer default c_level_info,
+  p_min_days  number  default 30 )
+is
+  pragma autonomous_transaction;
+begin
+  assert (p_min_level in (1,2,3,4), 'Minimum level must be 1 (error), 2 (warning), 3 (info) or 4 (verbose).');
+  -- Only allowed for the owner of the console package
+  if c_console_owner = sys_context('USERENV','SESSION_USER') then
+    delete from console_logs
+     where level_id >= p_min_level
+       and log_systime <= sysdate - p_min_days;
+    commit;
+  else
+    raise_application_error(-20999, 'Deleting log entries is only allowed for the owner of the console package.');
+  end if;
+end;
+
+procedure purge_all is
+begin
+  purge(
+    p_min_level => 1,
+    p_min_days  => -1 -- to be sure we delete everything (sysdate - -1 is the same time tomorrow)
+  );
+end purge_all;
 
 
 --------------------------------------------------------------------------------

@@ -64,6 +64,8 @@ Oracle Instrumentation Console
 - [Function view_cache](#view_cache)
 - [Function view_last](#view_last)
 - [Function view_status](#view_status)
+- [Procedure purge](#purge)
+- [Procedure purge_all](#purge_all)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -82,7 +84,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.22.1'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.23.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -225,45 +227,44 @@ end;
 prompt - compile package body
 create or replace package body some_api is
 ------------------------------------------------------------------------------
-    procedure do_stuff is
+  procedure do_stuff is
+  --------------------------------------
+    procedure sub1 is
     --------------------------------------
-        procedure sub1 is
-        --------------------------------------
-            procedure sub2 is
-            --------------------------------------
-                procedure sub3 is
-                begin
-                  --raise_application_error(-20999, 'Test error with' || chr(10) || 'line break.');
-                  raise value_error;
-                exception --sub3
-                  when others then
-                    console.error_save_stack;
-                    raise;
-                end;
-            --------------------------------------
-            begin
-              sub3;
-            exception --sub2
-              when others then
-                console.error_save_stack;
-                raise;
-            end;
-        --------------------------------------
+      procedure sub2 is
+      --------------------------------------
+        procedure sub3 is
         begin
-          sub2;
-        exception --sub1
+          raise value_error;
+        exception --sub3
           when others then
             console.error_save_stack;
-            raise no_data_found;
+            raise;
         end;
+      --------------------------------------
+      begin
+        sub3;
+      exception --sub2
+        when others then
+          console.error_save_stack;
+          raise;
+      end;
     --------------------------------------
     begin
-      sub1;
-    exception --do_stuff
+      sub2;
+    exception --sub1
       when others then
-        console.error;
-        raise;
+        console.error_save_stack;
+        raise no_data_found;
     end;
+  --------------------------------------
+  begin
+    sub1;
+  exception --do_stuff
+    when others then
+      console.error;
+      raise;
+  end;
 ------------------------------------------------------------------------------
 end;
 /
@@ -286,40 +287,46 @@ select call_stack from console_logs order by log_id desc fetch first row only;
 EXAMPLE OUTPUT
 
 ```
+TEST ERROR_SAVE_STACK
+- compile package spec
+- compile package body
+- call the package
+- FINISHED, selecting now the call stack from the last log entry...
+
 Call Stack
 ------------------------------------------------------------------------------------------------------------------------
 ## Saved Error Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 15 (line 12, ORA-06502 PL/SQL: numeric or value error)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 23 (line 20)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 31 (line 28)
-- PLAYGROUND.SOME_API.DO_STUFF, line 39 (line 32, ORA-01403 no data found)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-06502 PL/SQL: numeric or value error)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 31, ORA-01403 no data found)
 
 ## Call Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF, line 39
+- PLAYGROUND.SOME_API.DO_STUFF, line 38
 - anonymous_block, line 2
 
 ## Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND.SOME_API", line 32
+- ORA-06512 at "PLAYGROUND.SOME_API", line 31
 - ORA-06502 PL/SQL: numeric or value error
-- ORA-06512 at "PLAYGROUND.SOME_API", line 24
-- ORA-06512 at "PLAYGROUND.SOME_API", line 16
-- ORA-06512 at "PLAYGROUND.SOME_API", line 12
-- ORA-06512 at "PLAYGROUND.SOME_API", line 20
-- ORA-06512 at "PLAYGROUND.SOME_API", line 28
+- ORA-06512 at "PLAYGROUND.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND.SOME_API", line 27
 
 ## Error Backtrace
 
-- PLAYGROUND.SOME_API, line 32
-- PLAYGROUND.SOME_API, line 24
-- PLAYGROUND.SOME_API, line 16
-- PLAYGROUND.SOME_API, line 12
-- PLAYGROUND.SOME_API, line 20
-- PLAYGROUND.SOME_API, line 28
-- PLAYGROUND.SOME_API, line 36
+- PLAYGROUND.SOME_API, line 31
+- PLAYGROUND.SOME_API, line 23
+- PLAYGROUND.SOME_API, line 15
+- PLAYGROUND.SOME_API, line 11
+- PLAYGROUND.SOME_API, line 19
+- PLAYGROUND.SOME_API, line 27
+- PLAYGROUND.SOME_API, line 35
 ```
 
 SIGNATURE
@@ -1539,6 +1546,54 @@ SIGNATURE
 
 ```sql
 function view_status return tab_key_value pipelined;
+```
+
+
+<h2><a id="purge"></a>Procedure purge</h2>
+<!--------------------------------------->
+
+Deletes log entries for the given condition.
+
+Deletion is only allowed for the owner of the package console.
+
+EXAMPLES
+
+```
+--> default: all level info and verbose older than 30 days
+exec console.purge;
+
+--> all three examples are equivalent
+exec console.purge(3, 0.25);
+exec console.purge(console.c_level_info, 0.25);
+exec console.purge(p_min_level => console.c_level_info, p_min_days => 0.25);
+```
+
+SIGNATURE
+
+```sql
+procedure purge (
+  p_min_level integer default c_level_info, -- Delete log entries greater or equal the given level.
+  p_min_days  number  default 30 );         -- Delete log entries older than the given minimum days.
+```
+
+
+<h2><a id="purge_all"></a>Procedure purge_all</h2>
+<!----------------------------------------------->
+
+Deletes all log entries except level permanent.
+
+Deletion is only allowed for the owner of the package console.
+
+EXAMPLE
+
+```
+exec console.purge_all;
+```
+
+SIGNATURE
+
+```sql
+procedure purge_all;
 ```
 
 

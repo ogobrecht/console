@@ -93,6 +93,8 @@ is welcome.*
     standard way: `select * from console.view_last(20)` is showing the last 20
     entries in descending order from the cache AND the log table (if not enough
     in the cache or disabled)
+  - [X] [console.purge](docs/console.md#purge) &
+    [purge_all](docs/console.md#purge_all)
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
   - [X] [console.to_yn](docs/console.md#to_yn) &
