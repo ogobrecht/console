@@ -29,8 +29,9 @@ c_anon_block_ora          constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block         constant varchar2 (20 byte) := 'anonymous_block';
 c_client_id_prefix        constant varchar2 (10 byte) := '{o,o} ';
 c_console_owner           constant varchar2 (30 byte) := user;
-c_console_pkg_name        constant varchar2 (30 byte) := $$plsql_unit || '.';
-c_ctx_namespace           constant varchar2 (30 byte) := $$plsql_unit || '_' || substr(user, 1, 30 - length($$plsql_unit));
+c_console_pkg_name_dot    constant varchar2 (30 byte) := 'CONSOLE.';
+c_console_job_name        constant varchar2 (30 byte) := 'CONSOLE_CLEANUP';
+c_ctx_namespace           constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
 c_ctx_test_attribute      constant varchar2 (15 byte) := 'TEST';
 c_ctx_date_format         constant varchar2 (30 byte) := 'yyyy-mm-dd hh24:mi:ss';
 c_ctx_exit_sysdate        constant varchar2 (15 byte) := 'EXIT_SYSDATE';
@@ -839,11 +840,15 @@ end init;
 
 --------------------------------------------------------------------------------
 
-procedure exit (
-  p_client_identifier varchar2 default my_client_identifier )
+-- We need this procedure to be able to use the identifier "exit". An internal
+-- call to "exit" would not compile, to "exit_" it is ok. Also see calls to
+-- "exit_" in the next two procedures.
+procedure exit_ (
+  p_client_identifier varchar2 )
 is
   pragma autonomous_transaction;
 begin
+  assert(p_client_identifier is not null, 'Client identifier must not be null.');
   delete from console_sessions where client_identifier = p_client_identifier;
   commit;
   utl_clear_context( p_client_identifier );
@@ -856,7 +861,25 @@ begin
     utl_load_session_configuration;
     flush_cache;
   end if;
-end;
+end exit_;
+
+procedure exit (
+  p_client_identifier varchar2 default my_client_identifier )
+is
+begin
+  exit_(p_client_identifier);
+end exit;
+
+procedure exit_stale is
+begin
+  for i in (
+    select client_identifier
+      from console_sessions
+     where exit_sysdate < sysdate - 1/24 )
+  loop
+    exit_(i.client_identifier);
+  end loop;
+end exit_stale;
 
 --------------------------------------------------------------------------------
 
@@ -1130,7 +1153,7 @@ begin
         c_anon_block_ora,
         c_anonymous_block);
       --exclude console package from the call stack
-      if instr ( upper(v_subprogram), c_console_pkg_name ) = 0 then
+      if instr ( upper(v_subprogram), c_console_pkg_name_dot ) = 0 then
         v_return := v_return
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
           || v_subprogram || ', line ' || utl_call_stack.unit_line(i);
@@ -1169,7 +1192,7 @@ begin
         c_anon_block_ora,
         c_anonymous_block);
       --exclude console package from the call stack
-      if instr( upper(v_subprogram), c_console_pkg_name ) = 0 then
+      if instr( upper(v_subprogram), c_console_pkg_name_dot ) = 0 then
         v_return := v_return
           || '- '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
@@ -1608,6 +1631,108 @@ begin
   );
 end purge_all;
 
+
+
+--------------------------------------------------------------------------------
+
+procedure cleanup_job_create (
+  p_repeat_interval varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,
+  p_min_level       integer  default c_level_info           ,
+  p_min_days        number   default 30                     )
+is
+begin
+  execute immediate replace(replace(replace(replace(q'[
+    begin
+      for i in (
+        select '#CONSOLE_JOB_NAME#' as job_name from dual
+        minus
+        select job_name from user_scheduler_jobs )
+      loop
+        sys.dbms_scheduler.create_job(
+          job_name        => i.job_name                                                               ,
+          job_type        => 'PLSQL_BLOCK'                                                            ,
+          job_action      => 'begin console.purge(#MIN_LEVEL#,#MIN_DAYS#); console.exit_stale; end;' ,
+          start_date      => sysdate                                                                  ,
+          repeat_interval => '#REPEAT_INTERVAL#'                                                      ,
+          enabled         => true                                                                     ,
+          auto_drop       => false                                                                    ,
+          comments        => 'Cleanup CONSOLE log entries and stale debug sessions.'                  );
+      end loop;
+    end;
+  ]',
+  '#CONSOLE_JOB_NAME#', c_console_job_name ),
+  '#REPEAT_INTERVAL#' , p_repeat_interval  ),
+  '#MIN_LEVEL#'       , p_min_level        ),
+  '#MIN_DAYS#'        , p_min_days         );
+end cleanup_job_create;
+
+procedure cleanup_job_drop is
+begin
+  execute immediate replace(q'[
+    begin
+      for i in (
+        select job_name
+          from user_scheduler_jobs
+         where job_name = '#CONSOLE_JOB_NAME#' )
+      loop
+        sys.dbms_scheduler.drop_job(
+          job_name => i.job_name ,
+          force    => true       );
+      end loop;
+    end;
+  ]',
+  '#CONSOLE_JOB_NAME#', c_console_job_name );
+end cleanup_job_drop;
+
+procedure cleanup_job_enable is
+begin
+  execute immediate replace(q'[
+    begin
+      for i in (
+        select job_name
+          from user_scheduler_jobs
+         where job_name = '#CONSOLE_JOB_NAME#' )
+      loop
+        sys.dbms_scheduler.enable(name => i.job_name);
+      end loop;
+    end;
+  ]',
+  '#CONSOLE_JOB_NAME#', c_console_job_name );
+end cleanup_job_enable;
+
+procedure cleanup_job_disable is
+begin
+  execute immediate replace(q'[
+    begin
+      for i in (
+        select job_name
+          from user_scheduler_jobs
+         where job_name = '#CONSOLE_JOB_NAME#' )
+      loop
+        sys.dbms_scheduler.disable(
+          name  => i.job_name ,
+          force => true       );
+      end loop;
+    end;
+  ]',
+  '#CONSOLE_JOB_NAME#', c_console_job_name );
+end cleanup_job_disable;
+
+procedure cleanup_job_run is
+begin
+  execute immediate replace(q'[
+    begin
+      for i in (
+        select job_name
+          from user_scheduler_jobs
+         where job_name = '#CONSOLE_JOB_NAME#' )
+      loop
+        sys.dbms_scheduler.run_job(job_name => i.job_name);
+      end loop;
+    end;
+  ]',
+  '#CONSOLE_JOB_NAME#', c_console_job_name );
+end cleanup_job_run;
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS

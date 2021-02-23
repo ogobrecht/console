@@ -26,7 +26,7 @@ begin
   --set config
   v_schema    := substr(upper('&1'), 1, 30);
   v_package   := 'CONSOLE';
-  v_namespace := v_package || '_' || substr(v_schema, 1, 30 - length(v_package));
+  v_namespace := substr(v_package || '_' || v_schema, 1, 30);
   v_ddl       := 'Create or replace context ' || v_namespace || ' using '
                  || v_schema || '.' || v_package || ' accessed globally';
 

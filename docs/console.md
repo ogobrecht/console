@@ -41,6 +41,7 @@ Oracle Instrumentation Console
 - [Procedure module](#module)
 - [Procedure init](#init)
 - [Procedure exit](#exit)
+- [Procedure exit_stale](#exit_stale)
 - [Function context_is_available](#context_is_available)
 - [Function context_is_available_yn](#context_is_available_yn)
 - [Function version](#version)
@@ -66,6 +67,11 @@ Oracle Instrumentation Console
 - [Function view_status](#view_status)
 - [Procedure purge](#purge)
 - [Procedure purge_all](#purge_all)
+- [Procedure cleanup_job_create](#cleanup_job_create)
+- [Procedure cleanup_job_drop](#cleanup_job_drop)
+- [Procedure cleanup_job_enable](#cleanup_job_enable)
+- [Procedure cleanup_job_disable](#cleanup_job_disable)
+- [Procedure cleanup_job_run](#cleanup_job_run)
 
 
 <h2><a id="console"></a>Package console</h2>
@@ -84,7 +90,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.23.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.24.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1026,6 +1032,25 @@ procedure exit (
 ```
 
 
+<h2><a id="exit_stale"></a>Procedure exit_stale</h2>
+<!------------------------------------------------->
+
+Stops the logging for all sessions in the table console_sessions which have a
+exit date older than one hour.
+
+This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
+runs per default at 1 o'clock after midnight.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING LOGGING MODES OF SESSIONS.
+
+SIGNATURE
+
+```sql
+procedure exit_stale;
+```
+
+
 <h2><a id="context_is_available"></a>Function context_is_available</h2>
 <!-------------------------------------------------------------------->
 
@@ -1594,6 +1619,71 @@ SIGNATURE
 
 ```sql
 procedure purge_all;
+```
+
+
+<h2><a id="cleanup_job_create"></a>Procedure cleanup_job_create</h2>
+<!----------------------------------------------------------------->
+
+Creates a cleanup job which deletes old log entries from console_logs and stale
+debug sessions from console_sessions.
+
+SIGNATURE
+
+```sql
+procedure cleanup_job_create (
+  p_repeat_interval varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
+  p_min_level       integer  default c_level_info           , -- Delete log entries greater or equal the given level.
+  p_min_days        number   default 30                       -- Delete log entries older than the given minimum days.
+);
+```
+
+
+<h2><a id="cleanup_job_drop"></a>Procedure cleanup_job_drop</h2>
+<!------------------------------------------------------------->
+
+Drops the cleanup job (if it exists).
+
+SIGNATURE
+
+```sql
+procedure cleanup_job_drop;
+```
+
+
+<h2><a id="cleanup_job_enable"></a>Procedure cleanup_job_enable</h2>
+<!----------------------------------------------------------------->
+
+Enables the cleanup job (if it exists).
+
+SIGNATURE
+
+```sql
+procedure cleanup_job_enable;
+```
+
+
+<h2><a id="cleanup_job_disable"></a>Procedure cleanup_job_disable</h2>
+<!------------------------------------------------------------------->
+
+Disables the cleanup job (if it exists).
+
+SIGNATURE
+
+```sql
+procedure cleanup_job_disable;
+```
+
+
+<h2><a id="cleanup_job_run"></a>Procedure cleanup_job_run</h2>
+<!----------------------------------------------------------->
+
+Runs the cleanup job (if it exists).
+
+SIGNATURE
+
+```sql
+procedure cleanup_job_run;
 ```
 
 

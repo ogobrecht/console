@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.23.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.24.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
@@ -784,6 +784,20 @@ MANAGING LOGGING MODES OF SESSIONS.
 
 **/
 
+procedure exit_stale;
+/**
+
+Stops the logging for all sessions in the table console_sessions which have a
+exit date older than one hour.
+
+This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
+runs per default at 1 o'clock after midnight.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING LOGGING MODES OF SESSIONS.
+
+**/
+
 --------------------------------------------------------------------------------
 
 function context_is_available return boolean;
@@ -1281,6 +1295,19 @@ exec console.purge_all;
 
 **/
 
+procedure cleanup_job_create (
+  p_repeat_interval varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
+  p_min_level       integer  default c_level_info           , -- Delete log entries greater or equal the given level.
+  p_min_days        number   default 30                       -- Delete log entries older than the given minimum days.
+);
+/**
+Creates a cleanup job which deletes old log entries from console_logs and stale
+debug sessions from console_sessions.
+**/
+procedure cleanup_job_drop;    /** Drops the cleanup job (if it exists). **/
+procedure cleanup_job_enable;  /** Enables the cleanup job (if it exists). **/
+procedure cleanup_job_disable; /** Disables the cleanup job (if it exists). **/
+procedure cleanup_job_run;     /** Runs the cleanup job (if it exists). **/
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)

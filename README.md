@@ -73,8 +73,8 @@ is welcome.*
     example APEX is setting the module, and often also the action).
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
-  - [X] [console.init](docs/console.md#init) & [exit](docs/console.md#exit) the
-    logging mode for a specific session by the client identifier
+  - [X] [console.init](docs/console.md#init) & [exit](docs/console.md#exit) &
+    [exit_stale](docs/console.md#exit_stale)
   - [X] [console.my_client_identifier](docs/console.md#my_client_identifier) &
     [my_log_level](docs/console.md#my_log_level)
   - [X] [console.context_is_available](docs/console.md#context_is_available) &
@@ -95,6 +95,11 @@ is welcome.*
     in the cache or disabled)
   - [X] [console.purge](docs/console.md#purge) &
     [purge_all](docs/console.md#purge_all)
+  - [X] [console.cleanup_job_create](docs/console.md#cleanup_job_create) &
+    [cleanup_job_run](docs/console.md#cleanup_job_run) &
+    [cleanup_job_disable](docs/console.md#cleanup_job_disable) &
+    [cleanup_job_enable](docs/console.md#cleanup_job_enable) &
+    [cleanup_job_drop](docs/console.md#cleanup_job_drop)
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
   - [X] [console.to_yn](docs/console.md#to_yn) &
