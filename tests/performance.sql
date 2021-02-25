@@ -136,6 +136,34 @@ end;
 /
 
 prompt
+prompt 1.000 SPRINTF CALLS (how many time you loose by formatting strings)
+declare
+  v_iterator   pls_integer := 1000;
+  v_start      timestamp;
+  v_rt_logger  number;
+  v_rt_console number;
+  v_test       varchar2 (1000);
+begin
+  -- test logger
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_test := logger.sprintf('Lorem ipsum %s1. Must be %s2, %s3, %s4 or test', 1, 2, 3, 4, 5, 6, 7, 8, 9);
+  end loop;
+  v_rt_logger := console.get_runtime_seconds(v_start);
+  -- test console
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_test := console.sprintf('Lorem ipsum %s1. Must be %s2, %s3, %s4 or test', 1, 2, 3, 4, 5, 6, 7, 8, 9);
+  end loop;
+  v_rt_console := console.get_runtime_seconds(v_start);
+  -- print results
+  dbms_output.put_line( '- logger.sprintf  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- console.sprintf : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
+  dbms_output.put_line( '- factor          : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
+end;
+/
+
+prompt
 prompt 1.000 GET_SCOPE CALLS (how many time you loose by fetching the scope from the call stack)
 declare
   v_iterator pls_integer := 1000;

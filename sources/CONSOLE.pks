@@ -1,10 +1,10 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.24.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.25.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
-c_license constant varchar2 ( 10 byte ) := 'MIT'                                  ;
-c_author  constant varchar2 ( 20 byte ) := 'Ottmar Gobrecht'                      ;
+c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
+c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
 c_level_permanent constant pls_integer := 0 ;
 c_level_error     constant pls_integer := 1 ;
@@ -970,6 +970,65 @@ following Markdown table row:
 ```
 
 **/
+
+function to_unibar (
+  p_value                   in  number,
+  p_scale                   in  number default 1,
+  p_width_block_characters  in  number default 25,
+  p_fill_scale              in  number default 0
+) return varchar2 deterministic;
+/*
+
+Returns a text bar consisting of unicode block characters.
+
+You can build simple text based bar charts with it. Not all fonts implement
+clean block characters, so the result depends a little bit on the font.
+
+EXAMPLE
+
+```sql
+select console.to_unibar(0.84) as "TextBar" from dual union all
+select console.to_unibar(0.75) as "TextBar" from dual union all
+select console.to_unibar(0.54) as "TextBar" from dual;
+```
+
+RESULT
+
+```
+TextBar
+-------------------------
+█████████████████████
+██████████████████▊
+█████████████▌
+```
+
+*/
+
+--------------------------------------------------------------------------------
+
+function sprintf (
+  str in varchar2              ,
+  s1  in varchar2 default null ,
+  s2  in varchar2 default null ,
+  s3  in varchar2 default null ,
+  s4  in varchar2 default null ,
+  s5  in varchar2 default null ,
+  s6  in varchar2 default null ,
+  s7  in varchar2 default null ,
+  s8  in varchar2 default null ,
+  s9  in varchar2 default null )
+return varchar2;
+/*
+
+Replaces first all occurrences of `%s1` .. `%s9` with the corresponding
+parameters `s1` .. `s9` and leverage then sys.utl_lms.format_message to replace
+occurrences of `%s` in positional order. Also see the [Oracle
+docs](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/UTL_LMS.html#GUID-88FFBFB6-FCA4-4951-884B-B0275BD5DF44).
+
+For easier handling we do not prefix parameter names with `p_`.
+
+*/
+
 
 --------------------------------------------------------------------------------
 

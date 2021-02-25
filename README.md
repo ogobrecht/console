@@ -59,6 +59,11 @@ is welcome.*
   - [X] [console.permanent](docs/console.md#permanent) (level 0=permanent): Log
     permanent messages like installation or upgrade notes with the level zero,
     which are not deleted when the purge job clears the log table.
+  - [X] [console.action](docs/console.md#action) &
+    [module](docs/console.md#module): Aliases for
+    dbms_application_info.set_action and set_module to be friendly to the DBA
+    and monitoring teams. The module is usually set by the application (for
+    example APEX is setting the module, and often also the action).
   - [X] [console.apex_error_handling](docs/console.md#apex_error_handling): Log
     internal APEX errors (only available, if APEX is installed, also see the
     [APEX
@@ -66,11 +71,6 @@ is welcome.*
   - [ ] [console.apex_plugin_render](docs/console.md#apex_plugin_render) &
     [apex_plugin_ajax](docs/console.md#apex_plugin_ajax): Methods for the APEX
     plugin (only available, if APEX is installed).
-  - [X] [console.action](docs/console.md#action) &
-    [module](docs/console.md#module): Aliases for
-    dbms_application_info.set_action and set_module to be friendly to the DBA
-    and monitoring teams. The module is usually set by the application (for
-    example APEX is setting the module, and often also the action).
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
   - [X] [console.init](docs/console.md#init) & [exit](docs/console.md#exit) &
@@ -107,6 +107,8 @@ is welcome.*
   - [X] [console.to_html_table](docs/console.md#to_html_table)
   - [X] [console.to_md_tab_header](docs/console.md#to_md_tab_header) &
     [to_md_tab_data](docs/console.md#to_md_tab_data)
+  - [X] [to_unibar](docs/console.md#to_unibar)
+  - [X] [sprintf](docs/console.md#sprintf)
   - [X] [console.get_runtime](docs/console.md#get_runtime) &
     [get_runtime_seconds](docs/console.md#get_runtime_seconds)
   - [X] [console.get_scope](docs/console.md#get_scope) &

@@ -7,88 +7,75 @@ create or replace package body console is
 insufficient_privileges exception;
 pragma exception_init (insufficient_privileges, -1031);
 
-c_identifier_length   constant pls_integer := 128;
-subtype t_identifier  is varchar2 (c_identifier_length char);
+c_crlf                 constant varchar2 ( 2 byte) := chr(13) || chr(10);
+c_cr                   constant varchar2 ( 1 byte) := chr(13);
+c_lf                   constant varchar2 ( 1 byte) := chr(10);
+c_lflf                 constant varchar2 ( 2 byte) := chr(10) || chr(10);
+c_ampersand            constant varchar2 ( 1 byte) := chr(26);
+c_html_ampersand       constant varchar2 ( 5 byte) := chr(26) || 'amp;';
+c_html_less_then       constant varchar2 ( 4 byte) := chr(26) || 'lt;';
+c_html_greater_then    constant varchar2 ( 4 byte) := chr(26) || 'gt;';
+c_timestamp_format     constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
+c_default_label        constant varchar2 (10 byte) := 'Default';
+c_anon_block_ora       constant varchar2 (20 byte) := '__anonymous_block';
+c_anonymous_block      constant varchar2 (20 byte) := 'anonymous_block';
+c_client_id_prefix     constant varchar2 (10 byte) := '{o,o} ';
+c_console_owner        constant varchar2 (30 byte) := user;
+c_console_pkg_name_dot constant varchar2 (30 byte) := 'CONSOLE.';
+c_console_job_name     constant varchar2 (30 byte) := 'CONSOLE_CLEANUP';
+c_ctx_namespace        constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
+c_ctx_test_attribute   constant varchar2 (15 byte) := 'TEST';
+c_ctx_date_format      constant varchar2 (30 byte) := 'yyyy-mm-dd hh24:mi:ss';
+c_ctx_exit_sysdate     constant varchar2 (15 byte) := 'EXIT_SYSDATE';
+c_ctx_level            constant varchar2 (15 byte) := 'LEVEL';
+c_ctx_cache_size       constant varchar2 (15 byte) := 'CACHE_SIZE';
+c_ctx_check_interval   constant varchar2 (15 byte) := 'CHECK_INTERVAL';
+c_ctx_call_stack       constant varchar2 (15 byte) := 'CALL_STACK';
+c_ctx_user_env         constant varchar2 (15 byte) := 'USER_ENV';
+c_ctx_apex_env         constant varchar2 (15 byte) := 'APEX_ENV';
+c_ctx_cgi_env          constant varchar2 (15 byte) := 'CGI_ENV';
+c_ctx_console_env      constant varchar2 (15 byte) := 'CONSOLE_ENV';
 
-c_tab                     constant varchar2 ( 1 byte) := chr(9);
-c_cr                      constant varchar2 ( 1 byte) := chr(13);
-c_lf                      constant varchar2 ( 1 byte) := chr(10);
-c_lflf                    constant varchar2 ( 2 byte) := chr(10) || chr(10);
-c_crlf                    constant varchar2 ( 2 byte) := chr(13) || chr(10);
-c_sep                     constant varchar2 ( 1 byte) := ',';
-c_at                      constant varchar2 ( 1 byte) := '@';
-c_hash                    constant varchar2 ( 1 byte) := '#';
-c_slash                   constant varchar2 ( 1 byte) := '/';
-c_ampersand               constant varchar2 ( 1 byte) := chr(26);
-c_html_ampersand          constant varchar2 ( 5 byte) := chr(26) || 'amp;';
-c_html_less_then          constant varchar2 ( 4 byte) := chr(26) || 'lt;';
-c_html_greater_then       constant varchar2 ( 4 byte) := chr(26) || 'gt;';
-c_timestamp_format        constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
-c_default_label           constant varchar2 (10 byte) := 'Default';
-c_anon_block_ora          constant varchar2 (20 byte) := '__anonymous_block';
-c_anonymous_block         constant varchar2 (20 byte) := 'anonymous_block';
-c_client_id_prefix        constant varchar2 (10 byte) := '{o,o} ';
-c_console_owner           constant varchar2 (30 byte) := user;
-c_console_pkg_name_dot    constant varchar2 (30 byte) := 'CONSOLE.';
-c_console_job_name        constant varchar2 (30 byte) := 'CONSOLE_CLEANUP';
-c_ctx_namespace           constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
-c_ctx_test_attribute      constant varchar2 (15 byte) := 'TEST';
-c_ctx_date_format         constant varchar2 (30 byte) := 'yyyy-mm-dd hh24:mi:ss';
-c_ctx_exit_sysdate        constant varchar2 (15 byte) := 'EXIT_SYSDATE';
-c_ctx_level               constant varchar2 (15 byte) := 'LEVEL';
-c_ctx_cache_size          constant varchar2 (15 byte) := 'CACHE_SIZE';
-c_ctx_check_interval      constant varchar2 (15 byte) := 'CHECK_INTERVAL';
-c_ctx_call_stack          constant varchar2 (15 byte) := 'CALL_STACK';
-c_ctx_user_env            constant varchar2 (15 byte) := 'USER_ENV';
-c_ctx_apex_env            constant varchar2 (15 byte) := 'APEX_ENV';
-c_ctx_cgi_env             constant varchar2 (15 byte) := 'CGI_ENV';
-c_ctx_console_env         constant varchar2 (15 byte) := 'CONSOLE_ENV';
-c_vc_max_size             constant pls_integer        := 32767;
+subtype t_vc32  is varchar2 (   32 byte);
+subtype t_vc64  is varchar2 (   64 byte);
+subtype t_vc128 is varchar2 (  128 byte);
+subtype t_vc256 is varchar2 (  256 byte);
+subtype t_vc1k  is varchar2 ( 1024 byte);
+subtype t_vc32k is varchar2 (32767 byte);
 
 -- numeric type identfiers
-c_number                  constant pls_integer := 2;   -- float
-c_binary_float            constant pls_integer := 100;
-c_binary_double           constant pls_integer := 101;
+c_number                 constant pls_integer :=   2; -- float
+c_binary_float           constant pls_integer := 100;
+c_binary_double          constant pls_integer := 101;
 -- string type identfiers
-c_char                    constant pls_integer := 96;  -- nchar
-c_varchar2                constant pls_integer := 1;   -- nvarchar2
-c_long                    constant pls_integer := 8;
-c_clob                    constant pls_integer := 112; -- nclob
-c_xmltype                 constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
-c_rowid                   constant pls_integer := 69;
-c_urowid                  constant pls_integer := 208;
+c_char                   constant pls_integer :=  96; -- nchar
+c_varchar2               constant pls_integer :=   1; -- nvarchar2
+c_long                   constant pls_integer :=   8;
+c_clob                   constant pls_integer := 112; -- nclob
+c_xmltype                constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
+c_rowid                  constant pls_integer :=  69;
+c_urowid                 constant pls_integer := 208;
 -- binary type identfiers
-c_raw                     constant pls_integer := 23;
-c_long_raw                constant pls_integer := 24;
-c_blob                    constant pls_integer := 113;
-c_bfile                   constant pls_integer := 114;
+c_raw                    constant pls_integer :=  23;
+c_long_raw               constant pls_integer :=  24;
+c_blob                   constant pls_integer := 113;
+c_bfile                  constant pls_integer := 114;
 -- date type identfiers
-c_date                    constant pls_integer := 12;
-c_timestamp               constant pls_integer := 180;
-c_timestamp_tz            constant pls_integer := 181;
-c_timestamp_ltz           constant pls_integer := 231;
+c_date                   constant pls_integer :=  12;
+c_timestamp              constant pls_integer := 180;
+c_timestamp_tz           constant pls_integer := 181;
+c_timestamp_ltz          constant pls_integer := 231;
 -- interval type identfiers
-c_interval_year_to_month  constant pls_integer := 182;
-c_interval_day_to_second  constant pls_integer := 183;
+c_interval_year_to_month constant pls_integer := 182;
+c_interval_day_to_second constant pls_integer := 183;
 -- cursor type identfiers
-c_ref                     constant pls_integer := 111;
-c_ref_cursor              constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
-
-subtype vc16    is varchar2 (   16 char);
-subtype vc32    is varchar2 (   32 char);
-subtype vc64    is varchar2 (   64 char);
-subtype vc128   is varchar2 (  128 char);
-subtype vc255   is varchar2 (  255 char);
-subtype vc500   is varchar2 (  500 char);
-subtype vc1000  is varchar2 ( 1000 char);
-subtype vc2000  is varchar2 ( 2000 char);
-subtype vc4000  is varchar2 ( 4000 char);
-subtype vc_max  is varchar2 (32767 char);
+c_ref                    constant pls_integer := 111;
+c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
 g_conf_check_sysdate        date;
 g_conf_exit_sysdate         date;
 g_conf_context_is_available boolean;
-g_conf_client_identifier    varchar2 (64 byte);
+g_conf_client_identifier    t_vc64;
 g_conf_level                pls_integer;
 g_conf_cache_size           integer;
 g_conf_check_interval       integer;
@@ -98,15 +85,15 @@ g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
 
-type tab_timers      is table of timestamp            index by t_identifier;
-type tab_counters    is table of pls_integer          index by t_identifier;
-type tab_saved_stack is table of varchar2 (1000 byte) index by binary_integer;
+type tab_timers      is table of timestamp   index by t_vc128;
+type tab_counters    is table of pls_integer index by t_vc128;
+type tab_saved_stack is table of t_vc1k      index by binary_integer;
 
 g_timers         tab_timers;
 g_counters       tab_counters;
 g_log_cache      tab_logs := new tab_logs();
 g_saved_stack    tab_saved_stack;
-g_prev_error_msg varchar2 (1000 byte);
+g_prev_error_msg t_vc1k;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -241,7 +228,7 @@ end error;
 
 procedure error_save_stack is
 begin
-  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1000);
+  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1024);
 end error_save_stack;
 
 --------------------------------------------------------------------------------
@@ -439,7 +426,7 @@ end trace;
 procedure count (
   p_label varchar2 default null )
 is
-  v_label t_identifier;
+  v_label t_vc128;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
@@ -452,7 +439,7 @@ end count;
 procedure count_end (
   p_label varchar2 default null )
 is
-  v_label t_identifier;
+  v_label t_vc128;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
@@ -471,8 +458,8 @@ function count_end (
   p_label varchar2 default null )
 return varchar2
 is
-  v_label   t_identifier;
-  v_return  varchar2(50);
+  v_label   t_vc128;
+  v_return  t_vc64;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
@@ -496,7 +483,7 @@ end time;
 procedure time_end (
   p_label varchar2 default null )
 is
-  v_label t_identifier;
+  v_label t_vc128;
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
@@ -515,8 +502,8 @@ function time_end (
   p_label varchar2 default null )
 return varchar2
 is
-  v_label  t_identifier;
-  v_return varchar2(50);
+  v_label  t_vc128;
+  v_return t_vc64;
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
@@ -566,7 +553,7 @@ return apex_error.t_error_result
 is
   v_result          apex_error.t_error_result;
   v_reference_id    number;
-  v_constraint_name varchar2(255);
+  v_constraint_name t_vc256;
   v_message         clob;
   v_app_id          pls_integer;
   --
@@ -936,11 +923,11 @@ return clob is
   v_data_cursor        sys_refcursor := p_data_cursor;
   v_cursor_id          integer;
   v_clob               clob;
-  v_cache              varchar2 (32767 char);
+  v_cache              t_vc32k;
   v_data_count         pls_integer := 0;
   v_col_count          pls_integer;
   v_desc_tab           dbms_sql.desc_tab3;
-  v_buffer_varchar2    varchar2(32767 char);
+  v_buffer_varchar2    t_vc32k;
   v_buffer_clob        clob;
   v_buffer_xmltype     xmltype;
   v_buffer_long        long;
@@ -1071,8 +1058,8 @@ function to_md_tab_header (
   p_key   varchar2 default 'Attribute' ,
   p_value varchar2 default 'Value'     )
 return varchar2 is
-  v_key   vc_max;
-  v_value vc_max;
+  v_key   t_vc32k;
+  v_value t_vc32k;
 begin
   v_key   := utl_escape_md_tab_text(p_key);
   v_value := utl_escape_md_tab_text(p_value);
@@ -1090,8 +1077,8 @@ function to_md_tab_data (
   p_value_max_length integer  default 1000  ,
   p_show_null_values boolean  default false )
 return varchar2 is
-  v_key   vc_max;
-  v_value vc_max;
+  v_key   t_vc32k;
+  v_value t_vc32k;
 begin
   if p_value is null and not p_show_null_values then
     return null;
@@ -1103,6 +1090,93 @@ begin
       case when nvl(length(v_value), 0) < 43 then rpad(nvl(v_value,' '), 43, ' ') else v_value end || ' |'  || c_lf;
   end if;
 end;
+
+--------------------------------------------------------------------------------
+
+function to_unibar (
+  p_value                   in  number,
+  p_scale                   in  number default 1,
+  p_width_block_characters  in  number default 25,
+  p_fill_scale              in  number default 0
+) return varchar2
+  deterministic
+is
+  v_return               varchar2(1000);
+  v_value_one_character  number;
+begin
+  if p_value is not null then
+  -- calculate the value of one character
+    v_value_one_character := p_scale / p_width_block_characters;
+
+  -- create textbar: full block characters
+    for i in 1..FLOOR(p_value / v_value_one_character) loop
+      v_return := v_return || UNISTR('\2588');
+    end loop;
+
+  -- create textbar: last character - can be between 0 and 8(rounded), because there
+  -- are block character available in unicode for 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8 and 1;
+    case ROUND((p_value / v_value_one_character - FLOOR(p_value / v_value_one_character)) / 0.125)
+      when 1 then -- 1/8 = char U+258F
+        v_return := v_return || UNISTR('\258F');
+      when 2 then -- 2/8 = char U+258E
+        v_return := v_return || UNISTR('\258E');
+      when 3 then -- 3/8 = char U+258D
+        v_return := v_return || UNISTR('\258D');
+      when 4 then -- 4/8 = char U+258C
+        v_return := v_return || UNISTR('\258C');
+      when 5 then -- 5/8 = char U+258B
+        v_return := v_return || UNISTR('\258B');
+      when 6 then -- 6/8 = char U+258A
+        v_return := v_return || UNISTR('\258A');
+      when 7 then -- 7/8 = char U+2589
+        v_return := v_return || UNISTR('\2589');
+      when 8 then -- 8/8 = char U+2588
+        v_return := v_return || UNISTR('\2588');
+      else
+        null;
+    end case;
+
+  -- fill up scale with shade
+    if p_fill_scale = 1 then
+      for i in 1..( p_width_block_characters - NVL(LENGTH(v_return), 0) ) loop
+        v_return := v_return || UNISTR('\2591');
+      end loop;
+    end if;
+  end if;
+
+  return v_return;
+exception
+  when VALUE_ERROR then
+    return UNISTR('\221E');
+end to_unibar;
+
+--------------------------------------------------------------------------------
+
+function sprintf (
+  str in varchar2              ,
+  s1  in varchar2 default null ,
+  s2  in varchar2 default null ,
+  s3  in varchar2 default null ,
+  s4  in varchar2 default null ,
+  s5  in varchar2 default null ,
+  s6  in varchar2 default null ,
+  s7  in varchar2 default null ,
+  s8  in varchar2 default null ,
+  s9  in varchar2 default null )
+return varchar2 is
+  v_str t_vc32k := str;
+begin
+  if s1 is not null and instr(v_str, '%s1') > 0 then v_str := replace(v_str, '%s1', s1); end if;
+  if s2 is not null and instr(v_str, '%s2') > 0 then v_str := replace(v_str, '%s2', s2); end if;
+  if s3 is not null and instr(v_str, '%s3') > 0 then v_str := replace(v_str, '%s3', s3); end if;
+  if s4 is not null and instr(v_str, '%s4') > 0 then v_str := replace(v_str, '%s4', s4); end if;
+  if s5 is not null and instr(v_str, '%s5') > 0 then v_str := replace(v_str, '%s5', s5); end if;
+  if s6 is not null and instr(v_str, '%s6') > 0 then v_str := replace(v_str, '%s6', s6); end if;
+  if s7 is not null and instr(v_str, '%s7') > 0 then v_str := replace(v_str, '%s7', s7); end if;
+  if s8 is not null and instr(v_str, '%s8') > 0 then v_str := replace(v_str, '%s8', s8); end if;
+  if s9 is not null and instr(v_str, '%s9') > 0 then v_str := replace(v_str, '%s9', s9); end if;
+  return sys.utl_lms.format_message(v_str, s1, s2, s3, s4, s5, s6, s7, s8, s9);
+end sprintf;
 
 --------------------------------------------------------------------------------
 
@@ -1119,7 +1193,7 @@ begin
 end get_level_name;
 
 function get_runtime ( p_start timestamp ) return varchar2 is
-  v_runtime varchar2(32);
+  v_runtime t_vc32;
 begin
   v_runtime := to_char(localtimestamp - p_start);
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
@@ -1140,8 +1214,8 @@ end get_runtime_seconds;
 --------------------------------------------------------------------------------
 
 function get_scope return varchar2 is
-  v_return     vc_max;
-  v_subprogram vc_max;
+  v_return     t_vc32k;
+  v_subprogram t_vc32k;
 begin
   if utl_call_stack.dynamic_depth > 0 then
     --ignore 1, is always this function (get_call_stack) itself
@@ -1168,8 +1242,8 @@ end get_scope;
 
 function get_call_stack return varchar2
 is
-  v_return     vc_max;
-  v_subprogram vc_max;
+  v_return     t_vc32k;
+  v_subprogram t_vc32k;
 begin
 
   if g_saved_stack.count > 0 then
@@ -1234,8 +1308,8 @@ end get_call_stack;
 function get_apex_env return clob
 is
   v_clob        clob;
-  v_cache       vc_max;
-  v_value       vc_max;
+  v_cache       t_vc32k;
+  v_value       t_vc32k;
   v_app_id      pls_integer;
   v_app_page_id pls_integer;
   v_app_session pls_integer;
@@ -1297,7 +1371,7 @@ end get_apex_env;
 
 function get_cgi_env return varchar2
 is
-  v_return vc_max;
+  v_return t_vc32k;
 begin
   v_return := '## CGI Environment' || c_lflf || to_md_tab_header;
   for i in 1 .. nvl(owa.num_cgi_vars, 0) loop
@@ -1318,8 +1392,8 @@ end get_cgi_env;
 
 function get_console_env return varchar2
 is
-  v_return vc_max;
-  v_index t_identifier;
+  v_return t_vc32k;
+  v_index t_vc128;
   --
   procedure append_row (p_key varchar2, p_value varchar2) is
   begin
@@ -1375,7 +1449,7 @@ end get_console_env;
 
 function get_user_env return varchar2
 is
-  v_return vc_max;
+  v_return t_vc32k;
   invalid_user_env_key exception;
   pragma exception_init(invalid_user_env_key, -2003);
   --
@@ -1750,7 +1824,7 @@ end;
 --------------------------------------------------------------------------------
 
 function utl_get_error return varchar2 is
-  v_return vc_max;
+  v_return t_vc32k;
 begin
   if utl_call_stack.error_depth > 0 and utl_call_stack.backtrace_depth > 0 then
     if utl_call_stack.error_number(1) != 6512 and utl_call_stack.error_msg(1) != coalesce(g_prev_error_msg, 'null') then
@@ -1785,7 +1859,7 @@ end utl_logging_is_enabled;
 
 function utl_normalize_label (p_label varchar2) return varchar2 is
 begin
-  return coalesce(substrb(p_label, 1, c_identifier_length), c_default_label);
+  return coalesce(substrb(p_label, 1, 128), c_default_label);
 end;
 
 --------------------------------------------------------------------------------
@@ -1957,7 +2031,7 @@ return integer
 is
   pragma autonomous_transaction;
   v_row   console_logs%rowtype;
-  v_cache vc_max;
+  v_cache t_vc32k;
 begin
   v_row.scope :=
     case
