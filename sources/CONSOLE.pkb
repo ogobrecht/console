@@ -1152,31 +1152,46 @@ end to_unibar;
 
 --------------------------------------------------------------------------------
 
-function sprintf (
-  str in varchar2              ,
-  s1  in varchar2 default null ,
-  s2  in varchar2 default null ,
-  s3  in varchar2 default null ,
-  s4  in varchar2 default null ,
-  s5  in varchar2 default null ,
-  s6  in varchar2 default null ,
-  s7  in varchar2 default null ,
-  s8  in varchar2 default null ,
-  s9  in varchar2 default null )
+function format (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null )
 return varchar2 is
-  v_str t_vc32k := str;
+  v_message t_vc32k := p_message;
 begin
-  if s1 is not null and instr(v_str, '%s1') > 0 then v_str := replace(v_str, '%s1', s1); end if;
-  if s2 is not null and instr(v_str, '%s2') > 0 then v_str := replace(v_str, '%s2', s2); end if;
-  if s3 is not null and instr(v_str, '%s3') > 0 then v_str := replace(v_str, '%s3', s3); end if;
-  if s4 is not null and instr(v_str, '%s4') > 0 then v_str := replace(v_str, '%s4', s4); end if;
-  if s5 is not null and instr(v_str, '%s5') > 0 then v_str := replace(v_str, '%s5', s5); end if;
-  if s6 is not null and instr(v_str, '%s6') > 0 then v_str := replace(v_str, '%s6', s6); end if;
-  if s7 is not null and instr(v_str, '%s7') > 0 then v_str := replace(v_str, '%s7', s7); end if;
-  if s8 is not null and instr(v_str, '%s8') > 0 then v_str := replace(v_str, '%s8', s8); end if;
-  if s9 is not null and instr(v_str, '%s9') > 0 then v_str := replace(v_str, '%s9', s9); end if;
-  return sys.utl_lms.format_message(v_str, s1, s2, s3, s4, s5, s6, s7, s8, s9);
-end sprintf;
+  -- id replacements
+  v_message := replace(v_message, '%0', p0);
+  v_message := replace(v_message, '%1', p1);
+  v_message := replace(v_message, '%2', p2);
+  v_message := replace(v_message, '%3', p3);
+  v_message := replace(v_message, '%4', p4);
+  v_message := replace(v_message, '%5', p5);
+  v_message := replace(v_message, '%6', p6);
+  v_message := replace(v_message, '%7', p7);
+  v_message := replace(v_message, '%8', p8);
+  v_message := replace(v_message, '%9', p9);
+
+  -- new line
+  v_message := replace(v_message, '%n', c_lf);
+
+  -- positional replacements
+  return sys.utl_lms.format_message(v_message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+end format;
+
+--------------------------------------------------------------------------------
+
+procedure print ( p_message in varchar2 ) is
+begin
+  dbms_output.put_line(p_message);
+end;
 
 --------------------------------------------------------------------------------
 
@@ -1402,18 +1417,26 @@ is
   --
 begin
   v_return := '## Console Environment' || c_lflf || to_md_tab_header;
-  append_row('g_conf_check_sysdate',        to_char( g_conf_check_sysdate,       c_ctx_date_format ) );
-  append_row('g_conf_exit_sysdate',         to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
-  append_row('g_conf_context_is_available',   to_yn( g_conf_context_is_available                   ) );
-  append_row('g_conf_client_identifier',             g_conf_client_identifier                        );
-  append_row('g_conf_level',                to_char( g_conf_level                                  ) );
-  append_row('g_conf_cache_size',           to_char( g_conf_cache_size                             ) );
-  append_row('g_conf_check_interval',       to_char( g_conf_check_interval                         ) );
-  append_row('g_conf_call_stack',             to_yn( g_conf_call_stack                             ) );
-  append_row('g_conf_user_env',               to_yn( g_conf_user_env                               ) );
-  append_row('g_conf_apex_env',               to_yn( g_conf_apex_env                               ) );
-  append_row('g_conf_cgi_env',                to_yn( g_conf_cgi_env                                ) );
-  append_row('g_conf_console_env',            to_yn( g_conf_console_env                            ) );
+  append_row('c_version',                       to_char( c_version                                     ) );
+  append_row('g_conf_context_is_available',       to_yn( g_conf_context_is_available                   ) );
+  append_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format ) );
+  append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
+  append_row('g_conf_client_identifier',                 g_conf_client_identifier                        );
+  append_row('g_conf_level',                    to_char( g_conf_level                                  ) );
+  append_row('get_level_name(g_conf_level)',             get_level_name(g_conf_level)                    );
+  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                             ) );
+  append_row('g_conf_check_interval',           to_char( g_conf_check_interval                         ) );
+  append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                             ) );
+  append_row('g_conf_user_env',                   to_yn( g_conf_user_env                               ) );
+  append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                               ) );
+  append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                ) );
+  append_row('g_conf_console_env',                to_yn( g_conf_console_env                            ) );
+  append_row('g_counters.count',                to_char( g_counters.count                              ) );
+  append_row('g_timers.count',                  to_char( g_timers.count                                ) );
+  append_row('g_log_cache.count',               to_char( g_log_cache.count                             ) );
+  append_row('g_saved_stack.count',             to_char( g_saved_stack.count                           ) );
+  append_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                              ) );
+
   v_return := v_return || c_lf;
 
   if g_timers.count > 0 then
@@ -1544,7 +1567,7 @@ begin
   --
   v_return := v_return || c_lf ||
     'We tried to show [documented attributes from Oracle 19c](https://docs.oracle.com/en/database/oracle/oracle-database/19/sqlrf/SYS_CONTEXT.html#GUID-B9934A5D-D97B-4E51-B01B-80C76A5BD086).' || c_lf ||
-    'On older databases not existing attributes are simply omitted.' || c_lflf;
+    'On older databases not existing attributes or values which are null are simply omitted.' || c_lflf;
   return v_return;
 exception
   when value_error then
@@ -1656,25 +1679,25 @@ end view_last;
 function view_status return tab_key_value pipelined is
   v_row rec_key_value;
 begin
-  pipe row(new rec_key_value('c_version',                    to_char( c_version                                      )) );
-  pipe row(new rec_key_value('g_conf_context_is_available',    to_yn( g_conf_context_is_available                    )) );
-  pipe row(new rec_key_value('g_conf_check_sysdate',         to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
-  pipe row(new rec_key_value('g_conf_exit_sysdate',          to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
-  pipe row(new rec_key_value('g_conf_client_identifier',              g_conf_client_identifier                        ) );
-  pipe row(new rec_key_value('g_conf_level',                 to_char( g_conf_level                                   )) );
-  pipe row(new rec_key_value('get_level_name(g_conf_level)', to_char( get_level_name(g_conf_level)                   )) );
-  pipe row(new rec_key_value('g_conf_cache_size',            to_char( g_conf_cache_size                              )) );
-  pipe row(new rec_key_value('g_conf_check_interval',        to_char( g_conf_check_interval                          )) );
-  pipe row(new rec_key_value('g_conf_call_stack',              to_yn( g_conf_call_stack                              )) );
-  pipe row(new rec_key_value('g_conf_user_env',                to_yn( g_conf_user_env                                )) );
-  pipe row(new rec_key_value('g_conf_apex_env',                to_yn( g_conf_apex_env                                )) );
-  pipe row(new rec_key_value('g_conf_cgi_env',                 to_yn( g_conf_cgi_env                                 )) );
-  pipe row(new rec_key_value('g_conf_console_env',             to_yn( g_conf_console_env                             )) );
-  pipe row(new rec_key_value('g_counters.count',             to_char( g_counters.count                               )) );
-  pipe row(new rec_key_value('g_timers.count',               to_char( g_timers.count                                 )) );
-  pipe row(new rec_key_value('g_log_cache.count',            to_char( g_log_cache.count                              )) );
-  pipe row(new rec_key_value('g_saved_stack.count',          to_char( g_saved_stack.count                            )) );
-  pipe row(new rec_key_value('g_prev_error_msg',                      g_prev_error_msg                                ) );
+  pipe row(new rec_key_value('c_version',                       to_char( c_version                                      )) );
+  pipe row(new rec_key_value('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
+  pipe row(new rec_key_value('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
+  pipe row(new rec_key_value('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
+  pipe row(new rec_key_value('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
+  pipe row(new rec_key_value('g_conf_level',                    to_char( g_conf_level                                   )) );
+  pipe row(new rec_key_value('get_level_name(g_conf_level)',    to_char( get_level_name(g_conf_level)                   )) );
+  pipe row(new rec_key_value('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
+  pipe row(new rec_key_value('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
+  pipe row(new rec_key_value('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
+  pipe row(new rec_key_value('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
+  pipe row(new rec_key_value('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
+  pipe row(new rec_key_value('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
+  pipe row(new rec_key_value('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
+  pipe row(new rec_key_value('g_counters.count',                to_char( g_counters.count                               )) );
+  pipe row(new rec_key_value('g_timers.count',                  to_char( g_timers.count                                 )) );
+  pipe row(new rec_key_value('g_log_cache.count',               to_char( g_log_cache.count                              )) );
+  pipe row(new rec_key_value('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
+  pipe row(new rec_key_value('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
 end view_status;
 
 --------------------------------------------------------------------------------

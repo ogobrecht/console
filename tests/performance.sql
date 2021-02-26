@@ -39,10 +39,10 @@ begin
   end loop;
   v_rt_console := console.get_runtime_seconds(v_start);
   --
-  dbms_output.put_line( '- empty loop  : ' || trim(to_char(v_rt_null,    '0.000000')) || ' seconds (it does not really matter)' );
-  dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
+  console.print( '- empty loop  : ' || trim(to_char(v_rt_null,    '0.000000')) || ' seconds (it does not really matter)' );
+  console.print( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
+  console.print( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
+  console.print( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
 end;
 /
 
@@ -65,10 +65,10 @@ begin
     console.count('test');
   end loop;
   v_rt_count := console.get_runtime_seconds(v_start);
-  dbms_output.put_line( '- count result  : ' || (to_char(console.count_end('test'))));
-  dbms_output.put_line( '- runtime log   : ' || trim(to_char(v_rt_log, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- runtime count : ' || trim(to_char(v_rt_count, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor        : ' || trim(to_char(v_rt_log/v_rt_count, '90.0')));
+  console.print( '- count result  : ' || (to_char(console.count_end('test'))));
+  console.print( '- runtime log   : ' || trim(to_char(v_rt_log, '0.000000')) || ' seconds' );
+  console.print( '- runtime count : ' || trim(to_char(v_rt_count, '0.000000')) || ' seconds' );
+  console.print( '- factor        : ' || trim(to_char(v_rt_log/v_rt_count, '90.0')));
 end;
 /
 
@@ -86,9 +86,9 @@ begin
     --v_result := console.time_end('test');
   end loop;
   v_rt := console.get_runtime_seconds(v_start);
-  --dbms_output.put_line( '- last runtime    : ' || v_result);
-  dbms_output.put_line( '- runtime all     : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- per measurement : ' || trim(to_char(v_rt/1000, '0.000000')) || ' seconds' );
+  --console.print( '- last runtime    : ' || v_result);
+  console.print( '- runtime all     : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
+  console.print( '- per measurement : ' || trim(to_char(v_rt/1000, '0.000000')) || ' seconds' );
 end;
 /
 
@@ -126,9 +126,9 @@ begin
   console.flush_cache;
   v_rt_console := console.get_runtime_seconds(v_start);
   -- print results
-  dbms_output.put_line( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
+  console.print( '- logger.log  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
+  console.print( '- console.log : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
+  console.print( '- factor      : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
   --configure logger and console
   logger.set_level(logger.g_error);
   console.exit;
@@ -136,7 +136,7 @@ end;
 /
 
 prompt
-prompt 1.000 SPRINTF CALLS (how many time you loose by formatting strings)
+prompt 1.000 FORMAT CALLS (how many time you loose by formatting strings)
 declare
   v_iterator   pls_integer := 1000;
   v_start      timestamp;
@@ -153,13 +153,13 @@ begin
   -- test console
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    v_test := console.sprintf('Lorem ipsum %s1. Must be %s2, %s3, %s4 or test', 1, 2, 3, 4, 5, 6, 7, 8, 9);
+    v_test := console.format('Lorem ipsum %0. Must be %1, %2, %3 or test', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
   end loop;
   v_rt_console := console.get_runtime_seconds(v_start);
   -- print results
-  dbms_output.put_line( '- logger.sprintf  : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- console.sprintf : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
-  dbms_output.put_line( '- factor          : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
+  console.print( '- logger.sprintf : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
+  console.print( '- console.format : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
+  console.print( '- factor         : ' || trim(to_char(v_rt_logger/v_rt_console, '90.0')));
 end;
 /
 
@@ -177,7 +177,7 @@ begin
   end loop;
   v_rt_scope := console.get_runtime_seconds(v_start);
   --
-  dbms_output.put_line( '- get_scope : ' || trim(to_char(v_rt_scope, '0.000000')) || ' seconds' );
+  console.print( '- get_scope : ' || trim(to_char(v_rt_scope, '0.000000')) || ' seconds' );
 end;
 /
 
@@ -204,9 +204,9 @@ end;
 --  end loop;
 --  v_rt_date := console.get_runtime_seconds(v_start);
 --  --
---  dbms_output.put_line( '- timestamp   : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- date        : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_time/v_rt_date, '90.0')));
+--  console.print( '- timestamp   : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
+--  console.print( '- date        : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
+--  console.print( '- factor      : ' || trim(to_char(v_rt_time/v_rt_date, '90.0')));
 --end;
 --/
 --
@@ -232,9 +232,9 @@ end;
 --  end loop;
 --  v_rt_time := console.get_runtime_seconds(v_start);
 --  --
---  dbms_output.put_line( '- date        : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- get_time    : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_date/v_rt_time, '90.0')));
+--  console.print( '- date        : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
+--  console.print( '- get_time    : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
+--  console.print( '- factor      : ' || trim(to_char(v_rt_date/v_rt_time, '90.0')));
 --end;
 --/
 --
@@ -260,9 +260,9 @@ end;
 --  end loop;
 --  v_rt_int := console.get_runtime_seconds(v_start);
 --  --
---  dbms_output.put_line( '- boolean     : ' || trim(to_char(v_rt_bool, '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- integer     : ' || trim(to_char(v_rt_int, '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- factor      : ' || trim(to_char(v_rt_bool/v_rt_int, '90.0')));
+--  console.print( '- boolean     : ' || trim(to_char(v_rt_bool, '0.000000')) || ' seconds' );
+--  console.print( '- integer     : ' || trim(to_char(v_rt_int, '0.000000')) || ' seconds' );
+--  console.print( '- factor      : ' || trim(to_char(v_rt_bool/v_rt_int, '90.0')));
 --end;
 --/
 --
@@ -317,10 +317,10 @@ end;
 --  end loop;
 --  v_rt_substr := console.get_runtime_seconds(v_start);
 --  --
---  dbms_output.put_line( '- regex       : ' || trim(to_char(v_rt_regex,   '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- exract      : ' || trim(to_char(v_rt_extract, '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- substr      : ' || trim(to_char(v_rt_substr,  '0.000000')) || ' seconds' );
---  dbms_output.put_line( '- factor r/s  : ' || trim(to_char(v_rt_regex/v_rt_substr, '90.0')));
---  dbms_output.put_line( '- factor e/s  : ' || trim(to_char(v_rt_extract/v_rt_substr, '90.0')));
+--  console.print( '- regex       : ' || trim(to_char(v_rt_regex,   '0.000000')) || ' seconds' );
+--  console.print( '- exract      : ' || trim(to_char(v_rt_extract, '0.000000')) || ' seconds' );
+--  console.print( '- substr      : ' || trim(to_char(v_rt_substr,  '0.000000')) || ' seconds' );
+--  console.print( '- factor r/s  : ' || trim(to_char(v_rt_regex/v_rt_substr, '90.0')));
+--  console.print( '- factor e/s  : ' || trim(to_char(v_rt_extract/v_rt_substr, '90.0')));
 --end;
 --/

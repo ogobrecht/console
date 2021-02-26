@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.25.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.26.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -987,48 +987,63 @@ clean block characters, so the result depends a little bit on the font.
 EXAMPLE
 
 ```sql
-select console.to_unibar(0.84) as "TextBar" from dual union all
-select console.to_unibar(0.75) as "TextBar" from dual union all
-select console.to_unibar(0.54) as "TextBar" from dual;
+column textbar format a30
+
+select 'Some text'       as description, 0.84 as value, console.to_unibar(0.84) as textbar from dual union all
+select 'Some other text' as description, 0.75 as value, console.to_unibar(0.75) as textbar from dual union all
+select 'Bla bla bla'     as description, 0.54 as value, console.to_unibar(0.54) as textbar from dual;
 ```
 
 RESULT
 
 ```
-TextBar
--------------------------
-█████████████████████
-██████████████████▊
-█████████████▌
+DESCRIPTION          VALUE TEXTBAR
+--------------- ---------- ------------------------------
+Some text              .84 █████████████████████
+Some other text        .75 ██████████████████▊
+Bla bla bla            .54 █████████████▌
 ```
 
 */
 
 --------------------------------------------------------------------------------
 
-function sprintf (
-  str in varchar2              ,
-  s1  in varchar2 default null ,
-  s2  in varchar2 default null ,
-  s3  in varchar2 default null ,
-  s4  in varchar2 default null ,
-  s5  in varchar2 default null ,
-  s6  in varchar2 default null ,
-  s7  in varchar2 default null ,
-  s8  in varchar2 default null ,
-  s9  in varchar2 default null )
+function format (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null )
 return varchar2;
 /*
 
-Replaces first all occurrences of `%s1` .. `%s9` with the corresponding
-parameters `s1` .. `s9` and leverage then sys.utl_lms.format_message to replace
-occurrences of `%s` in positional order. Also see the [Oracle
-docs](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/UTL_LMS.html#GUID-88FFBFB6-FCA4-4951-884B-B0275BD5DF44).
+Formats a message after the following rules:
 
-For easier handling we do not prefix parameter names with `p_`.
+1. Replace all occurrences of `%0` .. `%9` by id with the corresponding
+   parameters `p0` .. `p9`
+2. Replace `%n` with new lines (line feed character)
+3. Replace all occurrences of `%s` in positional order with the corresponding
+   parameters using sys.utl_lms.format_message - also see the [Oracle
+   docs](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/UTL_LMS.html#GUID-88FFBFB6-FCA4-4951-884B-B0275BD5DF44).
 
 */
 
+--------------------------------------------------------------------------------
+
+procedure print ( p_message in varchar2 );
+/*
+
+An alias for dbms_output.put_line.
+
+Writing dbms_output.put_line is very annoying for me...
+
+*/
 
 --------------------------------------------------------------------------------
 
