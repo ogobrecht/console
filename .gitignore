@@ -1,4 +1,4 @@
 *.log
 *.zip
 node_modules
-temp.sql
+temp

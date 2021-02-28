@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.26.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.27.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -632,6 +632,33 @@ docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/
 The implementation code (see package body) is taken from the docs and aligned
 for CONSOLE as a starting point. If this does not fit your needs then simply
 reimplement an own function and use that instead.
+
+**/
+
+function apex_plugin_render (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_render_result;
+/**
+
+Used for the APEX plugin to capture frontend JavaScript errors.
+
+If you plan to use the plugin make sure you have either console installed in
+your APEX parsing schema or a synonym named `console` for it as this function is
+referenced in the plug-in as a callback to `console.apex_plugin_render`.
+
+**/
+function apex_plugin_ajax (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_ajax_result;
+/**
+
+Used for the APEX plugin to capture frontend JavaScript errors.
+
+If you plan to use the plugin make sure you have either console installed in
+your APEX parsing schema or a synonym named `console` for it as this function is
+referenced in the plug-in as a callback to `console.apex_plugin_ajax`.
 
 **/
 

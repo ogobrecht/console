@@ -8,7 +8,7 @@ declare
 begin
 
   --Basic settings
-  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6010,disable:6027''';
+  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027''';
   execute immediate 'alter session set plscope_settings = ''identifiers:all''';
   execute immediate 'alter session set plsql_optimize_level = 3';
 

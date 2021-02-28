@@ -68,7 +68,7 @@ is welcome.*
     internal APEX errors (only available, if APEX is installed, also see the
     [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
-  - [ ] [console.apex_plugin_render](docs/console.md#apex_plugin_render) &
+  - [X] [console.apex_plugin_render](docs/console.md#apex_plugin_render) &
     [apex_plugin_ajax](docs/console.md#apex_plugin_ajax): Methods for the APEX
     plugin (only available, if APEX is installed).
 - Additional methods to manage logging mode of sessions and to see the current

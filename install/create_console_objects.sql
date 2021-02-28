@@ -20,7 +20,7 @@ declare
 begin
 
   --Basic settings
-  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6010,disable:6027''';
+  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027''';
   execute immediate 'alter session set plscope_settings = ''identifiers:all''';
   execute immediate 'alter session set plsql_optimize_level = 3';
 
@@ -182,7 +182,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.26.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.27.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -813,6 +813,33 @@ docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/
 The implementation code (see package body) is taken from the docs and aligned
 for CONSOLE as a starting point. If this does not fit your needs then simply
 reimplement an own function and use that instead.
+
+**/
+
+function apex_plugin_render (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_render_result;
+/**
+
+Used for the APEX plugin to capture frontend JavaScript errors.
+
+If you plan to use the plugin make sure you have either console installed in
+your APEX parsing schema or a synonym named `console` for it as this function is
+referenced in the plug-in as a callback to `console.apex_plugin_render`.
+
+**/
+function apex_plugin_ajax (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_ajax_result;
+/**
+
+Used for the APEX plugin to capture frontend JavaScript errors.
+
+If you plan to use the plugin make sure you have either console installed in
+your APEX parsing schema or a synonym named `console` for it as this function is
+referenced in the plug-in as a callback to `console.apex_plugin_ajax`.
 
 **/
 
@@ -2299,6 +2326,61 @@ begin
 
   return v_result;
 end apex_error_handling;
+
+--------------------------------------------------------------------------------
+
+function apex_plugin_render (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_render_result is
+  v_result apex_plugin.t_dynamic_action_render_result;
+begin
+  v_result.ajax_identifier := apex_plugin.get_ajax_identifier;
+
+  if apex_application.g_debug then
+    apex_plugin_util.debug_dynamic_action(
+      p_plugin          => p_plugin         ,
+      p_dynamic_action  => p_dynamic_action );
+  end if;
+
+  apex_javascript.add_library(
+    p_name                   => 'console'            ,
+    p_directory              => p_plugin.file_prefix ,
+    p_check_to_add_minified  => false                ); --FIXME: add minified version
+
+  apex_javascript.add_onload_code(
+    'oracleInstrumentationConsole.apexPluginId = '                             ||
+      apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) || ';' ||
+    'oracleInstrumentationConsole.version = "' || console.version || '";'      ||
+    'oracleInstrumentationConsole.init();'                                      ,
+    'COM.OGOBRECHT.CONSOLE'
+  );
+
+  v_result.javascript_function := 'function(){ null; }';
+
+  return v_result;
+end apex_plugin_render;
+
+--------------------------------------------------------------------------------
+
+function apex_plugin_ajax (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_ajax_result is
+  v_result apex_plugin.t_dynamic_action_ajax_result;
+begin
+  case apex_application.g_x01                                --x01=level(Error, Warning, Info, Verbose)
+    when 'Error' then console.error(apex_application.g_x02); --x02=message
+  else
+    null;
+  end case;
+
+  htp.prn('SUCCESS');
+  return v_result;
+exception when others then
+  htp.prn(sqlerrm);
+  return v_result;
+end apex_plugin_ajax;
 
 $end
 

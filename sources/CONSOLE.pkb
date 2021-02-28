@@ -684,6 +684,61 @@ begin
   return v_result;
 end apex_error_handling;
 
+--------------------------------------------------------------------------------
+
+function apex_plugin_render (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_render_result is
+  v_result apex_plugin.t_dynamic_action_render_result;
+begin
+  v_result.ajax_identifier := apex_plugin.get_ajax_identifier;
+
+  if apex_application.g_debug then
+    apex_plugin_util.debug_dynamic_action(
+      p_plugin          => p_plugin         ,
+      p_dynamic_action  => p_dynamic_action );
+  end if;
+
+  apex_javascript.add_library(
+    p_name                   => 'console'            ,
+    p_directory              => p_plugin.file_prefix ,
+    p_check_to_add_minified  => false                ); --FIXME: add minified version
+
+  apex_javascript.add_onload_code(
+    'oracleInstrumentationConsole.apexPluginId = '                             ||
+      apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) || ';' ||
+    'oracleInstrumentationConsole.version = "' || console.version || '";'      ||
+    'oracleInstrumentationConsole.init();'                                      ,
+    'COM.OGOBRECHT.CONSOLE'
+  );
+
+  v_result.javascript_function := 'function(){ null; }';
+
+  return v_result;
+end apex_plugin_render;
+
+--------------------------------------------------------------------------------
+
+function apex_plugin_ajax (
+  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
+  p_plugin          in  apex_plugin.t_plugin         )
+return apex_plugin.t_dynamic_action_ajax_result is
+  v_result apex_plugin.t_dynamic_action_ajax_result;
+begin
+  case apex_application.g_x01                                --x01=level(Error, Warning, Info, Verbose)
+    when 'Error' then console.error(apex_application.g_x02); --x02=message
+  else
+    null;
+  end case;
+
+  htp.prn('SUCCESS');
+  return v_result;
+exception when others then
+  htp.prn(sqlerrm);
+  return v_result;
+end apex_plugin_ajax;
+
 $end
 
 --------------------------------------------------------------------------------
