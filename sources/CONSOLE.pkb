@@ -706,10 +706,12 @@ begin
     p_check_to_add_minified  => false                ); --FIXME: add minified version
 
   apex_javascript.add_onload_code(
-    'oracleInstrumentationConsole.apexPluginId = '                             ||
-      apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) || ';' ||
-    'oracleInstrumentationConsole.version = "' || console.version || '";'      ||
-    'oracleInstrumentationConsole.init();'                                      ,
+    'oraConsole.apexPluginId = ' || apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) || ';' ||
+    'oraConsole.version = "' || console.version || '";' ||
+    'oraConsole.clientIdentifier = "' || console.my_client_identifier || '";' ||
+    'oraConsole.level = ' || console.my_log_level || ';' ||
+    'oraConsole.levelName = "' || console.get_level_name(console.my_log_level) || '";' ||
+    'oraConsole.init();',
     'COM.OGOBRECHT.CONSOLE'
   );
 
@@ -726,8 +728,11 @@ function apex_plugin_ajax (
 return apex_plugin.t_dynamic_action_ajax_result is
   v_result apex_plugin.t_dynamic_action_ajax_result;
 begin
-  case apex_application.g_x01                                --x01=level(Error, Warning, Info, Verbose)
-    when 'Error' then console.error(apex_application.g_x02); --x02=message
+  case apex_application.g_x01                                  --x01=level(Error, Warning, Info, Verbose)
+    when 'Error'   then console.error(apex_application.g_x02); --x02=message
+    when 'Warning' then console.warn (apex_application.g_x02);
+    when 'Info'    then console.info (apex_application.g_x02);
+    when 'Verbose' then console.debug(apex_application.g_x02);
   else
     null;
   end case;
