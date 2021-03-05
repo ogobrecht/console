@@ -36,88 +36,89 @@ is welcome.*
   countReset (instead we have count_end and we ignore the line number, where the
   count occurred). For the two \*_end methods we use snake case instead of camel
   case for readability. As table is a keyword in SQL we named our method table#:
-  - [X] [console.error](docs/console.md#error) (level 1=error)
-  - [X] [console.warn](docs/console.md#warn) (level 2=warning)
-  - [X] [console.info](docs/console.md#info) (level 3=info)
-  - [X] [console.log](docs/console.md#log) (level 3=info)
-  - [X] [console.debug](docs/console.md#debug) (level 4=verbose)
-  - [X] [console.assert](docs/console.md#assert) (level 1=error, if failed)
-  - [X] [console.table#](docs/console.md#table) (level 3=info)
-  - [X] [console.trace](docs/console.md#trace) (level 3=info)
-  - [x] [console.count](docs/console.md#count)
-  - [x] [console.count_end](docs/console.md#count_end) (level 3=info)
-  - [X] [console.time](docs/console.md#time)
-  - [X] [console.time_end](docs/console.md#time_end) (level 3=info)
-  - [X] [console.clear](docs/console.md#clear)
+  - [console.error](docs/console.md#error) (level 1=error)
+  - [console.warn](docs/console.md#warn) (level 2=warning)
+  - [console.info](docs/console.md#info) (level 3=info)
+  - [console.log](docs/console.md#log) (level 3=info)
+  - [console.debug](docs/console.md#debug) (level 4=verbose)
+  - [console.assert](docs/console.md#assert) (level 1=error, if failed)
+  - [console.table#](docs/console.md#table) (level 3=info)
+  - [console.trace](docs/console.md#trace) (level 3=info)
+  - [console.count](docs/console.md#count)
+  - [console.count_end](docs/console.md#count_end) (level 3=info)
+  - [console.time](docs/console.md#time)
+  - [console.time_log](docs/console.md#time_log) (level 3=info)
+  - [console.time_end](docs/console.md#time_end) (level 3=info)
+  - [console.clear](docs/console.md#clear)
 - Additional methods:
-  - [X] [console.error_save_stack](docs/console.md#error_save_stack): Does only
+  - [console.error_save_stack](docs/console.md#error_save_stack): Does only
     save the current scope in an internal stack until the `error` procedure is
     called which outputs then the saved stack. This is possibly the most
     powerful feature which can save you useless log entries from nested methods.
     You need only to call `console.error` in the outermost method of you logic
     and you don't loose details.
-  - [X] [console.permanent](docs/console.md#permanent) (level 0=permanent): Log
+  - [console.permanent](docs/console.md#permanent) (level 0=permanent): Log
     permanent messages like installation or upgrade notes with the level zero,
     which are not deleted when the purge job clears the log table.
-  - [X] [console.action](docs/console.md#action) &
+  - [console.action](docs/console.md#action) &
     [module](docs/console.md#module): Aliases for
     dbms_application_info.set_action and set_module to be friendly to the DBA
     and monitoring teams. The module is usually set by the application (for
     example APEX is setting the module, and often also the action).
-  - [X] [console.apex_error_handling](docs/console.md#apex_error_handling): Log
+  - [console.apex_error_handling](docs/console.md#apex_error_handling): Log
     internal APEX errors (only available, if APEX is installed, also see the
     [APEX
     docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82)).
-  - [X] [console.apex_plugin_render](docs/console.md#apex_plugin_render) &
+  - [console.apex_plugin_render](docs/console.md#apex_plugin_render) &
     [apex_plugin_ajax](docs/console.md#apex_plugin_ajax): Methods for the APEX
     plugin (only available, if APEX is installed).
 - Additional methods to manage logging mode of sessions and to see the current
   status of the package console:
-  - [X] [console.init](docs/console.md#init) & [exit](docs/console.md#exit) &
+  - [console.init](docs/console.md#init) & [exit](docs/console.md#exit) &
     [exit_stale](docs/console.md#exit_stale)
-  - [X] [console.my_client_identifier](docs/console.md#my_client_identifier) &
+  - [console.my_client_identifier](docs/console.md#my_client_identifier) &
     [my_log_level](docs/console.md#my_log_level)
-  - [X] [console.context_is_available](docs/console.md#context_is_available) &
+  - [console.context_is_available](docs/console.md#context_is_available) &
     [context_is_available_yn](docs/console.md#context_is_available_yn)
-  - [X] [console.level_is_warning](docs/console.md#level_is_warning) &
+  - [console.level_is_warning](docs/console.md#level_is_warning) &
     [level_is_warning_yn](docs/console.md#level_is_warning_yn)
-  - [X] [console.level_is_info](docs/console.md#level_is_info) &
+  - [console.level_is_info](docs/console.md#level_is_info) &
     [level_is_info_yn](docs/console.md#level_is_info_yn)
-  - [X] [console.level_is_verbose](docs/console.md#level_is_verbose) &
+  - [console.level_is_verbose](docs/console.md#level_is_verbose) &
     [level_is_verbose_yn](docs/console.md#level_is_verbose_yn)
-  - [X] [console.version](docs/console.md#version)
-  - [X] [console.view_status](docs/console.md#view_status)
-  - [X] [console.view_cache](docs/console.md#view_cache) &
+  - [console.version](docs/console.md#version)
+  - [console.view_status](docs/console.md#view_status)
+  - [console.view_cache](docs/console.md#view_cache) &
     [flush_cache](docs/console.md#flush_cache)
-  - [X] [console.view_last](docs/console.md#view_last) - for me this is the
+  - [console.view_last](docs/console.md#view_last) - for me this is the
     standard way: `select * from console.view_last(20)` is showing the last 20
     entries in descending order from the cache AND the log table (if not enough
     in the cache or disabled)
-  - [X] [console.purge](docs/console.md#purge) &
+  - [console.purge](docs/console.md#purge) &
     [purge_all](docs/console.md#purge_all)
-  - [X] [console.cleanup_job_create](docs/console.md#cleanup_job_create) &
+  - [console.cleanup_job_create](docs/console.md#cleanup_job_create) &
     [cleanup_job_run](docs/console.md#cleanup_job_run) &
     [cleanup_job_disable](docs/console.md#cleanup_job_disable) &
     [cleanup_job_enable](docs/console.md#cleanup_job_enable) &
     [cleanup_job_drop](docs/console.md#cleanup_job_drop)
 - Additional methods (mostly used by console internally) which might also
   helpful for you:
-  - [X] [console.to_yn](docs/console.md#to_yn) &
+  - [console.to_yn](docs/console.md#to_yn) &
     [to_bool](docs/console.md#to_bool)
-  - [X] [console.to_html_table](docs/console.md#to_html_table)
-  - [X] [console.to_md_tab_header](docs/console.md#to_md_tab_header) &
+  - [console.to_html_table](docs/console.md#to_html_table)
+  - [console.to_md_tab_header](docs/console.md#to_md_tab_header) &
     [to_md_tab_data](docs/console.md#to_md_tab_data)
-  - [X] [to_unibar](docs/console.md#to_unibar)
-  - [X] [sprintf](docs/console.md#sprintf)
-  - [X] [console.get_runtime](docs/console.md#get_runtime) &
+  - [to_unibar](docs/console.md#to_unibar)
+  - [sprintf](docs/console.md#sprintf)
+  - [console.get_runtime](docs/console.md#get_runtime) &
     [get_runtime_seconds](docs/console.md#get_runtime_seconds)
-  - [X] [console.get_scope](docs/console.md#get_scope) &
+  - [console.get_scope](docs/console.md#get_scope) &
     [get_call_stack](docs/console.md#get_call_stack)
-  - [X] [console.get_apex_env](docs/console.md#get_apex_env) &
+  - [console.get_apex_env](docs/console.md#get_apex_env) &
     [get_cgi_env](docs/console.md#get_cgi_env) &
     [get_console_env](docs/console.md#get_console_env) &
     [get_user_env](docs/console.md#get_user_env)
-  - [X] [console.clob_append](docs/console.md#clob_append) &
+  - [console.clob_append](docs/console.md#clob_append) &
     [clob_flush_cache](docs/console.md#clob_flush_cache)
 
 For a more detailed overview of the public API methods please see the [docs for

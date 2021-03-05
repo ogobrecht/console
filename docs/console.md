@@ -22,6 +22,7 @@ Oracle Instrumentation Console
 - [Procedure count_end](#count_end)
 - [Function count_end](#count_end)
 - [Procedure time](#time)
+- [Procedure time_log](#time_log)
 - [Procedure time_end](#time_end)
 - [Function time_end](#time_end)
 - [Procedure clear](#clear)
@@ -92,7 +93,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.28.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.29.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -634,6 +635,51 @@ SIGNATURE
 
 ```sql
 procedure time ( p_label varchar2 default null );
+```
+
+
+<h2><a id="time_log"></a>Procedure time_log</h2>
+<!--------------------------------------------->
+
+Logs the elapsed time, if current log level >= 3 (info).
+
+Can be called multiple times - use `console.time_end` to stop a timer and get or
+log the elapsed time.
+
+EXAMPLE
+
+```sql
+--Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
+exec console.init;
+
+begin
+  console.time('myLabel');
+
+  --Do your stuff here.
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+
+  --Log the elapsed time.
+  console.time_log('myLabel');
+
+  --Do other things.
+  --Your code here...
+
+  --Log the elapsed time.
+  console.time_log('myLabel');
+
+end;
+/
+
+--Stop logging mode of your own session.
+exec console.exit;
+```
+
+SIGNATURE
+
+```sql
+procedure time_log ( p_label varchar2 default null );
 ```
 
 

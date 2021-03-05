@@ -41,6 +41,7 @@ subtype t_vc64  is varchar2 (   64 byte);
 subtype t_vc128 is varchar2 (  128 byte);
 subtype t_vc256 is varchar2 (  256 byte);
 subtype t_vc1k  is varchar2 ( 1024 byte);
+subtype t_vc4k  is varchar2 ( 4096 byte);
 subtype t_vc32k is varchar2 (32767 byte);
 
 -- numeric type identfiers
@@ -480,7 +481,7 @@ begin
   g_timers(utl_normalize_label(p_label)) := localtimestamp;
 end time;
 
-procedure time_end (
+procedure time_log (
   p_label varchar2 default null )
 is
   v_label t_vc128;
@@ -491,6 +492,23 @@ begin
       utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
+    end if;
+  else
+    warn('Timer `' || v_label || '` does not exist.');
+  end if;
+end time_log;
+
+procedure time_end (
+  p_label varchar2 default null )
+is
+  v_label t_vc128;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_timers.exists(v_label) then
+    if utl_logging_is_enabled (c_level_info) then
+      utl_create_log_entry (
+        p_level   => c_level_info,
+        p_message => v_label || ': ' || get_runtime (g_timers(v_label)) || ' - timer ended' );
     end if;
     g_timers.delete(v_label);
   else
@@ -728,11 +746,24 @@ function apex_plugin_ajax (
 return apex_plugin.t_dynamic_action_ajax_result is
   v_result apex_plugin.t_dynamic_action_ajax_result;
 begin
-  case apex_application.g_x01                                  --x01=level(Error, Warning, Info, Verbose)
-    when 'Error'   then console.error(apex_application.g_x02); --x02=message
-    when 'Warning' then console.warn (apex_application.g_x02);
-    when 'Info'    then console.info (apex_application.g_x02);
-    when 'Verbose' then console.debug(apex_application.g_x02);
+  case apex_application.g_x01 --x01=level(Error, Warning, Info, Verbose)
+    when 'Error'   then
+      console.error(
+        p_message         => apex_application.g_x02 ,
+        p_user_scope      => apex_application.g_x03 ,
+        p_user_call_stack => apex_application.g_x04 );
+    when 'Warning' then
+      console.warn (
+        p_message         => apex_application.g_x02 ,
+        p_user_scope      => apex_application.g_x03 );
+    when 'Info'    then
+      console.info (
+        p_message         => apex_application.g_x02 ,
+        p_user_scope      => apex_application.g_x03 );
+    when 'Verbose' then
+      console.debug(
+        p_message         => apex_application.g_x02 ,
+        p_user_scope      => apex_application.g_x03 );
   else
     null;
   end case;

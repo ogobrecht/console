@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.28.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.29.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -512,6 +512,46 @@ Starts a new timer.
 
 Call `console.time_end('yourLabel')` to stop the timer and get or log the elapsed
 time.
+
+**/
+
+procedure time_log ( p_label varchar2 default null );
+/**
+
+Logs the elapsed time, if current log level >= 3 (info).
+
+Can be called multiple times - use `console.time_end` to stop a timer and get or
+log the elapsed time.
+
+EXAMPLE
+
+```sql
+--Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
+exec console.init;
+
+begin
+  console.time('myLabel');
+
+  --Do your stuff here.
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+
+  --Log the elapsed time.
+  console.time_log('myLabel');
+
+  --Do other things.
+  --Your code here...
+
+  --Log the elapsed time.
+  console.time_log('myLabel');
+
+end;
+{{/}}
+
+--Stop logging mode of your own session.
+exec console.exit;
+```
 
 **/
 
@@ -1405,10 +1445,10 @@ procedure cleanup_job_create (
 Creates a cleanup job which deletes old log entries from console_logs and stale
 debug sessions from console_sessions.
 **/
-procedure cleanup_job_drop;    /** Drops the cleanup job (if it exists). **/
-procedure cleanup_job_enable;  /** Enables the cleanup job (if it exists). **/
+procedure cleanup_job_drop;    /** Drops the cleanup job (if it exists).    **/
+procedure cleanup_job_enable;  /** Enables the cleanup job (if it exists).  **/
 procedure cleanup_job_disable; /** Disables the cleanup job (if it exists). **/
-procedure cleanup_job_run;     /** Runs the cleanup job (if it exists). **/
+procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
