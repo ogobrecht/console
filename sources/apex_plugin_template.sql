@@ -59,15 +59,15 @@ wwv_flow_api.create_plugin(
 ,p_ajax_function=>'console.apex_plugin_ajax'
 ,p_substitute_attributes=>true
 ,p_subscribe_plugin_settings=>true
-,p_version_identifier=>'#VERSION#'
+,p_version_identifier=>'#CONSOLE_VERSION#'
 ,p_about_url=>'https://github.com/ogobrecht/console'
-,p_files_version=>7
+,p_files_version=>#FILE_VERSION#
 );
 end;
 /
 begin
 wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
-#CONSOLE.JS#
+#CONSOLE_JS_FILE#
 end;
 /
 begin

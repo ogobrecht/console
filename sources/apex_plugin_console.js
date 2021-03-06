@@ -26,17 +26,17 @@ oraConsole.init = function () {
         // Call the original console.xxx function.
         switch (level) {
             case 'Error':
-            oraConsole.error.apply(console, arguments);
-            break;
+                oraConsole.error.apply(console, arguments);
+                break;
             case 'Warning':
-            oraConsole.warn.apply(console, arguments);
-            break;
+                oraConsole.warn.apply(console, arguments);
+                break;
             case 'Info':
-            oraConsole.info.apply(console, arguments);
-            break;
+                oraConsole.info.apply(console, arguments);
+                break;
             case 'Verbose':
-            oraConsole.debug.apply(console, arguments);
-            break;
+                oraConsole.debug.apply(console, arguments);
+                break;
         }
 
     };
@@ -44,7 +44,7 @@ oraConsole.init = function () {
     // Save the original error method
     oraConsole.error = console.error;
     // Redefine console.error method with a custom function
-    console.error = function (message) { oraConsole.log('Error', message)};
+    console.error = function (message) { oraConsole.log('Error', message) };
 };
 
 
@@ -69,5 +69,4 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
 
   return false;
 };
-
 */

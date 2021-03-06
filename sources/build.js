@@ -1,4 +1,8 @@
 const fs = require('fs');
+const crypto = require('crypto')
+const toMd5Hash = function (string) {
+    return crypto.createHash('md5').update(string).digest("hex")
+};
 const toChunks = function (str, size) {
     const numChunks = Math.ceil(str.length / size)
     const chunks = new Array(numChunks)
@@ -7,12 +11,12 @@ const toChunks = function (str, size) {
     }
     return chunks
 };
-const toApexLoadFile = function (filePath) {
+const toApexPluginFile = function (filePath) {
     const hexString = Buffer.from(fs.readFileSync(filePath, 'utf8')).toString('hex')
     const chunks = toChunks(hexString, 200)
     let apexLoadFile = '';
     for (let i = 0; i < chunks.length; ++i) {
-        apexLoadFile += "wwv_flow_api.g_varchar2_table(" + (i+1) + ") := '" + chunks[i] + "';\n"
+        apexLoadFile += "wwv_flow_api.g_varchar2_table(" + (i + 1) + ") := '" + chunks[i] + "';\n"
     }
     return apexLoadFile
 };
@@ -38,17 +42,22 @@ fs.writeFileSync(
 );
 
 console.log('- build file install/apex_plugin.sql');
-// increase file version in template
-fs.writeFileSync(
-    'sources/apex_plugin_template.sql',
-    fs.readFileSync('sources/apex_plugin_template.sql', 'utf8')
-        .replace(/p_files_version=>(\d+)/, function(match, $1) { return 'p_files_version=>' + (parseInt($1)+1) })
-);
-// read template and build plug-in
-fs.writeFileSync(
-    'install/apex_plugin.sql',
-    '--DO NOT CHANGE THIS FILE - IT IS GENERATED WITH THE BUILD SCRIPT sources/build.js\n' +
-    fs.readFileSync('sources/apex_plugin_template.sql', 'utf8')
-        .replace('#CONSOLE.JS#', toApexLoadFile('sources/apex_plugin_console.js'))
-        .replace('#VERSION#', 'testus')
-);
+let fileMd5Hash = toMd5Hash(fs.readFileSync('sources/apex_plugin_console.js', 'utf8'));
+let conf = JSON.parse(fs.readFileSync('sources/apex_plugin_conf.json', 'utf8'));
+conf.consoleVersion = fs.readFileSync('sources/CONSOLE.pks', 'utf8').match(/c_version\s+constant.*?'(.*?)'/)[1];
+if (conf.fileMd5Hash !== fileMd5Hash) {
+    // FIXME: minify JavaScript
+    // build plug-in
+    conf.fileMd5Hash = fileMd5Hash;
+    conf.fileVersion += 1;
+    fs.writeFileSync(
+        'install/apex_plugin.sql',
+        '--DO NOT CHANGE THIS FILE - IT IS GENERATED WITH THE BUILD SCRIPT sources/build.js\n\n' +
+        fs.readFileSync('sources/apex_plugin_template.sql', 'utf8')
+            .replace('#CONSOLE_VERSION#', conf.consoleVersion)
+            .replace('#FILE_VERSION#', conf.fileVersion)
+            .replace('#CONSOLE_JS_FILE#', toApexPluginFile('sources/apex_plugin_console.js'))
+    );
+    fs.writeFileSync('sources/apex_plugin_conf.json', JSON.stringify(conf, null, 2));
+}
+
