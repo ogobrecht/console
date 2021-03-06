@@ -7,19 +7,19 @@
     "url": "https://github.com/ogobrecht/oracle-instrumentation-console.git"
   },
   "scripts": {
-    "watch": "chokidar sources/* --initial -c \"npm run build\"",
+    "watch": "chokidar sources/* --initial --command \"npm run build\"",
     "build": "node sources/build.js && npm-run-all -s docs_console install_create_console_objects install_apex_plugin",
     "docs_console": "npx ploc --in sources/CONSOLE.pks --out docs/console.md",
     "delete_logs": "del /s /q *.log",
-    "install_all":"npm-run-all -s install_create_context install_create_console_objects install_grant_rights install_apex_plugin",
+    "install_all": "npm-run-all -s install_create_context install_create_console_objects install_grant_rights install_apex_plugin",
     "install_create_context": "echo exit | sqlplus -S /@playground_admin @install/create_context.sql \"PLAYGROUND_DATA\"",
     "install_create_console_objects": "echo exit | sqlplus -S /@playground @install/create_console_objects.sql",
     "install_grant_rights": "echo exit | sqlplus -S /@playground @install/grant_rights.sql \"PUBLIC\"",
     "install_apex_plugin": "echo exit | sqlplus -S /@playground @install/apex_plugin.sql",
-    "uninstall_all":"npm-run-all -s uninstall_drop_context uninstall_drop_console_objects",
+    "uninstall_all": "npm-run-all -s uninstall_drop_context uninstall_drop_console_objects",
     "uninstall_drop_context": "echo exit | sqlplus -S /@playground_admin @uninstall/drop_context.sql \"PLAYGROUND_DATA\"",
     "uninstall_drop_console_objects": "echo exit | sqlplus -S /@playground @uninstall/drop_console_objects.sql",
-    "test_all":"npm-run-all -s test_ccflags test_console test_trace test_performance test_save_stack",
+    "test_all": "npm-run-all -s test_ccflags test_console test_trace test_performance test_save_stack",
     "test_ccflags": "echo exit | sqlplus -S /@playground @tests/ccflags.sql",
     "test_console": "echo exit | sqlplus -S /@playground @tests/console.sql",
     "test_trace": "echo exit | sqlplus -S /@playground @tests/trace.sql",
@@ -29,6 +29,7 @@
   "devDependencies": {
     "chokidar-cli": "^2.1.0",
     "npm-run-all": "^4.1.5",
-    "ploc": "^0.6.2"
+    "ploc": "^0.6.2",
+    "uglify-js": "^3.13.0"
   }
 }

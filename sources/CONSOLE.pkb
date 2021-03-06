@@ -721,14 +721,14 @@ begin
   apex_javascript.add_library(
     p_name                   => 'console'            ,
     p_directory              => p_plugin.file_prefix ,
-    p_check_to_add_minified  => false                ); --FIXME: add minified version
+    p_check_to_add_minified  => true                 );
 
   apex_javascript.add_onload_code(
-    'oraConsole.apexPluginId = ' || apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) || ';' ||
-    'oraConsole.version = "' || console.version || '";' ||
-    'oraConsole.clientIdentifier = "' || console.my_client_identifier || '";' ||
-    'oraConsole.level = ' || console.my_log_level || ';' ||
-    'oraConsole.levelName = "' || console.get_level_name(console.my_log_level) || '";' ||
+    'oraConsole.apexPluginId     = '  || apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) ||  ';' ||
+    'oraConsole.version          = "' || console.version                                                   || '";' ||
+    'oraConsole.clientIdentifier = "' || console.my_client_identifier                                      || '";' ||
+    'oraConsole.level            = '  || console.my_log_level                                              ||  ';' ||
+    'oraConsole.levelName        = "' || console.get_level_name(console.my_log_level)                      || '";' ||
     'oraConsole.init();',
     'COM.OGOBRECHT.CONSOLE'
   );
@@ -746,24 +746,31 @@ function apex_plugin_ajax (
 return apex_plugin.t_dynamic_action_ajax_result is
   v_result apex_plugin.t_dynamic_action_ajax_result;
 begin
-  case apex_application.g_x01 --x01=level(Error, Warning, Info, Verbose)
-    when 'Error'   then
+  case to_number(apex_application.g_x01) -- level
+    when 1 /*Error*/ then
       console.error(
-        p_message         => apex_application.g_x02 ,
-        p_user_scope      => apex_application.g_x03 ,
-        p_user_call_stack => apex_application.g_x04 );
-    when 'Warning' then
+        p_message         => apex_application.g_x02           ,
+        p_user_scope      => nvl(apex_application.g_x03, '.') ,
+        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
+        p_user_agent      => apex_application.g_x05           );
+    when 2 /*Warning*/ then
       console.warn (
-        p_message         => apex_application.g_x02 ,
-        p_user_scope      => apex_application.g_x03 );
-    when 'Info'    then
+        p_message         => apex_application.g_x02           ,
+        p_user_scope      => nvl(apex_application.g_x03, '.') ,
+        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
+        p_user_agent      => apex_application.g_x05           );
+    when 3 /*Info*/ then
       console.info (
-        p_message         => apex_application.g_x02 ,
-        p_user_scope      => apex_application.g_x03 );
-    when 'Verbose' then
+        p_message         => apex_application.g_x02           ,
+        p_user_scope      => nvl(apex_application.g_x03, '.') ,
+        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
+        p_user_agent      => apex_application.g_x05           );
+    when 4 /*Verbose*/ then
       console.debug(
-        p_message         => apex_application.g_x02 ,
-        p_user_scope      => apex_application.g_x03 );
+        p_message         => apex_application.g_x02           ,
+        p_user_scope      => nvl(apex_application.g_x03, '.') ,
+        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
+        p_user_agent      => apex_application.g_x05           );
   else
     null;
   end case;

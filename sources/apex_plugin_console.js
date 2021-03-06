@@ -7,8 +7,9 @@ oraConsole.init = function () {
             {
                 x01: level,
                 x02: message,
-                x03: scope,
+                x03: 'JavaScript APEX Frontend: ' + scope,
                 x04: stack,
+                x05: navigator.userAgent,
                 p_debug: $v('pdebug')
             },
             {
@@ -24,49 +25,56 @@ oraConsole.init = function () {
             }
         );
         // Call the original console.xxx function.
-        switch (level) {
-            case 'Error':
-                oraConsole.error.apply(console, arguments);
-                break;
-            case 'Warning':
-                oraConsole.warn.apply(console, arguments);
-                break;
-            case 'Info':
-                oraConsole.info.apply(console, arguments);
-                break;
-            case 'Verbose':
-                oraConsole.debug.apply(console, arguments);
-                break;
+        if (level === 1) {
+            oraConsole.original.error.apply(console, arguments);
+        } else if (level === 2 && oraConsole.level >= 2/*Warning*/) {
+            oraConsole.original.warn.apply(console, arguments);
+        } else if (level === 3 && oraConsole.level >= 3/*Info*/) {
+            oraConsole.original.info.apply(console, arguments);
+        } else if (level === 4 && oraConsole.level >= 4/*Verbose*/) {
+            oraConsole.original.debug.apply(console, arguments);
         }
-
     };
 
+    oraConsole.original = {};
     // Save the original error method
-    oraConsole.error = console.error;
+    oraConsole.original.error = console.error;
     // Redefine console.error method with a custom function
-    console.error = function (message) { oraConsole.log('Error', message) };
+    console.error = function (message) { oraConsole.log(1, message) };
+    // Do the same with other console methods depending on our current debug level
+    if (oraConsole.level >= 2/*Warning*/) {
+        oraConsole.original.warn = console.warn;
+        console.warn = function (message) { oraConsole.log(2, message) };
+    }
+    if (oraConsole.level >= 3/*Info*/) {
+        oraConsole.original.info = console.info;
+        console.info = function (message) { oraConsole.log(3, message) };
+        oraConsole.original.log = console.log;
+        console.log = function (message) { oraConsole.log(3, message) };
+    }
+    if (oraConsole.level >= 4/*Verbose*/) {
+        oraConsole.original.debug = console.debug;
+        console.debug = function (message) { oraConsole.log(4, message) };
+    }
 };
-
 
 //https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers/onerror
-/*
+//https://dzone.com/articles/capture-and-report-javascript-errors-with-windowon
 window.onerror = function (msg, url, lineNo, columnNo, error) {
-  var string = msg.toLowerCase();
-  var substring = "script error";
-  if (string.indexOf(substring) > -1){
-    alert('Script Error: See Browser Console for Detail');
-  } else {
-    var message = [
-      'Message: ' + msg,
-      'URL: ' + url,
-      'Line: ' + lineNo,
-      'Column: ' + columnNo,
-      'Error object: ' + JSON.stringify(error)
-    ].join(' - ');
-
-    alert(message);
-  }
-
-  return false;
+    var string = msg.toLowerCase();
+    var substring = "script error";
+    if (string.indexOf(substring) > -1) {
+        oraConsole.log(
+            1,
+            'Script error in external file (different origin): See browser console for details'
+        );
+    } else {
+        oraConsole.log(
+            1,
+            msg,
+            'URL: ' + url + ', Line: ' + lineNo + ', Column: ' + columnNo,
+            'Error object: ' + JSON.stringify(error, null, 2)
+        );
+    }
+    return false;
 };
-*/

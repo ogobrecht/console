@@ -1,0 +1,46 @@
+{
+  "name": "console",
+  "version": "0.30.0",
+  "description": "Oracle Instrumentation Console",
+  "keywords": [
+    "JavaScript",
+    "chart",
+    "gantt"
+  ],
+  "homepage": "https://github.com/ogobrecht/console",
+  "license": "MIT",
+  "author": {
+    "name": "Ottmar Gobrecht",
+    "email": "ottmar.gobrecht@gmail.com",
+    "url": "https://ogobrecht.com",
+    "twitter": "ogobrecht",
+    "donationUrl": "https://www.paypal.me/ogobrecht"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ogobrecht/console.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ogobrecht/console/issues"
+  },
+  "oracle": {
+    "versions": [
+      "12.1"
+    ],
+    "apex": {
+      "versions": [
+        "5.1.0"
+      ],
+      "plugin": {
+        "internalName": "COM.OGOBRECHT.CONSOLE",
+        "type": "dynamic action",
+        "demo": "https://apex.oracle.com/pls/apex/f?p=116612:1",
+        "previewImage": "https://raw.githubusercontent.com/ogobrecht/apex-plugin-dhtmlx-gantt/master/preview.png"
+      }
+    }
+  },
+  "jsFile": {
+    "md5Hash": "f1a135ba0b79bb6cd7883c13735a9179",
+    "version": 39
+  }
+}
