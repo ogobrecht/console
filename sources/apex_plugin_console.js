@@ -7,7 +7,7 @@ oraConsole.init = function () {
             {
                 x01: level,
                 x02: message,
-                x03: 'JavaScript APEX Frontend: ' + scope,
+                x03: 'APEX JS: ' + scope,
                 x04: stack,
                 x05: navigator.userAgent,
                 p_debug: $v('pdebug')
@@ -58,8 +58,15 @@ oraConsole.init = function () {
     }
 };
 
-//https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers/onerror
-//https://dzone.com/articles/capture-and-report-javascript-errors-with-windowon
+/*
+FIXME: Should we have an extended error handling when log level is higher than
+1(error) as described and the end of [this
+article](https://programming.vip/docs/javascript-global-error-handling.html)?
+
+- https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers/onerror
+- https://dzone.com/articles/capture-and-report-javascript-errors-with-windowon
+- https://programming.vip/docs/javascript-global-error-handling.html
+*/
 window.onerror = function (msg, url, lineNo, columnNo, error) {
     var string = msg.toLowerCase();
     var substring = "script error";
@@ -72,8 +79,8 @@ window.onerror = function (msg, url, lineNo, columnNo, error) {
         oraConsole.log(
             1,
             msg,
-            'URL: ' + url + ', Line: ' + lineNo + ', Column: ' + columnNo,
-            'Error object: ' + JSON.stringify(error, null, 2)
+            'url ' + url.match(/\/\/.*?(\/.*)/)[1] + ', line ' + lineNo + ', column ' + columnNo,
+            error.stack
         );
     }
     return false;

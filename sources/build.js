@@ -50,6 +50,7 @@ let minified;
 if (conf.version !== version || conf.jsFile.md5Hash !== md5Hash) {
     // minify JS code
     minified = UglifyJS.minify({ "console.js": consoleJsCode }, { sourceMap: true });
+    if (minified.error) throw minified.error;
     // build plug-in
     conf.version = version;
     conf.jsFile.md5Hash = md5Hash;
