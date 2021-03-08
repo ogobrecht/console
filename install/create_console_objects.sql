@@ -182,7 +182,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.31.0'                               ;
+c_version constant varchar2 ( 10 byte ) := '0.32.0'                               ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -2407,14 +2407,12 @@ begin
     p_check_to_add_minified  => true                 );
 
   apex_javascript.add_onload_code(
-    'oraConsole.apexPluginId     = '  || apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) ||  ';' ||
-    'oraConsole.version          = "' || console.version                                                   || '";' ||
-    'oraConsole.clientIdentifier = "' || console.my_client_identifier                                      || '";' ||
-    'oraConsole.level            = '  || console.my_log_level                                              ||  ';' ||
-    'oraConsole.levelName        = "' || console.get_level_name(console.my_log_level)                      || '";' ||
-    'oraConsole.init();',
-    'COM.OGOBRECHT.CONSOLE'
-  );
+    'oic.pluginId         = '  || apex_javascript.add_value(apex_plugin.get_ajax_identifier, false) ||  ';' ||
+    'oic.version          = "' || console.version                                                   || '";' ||
+    'oic.clientIdentifier = "' || console.my_client_identifier                                      || '";' ||
+    'oic.level            = '  || console.my_log_level                                              ||  ';' ||
+    'oic.init();'    ,
+    'COM.OGOBRECHT.CONSOLE' );
 
   v_result.javascript_function := 'function(){ null; }';
 
@@ -2427,33 +2425,47 @@ function apex_plugin_ajax (
   p_dynamic_action  in  apex_plugin.t_dynamic_action ,
   p_plugin          in  apex_plugin.t_plugin         )
 return apex_plugin.t_dynamic_action_ajax_result is
-  v_result apex_plugin.t_dynamic_action_ajax_result;
+  v_result          apex_plugin.t_dynamic_action_ajax_result;
+  v_level           pls_integer;
+  v_message         t_vc32k;
+  v_user_scope      t_vc32k;
+  v_user_call_stack t_vc32k;
+  v_user_agent      t_vc32k;
 begin
-  case to_number(apex_application.g_x01) -- level
-    when 1 /*Error*/ then
+  -- If we do not provide a value for p_user_scope and p_user_call_stack, then
+  -- our console package provides per default the values from the PL/SQL
+  -- environment. But this is useless for frontend messages from JavaScript.
+  -- Therefore we set any null value for these two parmaters to a point.
+  v_level           := to_number(apex_application.g_x01) ;
+  v_message         := apex_application.g_x02            ;
+  v_user_scope      := nvl(apex_application.g_x03, '.')  ;
+  v_user_call_stack := nvl(apex_application.g_x04, '.')  ;
+  v_user_agent      := apex_application.g_x05            ;
+  case v_level
+    when c_level_error then
       console.error(
-        p_message         => apex_application.g_x02           ,
-        p_user_scope      => nvl(apex_application.g_x03, '.') ,
-        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
-        p_user_agent      => apex_application.g_x05           );
-    when 2 /*Warning*/ then
+        p_message         => v_message         ,
+        p_user_scope      => v_user_scope      ,
+        p_user_call_stack => v_user_call_stack ,
+        p_user_agent      => v_user_agent      );
+    when c_level_warning then
       console.warn (
-        p_message         => apex_application.g_x02           ,
-        p_user_scope      => nvl(apex_application.g_x03, '.') ,
-        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
-        p_user_agent      => apex_application.g_x05           );
-    when 3 /*Info*/ then
+        p_message         => v_message         ,
+        p_user_scope      => v_user_scope      ,
+        p_user_call_stack => v_user_call_stack ,
+        p_user_agent      => v_user_agent      );
+    when c_level_info then
       console.info (
-        p_message         => apex_application.g_x02           ,
-        p_user_scope      => nvl(apex_application.g_x03, '.') ,
-        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
-        p_user_agent      => apex_application.g_x05           );
-    when 4 /*Verbose*/ then
+        p_message         => v_message         ,
+        p_user_scope      => v_user_scope      ,
+        p_user_call_stack => v_user_call_stack ,
+        p_user_agent      => v_user_agent      );
+    when c_level_verbose then
       console.debug(
-        p_message         => apex_application.g_x02           ,
-        p_user_scope      => nvl(apex_application.g_x03, '.') ,
-        p_user_call_stack => nvl(apex_application.g_x04, '.') ,
-        p_user_agent      => apex_application.g_x05           );
+        p_message         => v_message         ,
+        p_user_scope      => v_user_scope      ,
+        p_user_call_stack => v_user_call_stack ,
+        p_user_agent      => v_user_agent      );
   else
     null;
   end case;
@@ -2979,11 +2991,11 @@ end;
 function get_level_name(p_level integer) return varchar2 deterministic is
 begin
   return case p_level
-    when 0 then 'Permanent'
-    when 1 then 'Error'
-    when 2 then 'Warning'
-    when 3 then 'Info'
-    when 4 then 'Verbose'
+    when 0 then 'permanent'
+    when 1 then 'error'
+    when 2 then 'warning'
+    when 3 then 'info'
+    when 4 then 'verbose'
     else null
   end;
 end get_level_name;

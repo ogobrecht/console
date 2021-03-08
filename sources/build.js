@@ -13,7 +13,7 @@ const toChunks = function (str, size) {
     return chunks
 };
 const toApexPluginFile = function (code) {
-    const hexString = Buffer.from(code).toString('hex')
+    const hexString = new Buffer.from(code).toString('hex') // eslint-disable-line no-undef
     const chunks = toChunks(hexString, 200)
     let apexLoadFile = '';
     for (let i = 0; i < chunks.length; ++i) {

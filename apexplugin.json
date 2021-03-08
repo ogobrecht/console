@@ -1,6 +1,6 @@
 {
   "name": "console",
-  "version": "0.31.0",
+  "version": "0.32.0",
   "description": "Oracle Instrumentation Console",
   "keywords": [
     "JavaScript",
@@ -40,7 +40,7 @@
     }
   },
   "jsFile": {
-    "md5Hash": "29982f6fec428a7e0345b1ff3cc9c946",
-    "version": 47
+    "md5Hash": "4e743e0e22507b0bd3be631de17db330",
+    "version": 90
   }
 }
