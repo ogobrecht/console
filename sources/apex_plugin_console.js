@@ -63,6 +63,7 @@ oic.init = function () {
         oic.oa.error.apply(apex.debug, arguments);
     };
 
+    /* Currently we capture only errors because of the heavy overhead when do an AJAX call for every log event
     // Do the same with other console methods depending on our current debug level
     if (oic.level >= oic.ln.warning) {
         oic.oc.warn = console.warn;
@@ -95,7 +96,9 @@ oic.init = function () {
             oic.oc.debug.apply(console, arguments);
         };
     }
+    */
 
+    /* Currently we capture only errors because of the heavy overhead when do an AJAX call for every log event
     // Do the same with other apex methods depending on our current debug level
     if (oic.level >= oic.ln.warning && apex.debug.getLevel() >= apex.debug.LOG_LEVEL.WARN) {
         oic.oa.warn = apex.debug.warn;
@@ -127,6 +130,8 @@ oic.init = function () {
             oic.oc.debug.apply(console, arguments); // Using oic.oc is by intention.
         };
     }
+    */
+
     // FIXME: Should we have an extended error handling when log level is higher
     // than 1(error) as described and the end of [this
     // article](https://programming.vip/docs/javascript-global-error-handling.html)?
