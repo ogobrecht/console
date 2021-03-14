@@ -1,7 +1,9 @@
 # Oracle Instrumentation Console
 
-An instrumentation tool for Oracle developers focused on easy installation and
-usage.
+    .___.
+    {o,o}   An instrumentation tool for Oracle developers
+    /)__)   focused on easy installation and usage
+    -"-"-   combined with nice features
 
 *This is currently the release candidate 1. Feedback and help is welcome.*
 
@@ -14,7 +16,7 @@ usage.
     schema and call
     `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`.
     After some seconds you should be ready to go...
-- Docs: [installation](docs/installation.md),
+- Docs: [Installation](docs/installation.md),
   [uninstallation](docs/uninstallation.md).
 
 ## Easy to use
@@ -31,7 +33,7 @@ usage.
   Also see the [API overview](docs/api-overview.md) and for more details on the
   methods including examples the [documentation for the package
   console](docs/package-console.md).
-- Docs: [Getting started](docs/getting-started.md)
+- Docs: [Getting started](docs/getting-started.md).
 
 ## Nice Features
 
@@ -44,14 +46,14 @@ usage.
   errors in your client frontends. If you use another frontend technologies then
   have a look at the [JavScript sources for the APEX
   plug-in](sources/apex_plugin_console.js) as an template for an own
-  implementation
+  implementation.
 - Has an optional [APEX error handling
   function](docs/package-console.md#function-apex_error_handling) to log also
   internal errors of the APEX engine.
 - No need to provide manually a scope for your log entries - console does this
   automatically for you. If needed, you can overwrite the default scope.
 - Brings some useful helper functions - have a look at the [API
-  overview](docs/api-overview.md)
+  overview](docs/api-overview.md).
 
 ## Dependencies
 
