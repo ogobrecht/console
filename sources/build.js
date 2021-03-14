@@ -67,10 +67,3 @@ if (conf.version !== version || conf.jsFile.md5Hash !== md5Hash) {
     );
     fs.writeFileSync('apexplugin.json', JSON.stringify(conf, null, 2));
 }
-
-console.log('- Add CSS to docs for floating TOC');
-fs.writeFileSync('docs/package-console.md',
-    fs.readFileSync('docs/package-console.md', 'utf8') +
-    '<!-- Styles to have the TOC floating on the right side. Sadly this is not working on GitHub -->\n' +
-    '<style>article > h1 + ul {float: right; background-color: white; font-size: small;}</style>\n'
-);

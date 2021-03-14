@@ -3,7 +3,7 @@
     .___.
     {o,o}   An instrumentation tool for Oracle developers
     /)__)   focused on easy installation and usage
-    -"-"-   combined with nice features
+    -"-"-   combined with nice features.
 
 *This is currently the release candidate 1. Feedback and help is welcome.*
 

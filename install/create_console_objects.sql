@@ -980,15 +980,12 @@ exec console.init(4, 15);
 exec console.init(console.c_level_verbose, 90);
 
 -- Debug an APEX session...
-exec console.init('APEX:8805903776765', 4, 90);
+exec console.init('OGOBRECHT:8805903776765', 4, 90);
 
--- ... with the defaults
-exec console.init('APEX:8805903776765');
-
--- Debug another session
+-- ...with named parameters
 begin
   console.init(
-    p_client_identifier => 'APEX:8805903776765',
+    p_client_identifier => 'OGOBRECHT:8805903776765',
     p_level             => console.c_level_verbose,
     p_duration          => 15
   );
@@ -1009,6 +1006,9 @@ procedure init (
   p_cgi_env        boolean default false        , -- Should the CGI environment be included.
   p_console_env    boolean default false          -- Should the console environment be included.
 );
+/**
+An overloaded procedure for easier initialization of the own session in an development IDE.
+**/
 
 procedure exit (
   p_client_identifier varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.

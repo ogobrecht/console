@@ -43,6 +43,7 @@ Oracle Instrumentation Console
 - [Procedure action](#procedure-action)
 - [Procedure module](#procedure-module)
 - [Procedure init](#procedure-init)
+- [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
 - [Procedure exit_stale](#procedure-exit_stale)
 - [Function context_is_available](#function-context_is_available)
@@ -1022,15 +1023,12 @@ exec console.init(4, 15);
 exec console.init(console.c_level_verbose, 90);
 
 -- Debug an APEX session...
-exec console.init('APEX:8805903776765', 4, 90);
+exec console.init('OGOBRECHT:8805903776765', 4, 90);
 
--- ... with the defaults
-exec console.init('APEX:8805903776765');
-
--- Debug another session
+-- ...with named parameters
 begin
   console.init(
-    p_client_identifier => 'APEX:8805903776765',
+    p_client_identifier => 'OGOBRECHT:8805903776765',
     p_level             => console.c_level_verbose,
     p_duration          => 15
   );
@@ -1052,6 +1050,27 @@ procedure init (
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.
   p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
   p_console_env       boolean  default false          -- Should the console environment be included.
+);
+```
+
+
+## Procedure init
+
+An overloaded procedure for easier initialization of the own session in an development IDE.
+
+SIGNATURE
+
+```sql
+procedure init (
+  p_level          integer default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_duration       integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size     integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack     boolean default false        , -- Should the call stack be included.
+  p_user_env       boolean default false        , -- Should the user environment be included.
+  p_apex_env       boolean default false        , -- Should the APEX environment be included.
+  p_cgi_env        boolean default false        , -- Should the CGI environment be included.
+  p_console_env    boolean default false          -- Should the console environment be included.
 );
 ```
 
@@ -1800,5 +1819,3 @@ procedure cleanup_job_run;
 ```
 
 
-<!-- Styles to have the TOC floating on the right side. Sadly this is not working on GitHub -->
-<style>article > h1 + ul {float: right; background-color: white; font-size: small;}</style>
