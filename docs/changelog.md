@@ -1,14 +1,14 @@
 # Changelog
 
-## 0.33.0 rc1 (2021-03-14)
+## v1.0-beta1 (2021-03-14)
 
-- First release candidate.
+- First official beta version for collecting feedback from other users.
 
-## countless beta versions with many api changes ;-)
+## countless alpha and beta versions with many api changes ;-)
 
-- The CONSOLE was beta and in heavy development. Therefore I did not update the
+- The CONSOLE was in heavy development. Therefore I did not update the
   changelog.
 
-## 0.1.0 (2021-01-05)
+## v0.1-alpha (2021-01-05)
 
 - First functional code.
