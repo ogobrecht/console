@@ -1800,5 +1800,5 @@ procedure cleanup_job_run;
 ```
 
 
-<!-- Styles for GitHub to have the TOC floating on the right side. -->
+<!-- Styles to have the TOC floating on the right side. Sadly this is not working on GitHub -->
 <style>article > h1 + ul {float: right; background-color: white; font-size: small;}</style>
