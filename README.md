@@ -31,7 +31,7 @@ usage.
   Also see the [API overview](docs/api-overview.md) and for more details on the
   methods including examples the [documentation for the package
   console](docs/package-console.md).
-- Docs: [Getting started](getting-started.md)
+- Docs: [Getting started](docs/getting-started.md)
 
 ## Nice Features
 
