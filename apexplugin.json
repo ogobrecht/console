@@ -1,11 +1,12 @@
 {
   "name": "console",
-  "version": "0.32.1",
+  "version": "0.33.0 rc1",
   "description": "Oracle Instrumentation Console",
   "keywords": [
-    "JavaScript",
-    "chart",
-    "gantt"
+    "oracle",
+    "plsql",
+    "instrumentation",
+    "logging"
   ],
   "homepage": "https://github.com/ogobrecht/console",
   "license": "MIT",
@@ -25,11 +26,11 @@
   },
   "oracle": {
     "versions": [
-      "12.1"
+      "12.1+"
     ],
     "apex": {
       "versions": [
-        "5.1.0"
+        "5.1.4+"
       ],
       "plugin": {
         "internalName": "COM.OGOBRECHT.CONSOLE",
@@ -41,6 +42,6 @@
   },
   "jsFile": {
     "md5Hash": "7d6d955a0b0ca2c65090e323e36791a1",
-    "version": 92
+    "version": 96
   }
 }
