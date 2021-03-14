@@ -15,7 +15,7 @@ usage.
     `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`.
     After some seconds you should be ready to go...
 - Docs: [installation](docs/installation.md),
-  [uninstallation](docs/uninstallation).
+  [uninstallation](docs/uninstallation.md).
 
 ## Easy to use
 
