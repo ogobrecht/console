@@ -112,4 +112,4 @@ end;
 /
 
 set verify on feedback on define on
-prompt - finished
+prompt - FINISHED

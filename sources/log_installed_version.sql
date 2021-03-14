@@ -1,8 +1,7 @@
 prompt
 declare
-  v_count                pls_integer;
-  v_context_is_available_yn varchar2( 1 byte);
-  v_console_version      varchar2(10 byte);
+  v_count           pls_integer;
+  v_console_version varchar2(10 byte);
 begin
   select count(*)
     into v_count

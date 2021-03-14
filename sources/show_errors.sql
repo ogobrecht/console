@@ -1,6 +1,6 @@
 -- check for errors in package console and for existing context
 declare
-  v_count                pls_integer;
+  v_count                   pls_integer;
   v_context_is_available_yn varchar2(1 byte);
 begin
   select count(*)
