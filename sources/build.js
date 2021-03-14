@@ -32,6 +32,7 @@ fs.writeFileSync('install/create_console_objects.sql',
         .replace('@CONSOLE_SESSIONS.sql', function () { return fs.readFileSync('sources/CONSOLE_SESSIONS.sql', 'utf8') })
         .replace('@CONSOLE.pks', function () { return fs.readFileSync('sources/CONSOLE.pks', 'utf8') })
         .replace('@CONSOLE.pkb', function () { return fs.readFileSync('sources/CONSOLE.pkb', 'utf8') })
+        .replace('@create_clean_up_job.sql', function () { return fs.readFileSync('sources/create_clean_up_job.sql', 'utf8') })
         .replace('@show_errors.sql', function () { return fs.readFileSync('sources/show_errors.sql', 'utf8') })
         .replace('@log_installed_version.sql', function () { return fs.readFileSync('sources/log_installed_version.sql', 'utf8') })
     /*
@@ -66,3 +67,10 @@ if (conf.version !== version || conf.jsFile.md5Hash !== md5Hash) {
     );
     fs.writeFileSync('apexplugin.json', JSON.stringify(conf, null, 2));
 }
+
+console.log('- Add CSS to docs for floating TOC');
+fs.writeFileSync('docs/package-console.md',
+    fs.readFileSync('docs/package-console.md', 'utf8') +
+    '<!-- Styles for GitHub to have the TOC floating on the right side. -->\n' +
+    '<style>article > h1 + ul {float: right; background-color: white; font-size: small;}</style>\n'
+);
