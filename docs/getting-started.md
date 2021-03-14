@@ -18,7 +18,7 @@ line numbers where the error was bubbling up in your code.
 We try try to bridge this gap with a special helper method called
 [console.error_save_stack](package-console.md#procedure-error_save_stack). This
 procedure does not log the error. Instead it saves the call stack information
-(which includes the names of nested methods) until you finally call the
+(which includes the names of nested methods) until you finally call
 [console.error](package-console.md#procedure-error).
 
 Here an example script to illustrate this. You can play around with it - have a
