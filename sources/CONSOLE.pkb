@@ -1305,18 +1305,6 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_level_name(p_level integer) return varchar2 deterministic is
-begin
-  return case p_level
-    when 0 then 'permanent'
-    when 1 then 'error'
-    when 2 then 'warning'
-    when 3 then 'info'
-    when 4 then 'verbose'
-    else null
-  end;
-end get_level_name;
-
 function get_runtime ( p_start timestamp ) return varchar2 is
   v_runtime t_vc32;
 begin
@@ -1335,6 +1323,20 @@ begin
     extract(minute from v_runtime) * 60 +
     extract(second from v_runtime);
 end get_runtime_seconds;
+
+--------------------------------------------------------------------------------
+
+function get_level_name(p_level integer) return varchar2 deterministic is
+begin
+  return case p_level
+    when 0 then 'permanent'
+    when 1 then 'error'
+    when 2 then 'warning'
+    when 3 then 'info'
+    when 4 then 'verbose'
+    else null
+  end;
+end get_level_name;
 
 --------------------------------------------------------------------------------
 
@@ -1830,6 +1832,8 @@ begin
   end if;
 end;
 
+--------------------------------------------------------------------------------
+
 procedure purge_all is
 begin
   purge(
@@ -1837,8 +1841,6 @@ begin
     p_min_days  => -1 -- to be sure we delete everything (sysdate - -1 is the same time tomorrow)
   );
 end purge_all;
-
-
 
 --------------------------------------------------------------------------------
 
@@ -1856,14 +1858,15 @@ begin
         select job_name from user_scheduler_jobs )
       loop
         sys.dbms_scheduler.create_job(
-          job_name        => i.job_name                                                               ,
-          job_type        => 'PLSQL_BLOCK'                                                            ,
-          job_action      => 'begin console.purge(#MIN_LEVEL#,#MIN_DAYS#); console.exit_stale; end;' ,
-          start_date      => sysdate                                                                  ,
-          repeat_interval => '#REPEAT_INTERVAL#'                                                      ,
-          enabled         => true                                                                     ,
-          auto_drop       => false                                                                    ,
-          comments        => 'Cleanup CONSOLE log entries and stale debug sessions.'                  );
+          job_name        => i.job_name                                                              ,
+          job_type        => 'PLSQL_BLOCK'                                                           ,
+          job_action      => 'begin console.purge(p_min_level=>#MIN_LEVEL#,p_min_days=>#MIN_DAYS#);' ||
+                             ' console.exit_stale; end;'                                             ,
+          start_date      => sysdate                                                                 ,
+          repeat_interval => '#REPEAT_INTERVAL#'                                                     ,
+          enabled         => true                                                                    ,
+          auto_drop       => false                                                                   ,
+          comments        => 'Cleanup CONSOLE log entries and stale debug sessions.'                 );
       end loop;
     end;
   ]',
@@ -1872,6 +1875,8 @@ begin
   '#MIN_LEVEL#'       , p_min_level        ),
   '#MIN_DAYS#'        , p_min_days         );
 end cleanup_job_create;
+
+--------------------------------------------------------------------------------
 
 procedure cleanup_job_drop is
 begin
@@ -1891,6 +1896,8 @@ begin
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_drop;
 
+--------------------------------------------------------------------------------
+
 procedure cleanup_job_enable is
 begin
   execute immediate replace(q'[
@@ -1906,6 +1913,8 @@ begin
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_enable;
+
+--------------------------------------------------------------------------------
 
 procedure cleanup_job_disable is
 begin
@@ -1925,6 +1934,8 @@ begin
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_disable;
 
+--------------------------------------------------------------------------------
+
 procedure cleanup_job_run is
 begin
   execute immediate replace(q'[
@@ -1940,6 +1951,7 @@ begin
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_run;
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS

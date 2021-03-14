@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.32.1'                               ;
+c_version constant varchar2 ( 20 byte ) := '0.33.0 rc1'                           ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -214,7 +214,7 @@ select call_stack from console_logs order by log_id desc fetch first row only;
 
 EXAMPLE OUTPUT
 
-```
+```bash
 TEST ERROR_SAVE_STACK
 - compile package spec
 - compile package body
@@ -1044,7 +1044,7 @@ function to_unibar (
   p_width_block_characters  in  number default 25,
   p_fill_scale              in  number default 0
 ) return varchar2 deterministic;
-/*
+/**
 
 Returns a text bar consisting of unicode block characters.
 
@@ -1071,7 +1071,7 @@ Some other text        .75 █████████████████�
 Bla bla bla            .54 █████████████▌
 ```
 
-*/
+**/
 
 --------------------------------------------------------------------------------
 
@@ -1088,7 +1088,7 @@ function format (
   p8        in varchar2 default null ,
   p9        in varchar2 default null )
 return varchar2;
-/*
+/**
 
 Formats a message after the following rules:
 
@@ -1099,28 +1099,18 @@ Formats a message after the following rules:
    parameters using sys.utl_lms.format_message - also see the [Oracle
    docs](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/UTL_LMS.html#GUID-88FFBFB6-FCA4-4951-884B-B0275BD5DF44).
 
-*/
+**/
 
 --------------------------------------------------------------------------------
 
 procedure print ( p_message in varchar2 );
-/*
+/**
 
 An alias for dbms_output.put_line.
 
 Writing dbms_output.put_line is very annoying for me...
 
-*/
-
---------------------------------------------------------------------------------
-
-function get_level_name(p_level integer) return varchar2 deterministic;
-/*
-
-Returns the level name for a given level id and null, if the level is not
-between 0 and 4.
-
-*/
+**/
 
 --------------------------------------------------------------------------------
 
@@ -1172,6 +1162,16 @@ begin
 end;
 {{/}}
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_level_name(p_level integer) return varchar2 deterministic;
+/**
+
+Returns the level name for a given level id and null, if the level is not
+between 0 and 4.
 
 **/
 
@@ -1409,7 +1409,7 @@ Deletion is only allowed for the owner of the package console.
 
 EXAMPLES
 
-```
+```sql
 --> default: all level info and verbose older than 30 days
 exec console.purge;
 
@@ -1430,7 +1430,7 @@ Deletion is only allowed for the owner of the package console.
 
 EXAMPLE
 
-```
+```sql
 exec console.purge_all;
 ```
 
