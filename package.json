@@ -8,8 +8,8 @@
   },
   "scripts": {
     "watch": "chokidar sources/* --initial --command \"npm run build\"",
-    "build": "npx eslint sources/*.js && node sources/build.js && npm-run-all -s docs_console install_create_console_objects install_apex_plugin",
-    "docs_console": "npx ploc --in sources/CONSOLE.pks --out docs/console.md",
+    "build": "npx eslint sources/*.js && npm run docs_console && node sources/build.js && npm run install_create_console_objects && npm run install_apex_plugin",
+    "docs_console": "npx ploc --in sources/CONSOLE.pks --out docs/package-console.md",
     "install_all": "npm-run-all -s install_create_context install_create_console_objects install_grant_rights install_apex_plugin",
     "install_create_context": "echo exit | sqlplus -S /@playground_admin @install/create_context.sql \"PLAYGROUND_DATA\"",
     "install_create_console_objects": "echo exit | sqlplus -S /@playground @install/create_console_objects.sql",
@@ -29,7 +29,7 @@
     "chokidar-cli": "^2.1.0",
     "eslint": "^7.21.0",
     "npm-run-all": "^4.1.5",
-    "ploc": "^0.6.2",
+    "ploc": "^0.6.3",
     "uglify-js": "^3.13.0"
   }
 }
