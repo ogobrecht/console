@@ -46,9 +46,9 @@ begin
     p_ajax_function             => 'console.apex_plugin_ajax'             ,
     p_substitute_attributes     => true                                   ,
     p_subscribe_plugin_settings => true                                   ,
-    p_version_identifier        => '0.32.1'                               ,
+    p_version_identifier        => '0.33.0 rc1'                               ,
     p_about_url                 => 'https://github.com/ogobrecht/console' ,
-    p_files_version             => 92                                     );
+    p_files_version             => 96                                     );
 end;
 /
 
@@ -216,4 +216,4 @@ end;
 /
 
 set verify on feedback on define on
-prompt - finished
+prompt - FINISHED

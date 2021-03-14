@@ -182,7 +182,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '0.32.1'                               ;
+c_version constant varchar2 ( 20 byte ) := '0.33.0 rc1'                           ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -395,7 +395,7 @@ select call_stack from console_logs order by log_id desc fetch first row only;
 
 EXAMPLE OUTPUT
 
-```
+```bash
 TEST ERROR_SAVE_STACK
 - compile package spec
 - compile package body
@@ -1225,7 +1225,7 @@ function to_unibar (
   p_width_block_characters  in  number default 25,
   p_fill_scale              in  number default 0
 ) return varchar2 deterministic;
-/*
+/**
 
 Returns a text bar consisting of unicode block characters.
 
@@ -1252,7 +1252,7 @@ Some other text        .75 █████████████████�
 Bla bla bla            .54 █████████████▌
 ```
 
-*/
+**/
 
 --------------------------------------------------------------------------------
 
@@ -1269,7 +1269,7 @@ function format (
   p8        in varchar2 default null ,
   p9        in varchar2 default null )
 return varchar2;
-/*
+/**
 
 Formats a message after the following rules:
 
@@ -1280,28 +1280,18 @@ Formats a message after the following rules:
    parameters using sys.utl_lms.format_message - also see the [Oracle
    docs](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/UTL_LMS.html#GUID-88FFBFB6-FCA4-4951-884B-B0275BD5DF44).
 
-*/
+**/
 
 --------------------------------------------------------------------------------
 
 procedure print ( p_message in varchar2 );
-/*
+/**
 
 An alias for dbms_output.put_line.
 
 Writing dbms_output.put_line is very annoying for me...
 
-*/
-
---------------------------------------------------------------------------------
-
-function get_level_name(p_level integer) return varchar2 deterministic;
-/*
-
-Returns the level name for a given level id and null, if the level is not
-between 0 and 4.
-
-*/
+**/
 
 --------------------------------------------------------------------------------
 
@@ -1353,6 +1343,16 @@ begin
 end;
 {{/}}
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_level_name(p_level integer) return varchar2 deterministic;
+/**
+
+Returns the level name for a given level id and null, if the level is not
+between 0 and 4.
 
 **/
 
@@ -1590,7 +1590,7 @@ Deletion is only allowed for the owner of the package console.
 
 EXAMPLES
 
-```
+```sql
 --> default: all level info and verbose older than 30 days
 exec console.purge;
 
@@ -1611,7 +1611,7 @@ Deletion is only allowed for the owner of the package console.
 
 EXAMPLE
 
-```
+```sql
 exec console.purge_all;
 ```
 
@@ -2988,18 +2988,6 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_level_name(p_level integer) return varchar2 deterministic is
-begin
-  return case p_level
-    when 0 then 'permanent'
-    when 1 then 'error'
-    when 2 then 'warning'
-    when 3 then 'info'
-    when 4 then 'verbose'
-    else null
-  end;
-end get_level_name;
-
 function get_runtime ( p_start timestamp ) return varchar2 is
   v_runtime t_vc32;
 begin
@@ -3018,6 +3006,20 @@ begin
     extract(minute from v_runtime) * 60 +
     extract(second from v_runtime);
 end get_runtime_seconds;
+
+--------------------------------------------------------------------------------
+
+function get_level_name(p_level integer) return varchar2 deterministic is
+begin
+  return case p_level
+    when 0 then 'permanent'
+    when 1 then 'error'
+    when 2 then 'warning'
+    when 3 then 'info'
+    when 4 then 'verbose'
+    else null
+  end;
+end get_level_name;
 
 --------------------------------------------------------------------------------
 
@@ -3513,6 +3515,8 @@ begin
   end if;
 end;
 
+--------------------------------------------------------------------------------
+
 procedure purge_all is
 begin
   purge(
@@ -3520,8 +3524,6 @@ begin
     p_min_days  => -1 -- to be sure we delete everything (sysdate - -1 is the same time tomorrow)
   );
 end purge_all;
-
-
 
 --------------------------------------------------------------------------------
 
@@ -3539,14 +3541,15 @@ begin
         select job_name from user_scheduler_jobs )
       loop
         sys.dbms_scheduler.create_job(
-          job_name        => i.job_name                                                               ,
-          job_type        => 'PLSQL_BLOCK'                                                            ,
-          job_action      => 'begin console.purge(#MIN_LEVEL#,#MIN_DAYS#); console.exit_stale; end;' ,
-          start_date      => sysdate                                                                  ,
-          repeat_interval => '#REPEAT_INTERVAL#'                                                      ,
-          enabled         => true                                                                     ,
-          auto_drop       => false                                                                    ,
-          comments        => 'Cleanup CONSOLE log entries and stale debug sessions.'                  );
+          job_name        => i.job_name                                                              ,
+          job_type        => 'PLSQL_BLOCK'                                                           ,
+          job_action      => 'begin console.purge(p_min_level=>#MIN_LEVEL#,p_min_days=>#MIN_DAYS#);' ||
+                             ' console.exit_stale; end;'                                             ,
+          start_date      => sysdate                                                                 ,
+          repeat_interval => '#REPEAT_INTERVAL#'                                                     ,
+          enabled         => true                                                                    ,
+          auto_drop       => false                                                                   ,
+          comments        => 'Cleanup CONSOLE log entries and stale debug sessions.'                 );
       end loop;
     end;
   ]',
@@ -3555,6 +3558,8 @@ begin
   '#MIN_LEVEL#'       , p_min_level        ),
   '#MIN_DAYS#'        , p_min_days         );
 end cleanup_job_create;
+
+--------------------------------------------------------------------------------
 
 procedure cleanup_job_drop is
 begin
@@ -3574,6 +3579,8 @@ begin
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_drop;
 
+--------------------------------------------------------------------------------
+
 procedure cleanup_job_enable is
 begin
   execute immediate replace(q'[
@@ -3589,6 +3596,8 @@ begin
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_enable;
+
+--------------------------------------------------------------------------------
 
 procedure cleanup_job_disable is
 begin
@@ -3608,6 +3617,8 @@ begin
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_disable;
 
+--------------------------------------------------------------------------------
+
 procedure cleanup_job_run is
 begin
   execute immediate replace(q'[
@@ -3623,6 +3634,7 @@ begin
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end cleanup_job_run;
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS
@@ -3972,9 +3984,30 @@ begin
 end console;
 /
 
+declare
+  v_count pls_integer;
+begin
+  select count(*)
+    into v_count
+    from user_errors
+   where name = 'CONSOLE';
+  if v_count = 0 then
+    -- without execute immediate this script will raise an error when the package console is not valid
+    select count(*) into v_count from user_scheduler_jobs where job_name = 'CONSOLE_CLEANUP';
+    if v_count = 0 then
+      dbms_output.put_line('- Job CONSOLE_CLEANUP not found, run creation command with the defaults (purge entries of level info after 30 days)');
+      execute immediate 'begin console.cleanup_job_create; end;';
+    else
+      dbms_output.put_line('- Job CONSOLE_CLEANUP found, no action required');
+    end if;
+  end if;
+end;
+/
+
+
 -- check for errors in package console and for existing context
 declare
-  v_count                pls_integer;
+  v_count                   pls_integer;
   v_context_is_available_yn varchar2(1 byte);
 begin
   select count(*)
@@ -4013,9 +4046,8 @@ select name || case when type like '%BODY' then ' body' end as "Name",
 
 prompt
 declare
-  v_count                pls_integer;
-  v_context_is_available_yn varchar2( 1 byte);
-  v_console_version      varchar2(10 byte);
+  v_count           pls_integer;
+  v_console_version varchar2(10 byte);
 begin
   select count(*)
     into v_count

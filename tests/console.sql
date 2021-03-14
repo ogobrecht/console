@@ -22,7 +22,7 @@ begin
   console.error     ('error');
   console.warn      ('warn');
   console.info      ('info', p_user_agent => 'dummy');
-  console.log       ('log');
+  console.log       ('log', p_user_scope => 'testus');
   console.debug     ('debug');
   console.trace     ('who is calling us?');
   console.trace     ();
