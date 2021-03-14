@@ -184,7 +184,7 @@ exec console.init(console.c_level_verbose, 90);
 -- Debug an APEX session...
 exec console.init('OGOBRECHT:8805903776765', 4, 90);
 
--- ...with named parameters
+-- ...with named parameters (there are more availabe, checkout the docs)
 begin
   console.init(
     p_client_identifier => 'OGOBRECHT:8805903776765',
@@ -243,9 +243,35 @@ JavaScript console:
 
 Also see additional methods in the [API overview](api-overview.md)
 
+### Viewing Log Entries
+
+CONSOLE brings a [pipelined function to view the last entries](package-console.md#function-view_last). This function is especially useful, if you use the possibility to cache log entries in the packages state (works only for your own development session) as this function views the entries from the cache and the log table `CONSOLE_LOGS` in descending order:
+
+```sql
+--init logging for own session
+exec console.init(
+  p_level          => c_level_verbose ,
+  p_duration       => 90              ,
+  p_cache_size     => 1000            ,
+  p_check_interval => 30              );
+
+--test some business logic
+begin
+  --your code here;
+
+  console.log('test', p_user_env => true);
+end;
+/
+
+--view last cache and log entries
+select * from console.view_last(50);
+```
+
 ### Exit Log Level
 
 If you finished your debugging work you might want to exit the current log level
 and go back to the error level. You can do this by calling
 [console.exit](package-console.md#procedure-exit). If you provide no client
 identifier, then CONSOLE tries to exit your own session.
+
+If you don't do it by yourself the daily cleanup job from CONSOLE will exit stale sessions in the table `CONSOLE_SESSIONS`.

@@ -1337,11 +1337,11 @@ exec console.init(
 begin
   --your code here;
 
-  console_log('test', p_user_env => true);
+  console.log('test', p_user_env => true);
 end;
 {{/}}
 
---check current log cache
+--check current cache entries
 select * from console.view_cache();
 ```
 
@@ -1371,11 +1371,11 @@ exec console.init(
 begin
   --your code here;
 
-  console_log('test', p_user_env => true);
+  console.log('test', p_user_env => true);
 end;
 {{/}}
 
---check current log cache
+--view last cache and log entries
 select * from console.view_last(50);
 ```
 
