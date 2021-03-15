@@ -4,7 +4,7 @@
 Oracle Instrumentation Console
 ==============================
 
-<ul style="float:">
+<ul style="float:right;background-color:white;font-size:small;">
 <li><a href="#package-console">Package console</a></li>
 <li><a href="#function-my_client_identifier">Function my_client_identifier</a></li>
 <li><a href="#function-my_log_level">Function my_log_level</a></li>
