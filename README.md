@@ -7,7 +7,7 @@
 
 *This is currently version 1.0-beta1. Feedback and help is welcome.*
 
-## Easy to install
+## Easy to Install
 
 - Works with or without a context.
 - Has a single installation script (can be installed on apex.oracle.com via "SQL
@@ -19,7 +19,7 @@
 - Docs: [Installation](docs/installation.md),
   [uninstallation](docs/uninstallation.md).
 
-## Easy to use
+## Easy to Use
 
 - Save to run in production without configuration
   - Errors are always logged.
