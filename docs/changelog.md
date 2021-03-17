@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.0-beta2 (2021-xx-xx)
+
+- New helper function get_runtime_milliseconds
+
 ## v1.0-beta1 (2021-03-14)
 
 - First official beta version for collecting feedback from other users.

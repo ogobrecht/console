@@ -22,7 +22,7 @@ procedure does not log the error. Instead it saves the call stack information
 [console.error](package-console.md#procedure-error).
 
 Here an example script to illustrate this. You can play around with it - have a
-look at the calls of `console.error_save_stack` and then one, outermost
+look at the calls of `console.error_save_stack` and the one, outermost
 `console.error`:
 
 ```sql
@@ -217,7 +217,7 @@ interface - in APEX for example this would be very easy. You could write this in
 the footer of every page by calling
 [console.my_client_identifier](package-console.md#function-my_client_identifier).
 If you use the APEX plug-in to log frontend errors then you could do this in
-pure JavaScript in the fronend, as the plug-in provides the information under
+pure JavaScript in the frontend, as the plug-in provides the information under
 `window.oic.clientIdentifier`.
 
 ### Log Methods
@@ -245,15 +245,19 @@ Also see additional methods in the [API overview](api-overview.md)
 
 ### Viewing Log Entries
 
-CONSOLE brings a [pipelined function to view the last entries](package-console.md#function-view_last). This function is especially useful, if you use the possibility to cache log entries in the packages state (works only for your own development session) as this function views the entries from the cache and the log table `CONSOLE_LOGS` in descending order:
+CONSOLE brings a [pipelined function to view the last
+entries](package-console.md#function-view_last). This function is especially
+useful, if you use the possibility to cache log entries in the packages state
+(works only for your own development session) as this function views the entries
+from the cache and the log table `CONSOLE_LOGS` in descending order:
 
 ```sql
 --init logging for own session
 exec console.init(
   p_level          => c_level_verbose ,
-  p_duration       => 90              ,
-  p_cache_size     => 1000            ,
-  p_check_interval => 30              );
+  p_duration       => 90              , -- in minutes
+  p_cache_size     => 1000            , -- number of entries to cache in the package state
+  p_check_interval => 30              );-- in seconds, how often console looks for a changed configuration
 
 --test some business logic
 begin
@@ -274,4 +278,5 @@ and go back to the error level. You can do this by calling
 [console.exit](package-console.md#procedure-exit). If you provide no client
 identifier, then CONSOLE tries to exit your own session.
 
-If you don't do it by yourself the daily cleanup job from CONSOLE will exit stale sessions in the table `CONSOLE_SESSIONS`.
+If you don't do it by yourself the daily cleanup job from CONSOLE will exit
+stale sessions in the table `CONSOLE_SESSIONS`.
