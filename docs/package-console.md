@@ -59,6 +59,7 @@ Oracle Instrumentation Console
 - [Procedure print](#procedure-print)
 - [Function get_runtime](#function-get_runtime)
 - [Function get_runtime_seconds](#function-get_runtime_seconds)
+- [Function get_runtime_milliseconds](#function-get_runtime_milliseconds)
 - [Function get_level_name](#function-get_level_name)
 - [Function get_scope](#function-get_scope)
 - [Function get_call_stack](#function-get_call_stack)
@@ -1448,6 +1449,34 @@ function get_runtime_seconds ( p_start timestamp ) return number;
 ```
 
 
+## Function get_runtime_milliseconds
+
+Subtracts the start `localtimestamp` from the current `localtimestamp` and
+returns the exracted milliseconds.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line (
+    'Runtime (milliseconds): ' || to_char(console.get_runtime_milliseconds(v_start)) );
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+function get_runtime_milliseconds ( p_start timestamp ) return number;
+```
+
+
 ## Function get_level_name
 
 Returns the level name for a given level id and null, if the level is not
@@ -1456,7 +1485,7 @@ between 0 and 4.
 SIGNATURE
 
 ```sql
-function get_level_name(p_level integer) return varchar2 deterministic;
+function get_level_name (p_level integer) return varchar2 deterministic;
 ```
 
 

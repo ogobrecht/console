@@ -1319,14 +1319,26 @@ function get_runtime_seconds ( p_start timestamp ) return number is
 begin
   v_runtime := localtimestamp - p_start;
   return
-    extract(hour from v_runtime) * 3600 +
-    extract(minute from v_runtime) * 60 +
-    extract(second from v_runtime);
+    extract(hour   from v_runtime) * 3600 +
+    extract(minute from v_runtime) *   60 +
+    extract(second from v_runtime)        ;
 end get_runtime_seconds;
 
 --------------------------------------------------------------------------------
 
-function get_level_name(p_level integer) return varchar2 deterministic is
+function get_runtime_milliseconds ( p_start timestamp ) return number is
+  v_runtime interval day to second;
+begin
+  v_runtime := localtimestamp - p_start;
+  return (
+    extract(hour   from v_runtime) * 3600 +
+    extract(minute from v_runtime) *   60 +
+    extract(second from v_runtime)        ) * 1000;
+end get_runtime_milliseconds;
+
+--------------------------------------------------------------------------------
+
+function get_level_name (p_level integer) return varchar2 deterministic is
 begin
   return case p_level
     when 0 then 'permanent'

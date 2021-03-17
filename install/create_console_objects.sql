@@ -1348,7 +1348,33 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_level_name(p_level integer) return varchar2 deterministic;
+function get_runtime_milliseconds ( p_start timestamp ) return number;
+/**
+
+Subtracts the start `localtimestamp` from the current `localtimestamp` and
+returns the exracted milliseconds.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line (
+    'Runtime (milliseconds): ' || to_char(console.get_runtime_milliseconds(v_start)) );
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_level_name (p_level integer) return varchar2 deterministic;
 /**
 
 Returns the level name for a given level id and null, if the level is not
@@ -3002,14 +3028,26 @@ function get_runtime_seconds ( p_start timestamp ) return number is
 begin
   v_runtime := localtimestamp - p_start;
   return
-    extract(hour from v_runtime) * 3600 +
-    extract(minute from v_runtime) * 60 +
-    extract(second from v_runtime);
+    extract(hour   from v_runtime) * 3600 +
+    extract(minute from v_runtime) *   60 +
+    extract(second from v_runtime)        ;
 end get_runtime_seconds;
 
 --------------------------------------------------------------------------------
 
-function get_level_name(p_level integer) return varchar2 deterministic is
+function get_runtime_milliseconds ( p_start timestamp ) return number is
+  v_runtime interval day to second;
+begin
+  v_runtime := localtimestamp - p_start;
+  return (
+    extract(hour   from v_runtime) * 3600 +
+    extract(minute from v_runtime) *   60 +
+    extract(second from v_runtime)        ) * 1000;
+end get_runtime_milliseconds;
+
+--------------------------------------------------------------------------------
+
+function get_level_name (p_level integer) return varchar2 deterministic is
 begin
   return case p_level
     when 0 then 'permanent'

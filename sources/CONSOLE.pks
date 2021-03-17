@@ -1167,7 +1167,33 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_level_name(p_level integer) return varchar2 deterministic;
+function get_runtime_milliseconds ( p_start timestamp ) return number;
+/**
+
+Subtracts the start `localtimestamp` from the current `localtimestamp` and
+returns the exracted milliseconds.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line (
+    'Runtime (milliseconds): ' || to_char(console.get_runtime_milliseconds(v_start)) );
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_level_name (p_level integer) return varchar2 deterministic;
 /**
 
 Returns the level name for a given level id and null, if the level is not
