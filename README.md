@@ -7,6 +7,10 @@
 
 *This is currently version 1.0-beta1. Feedback and help is welcome.*
 
+**A T T E N T I O N: As long as we are in beta state you should always run the
+uninstallation script (`@uninstall/drop_console_objects.sql`) before you install
+a new version. An existing context does not to be dropped.**
+
 ## Easy to Install
 
 - Works with or without a context.

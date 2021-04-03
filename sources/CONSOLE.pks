@@ -6,11 +6,11 @@ c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_permanent constant pls_integer := 0 ;
 c_level_error     constant pls_integer := 1 ;
 c_level_warning   constant pls_integer := 2 ;
 c_level_info      constant pls_integer := 3 ;
-c_level_verbose   constant pls_integer := 4 ;
+c_level_debug     constant pls_integer := 4 ;
+c_level_trace     constant pls_integer := 5 ;
 
 /**
 
@@ -68,20 +68,13 @@ select console.my_log_level from dual;
 
 **/
 
---------------------------------------------------------------------------------
 
-procedure permanent ( p_message clob );
-/**
-
-Log a message with the level 0 (permanent). These messages will not be deleted
-on cleanup.
-
-**/
 
 --------------------------------------------------------------------------------
 
 procedure error (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -99,6 +92,7 @@ Log a message with the level 1 (error).
 
 function error (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -108,15 +102,10 @@ function error (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer;
+return console_logs.log_id%type;
 /**
 
-Log a message with the level 1 (error).
-
-This is an overloaded function which returns the `log_id` as a reference for
-further investigation by a support team. It can be used for example in an [APEX
-error handling
-function](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
+Log a message with the level 1 (error). Returns the log ID.
 
 **/
 
@@ -264,6 +253,7 @@ Call Stack
 
 procedure warn (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -279,10 +269,30 @@ Log a message with the level 2 (warning).
 
 **/
 
+function warn (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
+/**
+
+Log a message with the level 2 (warning). Returns the log ID.
+
+**/
+
 --------------------------------------------------------------------------------
 
 procedure info (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -302,6 +312,7 @@ Log a message with the level 3 (info).
 
 procedure log(
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -321,6 +332,7 @@ Log a message with the level 3 (info).
 
 procedure debug (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -332,83 +344,7 @@ procedure debug (
   p_user_call_stack varchar2 default null  );
 /**
 
-Log a message with the level 4 (verbose).
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure assert (
-  p_expression boolean,
-  p_message    varchar2
-);
-/**
-
-If the given expression evaluates to false, an error is raised with the given
-message.
-
-EXAMPLE
-
-```sql
-declare
-  x number := 5;
-  y number := 3;
-begin
-  console.assert(
-    x < y,
-    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
-  );
-exception
-  when others then
-    console.error;
-    raise;
-end;
-{{/}}
-```
-
-**/
-
---------------------------------------------------------------------------------
-procedure table# (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 );
-/**
-
-Logs a cursor as a HTML table with the level 3 (info).
-
-Using a cursor for the table method is very flexible, but opening a cursor can
-produce unnecessary work for your system when you are not in the log level info.
-Therefore please check your current log level before you open the cursor.
-
-EXAMPLE
-
-```sql
-declare
-  v_dataset sys_refcursor;
-begin
-  -- Your business logic here...
-
-  -- Debug code
-  if console.level_is_info then
-    open v_dataset for
-      select table_name,
-             tablespace_name,
-             logging,
-             num_rows,
-             last_analyzed,
-             partitioned,
-             has_identity
-        from user_tables;
-    console.table#(v_dataset);
-  end if;
-
-  -- Your business logic here...
-end;
-{{/}}
-```
+Log a message with the level 4 (debug).
 
 **/
 
@@ -416,18 +352,19 @@ end;
 
 procedure trace (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
+  p_apex_env        boolean  default true  ,
+  p_cgi_env         boolean  default true  ,
+  p_console_env     boolean  default true  ,
+  p_user_env        boolean  default true  ,
   p_user_agent      varchar2 default null  ,
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
 /**
 
-Logs a call stack with the level 3 (info).
+Log a message with the level 5 (trace).
 
 **/
 
@@ -616,6 +553,82 @@ end;
 **/
 
 --------------------------------------------------------------------------------
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 );
+/**
+
+Logs a cursor as a HTML table with the level 3 (info).
+
+Using a cursor for the table method is very flexible, but opening a cursor can
+produce unnecessary work for your system when you are not in the log level info.
+Therefore please check your current log level before you open the cursor.
+
+EXAMPLE
+
+```sql
+declare
+  v_dataset sys_refcursor;
+begin
+  -- Your business logic here...
+
+  -- Debug code
+  if console.level_is_info then
+    open v_dataset for
+      select table_name,
+             tablespace_name,
+             logging,
+             num_rows,
+             last_analyzed,
+             partitioned,
+             has_identity
+        from user_tables;
+    console.table#(v_dataset);
+  end if;
+
+  -- Your business logic here...
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure assert (
+  p_expression boolean,
+  p_message    varchar2
+);
+/**
+
+If the given expression evaluates to false, an error is raised with the given
+message.
+
+EXAMPLE
+
+```sql
+declare
+  x number := 5;
+  y number := 3;
+begin
+  console.assert(
+    x < y,
+    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+  );
+exception
+  when others then
+    console.error;
+    raise;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
 
 procedure clear ( p_client_identifier varchar2 default my_client_identifier );
 /**
@@ -635,18 +648,21 @@ MANAGING LOGGING MODES OF SESSIONS.
 
 --------------------------------------------------------------------------------
 
-function level_permanent return integer; /** Returns the number code for the level 0 permanent. **/
 function level_error     return integer; /** Returns the number code for the level 1 error.     **/
 function level_warning   return integer; /** Returns the number code for the level 2 warning.   **/
 function level_info      return integer; /** Returns the number code for the level 3 info.      **/
-function level_verbose   return integer; /** Returns the number code for the level 4 verbose.   **/
+function level_debug     return integer; /** Returns the number code for the level 4 debug.     **/
+function level_trace     return integer; /** Returns the number code for the level 5 trace.     **/
 
 function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
 function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
-function level_is_verbose return boolean; /** Returns true when the level is greater than or equal verbose, otherwise false. **/
+function level_is_debug   return boolean; /** Returns true when the level is greater than or equal debug, otherwise false.   **/
+function level_is_trace   return boolean; /** Returns true when the level is greater than or equal trace, otherwise false.   **/
+
 function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
 function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
-function level_is_verbose_yn return varchar2; /** Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'. **/
+function level_is_debug_yn   return varchar2; /** Returns 'Y' when the level is greater than or equal debug, otherwise 'N'.   **/
+function level_is_trace_yn   return varchar2; /** Returns 'Y' when the level is greater than or equal trace, otherwise 'N'.   **/
 
 
 --------------------------------------------------------------------------------
@@ -1497,6 +1513,7 @@ procedure utl_set_client_identifier;
 function utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -1506,19 +1523,7 @@ function utl_create_log_entry (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer;
-procedure utl_create_log_entry (
-  p_level           integer                ,
-  p_message         clob     default null  ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+return console_logs.log_id%type;
 
 $end
 

@@ -58,10 +58,7 @@ begin
      where table_name in ('CONSOLE_LOGS', 'CONSOLE_SESSIONS') )
   loop
     execute immediate 'select count(*) from ' || i.table_name ||
-      case when i.table_name = 'CONSOLE_LOGS'
-        then q'{ where level_id = 0 and message not like '{o,o} CONSOLE%' }'
-        else null
-      end
+      case when i.table_name = 'CONSOLE_LOGS' then q'{ where permanent = 'Y' }' else null end
       into v_count;
     if i.table_name = 'CONSOLE_LOGS' and v_count > 0 then
       dbms_output.put_line(

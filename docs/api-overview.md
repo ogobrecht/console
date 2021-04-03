@@ -1,31 +1,41 @@
-# API Overview of the Package CONSOLE
+# API Overview - Package CONSOLE
 
 For a more detailed overview of the public API methods including examples please
-see the [docs for the package console](package-console.md).
+see the [docs for the package console](package-console.md). You can also use the
+links on the method names below.
 
-- The console API is mostly compatible with the [JavaScript Console
+- The console API is inspired by the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
-  This means, the same method names are provided. The parameters differs a
-  little bit to fit our needs in PL/SQL. Not all methods making sense in a
-  PL/SQL instrumentation tool (we have no direct screen) and therefore these six
-  are not implemented: dir, dirxml, group, groupCollapsed, groupEnd and
-  countReset (instead we have count_end and we ignore the line number, where the
-  count occurred). For the two \*_end methods we use snake case instead of camel
-  case for readability. As table is a keyword in SQL we named our method table#:
-  - [console.error](package-console.md#procedure-error) (level 1=error)
-  - [console.warn](package-console.md#procedure-warn) (level 2=warning)
-  - [console.info](package-console.md#procedure-info) (level 3=info)
-  - [console.log](package-console.md#procedure-log) (level 3=info)
-  - [console.debug](package-console.md#procedure-debug) (level 4=verbose)
-  - [console.assert](package-console.md#procedure-assert) (level 1=error, if
-    failed)
-  - [console.table#](package-console.md#procedure-table) (level 3=info)
-  - [console.trace](package-console.md#procedure-trace) (level 3=info)
+  This means, we have mostly the same log levels and method names. The
+  parameters differs a little bit to fit our needs in PL/SQL. Not all methods
+  making sense in a PL/SQL instrumentation tool (we have no direct screen) and
+  therefore these six are not implemented: dir, dirxml, group, groupCollapsed,
+  groupEnd and countReset (instead we have count_end and we ignore the line
+  number, where the count occurred). For the two \*_end methods we use snake
+  case instead of camel case for readability. As table is a keyword in SQL we
+  named our method table#. The log level verbose is splitted into debug and
+  trace.
+- Five log levels
+  - Level 1: Error
+  - Level 2: Warning
+  - Level 3: Info
+  - Level 4: Debug (instead of verbose in JavaScript)
+  - Level 5: Trace (not existing in JavaScript)
+- Console main methods
+  - [console.error](package-console.md#procedure-error) (level error)
+  - [console.warn](package-console.md#procedure-warn) (level warning)
+  - [console.info](package-console.md#procedure-info) & alias
+    [console.log](package-console.md#procedure-log) (level info)
+  - [console.debug](package-console.md#procedure-debug) (level debug)
+  - [console.trace](package-console.md#procedure-trace) (level trace)
   - [console.count](package-console.md#procedure-count)
-  - [console.count_end](package-console.md#procedure-count_end) (level 3=info)
+  - [console.count_end](package-console.md#procedure-count_end) (level info)
   - [console.time](package-console.md#procedure-time)
-  - [console.time_log](package-console.md#procedure-time_log) (level 3=info)
-  - [console.time_end](package-console.md#procedure-time_end) (level 3=info)
+  - [console.time_log](package-console.md#procedure-time_log) (level info)
+  - [console.time_end](package-console.md#procedure-time_end) (level info)
+  - [console.table#](package-console.md#procedure-table) (level info)
+  - [console.assert](package-console.md#procedure-assert) (level error, if
+    failed)
   - [console.clear](package-console.md#procedure-clear)
 - Additional methods:
   - [console.error_save_stack](package-console.md#procedure-error_save_stack):
@@ -34,10 +44,6 @@ see the [docs for the package console](package-console.md).
     most powerful feature which can save you useless log entries from nested
     methods. You need only to call `console.error` in the outermost method of
     you logic and you don't loose details.
-  - [console.permanent](package-console.md#procedure-permanent) (level
-    0=permanent): Log permanent messages like installation or upgrade notes with
-    the level zero, which are not deleted when the purge job clears the log
-    table.
   - [console.action](package-console.md#procedure-action) &
     [module](package-console.md#procedure-module): Aliases for
     dbms_application_info.set_action and set_module to be friendly to the DBA

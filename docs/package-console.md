@@ -7,16 +7,14 @@ Oracle Instrumentation Console
 - [Package console](#package-console)
 - [Function my_client_identifier](#function-my_client_identifier)
 - [Function my_log_level](#function-my_log_level)
-- [Procedure permanent](#procedure-permanent)
 - [Procedure error](#procedure-error)
 - [Function error](#function-error)
 - [Procedure error_save_stack](#procedure-error_save_stack)
 - [Procedure warn](#procedure-warn)
+- [Function warn](#function-warn)
 - [Procedure info](#procedure-info)
 - [Procedure log](#procedure-log)
 - [Procedure debug](#procedure-debug)
-- [Procedure assert](#procedure-assert)
-- [Procedure table#](#procedure-table)
 - [Procedure trace](#procedure-trace)
 - [Procedure count](#procedure-count)
 - [Procedure count_end](#procedure-count_end)
@@ -25,18 +23,22 @@ Oracle Instrumentation Console
 - [Procedure time_log](#procedure-time_log)
 - [Procedure time_end](#procedure-time_end)
 - [Function time_end](#function-time_end)
+- [Procedure table#](#procedure-table)
+- [Procedure assert](#procedure-assert)
 - [Procedure clear](#procedure-clear)
-- [Function level_permanent](#function-level_permanent)
 - [Function level_error](#function-level_error)
 - [Function level_warning](#function-level_warning)
 - [Function level_info](#function-level_info)
-- [Function level_verbose](#function-level_verbose)
+- [Function level_debug](#function-level_debug)
+- [Function level_trace](#function-level_trace)
 - [Function level_is_warning](#function-level_is_warning)
 - [Function level_is_info](#function-level_is_info)
-- [Function level_is_verbose](#function-level_is_verbose)
+- [Function level_is_debug](#function-level_is_debug)
+- [Function level_is_trace](#function-level_is_trace)
 - [Function level_is_warning_yn](#function-level_is_warning_yn)
 - [Function level_is_info_yn](#function-level_is_info_yn)
-- [Function level_is_verbose_yn](#function-level_is_verbose_yn)
+- [Function level_is_debug_yn](#function-level_is_debug_yn)
+- [Function level_is_trace_yn](#function-level_is_trace_yn)
 - [Function apex_error_handling](#function-apex_error_handling)
 - [Function apex_plugin_render](#function-apex_plugin_render)
 - [Function apex_plugin_ajax](#function-apex_plugin_ajax)
@@ -103,11 +105,11 @@ c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_permanent constant pls_integer := 0 ;
 c_level_error     constant pls_integer := 1 ;
 c_level_warning   constant pls_integer := 2 ;
 c_level_info      constant pls_integer := 3 ;
-c_level_verbose   constant pls_integer := 4 ;
+c_level_debug     constant pls_integer := 4 ;
+c_level_trace     constant pls_integer := 5 ;
 ```
 
 
@@ -143,18 +145,6 @@ function my_log_level return integer;
 ```
 
 
-## Procedure permanent
-
-Log a message with the level 0 (permanent). These messages will not be deleted
-on cleanup.
-
-SIGNATURE
-
-```sql
-procedure permanent ( p_message clob );
-```
-
-
 ## Procedure error
 
 Log a message with the level 1 (error).
@@ -164,6 +154,7 @@ SIGNATURE
 ```sql
 procedure error (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -178,18 +169,14 @@ procedure error (
 
 ## Function error
 
-Log a message with the level 1 (error).
-
-This is an overloaded function which returns the `log_id` as a reference for
-further investigation by a support team. It can be used for example in an [APEX
-error handling
-function](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
+Log a message with the level 1 (error). Returns the log ID.
 
 SIGNATURE
 
 ```sql
 function error (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -199,7 +186,7 @@ function error (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer;
+return console_logs.log_id%type;
 ```
 
 
@@ -353,6 +340,7 @@ SIGNATURE
 ```sql
 procedure warn (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -365,6 +353,29 @@ procedure warn (
 ```
 
 
+## Function warn
+
+Log a message with the level 2 (warning). Returns the log ID.
+
+SIGNATURE
+
+```sql
+function warn (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
+```
+
+
 ## Procedure info
 
 Log a message with the level 3 (info).
@@ -374,6 +385,7 @@ SIGNATURE
 ```sql
 procedure info (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -395,6 +407,7 @@ SIGNATURE
 ```sql
 procedure log(
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -409,13 +422,14 @@ procedure log(
 
 ## Procedure debug
 
-Log a message with the level 4 (verbose).
+Log a message with the level 4 (debug).
 
 SIGNATURE
 
 ```sql
 procedure debug (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -428,101 +442,21 @@ procedure debug (
 ```
 
 
-## Procedure assert
-
-If the given expression evaluates to false, an error is raised with the given
-message.
-
-EXAMPLE
-
-```sql
-declare
-  x number := 5;
-  y number := 3;
-begin
-  console.assert(
-    x < y,
-    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
-  );
-exception
-  when others then
-    console.error;
-    raise;
-end;
-/
-```
-
-SIGNATURE
-
-```sql
-procedure assert (
-  p_expression boolean,
-  p_message    varchar2
-);
-```
-
-
-## Procedure table#
-
-Logs a cursor as a HTML table with the level 3 (info).
-
-Using a cursor for the table method is very flexible, but opening a cursor can
-produce unnecessary work for your system when you are not in the log level info.
-Therefore please check your current log level before you open the cursor.
-
-EXAMPLE
-
-```sql
-declare
-  v_dataset sys_refcursor;
-begin
-  -- Your business logic here...
-
-  -- Debug code
-  if console.level_is_info then
-    open v_dataset for
-      select table_name,
-             tablespace_name,
-             logging,
-             num_rows,
-             last_analyzed,
-             partitioned,
-             has_identity
-        from user_tables;
-    console.table#(v_dataset);
-  end if;
-
-  -- Your business logic here...
-end;
-/
-```
-
-SIGNATURE
-
-```sql
-procedure table# (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 );
-```
-
-
 ## Procedure trace
 
-Logs a call stack with the level 3 (info).
+Log a message with the level 5 (trace).
 
 SIGNATURE
 
 ```sql
 procedure trace (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
+  p_apex_env        boolean  default true  ,
+  p_cgi_env         boolean  default true  ,
+  p_console_env     boolean  default true  ,
+  p_user_env        boolean  default true  ,
   p_user_agent      varchar2 default null  ,
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
@@ -738,6 +672,87 @@ function time_end ( p_label varchar2 default null ) return varchar2;
 ```
 
 
+## Procedure table#
+
+Logs a cursor as a HTML table with the level 3 (info).
+
+Using a cursor for the table method is very flexible, but opening a cursor can
+produce unnecessary work for your system when you are not in the log level info.
+Therefore please check your current log level before you open the cursor.
+
+EXAMPLE
+
+```sql
+declare
+  v_dataset sys_refcursor;
+begin
+  -- Your business logic here...
+
+  -- Debug code
+  if console.level_is_info then
+    open v_dataset for
+      select table_name,
+             tablespace_name,
+             logging,
+             num_rows,
+             last_analyzed,
+             partitioned,
+             has_identity
+        from user_tables;
+    console.table#(v_dataset);
+  end if;
+
+  -- Your business logic here...
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 );
+```
+
+
+## Procedure assert
+
+If the given expression evaluates to false, an error is raised with the given
+message.
+
+EXAMPLE
+
+```sql
+declare
+  x number := 5;
+  y number := 3;
+begin
+  console.assert(
+    x < y,
+    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+  );
+exception
+  when others then
+    console.error;
+    raise;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure assert (
+  p_expression boolean,
+  p_message    varchar2
+);
+```
+
+
 ## Procedure clear
 
 Clears the cached log entries (if any).
@@ -755,17 +770,6 @@ SIGNATURE
 
 ```sql
 procedure clear ( p_client_identifier varchar2 default my_client_identifier );
-```
-
-
-## Function level_permanent
-
-Returns the number code for the level 0 permanent.
-
-SIGNATURE
-
-```sql
-function level_permanent return integer;
 ```
 
 
@@ -802,14 +806,25 @@ function level_info      return integer;
 ```
 
 
-## Function level_verbose
+## Function level_debug
 
-Returns the number code for the level 4 verbose.
+Returns the number code for the level 4 debug.
 
 SIGNATURE
 
 ```sql
-function level_verbose   return integer;
+function level_debug     return integer;
+```
+
+
+## Function level_trace
+
+Returns the number code for the level 5 trace.
+
+SIGNATURE
+
+```sql
+function level_trace     return integer;
 ```
 
 
@@ -835,14 +850,25 @@ function level_is_info    return boolean;
 ```
 
 
-## Function level_is_verbose
+## Function level_is_debug
 
-Returns true when the level is greater than or equal verbose, otherwise false.
+Returns true when the level is greater than or equal debug, otherwise false.
 
 SIGNATURE
 
 ```sql
-function level_is_verbose return boolean;
+function level_is_debug   return boolean;
+```
+
+
+## Function level_is_trace
+
+Returns true when the level is greater than or equal trace, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_trace   return boolean;
 ```
 
 
@@ -868,14 +894,25 @@ function level_is_info_yn    return varchar2;
 ```
 
 
-## Function level_is_verbose_yn
+## Function level_is_debug_yn
 
-Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'.
+Returns 'Y' when the level is greater than or equal debug, otherwise 'N'.
 
 SIGNATURE
 
 ```sql
-function level_is_verbose_yn return varchar2;
+function level_is_debug_yn   return varchar2;
+```
+
+
+## Function level_is_trace_yn
+
+Returns 'Y' when the level is greater than or equal trace, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_trace_yn   return varchar2;
 ```
 
 
