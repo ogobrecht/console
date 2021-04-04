@@ -2044,6 +2044,7 @@ begin
   if c_console_owner = sys_context('USERENV','SESSION_USER') then
     delete from console_logs
      where level_id >= p_min_level
+       and permanent = 'N'
        and log_systime <= sysdate - p_min_days;
     commit;
   else

@@ -102,7 +102,8 @@ begin
     dbms_output.put_line('- Table CONSOLE_LOGS found, no action required');
   end if;
 
-  create_index (null    , 'LOG_SYSTIME, LEVEL_ID', 'IX');
+  --FIXME: which way should we go with indexes?
+    create_index (null    , 'LOG_SYSTIME, LEVEL_ID', 'IX');
   --create_index (null    , 'LOG_SYSTIME'          , 'IX1');
   --create_index ('bitmap', 'LEVEL_ID, LEVEL_NAME' , 'IX2');
   --create_index ('bitmap', 'PERMANENT'            , 'IX3');
@@ -3851,6 +3852,7 @@ begin
   if c_console_owner = sys_context('USERENV','SESSION_USER') then
     delete from console_logs
      where level_id >= p_min_level
+       and permanent = 'N'
        and log_systime <= sysdate - p_min_days;
     commit;
   else
