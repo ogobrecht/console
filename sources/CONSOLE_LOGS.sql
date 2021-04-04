@@ -1,7 +1,11 @@
 declare
   v_count pls_integer;
   --
-  procedure create_index (p_column_list varchar2, p_postfix varchar2) is
+  procedure create_index (
+    p_type        varchar2,
+    p_column_list varchar2,
+    p_postfix     varchar2)
+  is
   begin
     with t as (
       select listagg(column_name, ', ') within group(order by column_position) as index_column_list
@@ -15,7 +19,7 @@ declare
     where index_column_list = p_column_list;
     if v_count = 0 then
       dbms_output.put_line('- Index for CONSOLE_LOGS column list ' || p_column_list || ' not found, run creation command');
-      execute immediate 'create index CONSOLE_LOGS_' || p_postfix || ' on CONSOLE_LOGS (' || p_column_list || ')';
+      execute immediate 'create ' || p_type || ' index CONSOLE_LOGS_' || p_postfix || ' on CONSOLE_LOGS (' || p_column_list || ')';
     else
       dbms_output.put_line('- Index for CONSOLE_LOGS column list ' || p_column_list || ' found, no action required');
     end if;
@@ -33,6 +37,7 @@ begin
         log_systime        timestamp                                   not null  ,
         level_id           number   (   1,0)                           not null  ,
         level_name         varchar2 (  10 byte)                        not null  ,
+        permanent          varchar2 (   1 byte)                        not null  ,
         scope              varchar2 ( 256 byte)                                  ,
         message            clob                                                  ,
         error_code         number   (  10,0)                                     ,
@@ -45,15 +50,20 @@ begin
         ip_address         varchar2 (  48 byte)                                  ,
         host               varchar2 (  64 byte)                                  ,
         os_user            varchar2 (  64 byte)                                  ,
-        os_user_agent      varchar2 ( 200 byte)
+        os_user_agent      varchar2 ( 200 byte)                                  ,
+        --
+        constraint  console_logs_pk  primary key (log_id)                        ,
+        constraint  console_logs_ck  check       (permanent in ('Y','N'))
       )
     }';
   else
     dbms_output.put_line('- Table CONSOLE_LOGS found, no action required');
   end if;
 
-  create_index ('LOG_SYSTIME, LEVEL_ID', 'IX1');
-  create_index ('CLIENT_IDENTIFIER', 'IX2');
+  create_index (null    , 'LOG_SYSTIME, LEVEL_ID', 'IX');
+  --create_index (null    , 'LOG_SYSTIME'          , 'IX1');
+  --create_index ('bitmap', 'LEVEL_ID, LEVEL_NAME' , 'IX2');
+  --create_index ('bitmap', 'PERMANENT'            , 'IX3');
 
 end;
 /
@@ -61,7 +71,7 @@ end;
 comment on table  console_logs                   is 'Table for log entries of the package CONSOLE. Column names are mostly driven by the attribute names of SYS_CONTEXT(''USERENV'') and DBMS_SESSION for easier mapping and clearer context.';
 comment on column console_logs.log_id            is 'Primary key based on a sequence.';
 comment on column console_logs.log_systime       is 'Log systimestamp.';
-comment on column console_logs.level_id          is 'Level ID. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info) or 4 (verbose).';
+comment on column console_logs.level_id          is 'Level ID. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).';
 comment on column console_logs.level_name        is 'Level name. Can be Permanent, Error, Warning, Info or Verbose.';
 comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number). Couls also be an external scope provided by the user.';
 comment on column console_logs.message           is 'The log message itself.';

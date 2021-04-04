@@ -117,6 +117,7 @@ procedure utl_set_client_identifier;
 function utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -126,19 +127,7 @@ function utl_create_log_entry (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer;
-procedure utl_create_log_entry (
-  p_level           integer                ,
-  p_message         clob     default null  ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+return console_logs.log_id%type;
 
 $end
 
@@ -160,19 +149,39 @@ end my_log_level;
 
 --------------------------------------------------------------------------------
 
-procedure permanent (
-  p_message clob )
-is
+function view_last (p_log_rows integer default 100)
+return tab_logs pipelined is
+  v_count pls_integer := 0;
+  v_left  pls_integer;
 begin
-  utl_create_log_entry (
-    p_level   => c_level_permanent ,
-    p_message => p_message           );
-end permanent;
+  for i in reverse 1 .. g_log_cache.count loop
+    exit when v_count > p_log_rows;
+    pipe row(g_log_cache(i));
+    v_count := v_count + 1;
+  end loop;
+  if v_count < p_log_rows then
+    v_left := p_log_rows - v_count;
+    for i in (select * from console_logs
+              order by log_systime desc
+              fetch first v_left rows only)
+    loop
+          pipe row(i);
+    end loop;
+  end if;
+end view_last;
+
+--------------------------------------------------------------------------------
+
+procedure error_save_stack is
+begin
+  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1024);
+end error_save_stack;
 
 --------------------------------------------------------------------------------
 
 procedure error (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -183,10 +192,12 @@ procedure error (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
+  v_log_id console_logs.log_id%type;
 begin
-  utl_create_log_entry (
-    p_level           => c_level_error   ,
+  v_log_id := utl_create_log_entry (
+    p_level           => c_level_error     ,
     p_message         => p_message         ,
+    p_permanent       => p_permanent       ,
     p_call_stack      => p_call_stack      ,
     p_apex_env        => p_apex_env        ,
     p_cgi_env         => p_cgi_env         ,
@@ -200,6 +211,7 @@ end error;
 
 function error (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default true  ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -209,11 +221,14 @@ function error (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer is
+return console_logs.log_id%type
+is
+  v_log_id console_logs.log_id%type;
 begin
-  return utl_create_log_entry (
-    p_level           => c_level_error   ,
+  v_log_id := utl_create_log_entry (
+    p_level           => c_level_error     ,
     p_message         => p_message         ,
+    p_permanent       => p_permanent       ,
     p_call_stack      => p_call_stack      ,
     p_apex_env        => p_apex_env        ,
     p_cgi_env         => p_cgi_env         ,
@@ -223,19 +238,14 @@ begin
     p_user_scope      => p_user_scope      ,
     p_user_error_code => p_user_error_code ,
     p_user_call_stack => p_user_call_stack );
+  return v_log_id;
 end error;
-
---------------------------------------------------------------------------------
-
-procedure error_save_stack is
-begin
-  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1024);
-end error_save_stack;
 
 --------------------------------------------------------------------------------
 
 procedure warn (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -246,11 +256,13 @@ procedure warn (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
+  v_log_id console_logs.log_id%type;
 begin
   if utl_logging_is_enabled (c_level_warning) then
-    utl_create_log_entry (
-      p_level           => c_level_warning ,
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_warning   ,
       p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
       p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
@@ -263,10 +275,45 @@ begin
   end if;
 end warn;
 
+function warn (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type
+is
+  v_log_id console_logs.log_id%type;
+begin
+  if utl_logging_is_enabled (c_level_warning) then
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_warning   ,
+      p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
+      p_call_stack      => p_call_stack      ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
+  end if;
+  return v_log_id;
+end warn;
+
 --------------------------------------------------------------------------------
 
 procedure info (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -277,11 +324,13 @@ procedure info (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
+  v_log_id console_logs.log_id%type;
 begin
   if utl_logging_is_enabled (c_level_info) then
-    utl_create_log_entry (
-      p_level           => c_level_info    ,
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_info      ,
       p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
       p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
@@ -294,10 +343,45 @@ begin
   end if;
 end info;
 
+function info (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type
+is
+  v_log_id console_logs.log_id%type;
+begin
+  if utl_logging_is_enabled (c_level_info) then
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_info      ,
+      p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
+      p_call_stack      => p_call_stack      ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
+  end if;
+  return v_log_id;
+end info;
+
 --------------------------------------------------------------------------------
 
 procedure log (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -308,11 +392,13 @@ procedure log (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
+  v_log_id console_logs.log_id%type;
 begin
   if utl_logging_is_enabled (c_level_info) then
-    utl_create_log_entry (
+    v_log_id := utl_create_log_entry (
       p_level           => c_level_info    ,
       p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
       p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
@@ -325,10 +411,45 @@ begin
   end if;
 end log;
 
+function log (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type
+is
+  v_log_id console_logs.log_id%type;
+begin
+  if utl_logging_is_enabled (c_level_info) then
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_info    ,
+      p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
+      p_call_stack      => p_call_stack      ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
+  end if;
+  return v_log_id;
+end log;
+
 --------------------------------------------------------------------------------
 
 procedure debug (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -339,11 +460,13 @@ procedure debug (
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
 is
+  v_log_id console_logs.log_id%type;
 begin
-  if utl_logging_is_enabled (c_level_verbose) then
-    utl_create_log_entry (
-      p_level           => c_level_verbose ,
+  if utl_logging_is_enabled (c_level_debug) then
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_debug     ,
       p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
       p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
@@ -356,46 +479,10 @@ begin
   end if;
 end debug;
 
---------------------------------------------------------------------------------
-
-procedure assert (
-  p_expression boolean  ,
-  p_message    varchar2 )
-is
-begin
-  if not p_expression then
-    raise_application_error(-20777, 'Assertion failed: ' || p_message, true);
-  end if;
-end assert;
-
-
---------------------------------------------------------------------------------
-
-procedure table# (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 )
-is
-begin
-  if utl_logging_is_enabled (c_level_info) then
-    utl_create_log_entry (
-      p_level   => c_level_info,
-      p_message => to_html_table (
-        p_data_cursor       => p_data_cursor       ,
-        p_comment           => p_comment           ,
-        p_include_row_num   => p_include_row_num   ,
-        p_max_rows          => p_max_rows          ,
-        p_max_column_length => p_max_column_length ) );
-  end if;
-end table#;
-
---------------------------------------------------------------------------------
-
-procedure trace (
+function debug (
   p_message         clob     default null  ,
-  p_call_stack      boolean  default true  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -404,12 +491,15 @@ procedure trace (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type
 is
+  v_log_id console_logs.log_id%type;
 begin
-  if utl_logging_is_enabled (c_level_info) then
-    utl_create_log_entry (
-      p_level           => c_level_info    ,
+  if utl_logging_is_enabled (c_level_debug) then
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_debug     ,
       p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
       p_call_stack      => p_call_stack      ,
       p_apex_env        => p_apex_env        ,
       p_cgi_env         => p_cgi_env         ,
@@ -420,6 +510,75 @@ begin
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   end if;
+  return v_log_id;
+end debug;
+
+--------------------------------------------------------------------------------
+
+procedure trace (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default true  ,
+  p_apex_env        boolean  default true  ,
+  p_cgi_env         boolean  default true  ,
+  p_console_env     boolean  default true  ,
+  p_user_env        boolean  default true  ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+is
+  v_log_id console_logs.log_id%type;
+begin
+  if utl_logging_is_enabled (c_level_trace) then
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_trace     ,
+      p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
+      p_call_stack      => p_call_stack      ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
+  end if;
+end trace;
+
+function trace (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default true  ,
+  p_apex_env        boolean  default true  ,
+  p_cgi_env         boolean  default true  ,
+  p_console_env     boolean  default true  ,
+  p_user_env        boolean  default true  ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type
+is
+  v_log_id console_logs.log_id%type;
+begin
+  if utl_logging_is_enabled (c_level_trace) then
+    v_log_id := utl_create_log_entry (
+      p_level           => c_level_trace     ,
+      p_message         => p_message         ,
+      p_permanent       => p_permanent       ,
+      p_call_stack      => p_call_stack      ,
+      p_apex_env        => p_apex_env        ,
+      p_cgi_env         => p_cgi_env         ,
+      p_console_env     => p_console_env     ,
+      p_user_env        => p_user_env        ,
+      p_user_agent      => p_user_agent      ,
+      p_user_scope      => p_user_scope      ,
+      p_user_error_code => p_user_error_code ,
+      p_user_call_stack => p_user_call_stack );
+  end if;
+  return v_log_id;
 end trace;
 
 --------------------------------------------------------------------------------
@@ -437,17 +596,36 @@ begin
   end if;
 end count;
 
-procedure count_end (
-  p_label varchar2 default null )
+procedure count_log (
+  p_label  varchar2 default null )
 is
-  v_label t_vc128;
+  v_label  t_vc128;
+  v_log_id console_logs.log_id%type;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
     if utl_logging_is_enabled (c_level_info) then
-      utl_create_log_entry (
+      v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
+    end if;
+  else
+    warn('Counter `' || v_label || '` does not exist.');
+  end if;
+end count_log;
+
+procedure count_end (
+  p_label  varchar2 default null )
+is
+  v_label  t_vc128;
+  v_log_id console_logs.log_id%type;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    if utl_logging_is_enabled (c_level_info) then
+      v_log_id := utl_create_log_entry (
+        p_level   => c_level_info,
+        p_message => v_label || ': ' || to_char(g_counters(v_label)) || ' - counter ended');
     end if;
     g_counters.delete(v_label);
   else
@@ -459,8 +637,8 @@ function count_end (
   p_label varchar2 default null )
 return varchar2
 is
-  v_label   t_vc128;
-  v_return  t_vc64;
+  v_label  t_vc128;
+  v_return t_vc64;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
@@ -484,12 +662,13 @@ end time;
 procedure time_log (
   p_label varchar2 default null )
 is
-  v_label t_vc128;
+  v_label  t_vc128;
+  v_log_id console_logs.log_id%type;
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
     if utl_logging_is_enabled (c_level_info) then
-      utl_create_log_entry (
+      v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
     end if;
@@ -501,12 +680,13 @@ end time_log;
 procedure time_end (
   p_label varchar2 default null )
 is
-  v_label t_vc128;
+  v_label  t_vc128;
+  v_log_id console_logs.log_id%type;
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
     if utl_logging_is_enabled (c_level_info) then
-      utl_create_log_entry (
+      v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || get_runtime (g_timers(v_label)) || ' - timer ended' );
     end if;
@@ -535,28 +715,115 @@ end time_end;
 
 --------------------------------------------------------------------------------
 
-procedure clear (
-  p_client_identifier varchar2 default my_client_identifier )
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 )
 is
+  v_log_id console_logs.log_id%type;
 begin
-  g_log_cache.delete;
-end;
+  if utl_logging_is_enabled (c_level_info) then
+    v_log_id := utl_create_log_entry (
+      p_level   => c_level_info,
+      p_message => to_html_table (
+        p_data_cursor       => p_data_cursor       ,
+        p_comment           => p_comment           ,
+        p_include_row_num   => p_include_row_num   ,
+        p_max_rows          => p_max_rows          ,
+        p_max_column_length => p_max_column_length ) );
+  end if;
+end table#;
 
 --------------------------------------------------------------------------------
 
-function level_permanent return integer is begin return c_level_permanent; end;
-function level_error     return integer is begin return c_level_error    ; end;
-function level_warning   return integer is begin return c_level_warning  ; end;
-function level_info      return integer is begin return c_level_info     ; end;
-function level_verbose   return integer is begin return c_level_verbose  ; end;
+procedure assert (
+  p_expression boolean  ,
+  p_message    varchar2 )
+is
+begin
+  if not p_expression then
+    raise_application_error(-20777, 'Assertion failed: ' || p_message, true);
+  end if;
+end assert;
+
+--------------------------------------------------------------------------------
+
+function format (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null )
+return varchar2 is
+  v_message t_vc32k := p_message;
+begin
+  -- id replacements
+  v_message := replace(v_message, '%0', p0);
+  v_message := replace(v_message, '%1', p1);
+  v_message := replace(v_message, '%2', p2);
+  v_message := replace(v_message, '%3', p3);
+  v_message := replace(v_message, '%4', p4);
+  v_message := replace(v_message, '%5', p5);
+  v_message := replace(v_message, '%6', p6);
+  v_message := replace(v_message, '%7', p7);
+  v_message := replace(v_message, '%8', p8);
+  v_message := replace(v_message, '%9', p9);
+
+  -- new line
+  v_message := replace(v_message, '%n', c_lf);
+
+  -- positional replacements
+  return sys.utl_lms.format_message(v_message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+end format;
+
+--------------------------------------------------------------------------------
+
+procedure action (
+  p_action varchar2 )
+is
+begin
+  dbms_application_info.set_action (
+    p_action );
+end action;
+
+--------------------------------------------------------------------------------
+
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+)
+is
+begin
+  dbms_application_info.set_module(
+    p_module ,
+    p_action );
+end module;
+
+--------------------------------------------------------------------------------
+
+function level_error   return integer is begin return c_level_error  ; end;
+function level_warning return integer is begin return c_level_warning; end;
+function level_info    return integer is begin return c_level_info   ; end;
+function level_debug   return integer is begin return c_level_debug  ; end;
+function level_trace   return integer is begin return c_level_trace  ; end;
 
 function level_is_warning return boolean is begin return utl_logging_is_enabled(c_level_warning); end;
 function level_is_info    return boolean is begin return utl_logging_is_enabled(c_level_info   ); end;
-function level_is_verbose return boolean is begin return utl_logging_is_enabled(c_level_verbose); end;
+function level_is_debug   return boolean is begin return utl_logging_is_enabled(c_level_debug  ); end;
+function level_is_trace   return boolean is begin return utl_logging_is_enabled(c_level_trace  ); end;
 
 function level_is_warning_yn return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_warning)); end;
 function level_is_info_yn    return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_info   )); end;
-function level_is_verbose_yn return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_verbose)); end;
+function level_is_debug_yn   return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_debug  )); end;
+function level_is_trace_yn   return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_trace  )); end;
 
 
 --------------------------------------------------------------------------------
@@ -777,8 +1044,14 @@ begin
         p_user_scope      => v_user_scope      ,
         p_user_call_stack => v_user_call_stack ,
         p_user_agent      => v_user_agent      );
-    when c_level_verbose then
+    when c_level_debug then
       console.debug(
+        p_message         => v_message         ,
+        p_user_scope      => v_user_scope      ,
+        p_user_call_stack => v_user_call_stack ,
+        p_user_agent      => v_user_agent      );
+    when c_level_trace then
+      console.trace(
         p_message         => v_message         ,
         p_user_scope      => v_user_scope      ,
         p_user_call_stack => v_user_call_stack ,
@@ -795,27 +1068,6 @@ exception when others then
 end apex_plugin_ajax;
 
 $end
-
---------------------------------------------------------------------------------
-
-procedure action (
-  p_action varchar2 )
-is
-begin
-  dbms_application_info.set_action (
-    p_action );
-end action;
-
-procedure module (
-  p_module varchar2,
-  p_action varchar2 default null
-)
-is
-begin
-  dbms_application_info.set_module(
-    p_module ,
-    p_action );
-end module;
 
 --------------------------------------------------------------------------------
 
@@ -852,9 +1104,9 @@ is
   end;
   --
 begin
-  assert ( p_level          in (2, 3, 4),       'Level needs to be 2 (warning), 3 (info) or 4 (verbose). ' ||
-                                                'Level 1 (error) and 0 (permanent) are always logged '     ||
-                                                'without a call to the init method.'                       );
+  assert ( p_level          in (2, 3, 4, 5),    'Level needs to be 2 (warning), 3 (info), 4 (debug) or 5 ' ||
+                                                '(trace). Level 1 (error) will be always logged without '  ||
+                                                'a call to the init method.'                               );
   assert ( p_duration       between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
   assert ( p_cache_size     between 0 and 1000, 'Cache size needs to be between 1 and 1000 (log entries).' );
   assert ( p_check_interval between 1 and   60, 'Cache duration needs to be between 1 and 60 (seconds).'   );
@@ -960,12 +1212,16 @@ begin
   end if;
 end exit_;
 
+--------------------------------------------------------------------------------
+
 procedure exit (
   p_client_identifier varchar2 default my_client_identifier )
 is
 begin
   exit_(p_client_identifier);
 end exit;
+
+--------------------------------------------------------------------------------
 
 procedure exit_stale is
 begin
@@ -1262,42 +1518,6 @@ end to_unibar;
 
 --------------------------------------------------------------------------------
 
-function format (
-  p_message in varchar2              ,
-  p0        in varchar2 default null ,
-  p1        in varchar2 default null ,
-  p2        in varchar2 default null ,
-  p3        in varchar2 default null ,
-  p4        in varchar2 default null ,
-  p5        in varchar2 default null ,
-  p6        in varchar2 default null ,
-  p7        in varchar2 default null ,
-  p8        in varchar2 default null ,
-  p9        in varchar2 default null )
-return varchar2 is
-  v_message t_vc32k := p_message;
-begin
-  -- id replacements
-  v_message := replace(v_message, '%0', p0);
-  v_message := replace(v_message, '%1', p1);
-  v_message := replace(v_message, '%2', p2);
-  v_message := replace(v_message, '%3', p3);
-  v_message := replace(v_message, '%4', p4);
-  v_message := replace(v_message, '%5', p5);
-  v_message := replace(v_message, '%6', p6);
-  v_message := replace(v_message, '%7', p7);
-  v_message := replace(v_message, '%8', p8);
-  v_message := replace(v_message, '%9', p9);
-
-  -- new line
-  v_message := replace(v_message, '%n', c_lf);
-
-  -- positional replacements
-  return sys.utl_lms.format_message(v_message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
-end format;
-
---------------------------------------------------------------------------------
-
 procedure print ( p_message in varchar2 ) is
 begin
   dbms_output.put_line(p_message);
@@ -1319,21 +1539,33 @@ function get_runtime_seconds ( p_start timestamp ) return number is
 begin
   v_runtime := localtimestamp - p_start;
   return
-    extract(hour from v_runtime) * 3600 +
-    extract(minute from v_runtime) * 60 +
-    extract(second from v_runtime);
+    extract(hour   from v_runtime) * 3600 +
+    extract(minute from v_runtime) *   60 +
+    extract(second from v_runtime)        ;
 end get_runtime_seconds;
 
 --------------------------------------------------------------------------------
 
-function get_level_name(p_level integer) return varchar2 deterministic is
+function get_runtime_milliseconds ( p_start timestamp ) return number is
+  v_runtime interval day to second;
+begin
+  v_runtime := localtimestamp - p_start;
+  return (
+    extract(hour   from v_runtime) * 3600 +
+    extract(minute from v_runtime) *   60 +
+    extract(second from v_runtime)        ) * 1000;
+end get_runtime_milliseconds;
+
+--------------------------------------------------------------------------------
+
+function get_level_name (p_level integer) return varchar2 deterministic is
 begin
   return case p_level
-    when 0 then 'permanent'
     when 1 then 'error'
     when 2 then 'warning'
     when 3 then 'info'
-    when 4 then 'verbose'
+    when 4 then 'debug'
+    when 5 then 'trace'
     else null
   end;
 end get_level_name;
@@ -1470,15 +1702,16 @@ begin
   end loop;
   clob_append(v_clob, v_cache, c_lf);
 
+  --Only page items from current page when level < debug, otherwise all page items.
   clob_append(v_clob, v_cache,
     '### Page Items' ||
-    case when g_conf_level < c_level_verbose and v_app_page_id is not null then ' - APP_PAGE_ID ' || v_app_page_id end ||
+    case when g_conf_level < c_level_debug and v_app_page_id is not null then ' - APP_PAGE_ID ' || v_app_page_id end ||
     c_lflf || to_md_tab_header('Item Name'));
   for i in (
     select item_name
       from apex_application_page_items
     where application_id = v_app_id
-      and page_id        = case when (select console.my_log_level from dual) = (select console.level_verbose from dual)
+      and page_id        = case when (select console.my_log_level from dual) >= (select console.level_debug from dual)
                               then page_id
                               else v_app_page_id
                             end )
@@ -1743,6 +1976,15 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
+function view_cache return tab_logs pipelined is
+begin
+  for i in reverse 1 .. g_log_cache.count loop
+    pipe row(g_log_cache(i));
+  end loop;
+end view_cache;
+
+--------------------------------------------------------------------------------
+
 procedure flush_cache is
   pragma autonomous_transaction;
 begin
@@ -1756,35 +1998,12 @@ end flush_cache;
 
 --------------------------------------------------------------------------------
 
-function view_cache return tab_logs pipelined is
+procedure clear (
+  p_client_identifier varchar2 default my_client_identifier )
+is
 begin
-  for i in reverse 1 .. g_log_cache.count loop
-    pipe row(g_log_cache(i));
-  end loop;
-end view_cache;
-
---------------------------------------------------------------------------------
-
-function view_last (p_log_rows integer default 100)
-return tab_logs pipelined is
-  v_count pls_integer := 0;
-  v_left  pls_integer;
-begin
-  for i in reverse 1 .. g_log_cache.count loop
-    exit when v_count > p_log_rows;
-    pipe row(g_log_cache(i));
-    v_count := v_count + 1;
-  end loop;
-  if v_count < p_log_rows then
-    v_left := p_log_rows - v_count;
-    for i in (select * from console_logs
-              order by log_systime desc
-              fetch first v_left rows only)
-    loop
-          pipe row(i);
-    end loop;
-  end if;
-end view_last;
+  g_log_cache.delete;
+end;
 
 --------------------------------------------------------------------------------
 
@@ -1820,7 +2039,7 @@ procedure purge (
 is
   pragma autonomous_transaction;
 begin
-  assert (p_min_level in (1,2,3,4), 'Minimum level must be 1 (error), 2 (warning), 3 (info) or 4 (verbose).');
+  assert (p_min_level in (1,2,3,4,5), 'Minimum level must be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
   -- Only allowed for the owner of the console package
   if c_console_owner = sys_context('USERENV','SESSION_USER') then
     delete from console_logs
@@ -2163,6 +2382,7 @@ end utl_set_client_identifier;
 function utl_create_log_entry (
   p_level           integer                ,
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -2172,7 +2392,7 @@ function utl_create_log_entry (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  )
-return integer
+return console_logs.log_id%type
 is
   pragma autonomous_transaction;
   v_row   console_logs%rowtype;
@@ -2238,6 +2458,7 @@ begin
   v_row.log_systime       := systimestamp;
   v_row.level_id          := p_level;
   v_row.level_name        := get_level_name(p_level);
+  v_row.permanent         := to_yn(p_permanent);
   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
   v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
   v_row.action            := substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 );
@@ -2261,35 +2482,6 @@ begin
 
   return v_row.log_id;
 end utl_create_log_entry;
-
-procedure utl_create_log_entry (
-  p_level           integer                ,
-  p_message         clob     default null  ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
-is
-  v_log_id integer;
-begin
-  v_log_id := utl_create_log_entry (
-    p_level           => p_level           ,
-    p_message         => p_message         ,
-    p_call_stack      => p_call_stack      ,
-    p_apex_env        => p_apex_env        ,
-    p_cgi_env         => p_cgi_env         ,
-    p_console_env     => p_console_env     ,
-    p_user_env        => p_user_env        ,
-    p_user_agent      => p_user_agent      ,
-    p_user_scope      => p_user_scope      ,
-    p_user_error_code => p_user_error_code ,
-    p_user_call_stack => p_user_call_stack );
-end;
 
 --------------------------------------------------------------------------------
 

@@ -7,41 +7,49 @@ Oracle Instrumentation Console
 - [Package console](#package-console)
 - [Function my_client_identifier](#function-my_client_identifier)
 - [Function my_log_level](#function-my_log_level)
-- [Procedure permanent](#procedure-permanent)
+- [Function view_last](#function-view_last)
+- [Procedure error_save_stack](#procedure-error_save_stack)
 - [Procedure error](#procedure-error)
 - [Function error](#function-error)
-- [Procedure error_save_stack](#procedure-error_save_stack)
 - [Procedure warn](#procedure-warn)
+- [Function warn](#function-warn)
 - [Procedure info](#procedure-info)
+- [Function info](#function-info)
 - [Procedure log](#procedure-log)
+- [Function log](#function-log)
 - [Procedure debug](#procedure-debug)
-- [Procedure assert](#procedure-assert)
-- [Procedure table#](#procedure-table)
+- [Function debug](#function-debug)
 - [Procedure trace](#procedure-trace)
+- [Function trace](#function-trace)
 - [Procedure count](#procedure-count)
+- [Procedure count_log](#procedure-count_log)
 - [Procedure count_end](#procedure-count_end)
 - [Function count_end](#function-count_end)
 - [Procedure time](#procedure-time)
 - [Procedure time_log](#procedure-time_log)
 - [Procedure time_end](#procedure-time_end)
 - [Function time_end](#function-time_end)
-- [Procedure clear](#procedure-clear)
-- [Function level_permanent](#function-level_permanent)
+- [Procedure table#](#procedure-table)
+- [Procedure assert](#procedure-assert)
+- [Function format](#function-format)
+- [Procedure action](#procedure-action)
+- [Procedure module](#procedure-module)
 - [Function level_error](#function-level_error)
 - [Function level_warning](#function-level_warning)
 - [Function level_info](#function-level_info)
-- [Function level_verbose](#function-level_verbose)
+- [Function level_debug](#function-level_debug)
+- [Function level_trace](#function-level_trace)
 - [Function level_is_warning](#function-level_is_warning)
 - [Function level_is_info](#function-level_is_info)
-- [Function level_is_verbose](#function-level_is_verbose)
+- [Function level_is_debug](#function-level_is_debug)
+- [Function level_is_trace](#function-level_is_trace)
 - [Function level_is_warning_yn](#function-level_is_warning_yn)
 - [Function level_is_info_yn](#function-level_is_info_yn)
-- [Function level_is_verbose_yn](#function-level_is_verbose_yn)
+- [Function level_is_debug_yn](#function-level_is_debug_yn)
+- [Function level_is_trace_yn](#function-level_is_trace_yn)
 - [Function apex_error_handling](#function-apex_error_handling)
 - [Function apex_plugin_render](#function-apex_plugin_render)
 - [Function apex_plugin_ajax](#function-apex_plugin_ajax)
-- [Procedure action](#procedure-action)
-- [Procedure module](#procedure-module)
 - [Procedure init](#procedure-init)
 - [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
@@ -55,10 +63,10 @@ Oracle Instrumentation Console
 - [Function to_md_tab_header](#function-to_md_tab_header)
 - [Function to_md_tab_data](#function-to_md_tab_data)
 - [Function to_unibar](#function-to_unibar)
-- [Function format](#function-format)
 - [Procedure print](#procedure-print)
 - [Function get_runtime](#function-get_runtime)
 - [Function get_runtime_seconds](#function-get_runtime_seconds)
+- [Function get_runtime_milliseconds](#function-get_runtime_milliseconds)
 - [Function get_level_name](#function-get_level_name)
 - [Function get_scope](#function-get_scope)
 - [Function get_call_stack](#function-get_call_stack)
@@ -69,9 +77,9 @@ Oracle Instrumentation Console
 - [Procedure clob_append](#procedure-clob_append)
 - [Procedure clob_append](#procedure-clob_append-1)
 - [Procedure clob_flush_cache](#procedure-clob_flush_cache)
-- [Procedure flush_cache](#procedure-flush_cache)
 - [Function view_cache](#function-view_cache)
-- [Function view_last](#function-view_last)
+- [Procedure flush_cache](#procedure-flush_cache)
+- [Procedure clear](#procedure-clear)
 - [Function view_status](#function-view_status)
 - [Procedure purge](#procedure-purge)
 - [Procedure purge_all](#procedure-purge_all)
@@ -97,16 +105,16 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta1'                            ;
+c_version constant varchar2 ( 20 byte ) := '1.0-beta2'                            ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_permanent constant pls_integer := 0 ;
 c_level_error     constant pls_integer := 1 ;
 c_level_warning   constant pls_integer := 2 ;
 c_level_info      constant pls_integer := 3 ;
-c_level_verbose   constant pls_integer := 4 ;
+c_level_debug     constant pls_integer := 4 ;
+c_level_trace     constant pls_integer := 5 ;
 ```
 
 
@@ -142,63 +150,39 @@ function my_log_level return integer;
 ```
 
 
-## Procedure permanent
+## Function view_last
 
-Log a message with the level 0 (permanent). These messages will not be deleted
-on cleanup.
+View the last log entries from the log cache and the log table (if not enough in
+the cache) in descending order.
 
-SIGNATURE
+The entries without a log_id are from the cache, the others from the log table.
+
+EXAMPLE
 
 ```sql
-procedure permanent ( p_message clob );
+--init logging for own session
+exec console.init(
+  p_level          => c_level_debug ,
+  p_duration       => 90            ,
+  p_cache_size     => 10            ,
+  p_check_interval => 30            );
+
+--test some business logic
+begin
+  --your code here;
+
+  console.log('test', p_user_env => true);
+end;
+/
+
+--view last cache and log entries
+select * from console.view_last(50);
 ```
 
-
-## Procedure error
-
-Log a message with the level 1 (error).
-
 SIGNATURE
 
 ```sql
-procedure error (
-  p_message         clob     default null  ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
-```
-
-
-## Function error
-
-Log a message with the level 1 (error).
-
-This is an overloaded function which returns the `log_id` as a reference for
-further investigation by a support team. It can be used for example in an [APEX
-error handling
-function](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
-
-SIGNATURE
-
-```sql
-function error (
-  p_message         clob     default null  ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
-return integer;
+function view_last (p_log_rows integer default 100) return tab_logs pipelined;
 ```
 
 
@@ -343,6 +327,51 @@ procedure error_save_stack;
 ```
 
 
+## Procedure error
+
+Log a message with the level 1 (error).
+
+SIGNATURE
+
+```sql
+procedure error (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  );
+```
+
+
+## Function error
+
+Log a message with the level 1 (error). Returns the log ID.
+
+SIGNATURE
+
+```sql
+function error (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default true  ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
+```
+
+
 ## Procedure warn
 
 Log a message with the level 2 (warning).
@@ -352,6 +381,7 @@ SIGNATURE
 ```sql
 procedure warn (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -361,6 +391,29 @@ procedure warn (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
+```
+
+
+## Function warn
+
+Log a message with the level 2 (warning). Returns the log ID.
+
+SIGNATURE
+
+```sql
+function warn (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
 ```
 
 
@@ -373,6 +426,7 @@ SIGNATURE
 ```sql
 procedure info (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -382,6 +436,29 @@ procedure info (
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
+```
+
+
+## Function info
+
+Log a message with the level 3 (info). Returns the log ID.
+
+SIGNATURE
+
+```sql
+function info (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
 ```
 
 
@@ -394,6 +471,7 @@ SIGNATURE
 ```sql
 procedure log(
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -406,15 +484,39 @@ procedure log(
 ```
 
 
+## Function log
+
+Log a message with the level 3 (info). Returns the log ID.
+
+SIGNATURE
+
+```sql
+function log(
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
+  p_apex_env        boolean  default false ,
+  p_cgi_env         boolean  default false ,
+  p_console_env     boolean  default false ,
+  p_user_env        boolean  default false ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
+```
+
+
 ## Procedure debug
 
-Log a message with the level 4 (verbose).
+Log a message with the level 4 (debug).
 
 SIGNATURE
 
 ```sql
 procedure debug (
   p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
   p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
@@ -427,97 +529,17 @@ procedure debug (
 ```
 
 
-## Procedure assert
+## Function debug
 
-If the given expression evaluates to false, an error is raised with the given
-message.
-
-EXAMPLE
-
-```sql
-declare
-  x number := 5;
-  y number := 3;
-begin
-  console.assert(
-    x < y,
-    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
-  );
-exception
-  when others then
-    console.error;
-    raise;
-end;
-/
-```
+Log a message with the level 4 (debug). Returns the log ID.
 
 SIGNATURE
 
 ```sql
-procedure assert (
-  p_expression boolean,
-  p_message    varchar2
-);
-```
-
-
-## Procedure table#
-
-Logs a cursor as a HTML table with the level 3 (info).
-
-Using a cursor for the table method is very flexible, but opening a cursor can
-produce unnecessary work for your system when you are not in the log level info.
-Therefore please check your current log level before you open the cursor.
-
-EXAMPLE
-
-```sql
-declare
-  v_dataset sys_refcursor;
-begin
-  -- Your business logic here...
-
-  -- Debug code
-  if console.level_is_info then
-    open v_dataset for
-      select table_name,
-             tablespace_name,
-             logging,
-             num_rows,
-             last_analyzed,
-             partitioned,
-             has_identity
-        from user_tables;
-    console.table#(v_dataset);
-  end if;
-
-  -- Your business logic here...
-end;
-/
-```
-
-SIGNATURE
-
-```sql
-procedure table# (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 );
-```
-
-
-## Procedure trace
-
-Logs a call stack with the level 3 (info).
-
-SIGNATURE
-
-```sql
-procedure trace (
+function debug (
   p_message         clob     default null  ,
-  p_call_stack      boolean  default true  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default false ,
   p_apex_env        boolean  default false ,
   p_cgi_env         boolean  default false ,
   p_console_env     boolean  default false ,
@@ -525,7 +547,53 @@ procedure trace (
   p_user_agent      varchar2 default null  ,
   p_user_scope      varchar2 default null  ,
   p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
+```
+
+
+## Procedure trace
+
+Log a message with the level 5 (trace).
+
+SIGNATURE
+
+```sql
+procedure trace (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default true  ,
+  p_apex_env        boolean  default true  ,
+  p_cgi_env         boolean  default true  ,
+  p_console_env     boolean  default true  ,
+  p_user_env        boolean  default true  ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
   p_user_call_stack varchar2 default null  );
+```
+
+
+## Function trace
+
+Log a message with the level 5 (trace). Returns the log ID.
+
+SIGNATURE
+
+```sql
+function trace (
+  p_message         clob     default null  ,
+  p_permanent       boolean  default false ,
+  p_call_stack      boolean  default true  ,
+  p_apex_env        boolean  default true  ,
+  p_cgi_env         boolean  default true  ,
+  p_console_env     boolean  default true  ,
+  p_user_env        boolean  default true  ,
+  p_user_agent      varchar2 default null  ,
+  p_user_scope      varchar2 default null  ,
+  p_user_error_code integer  default null  ,
+  p_user_call_stack varchar2 default null  )
+return console_logs.log_id%type;
 ```
 
 
@@ -540,6 +608,20 @@ SIGNATURE
 
 ```sql
 procedure count ( p_label varchar2 default null );
+```
+
+
+## Procedure count_log
+
+Logs a counter, if current log level >= 3 (info).
+
+Can be called multiple times - use `console.count_end` to stop a counter and get or
+log the counter value.
+
+SIGNATURE
+
+```sql
+procedure count_log ( p_label varchar2 default null );
 ```
 
 
@@ -737,34 +819,172 @@ function time_end ( p_label varchar2 default null ) return varchar2;
 ```
 
 
-## Procedure clear
+## Procedure table#
 
-Clears the cached log entries (if any).
+Logs a cursor as a HTML table with the level 3 (info).
 
-This procedure is useful when you have initialized your own session with a cache
-size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_cache` or
-`console.view_last([numRows])` during development. By clearing the cache you can
-avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
+Using a cursor for the table method is very flexible, but opening a cursor can
+produce unnecessary work for your system when you are not in the log level info.
+Therefore please check your current log level before you open the cursor.
 
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
+EXAMPLE
+
+```sql
+declare
+  v_dataset sys_refcursor;
+begin
+  -- Your business logic here...
+
+  -- Debug code
+  if console.level_is_info then
+    open v_dataset for
+      select table_name,
+             tablespace_name,
+             logging,
+             num_rows,
+             last_analyzed,
+             partitioned,
+             has_identity
+        from user_tables;
+    console.table#(v_dataset);
+  end if;
+
+  -- Your business logic here...
+end;
+/
+```
 
 SIGNATURE
 
 ```sql
-procedure clear ( p_client_identifier varchar2 default my_client_identifier );
+procedure table# (
+  p_data_cursor       sys_refcursor         ,
+  p_comment           varchar2 default null ,
+  p_include_row_num   boolean  default true ,
+  p_max_rows          integer  default 100  ,
+  p_max_column_length integer  default 1000 );
 ```
 
 
-## Function level_permanent
+## Procedure assert
 
-Returns the number code for the level 0 permanent.
+If the given expression evaluates to false, an error is raised with the given
+message.
+
+EXAMPLE
+
+```sql
+declare
+  x number := 5;
+  y number := 3;
+begin
+  console.assert(
+    x < y,
+    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+  );
+exception
+  when others then
+    console.error;
+    raise;
+end;
+/
+```
 
 SIGNATURE
 
 ```sql
-function level_permanent return integer;
+procedure assert (
+  p_expression boolean,
+  p_message    varchar2
+);
+```
+
+
+## Function format
+
+Formats a message after the following rules:
+
+1. Replace all occurrences of `%0` .. `%9` by id with the corresponding
+   parameters `p0` .. `p9`
+2. Replace `%n` with new lines (line feed character)
+3. Replace all occurrences of `%s` in positional order with the corresponding
+   parameters using sys.utl_lms.format_message - also see the [Oracle
+   docs](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/UTL_LMS.html#GUID-88FFBFB6-FCA4-4951-884B-B0275BD5DF44).
+
+SIGNATURE
+
+```sql
+function format (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null )
+return varchar2;
+```
+
+
+## Procedure action
+
+An alias for dbms_application_info.set_action.
+
+Use the given action to set the session action attribute (in memory operation,
+does not log anything). This attribute is then visible in the system session
+views, the user environment and will be logged within all console logging
+methods.
+
+When you set the action attribute with `console.action` you should also reset it
+when you have finished your work to prevent wrong info in the system and your
+logging for subsequent method calls.
+
+EXAMPLE
+
+```sql
+begin
+  console.action('My process/task');
+  -- do your stuff here...
+  console.action(null);
+exception
+  when others then
+    console.error('something went wrong');
+    console.action(null);
+    raise;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure action ( p_action varchar2 );
+```
+
+
+## Procedure module
+
+An alias for dbms_application_info.set_module.
+
+Use the given module and action to set the session module and action attributes
+(in memory operation, does not log anything). These attributes are then visible
+in the system session views, the user environment and will be logged within all
+console logging methods.
+
+Please note that your app framework may set the module and you should consider
+to only set the action attribute with the `action` (see below).
+
+SIGNATURE
+
+```sql
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+);
 ```
 
 
@@ -801,14 +1021,25 @@ function level_info      return integer;
 ```
 
 
-## Function level_verbose
+## Function level_debug
 
-Returns the number code for the level 4 verbose.
+Returns the number code for the level 4 debug.
 
 SIGNATURE
 
 ```sql
-function level_verbose   return integer;
+function level_debug     return integer;
+```
+
+
+## Function level_trace
+
+Returns the number code for the level 5 trace.
+
+SIGNATURE
+
+```sql
+function level_trace     return integer;
 ```
 
 
@@ -834,14 +1065,25 @@ function level_is_info    return boolean;
 ```
 
 
-## Function level_is_verbose
+## Function level_is_debug
 
-Returns true when the level is greater than or equal verbose, otherwise false.
+Returns true when the level is greater than or equal debug, otherwise false.
 
 SIGNATURE
 
 ```sql
-function level_is_verbose return boolean;
+function level_is_debug   return boolean;
+```
+
+
+## Function level_is_trace
+
+Returns true when the level is greater than or equal trace, otherwise false.
+
+SIGNATURE
+
+```sql
+function level_is_trace   return boolean;
 ```
 
 
@@ -867,14 +1109,25 @@ function level_is_info_yn    return varchar2;
 ```
 
 
-## Function level_is_verbose_yn
+## Function level_is_debug_yn
 
-Returns 'Y' when the level is greater than or equal verbose, otherwise 'N'.
+Returns 'Y' when the level is greater than or equal debug, otherwise 'N'.
 
 SIGNATURE
 
 ```sql
-function level_is_verbose_yn return varchar2;
+function level_is_debug_yn   return varchar2;
+```
+
+
+## Function level_is_trace_yn
+
+Returns 'Y' when the level is greater than or equal trace, otherwise 'N'.
+
+SIGNATURE
+
+```sql
+function level_is_trace_yn   return varchar2;
 ```
 
 
@@ -938,64 +1191,6 @@ return apex_plugin.t_dynamic_action_ajax_result;
 ```
 
 
-## Procedure action
-
-An alias for dbms_application_info.set_action.
-
-Use the given action to set the session action attribute (in memory operation,
-does not log anything). This attribute is then visible in the system session
-views, the user environment and will be logged within all console logging
-methods.
-
-When you set the action attribute with `console.action` you should also reset it
-when you have finished your work to prevent wrong info in the system and your
-logging for subsequent method calls.
-
-EXAMPLE
-
-```sql
-begin
-  console.action('My process/task');
-  -- do your stuff here...
-  console.action(null);
-exception
-  when others then
-    console.error('something went wrong');
-    console.action(null);
-    raise;
-end;
-/
-```
-
-SIGNATURE
-
-```sql
-procedure action ( p_action varchar2 );
-```
-
-
-## Procedure module
-
-An alias for dbms_application_info.set_module.
-
-Use the given module and action to set the session module and action attributes
-(in memory operation, does not log anything). These attributes are then visible
-in the system session views, the user environment and will be logged within all
-console logging methods.
-
-Please note that your app framework may set the module and you should consider
-to only set the action attribute with the `action` (see below).
-
-SIGNATURE
-
-```sql
-procedure module (
-  p_module varchar2,
-  p_action varchar2 default null
-);
-```
-
-
 ## Procedure init
 
 Starts the logging for a specific session.
@@ -1016,11 +1211,11 @@ EXAMPLES
 -- default duration of 60 (minutes).
 exec console.init;
 
--- With level 4 (verbose) for the next 15 minutes.
+-- With level 4 (debug) for the next 15 minutes.
 exec console.init(4, 15);
 
 -- Using a constant for the level
-exec console.init(console.c_level_verbose, 90);
+exec console.init(console.c_level_debug, 90);
 
 -- Debug an APEX session...
 exec console.init('OGOBRECHT:8805903776765', 4, 90);
@@ -1029,7 +1224,7 @@ exec console.init('OGOBRECHT:8805903776765', 4, 90);
 begin
   console.init(
     p_client_identifier => 'OGOBRECHT:8805903776765',
-    p_level             => console.c_level_verbose,
+    p_level             => console.c_level_debug,
     p_duration          => 15
   );
 end;
@@ -1041,7 +1236,7 @@ SIGNATURE
 ```sql
 procedure init (
   p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
-  p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_duration          integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
   p_check_interval    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
@@ -1062,7 +1257,7 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_level          integer default c_level_info , -- Level 2 (warning), 3 (info) or 4 (verbose).
+  p_level          integer default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_duration       integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size     integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
   p_check_interval integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
@@ -1348,36 +1543,6 @@ function to_unibar (
 ```
 
 
-## Function format
-
-Formats a message after the following rules:
-
-1. Replace all occurrences of `%0` .. `%9` by id with the corresponding
-   parameters `p0` .. `p9`
-2. Replace `%n` with new lines (line feed character)
-3. Replace all occurrences of `%s` in positional order with the corresponding
-   parameters using sys.utl_lms.format_message - also see the [Oracle
-   docs](https://docs.oracle.com/en/database/oracle/oracle-database/19/arpls/UTL_LMS.html#GUID-88FFBFB6-FCA4-4951-884B-B0275BD5DF44).
-
-SIGNATURE
-
-```sql
-function format (
-  p_message in varchar2              ,
-  p0        in varchar2 default null ,
-  p1        in varchar2 default null ,
-  p2        in varchar2 default null ,
-  p3        in varchar2 default null ,
-  p4        in varchar2 default null ,
-  p5        in varchar2 default null ,
-  p6        in varchar2 default null ,
-  p7        in varchar2 default null ,
-  p8        in varchar2 default null ,
-  p9        in varchar2 default null )
-return varchar2;
-```
-
-
 ## Procedure print
 
 An alias for dbms_output.put_line.
@@ -1448,6 +1613,34 @@ function get_runtime_seconds ( p_start timestamp ) return number;
 ```
 
 
+## Function get_runtime_milliseconds
+
+Subtracts the start `localtimestamp` from the current `localtimestamp` and
+returns the exracted milliseconds.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_start timestamp := localtimestamp;
+begin
+
+  --do your stuff here
+
+  dbms_output.put_line (
+    'Runtime (milliseconds): ' || to_char(console.get_runtime_milliseconds(v_start)) );
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+function get_runtime_milliseconds ( p_start timestamp ) return number;
+```
+
+
 ## Function get_level_name
 
 Returns the level name for a given level id and null, if the level is not
@@ -1456,7 +1649,7 @@ between 0 and 4.
 SIGNATURE
 
 ```sql
-function get_level_name(p_level integer) return varchar2 deterministic;
+function get_level_name (p_level integer) return varchar2 deterministic;
 ```
 
 
@@ -1613,19 +1806,6 @@ procedure clob_flush_cache (
 ```
 
 
-## Procedure flush_cache
-
-Flushes the log cache and writes down the entries to the log table.
-
-Also see clob_append above.
-
-SIGNATURE
-
-```sql
-procedure flush_cache;
-```
-
-
 ## Function view_cache
 
 View the content of the log cache.
@@ -1635,10 +1815,10 @@ EXAMPLE
 ```sql
 --init logging for own session
 exec console.init(
-  p_level          => c_level_verbose ,
-  p_duration       => 90              ,
-  p_cache_size     => 1000            ,
-  p_check_interval => 30              );
+  p_level          => c_level_debug ,
+  p_duration       => 90            ,
+  p_cache_size     => 1000          ,
+  p_check_interval => 30            );
 
 --test some business logic
 begin
@@ -1659,39 +1839,36 @@ function view_cache return tab_logs pipelined;
 ```
 
 
-## Function view_last
+## Procedure flush_cache
 
-View the last log entries from the log cache and the log table (if not enough in
-the cache) in descending order.
+Flushes the log cache and writes down the entries to the log table.
 
-The entries without a log_id are from the cache, the others from the log table.
-
-EXAMPLE
-
-```sql
---init logging for own session
-exec console.init(
-  p_level          => c_level_verbose ,
-  p_duration       => 90              ,
-  p_cache_size     => 10              ,
-  p_check_interval => 30              );
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-/
-
---view last cache and log entries
-select * from console.view_last(50);
-```
+Also see clob_append above.
 
 SIGNATURE
 
 ```sql
-function view_last (p_log_rows integer default 100) return tab_logs pipelined;
+procedure flush_cache;
+```
+
+
+## Procedure clear
+
+Clears the cached log entries (if any).
+
+This procedure is useful when you have initialized your own session with a cache
+size greater then zero (for example 1000) and you take a look at the log entries
+with the pipelined function `console.view_cache` or
+`console.view_last([numRows])` during development. By clearing the cache you can
+avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING LOGGING MODES OF SESSIONS.
+
+SIGNATURE
+
+```sql
+procedure clear ( p_client_identifier varchar2 default my_client_identifier );
 ```
 
 
@@ -1722,7 +1899,7 @@ Deletion is only allowed for the owner of the package console.
 EXAMPLES
 
 ```sql
---> default: all level info and verbose older than 30 days
+--> default: all level info, debug and trace older than 30 days
 exec console.purge;
 
 --> all three examples are equivalent

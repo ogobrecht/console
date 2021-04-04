@@ -21,7 +21,7 @@ begin
         console_env       varchar2 ( 1 byte)  not null  ,
         --
         constraint  console_sessions_pk   primary key ( client_identifier          )  ,
-        constraint  console_sessions_ck1  check       ( level_id    in (0,1,2,3,4) )  ,
+        constraint  console_sessions_ck1  check       ( level_id    in (1,2,3,4,5) )  ,
         constraint  console_sessions_ck2  check       ( call_stack  in ('Y','N')   )  ,
         constraint  console_sessions_ck3  check       ( user_env    in ('Y','N')   )  ,
         constraint  console_sessions_ck4  check       ( apex_env    in ('Y','N')   )  ,
