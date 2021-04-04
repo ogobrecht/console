@@ -18,7 +18,7 @@
     "uninstall_all": "npm-run-all -s uninstall_drop_context uninstall_drop_console_objects",
     "uninstall_drop_context": "echo exit | sqlplus -S /@playground_admin @uninstall/drop_context.sql \"PLAYGROUND_DATA\"",
     "uninstall_drop_console_objects": "echo exit | sqlplus -S /@playground @uninstall/drop_console_objects.sql",
-    "test_all": "npm-run-all -s test_ccflags test_console test_trace test_performance test_save_stack",
+    "test_all": "npm-run-all -s test_ccflags test_performance test_console test_trace test_save_stack",
     "test_ccflags": "echo exit | sqlplus -S /@playground @tests/ccflags.sql",
     "test_console": "echo exit | sqlplus -S /@playground @tests/console.sql",
     "test_trace": "echo exit | sqlplus -S /@playground @tests/trace.sql",

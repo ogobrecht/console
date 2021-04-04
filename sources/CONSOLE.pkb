@@ -149,6 +149,36 @@ end my_log_level;
 
 --------------------------------------------------------------------------------
 
+function view_last (p_log_rows integer default 100)
+return tab_logs pipelined is
+  v_count pls_integer := 0;
+  v_left  pls_integer;
+begin
+  for i in reverse 1 .. g_log_cache.count loop
+    exit when v_count > p_log_rows;
+    pipe row(g_log_cache(i));
+    v_count := v_count + 1;
+  end loop;
+  if v_count < p_log_rows then
+    v_left := p_log_rows - v_count;
+    for i in (select * from console_logs
+              order by log_systime desc
+              fetch first v_left rows only)
+    loop
+          pipe row(i);
+    end loop;
+  end if;
+end view_last;
+
+--------------------------------------------------------------------------------
+
+procedure error_save_stack is
+begin
+  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1024);
+end error_save_stack;
+
+--------------------------------------------------------------------------------
+
 procedure error (
   p_message         clob     default null  ,
   p_permanent       boolean  default false ,
@@ -210,13 +240,6 @@ begin
     p_user_call_stack => p_user_call_stack );
   return v_log_id;
 end error;
-
---------------------------------------------------------------------------------
-
-procedure error_save_stack is
-begin
-  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1024);
-end error_save_stack;
 
 --------------------------------------------------------------------------------
 
@@ -573,7 +596,7 @@ begin
   end if;
 end count;
 
-procedure count_end (
+procedure count_log (
   p_label  varchar2 default null )
 is
   v_label  t_vc128;
@@ -585,6 +608,24 @@ begin
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
         p_message => v_label || ': ' || to_char(g_counters(v_label)) );
+    end if;
+  else
+    warn('Counter `' || v_label || '` does not exist.');
+  end if;
+end count_log;
+
+procedure count_end (
+  p_label  varchar2 default null )
+is
+  v_label  t_vc128;
+  v_log_id console_logs.log_id%type;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    if utl_logging_is_enabled (c_level_info) then
+      v_log_id := utl_create_log_entry (
+        p_level   => c_level_info,
+        p_message => v_label || ': ' || to_char(g_counters(v_label)) || ' - counter ended');
     end if;
     g_counters.delete(v_label);
   else
@@ -709,12 +750,62 @@ end assert;
 
 --------------------------------------------------------------------------------
 
-procedure clear (
-  p_client_identifier varchar2 default my_client_identifier )
+function format (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null )
+return varchar2 is
+  v_message t_vc32k := p_message;
+begin
+  -- id replacements
+  v_message := replace(v_message, '%0', p0);
+  v_message := replace(v_message, '%1', p1);
+  v_message := replace(v_message, '%2', p2);
+  v_message := replace(v_message, '%3', p3);
+  v_message := replace(v_message, '%4', p4);
+  v_message := replace(v_message, '%5', p5);
+  v_message := replace(v_message, '%6', p6);
+  v_message := replace(v_message, '%7', p7);
+  v_message := replace(v_message, '%8', p8);
+  v_message := replace(v_message, '%9', p9);
+
+  -- new line
+  v_message := replace(v_message, '%n', c_lf);
+
+  -- positional replacements
+  return sys.utl_lms.format_message(v_message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
+end format;
+
+--------------------------------------------------------------------------------
+
+procedure action (
+  p_action varchar2 )
 is
 begin
-  g_log_cache.delete;
-end;
+  dbms_application_info.set_action (
+    p_action );
+end action;
+
+--------------------------------------------------------------------------------
+
+procedure module (
+  p_module varchar2,
+  p_action varchar2 default null
+)
+is
+begin
+  dbms_application_info.set_module(
+    p_module ,
+    p_action );
+end module;
 
 --------------------------------------------------------------------------------
 
@@ -733,6 +824,7 @@ function level_is_warning_yn return varchar2 is begin return to_yn(utl_logging_i
 function level_is_info_yn    return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_info   )); end;
 function level_is_debug_yn   return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_debug  )); end;
 function level_is_trace_yn   return varchar2 is begin return to_yn(utl_logging_is_enabled(c_level_trace  )); end;
+
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS
@@ -979,27 +1071,6 @@ $end
 
 --------------------------------------------------------------------------------
 
-procedure action (
-  p_action varchar2 )
-is
-begin
-  dbms_application_info.set_action (
-    p_action );
-end action;
-
-procedure module (
-  p_module varchar2,
-  p_action varchar2 default null
-)
-is
-begin
-  dbms_application_info.set_module(
-    p_module ,
-    p_action );
-end module;
-
---------------------------------------------------------------------------------
-
 procedure init (
   p_client_identifier varchar2                      ,
   p_level             integer  default c_level_info ,
@@ -1141,12 +1212,16 @@ begin
   end if;
 end exit_;
 
+--------------------------------------------------------------------------------
+
 procedure exit (
   p_client_identifier varchar2 default my_client_identifier )
 is
 begin
   exit_(p_client_identifier);
 end exit;
+
+--------------------------------------------------------------------------------
 
 procedure exit_stale is
 begin
@@ -1440,42 +1515,6 @@ exception
   when VALUE_ERROR then
     return UNISTR('\221E');
 end to_unibar;
-
---------------------------------------------------------------------------------
-
-function format (
-  p_message in varchar2              ,
-  p0        in varchar2 default null ,
-  p1        in varchar2 default null ,
-  p2        in varchar2 default null ,
-  p3        in varchar2 default null ,
-  p4        in varchar2 default null ,
-  p5        in varchar2 default null ,
-  p6        in varchar2 default null ,
-  p7        in varchar2 default null ,
-  p8        in varchar2 default null ,
-  p9        in varchar2 default null )
-return varchar2 is
-  v_message t_vc32k := p_message;
-begin
-  -- id replacements
-  v_message := replace(v_message, '%0', p0);
-  v_message := replace(v_message, '%1', p1);
-  v_message := replace(v_message, '%2', p2);
-  v_message := replace(v_message, '%3', p3);
-  v_message := replace(v_message, '%4', p4);
-  v_message := replace(v_message, '%5', p5);
-  v_message := replace(v_message, '%6', p6);
-  v_message := replace(v_message, '%7', p7);
-  v_message := replace(v_message, '%8', p8);
-  v_message := replace(v_message, '%9', p9);
-
-  -- new line
-  v_message := replace(v_message, '%n', c_lf);
-
-  -- positional replacements
-  return sys.utl_lms.format_message(v_message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
-end format;
 
 --------------------------------------------------------------------------------
 
@@ -1937,6 +1976,15 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
+function view_cache return tab_logs pipelined is
+begin
+  for i in reverse 1 .. g_log_cache.count loop
+    pipe row(g_log_cache(i));
+  end loop;
+end view_cache;
+
+--------------------------------------------------------------------------------
+
 procedure flush_cache is
   pragma autonomous_transaction;
 begin
@@ -1950,35 +1998,12 @@ end flush_cache;
 
 --------------------------------------------------------------------------------
 
-function view_cache return tab_logs pipelined is
+procedure clear (
+  p_client_identifier varchar2 default my_client_identifier )
+is
 begin
-  for i in reverse 1 .. g_log_cache.count loop
-    pipe row(g_log_cache(i));
-  end loop;
-end view_cache;
-
---------------------------------------------------------------------------------
-
-function view_last (p_log_rows integer default 100)
-return tab_logs pipelined is
-  v_count pls_integer := 0;
-  v_left  pls_integer;
-begin
-  for i in reverse 1 .. g_log_cache.count loop
-    exit when v_count > p_log_rows;
-    pipe row(g_log_cache(i));
-    v_count := v_count + 1;
-  end loop;
-  if v_count < p_log_rows then
-    v_left := p_log_rows - v_count;
-    for i in (select * from console_logs
-              order by log_systime desc
-              fetch first v_left rows only)
-    loop
-          pipe row(i);
-    end loop;
-  end if;
-end view_last;
+  g_log_cache.delete;
+end;
 
 --------------------------------------------------------------------------------
 
@@ -2014,7 +2039,7 @@ procedure purge (
 is
   pragma autonomous_transaction;
 begin
-  assert (p_min_level in (1,2,3,4), 'Minimum level must be 1 (error), 2 (warning), 3 (info) or 4 (verbose).');
+  assert (p_min_level in (1,2,3,4,5), 'Minimum level must be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
   -- Only allowed for the owner of the console package
   if c_console_owner = sys_context('USERENV','SESSION_USER') then
     delete from console_logs

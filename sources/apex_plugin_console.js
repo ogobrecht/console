@@ -6,7 +6,8 @@ oic.ln  = {}; // Namespace for "Level Names".
 oic.ln.error = 1;
 oic.ln.warning = 2;
 oic.ln.info = 3;
-oic.ln.verbose = 4;
+oic.ln.debug = 4;
+oic.ln.trace = 5;
 oic.toString = function (argumentsArray) {
     var result = "";
     for (var i = 0; i < argumentsArray.length; i++) {
@@ -89,10 +90,10 @@ oic.init = function () {
             oic.oc.trace.apply(console, arguments);
         };
     }
-    if (oic.level >= oic.ln.verbose) {
+    if (oic.level >= oic.ln.debug) {
         oic.oc.debug = console.debug;
         console.debug = function () {
-            oic.message(oic.ln.verbose, oic.toString(arguments), 'console.debug');
+            oic.message(oic.ln.debug, oic.toString(arguments), 'console.debug');
             oic.oc.debug.apply(console, arguments);
         };
     }
@@ -123,10 +124,10 @@ oic.init = function () {
         //    oic.oc.log.apply(console, arguments); // Using oic.oc is by intention.
         //};
     }
-    if (oic.level >= oic.ln.verbose && apex.debug.getLevel() >= apex.debug.LOG_LEVEL.APP_TRACE) {
+    if (oic.level >= oic.ln.debug && apex.debug.getLevel() >= apex.debug.LOG_LEVEL.APP_TRACE) {
         oic.oa.trace = apex.debug.trace;
         apex.debug.trace = function () {
-            oic.message(oic.ln.verbose, oic.toString(arguments), 'apex.debug.trace');
+            oic.message(oic.ln.debug, oic.toString(arguments), 'apex.debug.trace');
             oic.oc.debug.apply(console, arguments); // Using oic.oc is by intention.
         };
     }

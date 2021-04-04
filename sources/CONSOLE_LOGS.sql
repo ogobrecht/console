@@ -1,7 +1,11 @@
 declare
   v_count pls_integer;
   --
-  procedure create_index (p_column_list varchar2, p_postfix varchar2) is
+  procedure create_index (
+    p_type        varchar2,
+    p_column_list varchar2,
+    p_postfix     varchar2)
+  is
   begin
     with t as (
       select listagg(column_name, ', ') within group(order by column_position) as index_column_list
@@ -15,7 +19,7 @@ declare
     where index_column_list = p_column_list;
     if v_count = 0 then
       dbms_output.put_line('- Index for CONSOLE_LOGS column list ' || p_column_list || ' not found, run creation command');
-      execute immediate 'create index CONSOLE_LOGS_' || p_postfix || ' on CONSOLE_LOGS (' || p_column_list || ')';
+      execute immediate 'create ' || p_type || ' index CONSOLE_LOGS_' || p_postfix || ' on CONSOLE_LOGS (' || p_column_list || ')';
     else
       dbms_output.put_line('- Index for CONSOLE_LOGS column list ' || p_column_list || ' found, no action required');
     end if;
@@ -48,15 +52,18 @@ begin
         os_user            varchar2 (  64 byte)                                  ,
         os_user_agent      varchar2 ( 200 byte)                                  ,
         --
-        constraint  console_logs_permanent_ck check(permanent in ('Y','N'))
+        constraint  console_logs_pk  primary key (log_id)                        ,
+        constraint  console_logs_ck  check       (permanent in ('Y','N'))
       )
     }';
   else
     dbms_output.put_line('- Table CONSOLE_LOGS found, no action required');
   end if;
 
-  create_index ('LOG_SYSTIME, LEVEL_ID', 'IX1');
-  create_index ('CLIENT_IDENTIFIER', 'IX2');
+  create_index (null    , 'LOG_SYSTIME, LEVEL_ID', 'IX');
+  --create_index (null    , 'LOG_SYSTIME'          , 'IX1');
+  --create_index ('bitmap', 'LEVEL_ID, LEVEL_NAME' , 'IX2');
+  --create_index ('bitmap', 'PERMANENT'            , 'IX3');
 
 end;
 /
