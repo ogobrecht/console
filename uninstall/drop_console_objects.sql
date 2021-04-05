@@ -55,7 +55,7 @@ begin
     select 'drop table ' || table_name || ' cascade constraints' as ddl,
            table_name
       from user_tables
-     where table_name in ('CONSOLE_LOGS', 'CONSOLE_SESSIONS') )
+     where table_name in ('CONSOLE_CONF', 'CONSOLE_LOGS', 'CONSOLE_SESSIONS') )
   loop
     --FIXME: Should we really check for permanent entries?
     --execute immediate 'select count(*) from ' || i.table_name ||

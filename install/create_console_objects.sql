@@ -42,6 +42,47 @@ end;
 
 declare
   v_count pls_integer;
+begin
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_CONF';
+  if v_count = 0 then
+    dbms_output.put_line('- Table CONSOLE_CONF not found, run creation command');
+    execute immediate q'{
+      create table console_conf (
+        conf_id           varchar2 (16 byte)  not null  ,
+        conf_by           varchar2 (64 byte)            ,
+        conf_sysdate      date                not null  ,
+        level_id          number   ( 1,0)     not null  ,
+        level_name        varchar2 (10 byte)  not null  ,
+        check_interval    number   ( 2,0)     not null  ,
+        --
+        constraint  console_conf_pk   primary key ( conf_id                 )  ,
+        constraint  console_conf_ck1  check       ( conf_id = 'GLOBAL_CONF' )  ,
+        --
+        constraint  console_conf_ck2  check ( level_id   in (1, 2, 3)                                          )  ,
+        constraint  console_conf_ck3  check ( level_name =  decode(level_id, 1,'error', 2,'warning', 3,'info') )  ,
+        --
+        constraint  console_conf_ck4  check ( check_interval between 10 and 60 )
+      ) organization index
+    }';
+  else
+    dbms_output.put_line('- Table CONSOLE_CONF found, no action required');
+  end if;
+
+end;
+/
+
+comment on table  console_conf                is 'Holds the global console configuration in a single record.';
+comment on column console_conf.conf_id        is 'The primary key - is secured by a check constraint which allows only one record in the table.';
+comment on column console_conf.conf_by        is 'The user who configured the console the last time.';
+comment on column console_conf.conf_sysdate   is 'The date when the console was configured the last time.';
+comment on column console_conf.level_id       is 'The defined global log level ID.';
+comment on column console_conf.level_name     is 'The defined log level name.';
+comment on column console_conf.check_interval is 'The number of seconds a session looks for a changed configuration.';
+
+
+
+declare
+  v_count pls_integer;
   --
   procedure create_index (
     p_type        varchar2,
@@ -141,10 +182,10 @@ begin
     dbms_output.put_line('- Table CONSOLE_SESSIONS not found, run creation command');
     execute immediate q'{
       create table console_sessions (
+        client_identifier varchar2 (64 byte)  not null  ,
         init_by           varchar2 (64 byte)            ,
         init_sysdate      date                not null  ,
         exit_sysdate      date                not null  ,
-        client_identifier varchar2 (64 byte)  not null  ,
         level_id          number   ( 1,0)     not null  ,
         level_name        varchar2 (10 byte)  not null  ,
         cache_size        number   ( 4,0)     not null  ,
@@ -156,12 +197,16 @@ begin
         console_env       varchar2 ( 1 byte)  not null  ,
         --
         constraint  console_sessions_pk   primary key ( client_identifier          )  ,
-        constraint  console_sessions_ck1  check       ( level_id    in (1,2,3,4,5) )  ,
-        constraint  console_sessions_ck2  check       ( call_stack  in ('Y','N')   )  ,
-        constraint  console_sessions_ck3  check       ( user_env    in ('Y','N')   )  ,
-        constraint  console_sessions_ck4  check       ( apex_env    in ('Y','N')   )  ,
-        constraint  console_sessions_ck5  check       ( cgi_env     in ('Y','N')   )  ,
-        constraint  console_sessions_ck6  check       ( console_env in ('Y','N')   )
+        constraint  console_sessions_ck1  check       ( call_stack  in ('Y','N')   )  ,
+        constraint  console_sessions_ck2  check       ( user_env    in ('Y','N')   )  ,
+        constraint  console_sessions_ck3  check       ( apex_env    in ('Y','N')   )  ,
+        constraint  console_sessions_ck4  check       ( cgi_env     in ('Y','N')   )  ,
+        constraint  console_sessions_ck5  check       ( console_env in ('Y','N')   )  ,
+        --
+        constraint  console_sessions_ck6  check       ( level_id   in (1, 2, 3, 4, 5)                                                          )  ,
+        constraint  console_sessions_ck7  check       ( level_name =  decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
+        --
+        constraint  console_sessions_ck8  check       ( check_interval between 1 and 60 )
       ) organization index
     }';
   else
@@ -175,10 +220,10 @@ comment on table  console_sessions                     is 'Holds the sessions th
 comment on column console_sessions.init_by             is 'The user who initiated the logging.';
 comment on column console_sessions.init_sysdate        is 'The logging start date for the nominated client identifier.';
 comment on column console_sessions.exit_sysdate        is 'The planned logging end date for the nominated client identifier.';
-comment on column console_sessions.client_identifier   is 'The client identifier provided by the application or console itself.';
-comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the default log level of 1 (error).';
-comment on column console_sessions.level_name          is 'The defined log level name. Any session not listed here has the default log level of Error.';
-comment on column console_sessions.check_interval is 'The number of seconds a session in logging mode looks for a changed configuration. Defaults to 10.';
+comment on column console_sessions.client_identifier   is 'The client identifier provided by the application or console itself (this is the primary key).';
+comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_CONF.';
+comment on column console_sessions.level_name          is 'The defined log level name.';
+comment on column console_sessions.check_interval      is 'The number of seconds a session looks for a changed configuration. Defaults to 10.';
 comment on column console_sessions.cache_size          is 'The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX.';
 comment on column console_sessions.call_stack          is 'Should the call_stack be included.';
 comment on column console_sessions.user_env            is 'Should the user environment be included.';
@@ -1095,12 +1140,24 @@ $end
 
 --------------------------------------------------------------------------------
 
+procedure conf (
+  p_level           integer default c_level_error, -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval  integer default 10             -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+);
+/**
+
+Set the global console configuration.
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure init (
   p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
   p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_duration          integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_check_interval    integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack        boolean  default false        , -- Should the call stack be included.
   p_user_env          boolean  default false        , -- Should the user environment be included.
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.
@@ -1777,7 +1834,8 @@ function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function  utl_get_error return varchar2;
 function  utl_logging_is_enabled (p_level integer) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
-function  utl_read_row_from_sessions (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function  utl_read_global_conf return console_conf%rowtype result_cache;
+function  utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 function  utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
@@ -1827,6 +1885,7 @@ c_timestamp_format     constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6
 c_default_label        constant varchar2 (10 byte) := 'Default';
 c_anon_block_ora       constant varchar2 (20 byte) := '__anonymous_block';
 c_anonymous_block      constant varchar2 (20 byte) := 'anonymous_block';
+c_conf_id              constant varchar2 (15 byte) := 'GLOBAL_CONF';
 c_client_id_prefix     constant varchar2 (10 byte) := '{o,o} ';
 c_console_owner        constant varchar2 (30 byte) := user;
 c_console_pkg_name_dot constant varchar2 (30 byte) := 'CONSOLE.';
@@ -1914,7 +1973,8 @@ function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function  utl_get_error return varchar2;
 function  utl_logging_is_enabled (p_level integer) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
-function  utl_read_row_from_sessions (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function  utl_read_global_conf return console_conf%rowtype result_cache;
+function  utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 function  utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
@@ -2879,6 +2939,43 @@ $end
 
 --------------------------------------------------------------------------------
 
+procedure conf (
+  p_level           integer default c_level_error,
+  p_check_interval  integer default 10
+)
+is
+  v_row console_conf%rowtype;
+begin
+  assert (
+    p_level in (1, 2, 3),
+    'Level needs to be 1 (error), 2 (warning) or 3 (info). ' ||
+    'Levels 4 (debug) and 5 (trace) can only be set per session with the procedure init.');
+  assert (
+    c_console_owner = sys_context('USERENV','SESSION_USER'),
+    'Setting of the global console configuration is only allowed for the owner of the console package.');
+  assert (
+    p_check_interval between 10 and 60,
+    'Check interval needs to be between 10 and 60 (seconds). ' ||
+    'Values between 1 and 10 seconds can only be set per session with the procedure init.');
+  v_row.conf_id        := c_conf_id;
+  v_row.conf_by        := substrb(
+                            coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')),
+                            1,
+                            64);
+  v_row.conf_sysdate   := sysdate;
+  v_row.level_id       := p_level;
+  v_row.level_name     := get_level_name(p_level);
+  v_row.check_interval := p_check_interval;
+  --
+  update console_conf set row = v_row where conf_id = c_conf_id;
+  if sql%rowcount = 0 then
+    insert into console_conf values v_row;
+  end if;
+  commit;
+end conf;
+
+--------------------------------------------------------------------------------
+
 procedure init (
   p_client_identifier varchar2                      ,
   p_level             integer  default c_level_info ,
@@ -2892,8 +2989,7 @@ procedure init (
   p_console_env       boolean  default false        )
 is
   pragma autonomous_transaction;
-  v_row         console_sessions%rowtype;
-  v_count       pls_integer;
+  v_row console_sessions%rowtype;
   --
   procedure set_context (
   p_attribute         varchar2 ,
@@ -2912,12 +3008,13 @@ is
   end;
   --
 begin
-  assert ( p_level          in (2, 3, 4, 5),    'Level needs to be 2 (warning), 3 (info), 4 (debug) or 5 ' ||
-                                                '(trace). Level 1 (error) will be always logged without '  ||
-                                                'a call to the init method.'                               );
+  assert (
+    p_level in (1, 2, 3, 4, 5),
+    'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace). ' ||
+    'NOTE: Level 1 (error) will be always logged and needs no explicit call to the init method.' );
   assert ( p_duration       between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
   assert ( p_cache_size     between 0 and 1000, 'Cache size needs to be between 1 and 1000 (log entries).' );
-  assert ( p_check_interval between 1 and   60, 'Cache duration needs to be between 1 and 60 (seconds).'   );
+  assert ( p_check_interval between 1 and   60, 'Check interval needs to be between 1 and 60 (seconds).'   );
   assert ( p_call_stack     is not null,        'Call stack needs to be true or false (not null).'         );
   assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
   assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
@@ -2940,12 +3037,9 @@ begin
   v_row.cgi_env           := to_yn ( p_cgi_env     );
   v_row.console_env       := to_yn ( p_console_env );
   --
-  select count(*) into v_count from console_sessions where client_identifier = p_client_identifier;
-  if v_count = 0 then
+  update console_sessions set row = v_row where client_identifier = v_row.client_identifier;
+  if sql%rowcount = 0 then
     insert into console_sessions values v_row;
-  else
-    update console_sessions set row = v_row
-     where client_identifier = v_row.client_identifier;
   end if;
   commit;
   --
@@ -3847,17 +3941,17 @@ procedure purge (
 is
   pragma autonomous_transaction;
 begin
-  assert (p_min_level in (1,2,3,4,5), 'Minimum level must be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
-  -- Only allowed for the owner of the console package
-  if c_console_owner = sys_context('USERENV','SESSION_USER') then
-    delete from console_logs
-     where level_id >= p_min_level
-       and permanent = 'N'
-       and log_systime <= sysdate - p_min_days;
-    commit;
-  else
-    raise_application_error(-20999, 'Deleting log entries is only allowed for the owner of the console package.');
-  end if;
+  assert (
+    p_min_level in (1,2,3,4,5),
+    'Minimum level must be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
+  assert (
+    c_console_owner = sys_context('USERENV','SESSION_USER'),
+    'Deleting log entries is only allowed for the owner of the console package.');
+  delete from console_logs
+    where level_id >= p_min_level
+      and permanent = 'N'
+      and log_systime <= sysdate - p_min_days;
+  commit;
 end;
 
 --------------------------------------------------------------------------------
@@ -4043,7 +4137,22 @@ select id, name, cache_id, type, status, invalidations, scan_count
  where name like '%CONSOLE%'
    and status != 'Invalid';
 */
-function utl_read_row_from_sessions (
+function utl_read_global_conf
+return console_conf%rowtype result_cache is
+  v_row console_conf%rowtype;
+begin
+  select *
+    into v_row
+    from console_conf
+   where conf_id = c_conf_id;
+  return v_row;
+exception
+  when no_data_found then
+    return v_row;
+end utl_read_global_conf;
+
+
+function utl_read_session_conf (
   p_client_identifier varchar2 )
 return console_sessions%rowtype result_cache is
   v_row console_sessions%rowtype;
@@ -4056,7 +4165,7 @@ begin
 exception
   when no_data_found then
     return v_row;
-end utl_read_row_from_sessions;
+end utl_read_session_conf;
 
 --------------------------------------------------------------------------------
 
@@ -4105,16 +4214,17 @@ end utl_clear_context;
 --------------------------------------------------------------------------------
 
 procedure utl_load_session_configuration is
-  v_row console_sessions%rowtype;
+  v_global_conf  console_conf%rowtype;
+  v_session_conf console_sessions%rowtype;
   --
   procedure set_default_config is
   begin
     --We have no real conf until now, so we fake 24 hours.
     --Conf will be re-evaluated at least every 10 seconds.
     g_conf_exit_sysdate   := sysdate + 1;
-    g_conf_level          := 1;
+    g_conf_level          := coalesce(v_global_conf.level_id, 1);
     g_conf_cache_size     := 0;
-    g_conf_check_interval := 10;
+    g_conf_check_interval := coalesce(v_global_conf.check_interval, 10);
     g_conf_call_stack     := false;
     g_conf_user_env       := false;
     g_conf_apex_env       := false;
@@ -4136,17 +4246,19 @@ procedure utl_load_session_configuration is
   --
   procedure load_config_from_table_row is
   begin
-    g_conf_level          :=           v_row.level_id        ;
-    g_conf_cache_size     :=           v_row.cache_size      ;
-    g_conf_check_interval :=           v_row.check_interval  ;
-    g_conf_call_stack     := to_bool ( v_row.call_stack     );
-    g_conf_user_env       := to_bool ( v_row.user_env       );
-    g_conf_apex_env       := to_bool ( v_row.apex_env       );
-    g_conf_cgi_env        := to_bool ( v_row.cgi_env        );
-    g_conf_console_env    := to_bool ( v_row.console_env    );
+    g_conf_level          :=           v_session_conf.level_id        ;
+    g_conf_cache_size     :=           v_session_conf.cache_size      ;
+    g_conf_check_interval :=           v_session_conf.check_interval  ;
+    g_conf_call_stack     := to_bool ( v_session_conf.call_stack     );
+    g_conf_user_env       := to_bool ( v_session_conf.user_env       );
+    g_conf_apex_env       := to_bool ( v_session_conf.apex_env       );
+    g_conf_cgi_env        := to_bool ( v_session_conf.cgi_env        );
+    g_conf_console_env    := to_bool ( v_session_conf.console_env    );
   end load_config_from_table_row;
   --
 begin
+  v_global_conf := utl_read_global_conf;
+
   if g_conf_context_is_available then
 
     g_conf_exit_sysdate := to_date(sys_context(c_ctx_namespace, c_ctx_exit_sysdate), c_ctx_date_format);
@@ -4161,8 +4273,8 @@ begin
 
   else
 
-    v_row := utl_read_row_from_sessions(g_conf_client_identifier);
-    g_conf_exit_sysdate := v_row.exit_sysdate;
+    v_session_conf := utl_read_session_conf(g_conf_client_identifier);
+    g_conf_exit_sysdate := v_session_conf.exit_sysdate;
     if g_conf_exit_sysdate is null or g_conf_exit_sysdate < sysdate then
       set_default_config;
     else
@@ -4171,7 +4283,7 @@ begin
 
   end if;
 
-  g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60*10);
+  g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
 
 end utl_load_session_configuration;
 

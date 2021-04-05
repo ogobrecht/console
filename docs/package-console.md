@@ -50,6 +50,7 @@ Oracle Instrumentation Console
 - [Function apex_error_handling](#function-apex_error_handling)
 - [Function apex_plugin_render](#function-apex_plugin_render)
 - [Function apex_plugin_ajax](#function-apex_plugin_ajax)
+- [Procedure conf](#procedure-conf)
 - [Procedure init](#procedure-init)
 - [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
@@ -1191,6 +1192,20 @@ return apex_plugin.t_dynamic_action_ajax_result;
 ```
 
 
+## Procedure conf
+
+Set the global console configuration.
+
+SIGNATURE
+
+```sql
+procedure conf (
+  p_level           integer default c_level_error, -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval  integer default 10             -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+);
+```
+
+
 ## Procedure init
 
 Starts the logging for a specific session.
@@ -1239,7 +1254,7 @@ procedure init (
   p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_duration          integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_check_interval    integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack        boolean  default false        , -- Should the call stack be included.
   p_user_env          boolean  default false        , -- Should the user environment be included.
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.

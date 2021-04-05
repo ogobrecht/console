@@ -903,12 +903,24 @@ $end
 
 --------------------------------------------------------------------------------
 
+procedure conf (
+  p_level           integer default c_level_error, -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval  integer default 10             -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+);
+/**
+
+Set the global console configuration.
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure init (
   p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
   p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_duration          integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_check_interval    integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack        boolean  default false        , -- Should the call stack be included.
   p_user_env          boolean  default false        , -- Should the user environment be included.
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.
@@ -1585,7 +1597,8 @@ function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function  utl_get_error return varchar2;
 function  utl_logging_is_enabled (p_level integer) return boolean;
 function  utl_normalize_label (p_label varchar2) return varchar2;
-function  utl_read_row_from_sessions (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function  utl_read_global_conf return console_conf%rowtype result_cache;
+function  utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 function  utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_check_context_availability;
 procedure utl_clear_all_context;
