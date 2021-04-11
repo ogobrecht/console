@@ -1,7 +1,8 @@
 set serveroutput on verify off feedback off
 
---configure logger
+--configure logger and console
 exec logger.set_level(logger.g_error);
+exec console.conf(p_level => console.c_level_error, p_check_interval => 10);
 
 --warm up logger and console
 begin
@@ -9,6 +10,24 @@ begin
     logger.log ('test');
     console.log ('test');
   end loop;
+end;
+/
+
+prompt
+prompt 1.000 utl_load_session_configuration CALLS
+declare
+  v_iterator   pls_integer := 1000;
+  v_start      timestamp;
+  v_rt         number;
+  v_result     varchar2(100);
+begin
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    console.utl_load_session_configuration;
+  end loop;
+  v_rt := console.get_runtime_seconds(v_start);
+  console.print( '- runtime all : ' || trim(to_char(v_rt, '0.000000000')) || ' seconds' );
+  console.print( '- per call    : ' || trim(to_char(v_rt/1000, '0.000000000')) || ' seconds' );
 end;
 /
 
