@@ -68,3 +68,9 @@ if (conf.version !== version || conf.jsFile.md5Hash !== md5Hash) {
     );
     fs.writeFileSync('apexplugin.json', JSON.stringify(conf, null, 2));
 }
+
+console.log('- change version number in README.md');
+fs.writeFileSync('README.md',
+    fs.readFileSync('README.md', 'utf8')
+        .replace(/version(.*). Feedback/, 'version ' + conf.version + '. Feedback')
+);
