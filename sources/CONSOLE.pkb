@@ -11,31 +11,31 @@ c_crlf                 constant varchar2 ( 2 byte) := chr(13) || chr(10);
 c_cr                   constant varchar2 ( 1 byte) := chr(13);
 c_lf                   constant varchar2 ( 1 byte) := chr(10);
 c_lflf                 constant varchar2 ( 2 byte) := chr(10) || chr(10);
-c_ampersand            constant varchar2 ( 1 byte) := chr(26);
-c_html_ampersand       constant varchar2 ( 5 byte) := chr(26) || 'amp;';
-c_html_less_then       constant varchar2 ( 4 byte) := chr(26) || 'lt;';
-c_html_greater_then    constant varchar2 ( 4 byte) := chr(26) || 'gt;';
+c_ampersand            constant varchar2 ( 1 byte) := chr(38);
+c_html_ampersand       constant varchar2 ( 5 byte) := chr(38) || 'amp;';
+c_html_less_then       constant varchar2 ( 4 byte) := chr(38) || 'lt;';
+c_html_greater_then    constant varchar2 ( 4 byte) := chr(38) || 'gt;';
 c_timestamp_format     constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
-c_default_label        constant varchar2 (10 byte) := 'Default';
-c_anon_block_ora       constant varchar2 (20 byte) := '__anonymous_block';
-c_anonymous_block      constant varchar2 (20 byte) := 'anonymous_block';
-c_conf_id              constant varchar2 (15 byte) := 'GLOBAL_CONF';
-c_client_id_prefix     constant varchar2 (10 byte) := '{o,o} ';
+c_default_label        constant varchar2 ( 7 byte) := 'Default';
+c_anon_block_ora       constant varchar2 (17 byte) := '__anonymous_block';
+c_anonymous_block      constant varchar2 (15 byte) := 'anonymous_block';
+c_conf_id              constant varchar2 (11 byte) := 'GLOBAL_CONF';
+c_client_id_prefix     constant varchar2 ( 6 byte) := '{o,o} ';
 c_console_owner        constant varchar2 (30 byte) := user;
-c_console_pkg_name_dot constant varchar2 (30 byte) := 'CONSOLE.';
-c_console_job_name     constant varchar2 (30 byte) := 'CONSOLE_CLEANUP';
+c_console_pkg_name_dot constant varchar2 ( 8 byte) := 'CONSOLE.';
+c_console_job_name     constant varchar2 (15 byte) := 'CONSOLE_CLEANUP';
 c_ctx_namespace        constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
-c_ctx_test_attribute   constant varchar2 (15 byte) := 'TEST';
-c_ctx_date_format      constant varchar2 (30 byte) := 'yyyy-mm-dd hh24:mi:ss';
-c_ctx_exit_sysdate     constant varchar2 (15 byte) := 'EXIT_SYSDATE';
-c_ctx_level            constant varchar2 (15 byte) := 'LEVEL';
-c_ctx_cache_size       constant varchar2 (15 byte) := 'CACHE_SIZE';
-c_ctx_check_interval   constant varchar2 (15 byte) := 'CHECK_INTERVAL';
-c_ctx_call_stack       constant varchar2 (15 byte) := 'CALL_STACK';
-c_ctx_user_env         constant varchar2 (15 byte) := 'USER_ENV';
-c_ctx_apex_env         constant varchar2 (15 byte) := 'APEX_ENV';
-c_ctx_cgi_env          constant varchar2 (15 byte) := 'CGI_ENV';
-c_ctx_console_env      constant varchar2 (15 byte) := 'CONSOLE_ENV';
+c_ctx_test_attribute   constant varchar2 ( 4 byte) := 'TEST';
+c_ctx_date_format      constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
+c_ctx_exit_sysdate     constant varchar2 (12 byte) := 'EXIT_SYSDATE';
+c_ctx_level            constant varchar2 ( 5 byte) := 'LEVEL';
+c_ctx_cache_size       constant varchar2 (10 byte) := 'CACHE_SIZE';
+c_ctx_check_interval   constant varchar2 (14 byte) := 'CHECK_INTERVAL';
+c_ctx_call_stack       constant varchar2 (10 byte) := 'CALL_STACK';
+c_ctx_user_env         constant varchar2 ( 8 byte) := 'USER_ENV';
+c_ctx_apex_env         constant varchar2 ( 8 byte) := 'APEX_ENV';
+c_ctx_cgi_env          constant varchar2 ( 7 byte) := 'CGI_ENV';
+c_ctx_console_env      constant varchar2 (11 byte) := 'CONSOLE_ENV';
 
 subtype t_vc32  is varchar2 (   32 byte);
 subtype t_vc64  is varchar2 (   64 byte);
@@ -103,16 +103,17 @@ g_prev_error_msg t_vc1k;
 
 $if not $$utils_public $then
 
-function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function  utl_get_error return varchar2;
-function  utl_logging_is_enabled (p_level integer) return boolean;
-function  utl_normalize_label (p_label varchar2) return varchar2;
-function  utl_read_global_conf return console_conf%rowtype result_cache;
-function  utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
-function  utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-procedure utl_check_context_availability;
-procedure utl_clear_all_context;
-procedure utl_clear_context (p_client_identifier varchar2);
+function utl_escape_md_tab_text (p_text varchar2) return varchar2;
+function utl_get_error return varchar2;
+function utl_logging_is_enabled (p_level integer) return boolean;
+function utl_normalize_label (p_label varchar2) return varchar2;
+function utl_read_global_conf return console_conf%rowtype result_cache;
+function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
+procedure utl_ctx_check_availability;
+procedure utl_ctx_clear (p_client_identifier varchar2);
+procedure utl_ctx_clear_all;
+procedure utl_ctx_set (p_attribute varchar2, p_value varchar2, p_client_identifier varchar2);
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
 --
@@ -1125,35 +1126,20 @@ is
   pragma autonomous_transaction;
   v_row console_sessions%rowtype;
   --
-  procedure set_context (
-  p_attribute         varchar2 ,
-  p_value             varchar2 ,
-  p_client_identifier varchar2 )
-  is
-  begin
-    sys.dbms_session.set_context(
-      namespace => c_ctx_namespace     ,
-      attribute => p_attribute         ,
-      value     => p_value             ,
-      client_id => p_client_identifier );
-  exception
-    when insufficient_privileges then
-      error ( 'Context not available, package var g_conf_context_is_available tells us it is ?!?' );
-  end;
-  --
 begin
   assert (
     p_level in (1, 2, 3, 4, 5),
     'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace). ' ||
     'NOTE: Level 1 (error) will be always logged and needs no explicit call to the init method.' );
-  assert ( p_duration       between 1 and 1440, 'Duration needs to be between 1 and 1440 (minutes).'       );
-  assert ( p_cache_size     between 0 and 1000, 'Cache size needs to be between 1 and 1000 (log entries).' );
-  assert ( p_check_interval between 1 and   60, 'Check interval needs to be between 1 and 60 (seconds).'   );
-  assert ( p_call_stack     is not null,        'Call stack needs to be true or false (not null).'         );
-  assert ( p_user_env       is not null,        'User env needs to be true or false (not null).'           );
-  assert ( p_apex_env       is not null,        'APEX env needs to be true or false (not null).'           );
-  assert ( p_cgi_env        is not null,        'CGI env needs to be true or false (not null).'            );
-  assert ( p_console_env    is not null,        'Console env needs to be true or false (not null).'        );
+  assert ( p_client_identifier is not null        , 'Client identifier must not be null.'                      );
+  assert ( p_duration          between 1 and 1440 , 'Duration needs to be between 1 and 1440 (minutes).'       );
+  assert ( p_cache_size        between 0 and 1000 , 'Cache size needs to be between 1 and 1000 (log entries).' );
+  assert ( p_check_interval    between 1 and   60 , 'Check interval needs to be between 1 and 60 (seconds).'   );
+  assert ( p_call_stack        is not null        , 'Call stack needs to be true or false (not null).'         );
+  assert ( p_user_env          is not null        , 'User env needs to be true or false (not null).'           );
+  assert ( p_apex_env          is not null        , 'APEX env needs to be true or false (not null).'           );
+  assert ( p_cgi_env           is not null        , 'CGI env needs to be true or false (not null).'            );
+  assert ( p_console_env       is not null        , 'Console env needs to be true or false (not null).'        );
   --
   v_row.init_by           := substrb(coalesce(
                                 sys_context('USERENV', 'OS_USER'),
@@ -1178,15 +1164,15 @@ begin
   commit;
   --
   if g_conf_context_is_available then
-    set_context ( c_ctx_level          , to_char ( v_row.level_id                        ) , p_client_identifier );
-    set_context ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
-    set_context ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
-    set_context ( c_ctx_check_interval , to_char ( v_row.check_interval                  ) , p_client_identifier );
-    set_context ( c_ctx_call_stack     , to_char ( v_row.call_stack                      ) , p_client_identifier );
-    set_context ( c_ctx_user_env       , to_char ( v_row.user_env                        ) , p_client_identifier );
-    set_context ( c_ctx_apex_env       , to_char ( v_row.apex_env                        ) , p_client_identifier );
-    set_context ( c_ctx_cgi_env        , to_char ( v_row.cgi_env                         ) , p_client_identifier );
-    set_context ( c_ctx_console_env    , to_char ( v_row.console_env                     ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_level          , to_char ( v_row.level_id                        ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_check_interval , to_char ( v_row.check_interval                  ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_call_stack     , to_char ( v_row.call_stack                      ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_user_env       , to_char ( v_row.user_env                        ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_apex_env       , to_char ( v_row.apex_env                        ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_cgi_env        , to_char ( v_row.cgi_env                         ) , p_client_identifier );
+    utl_ctx_set ( c_ctx_console_env    , to_char ( v_row.console_env                     ) , p_client_identifier );
   end if;
 
   -- If we want to monitor our own session, wee need to load the configuration
@@ -1201,14 +1187,14 @@ end init;
 
 procedure init (
   p_level          integer default c_level_info ,
-  p_duration       integer default 60             ,
-  p_cache_size     integer default 0              ,
-  p_check_interval integer default 10             ,
-  p_call_stack     boolean default false          ,
-  p_user_env       boolean default false          ,
-  p_apex_env       boolean default false          ,
-  p_cgi_env        boolean default false          ,
-  p_console_env    boolean default false          )
+  p_duration       integer default 60           ,
+  p_cache_size     integer default 0            ,
+  p_check_interval integer default 10           ,
+  p_call_stack     boolean default false        ,
+  p_user_env       boolean default false        ,
+  p_apex_env       boolean default false        ,
+  p_cgi_env        boolean default false        ,
+  p_console_env    boolean default false        )
 is
 begin
   init (
@@ -1236,7 +1222,7 @@ begin
   assert(p_client_identifier is not null, 'Client identifier must not be null.');
   delete from console_sessions where client_identifier = p_client_identifier;
   commit;
-  utl_clear_context( p_client_identifier );
+  utl_ctx_clear( p_client_identifier );
   -- If we monitor our own session, wee need to load the configuration
   -- data from the context or table into the cache (package variables).
   -- Otherwise we need to wait until the cache duration is over (which defaults
@@ -1583,13 +1569,8 @@ end get_runtime_seconds;
 --------------------------------------------------------------------------------
 
 function get_runtime_milliseconds ( p_start timestamp ) return number is
-  v_runtime interval day to second;
 begin
-  v_runtime := localtimestamp - p_start;
-  return (
-    extract(hour   from v_runtime) * 3600 +
-    extract(minute from v_runtime) *   60 +
-    extract(second from v_runtime)        ) * 1000;
+  return get_runtime_seconds(p_start) * 1000;
 end get_runtime_milliseconds;
 
 --------------------------------------------------------------------------------
@@ -1613,7 +1594,7 @@ function get_scope return varchar2 is
   v_subprogram t_vc32k;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_call_stack) itself
+    --ignore 1, is always this function (get_scope) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       --the replace changes `__anonymous_block` to `anonymous_block`
@@ -1621,8 +1602,8 @@ begin
         utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) ),
         c_anon_block_ora,
         c_anonymous_block);
-      --exclude console package from the call stack
-      if instr ( upper(v_subprogram), c_console_pkg_name_dot ) = 0 then
+      --exclude console package from the scope
+      if instr ( upper(v_subprogram), 'CONSOLE.' ) = 0 then
         v_return := v_return
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
           || v_subprogram || ', line ' || utl_call_stack.unit_line(i);
@@ -1661,7 +1642,7 @@ begin
         c_anon_block_ora,
         c_anonymous_block);
       --exclude console package from the call stack
-      if instr( upper(v_subprogram), c_console_pkg_name_dot ) = 0 then
+      if instr( upper(v_subprogram), 'CONSOLE.' ) = 0 then
         v_return := v_return
           || '- '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
@@ -1800,6 +1781,7 @@ begin
   v_return := '## Console Environment' || c_lflf || to_md_tab_header;
   append_row('c_version',                       to_char( c_version                                     ) );
   append_row('g_conf_context_is_available',       to_yn( g_conf_context_is_available                   ) );
+  append_row('c_ctx_namespace',                          c_ctx_namespace                                 );
   append_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format ) );
   append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
   append_row('g_conf_client_identifier',                 g_conf_client_identifier                        );
@@ -2229,15 +2211,15 @@ function utl_get_error return varchar2 is
 begin
   if utl_call_stack.error_depth > 0 and utl_call_stack.backtrace_depth > 0 then
     if utl_call_stack.error_number(1) != 6512 and utl_call_stack.error_msg(1) != coalesce(g_prev_error_msg, 'null') then
-      --Get the line number of the first entry and also the error message
-      v_return := ' (line ' || utl_call_stack.backtrace_line(1) ||
+      --Get the last backtrace line number and also the error message
+      v_return := ' (line ' || to_char(utl_call_stack.backtrace_line(utl_call_stack.backtrace_depth)) ||
         ', ORA-' || trim(to_char(utl_call_stack.error_number(1), '00009')) || ' ' ||
         utl_replace_linebreaks(utl_call_stack.error_msg(1)) || ')';
       --Set the new error message as the last error message.
       g_prev_error_msg := utl_call_stack.error_msg(1);
     else
-      --Get only the line number of the last entry
-      v_return := ' (line ' || utl_call_stack.backtrace_line(utl_call_stack.backtrace_depth) || ')';
+      --Get only the last backtrace line number
+      v_return := ' (line ' || to_char(utl_call_stack.backtrace_line(utl_call_stack.backtrace_depth)) || ')';
     end if;
   end if;
 
@@ -2316,43 +2298,62 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure utl_check_context_availability is
+procedure utl_ctx_check_availability is
 begin
   sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
   g_conf_context_is_available := true;
 exception
   when insufficient_privileges then
     g_conf_context_is_available := false;
-end utl_check_context_availability;
+end utl_ctx_check_availability;
 
 --------------------------------------------------------------------------------
 
-procedure utl_clear_all_context is
+procedure utl_ctx_set (
+p_attribute         varchar2 ,
+p_value             varchar2 ,
+p_client_identifier varchar2 )
+is
+begin
+  sys.dbms_session.set_context(
+    namespace => c_ctx_namespace     ,
+    attribute => p_attribute         ,
+    value     => p_value             ,
+    client_id => p_client_identifier );
+exception
+  when insufficient_privileges then
+    error ( 'Context not available, package var g_conf_context_is_available tells us it is ?!?' );
+end utl_ctx_set;
+
+--------------------------------------------------------------------------------
+
+procedure utl_ctx_clear_all is
 begin
   if g_conf_context_is_available then
     sys.dbms_session.clear_all_context(c_ctx_namespace);
   end if;
-end utl_clear_all_context;
+end utl_ctx_clear_all;
 
 --------------------------------------------------------------------------------
 
-procedure utl_clear_context (
+procedure utl_ctx_clear (
   p_client_identifier varchar2 )
 is
 begin
   if g_conf_context_is_available then
     sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
   end if;
-end utl_clear_context;
+end utl_ctx_clear;
 
 --------------------------------------------------------------------------------
 
 procedure utl_load_session_configuration is
-  v_global_conf  console_conf%rowtype;
   v_session_conf console_sessions%rowtype;
   --
   procedure set_default_config is
+    v_global_conf  console_conf%rowtype;
   begin
+    v_global_conf := utl_read_global_conf;
     --We have no real conf until now, so we fake 24 hours.
     --Conf will be re-evaluated at least every 10 seconds.
     g_conf_exit_sysdate   := sysdate + 1;
@@ -2391,7 +2392,7 @@ procedure utl_load_session_configuration is
   end load_config_from_table_row;
   --
 begin
-  v_global_conf := utl_read_global_conf;
+  --
 
   if g_conf_context_is_available then
 
@@ -2399,7 +2400,7 @@ begin
     if g_conf_exit_sysdate is null then
       set_default_config;
     elsif g_conf_exit_sysdate < sysdate then
-      utl_clear_context(g_conf_client_identifier);
+      utl_ctx_clear(g_conf_client_identifier);
       set_default_config;
     else
       load_config_from_context;
@@ -2543,7 +2544,7 @@ end utl_create_log_entry;
 --package inizialization
 begin
   utl_set_client_identifier;
-  utl_check_context_availability;
+  utl_ctx_check_availability;
   utl_load_session_configuration;
 end console;
 /
