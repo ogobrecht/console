@@ -1,10 +1,20 @@
 # Changelog
 
+## v1.0-beta3 (2021-04-12)
+
+- New global configuration to be able to set the default log level and the conf
+  check interval to other values then 1 and 10 seconds (see
+  [console.conf](package-console.md#procedure-conf))
+- Fixed: Saved call stack shows line numbers from the method console.assert
+  instead of the calling code
+- Some code refactoring
+
 ## v1.0-beta2 (2021-04-04)
 
-First improvements after user feedback - thank you Dietmar(@daust):
+First improvements after user feedback - thank you Dietmar (@daust):
 
-- Splitting level verbose into debug and trace (we have now error, warning, info, debug and trace)
+- Splitting level verbose into debug and trace (we have now error, warning,
+  info, debug and trace)
 - Remove method permanent (is now a attribute in all log methods)
 - Overload all log messages (procedure and function returning log_id)
 - Improved docs to reflect the changes

@@ -50,6 +50,7 @@ Oracle Instrumentation Console
 - [Function apex_error_handling](#function-apex_error_handling)
 - [Function apex_plugin_render](#function-apex_plugin_render)
 - [Function apex_plugin_ajax](#function-apex_plugin_ajax)
+- [Procedure conf](#procedure-conf)
 - [Procedure init](#procedure-init)
 - [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
@@ -105,7 +106,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta2'                            ;
+c_version constant varchar2 ( 20 byte ) := '1.0-beta3'                            ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -218,44 +219,44 @@ end;
 prompt - compile package body
 create or replace package body some_api is
 ------------------------------------------------------------------------------
-  procedure do_stuff is
-  --------------------------------------
-    procedure sub1 is
+    procedure do_stuff is
     --------------------------------------
-      procedure sub2 is
-      --------------------------------------
-        procedure sub3 is
+        procedure sub1 is
+        --------------------------------------
+            procedure sub2 is
+            --------------------------------------
+                procedure sub3 is
+                begin
+                  console.assert(1 = 2, 'Demo');
+                exception --sub3
+                  when others then
+                    console.error_save_stack;
+                    raise;
+                end;
+            --------------------------------------
+            begin
+              sub3;
+            exception --sub2
+              when others then
+                console.error_save_stack;
+                raise;
+            end;
+        --------------------------------------
         begin
-          raise value_error;
-        exception --sub3
+          sub2;
+        exception --sub1
           when others then
             console.error_save_stack;
-            raise;
+            raise no_data_found;
         end;
-      --------------------------------------
-      begin
-        sub3;
-      exception --sub2
-        when others then
-          console.error_save_stack;
-          raise;
-      end;
     --------------------------------------
     begin
-      sub2;
-    exception --sub1
+      sub1;
+    exception --do_stuff
       when others then
-        console.error_save_stack;
-        raise no_data_found;
+        console.error;
+        raise;
     end;
-  --------------------------------------
-  begin
-    sub1;
-  exception --do_stuff
-    when others then
-      console.error;
-      raise;
-  end;
 ------------------------------------------------------------------------------
 end;
 /
@@ -288,36 +289,38 @@ Call Stack
 ------------------------------------------------------------------------------------------------------------------------
 ## Saved Error Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-06502 PL/SQL: numeric or value error)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
-- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 31, ORA-01403 no data found)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
 ## Call Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF, line 38
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
 - anonymous_block, line 2
 
 ## Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND.SOME_API", line 31
-- ORA-06502 PL/SQL: numeric or value error
-- ORA-06512 at "PLAYGROUND.SOME_API", line 23
-- ORA-06512 at "PLAYGROUND.SOME_API", line 15
-- ORA-06512 at "PLAYGROUND.SOME_API", line 11
-- ORA-06512 at "PLAYGROUND.SOME_API", line 19
-- ORA-06512 at "PLAYGROUND.SOME_API", line 27
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
+- ORA-20777 Assertion failed: Test assertion with line break.
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND_DATA.CONSOLE", line 750
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
 
 ## Error Backtrace
 
-- PLAYGROUND.SOME_API, line 31
-- PLAYGROUND.SOME_API, line 23
-- PLAYGROUND.SOME_API, line 15
-- PLAYGROUND.SOME_API, line 11
-- PLAYGROUND.SOME_API, line 19
-- PLAYGROUND.SOME_API, line 27
-- PLAYGROUND.SOME_API, line 35
+- PLAYGROUND_DATA.SOME_API, line 31
+- PLAYGROUND_DATA.SOME_API, line 23
+- PLAYGROUND_DATA.SOME_API, line 15
+- PLAYGROUND_DATA.CONSOLE, line 750
+- PLAYGROUND_DATA.SOME_API, line 11
+- PLAYGROUND_DATA.SOME_API, line 19
+- PLAYGROUND_DATA.SOME_API, line 27
+- PLAYGROUND_DATA.SOME_API, line 35
 ```
 
 SIGNATURE
@@ -1191,6 +1194,20 @@ return apex_plugin.t_dynamic_action_ajax_result;
 ```
 
 
+## Procedure conf
+
+Set the global console configuration.
+
+SIGNATURE
+
+```sql
+procedure conf (
+  p_level           integer default c_level_error, -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval  integer default 10             -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+);
+```
+
+
 ## Procedure init
 
 Starts the logging for a specific session.
@@ -1239,7 +1256,7 @@ procedure init (
   p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_duration          integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    integer  default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_check_interval    integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack        boolean  default false        , -- Should the call stack be included.
   p_user_env          boolean  default false        , -- Should the user environment be included.
   p_apex_env          boolean  default false        , -- Should the APEX environment be included.

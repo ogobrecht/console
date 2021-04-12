@@ -5,11 +5,11 @@
     /)__)   focused on easy installation and usage
     -"-"-   combined with nice features.
 
-*This is currently version 1.0-beta2. Feedback and help is welcome.*
+*This is currently version 1.0-beta3. Feedback and help is welcome.*
 
 **A T T E N T I O N: As long as we are in beta state you should always run the
 uninstallation script (`@uninstall/drop_console_objects.sql`) before you install
-a new version. An existing context does not to be dropped.**
+a new version. An existing context does not need to be dropped.**
 
 ## Easy to Install
 
@@ -27,12 +27,13 @@ a new version. An existing context does not to be dropped.**
 
 - Save to run in production without configuration
   - Errors are always logged.
-  - Minimal resource consumption.
-  - Logging can be switched on when needed for specific sessions identified by
-    the client identifier without recompilation (no, there is no way to enable
-    logging for all sessions, for good reasons and if a session has no client
-    identifier, console is setting one for you).
-- Mostly API compatible with the [JavaScript Console
+  - If you like, you can change the default log level for all sessions from
+    `error` to `warning` or `info`.
+  - Debugging levels `debug` and `trace` can be set for specific sessions
+    identified by the client identifier without recompilation (no, there is no
+    way to enable debugging levels for all sessions, for good reasons and if a
+    session has no client identifier, console is setting one for you).
+- Method names are inspired by the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   Also see the [API overview](docs/api-overview.md) and for more details on the
   methods including examples the [documentation for the package
@@ -49,7 +50,7 @@ a new version. An existing context does not to be dropped.**
 - Has an optional [APEX plug-in](install/apex_plugin.sql) to log JavaScript
   errors in your client frontends. If you use another frontend technologies then
   have a look at the [JavScript sources for the APEX
-  plug-in](sources/apex_plugin_console.js) as an template for an own
+  plug-in](sources/apex_plugin_console.js) as a template for an own
   implementation.
 - Has an optional [APEX error handling
   function](docs/package-console.md#function-apex_error_handling) to log also

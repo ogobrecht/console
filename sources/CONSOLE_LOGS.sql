@@ -60,7 +60,8 @@ begin
     dbms_output.put_line('- Table CONSOLE_LOGS found, no action required');
   end if;
 
-  create_index (null    , 'LOG_SYSTIME, LEVEL_ID', 'IX');
+  --FIXME: which way should we go with indexes?
+    create_index (null    , 'LOG_SYSTIME, LEVEL_ID', 'IX');
   --create_index (null    , 'LOG_SYSTIME'          , 'IX1');
   --create_index ('bitmap', 'LEVEL_ID, LEVEL_NAME' , 'IX2');
   --create_index ('bitmap', 'PERMANENT'            , 'IX3');

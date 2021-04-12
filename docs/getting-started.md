@@ -15,7 +15,7 @@ outermost methods of your business logic then you loose context information
 because the error backtrace from Oracle tells you only the package names and
 line numbers where the error was bubbling up in your code.
 
-We try try to bridge this gap with a special helper method called
+We try to bridge this gap with a special helper method called
 [console.error_save_stack](package-console.md#procedure-error_save_stack). This
 procedure does not log the error. Instead it saves the call stack information
 (which includes the names of nested methods) until you finally call
@@ -45,44 +45,44 @@ end;
 prompt - compile package body
 create or replace package body some_api is
 ------------------------------------------------------------------------------
-  procedure do_stuff is
-  --------------------------------------
-    procedure sub1 is
+    procedure do_stuff is
     --------------------------------------
-      procedure sub2 is
-      --------------------------------------
-        procedure sub3 is
+        procedure sub1 is
+        --------------------------------------
+            procedure sub2 is
+            --------------------------------------
+                procedure sub3 is
+                begin
+                  console.assert(1 = 2, 'Demo');
+                exception --sub3
+                  when others then
+                    console.error_save_stack;
+                    raise;
+                end;
+            --------------------------------------
+            begin
+              sub3;
+            exception --sub2
+              when others then
+                console.error_save_stack;
+                raise;
+            end;
+        --------------------------------------
         begin
-          raise value_error;
-        exception --sub3
+          sub2;
+        exception --sub1
           when others then
             console.error_save_stack;
-            raise;
+            raise no_data_found;
         end;
-      --------------------------------------
-      begin
-        sub3;
-      exception --sub2
-        when others then
-          console.error_save_stack;
-          raise;
-      end;
     --------------------------------------
     begin
-      sub2;
-    exception --sub1
+      sub1;
+    exception --do_stuff
       when others then
-        console.error_save_stack;
-        raise no_data_found;
+        console.error;
+        raise;
     end;
-  --------------------------------------
-  begin
-    sub1;
-  exception --do_stuff
-    when others then
-      console.error;
-      raise;
-  end;
 ------------------------------------------------------------------------------
 end;
 /
@@ -118,36 +118,38 @@ Call Stack
 ------------------------------------------------------------------------------------------------------------------------
 ## Saved Error Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-06502 PL/SQL: numeric or value error)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
-- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 31, ORA-01403 no data found)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
 ## Call Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF, line 38
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
 - anonymous_block, line 2
 
 ## Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND.SOME_API", line 31
-- ORA-06502 PL/SQL: numeric or value error
-- ORA-06512 at "PLAYGROUND.SOME_API", line 23
-- ORA-06512 at "PLAYGROUND.SOME_API", line 15
-- ORA-06512 at "PLAYGROUND.SOME_API", line 11
-- ORA-06512 at "PLAYGROUND.SOME_API", line 19
-- ORA-06512 at "PLAYGROUND.SOME_API", line 27
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
+- ORA-20777 Assertion failed: Demo
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND_DATA.CONSOLE", line 750
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
 
 ## Error Backtrace
 
-- PLAYGROUND.SOME_API, line 31
-- PLAYGROUND.SOME_API, line 23
-- PLAYGROUND.SOME_API, line 15
-- PLAYGROUND.SOME_API, line 11
-- PLAYGROUND.SOME_API, line 19
-- PLAYGROUND.SOME_API, line 27
-- PLAYGROUND.SOME_API, line 35
+- PLAYGROUND_DATA.SOME_API, line 31
+- PLAYGROUND_DATA.SOME_API, line 23
+- PLAYGROUND_DATA.SOME_API, line 15
+- PLAYGROUND_DATA.CONSOLE, line 750
+- PLAYGROUND_DATA.SOME_API, line 11
+- PLAYGROUND_DATA.SOME_API, line 19
+- PLAYGROUND_DATA.SOME_API, line 27
+- PLAYGROUND_DATA.SOME_API, line 35
 ```
 
 ## Debugging During Development or Analyzing Problems
@@ -157,10 +159,10 @@ Call Stack
 
 ### Init Log Level
 
-CONSOLE runs per default only in log level error (1). In this level all calls to
-log methods in levels warning, info, debug and trace are simply ignored. This is
-fine for production as you can leave your instrumentaion calls unchanged but if
-you want CONSOLE to really log then you have to call
+CONSOLE runs per default only in log level `error` (1). In this level all calls
+to log methods in levels warning, info, debug and trace are simply ignored. This
+is fine for production as you can leave your instrumentation calls unchanged but
+if you want CONSOLE to really log those levels then you have to call
 [console.init](package-console.md#procedure-init) to change the log level for
 your own or other sessions.
 
@@ -212,13 +214,20 @@ identifier, if the session has none.
 
 The only thing you need to do is to figure out which client identifier the user
 has. If you have no access to adminstrative views like v$session, then you need
-to get the client identifier from CONSOLE and write it somewhere in the user
-interface - in APEX for example this would be very easy. You could write this in
-the footer of every page by calling
+to get the client identifier from the user environment and write it somewhere in
+the user interface - in APEX for example this would be very easy. You could for
+example write this in the footer of every page by calling
+`sys_context('USERENV', 'CLIENT_IDENTIFIER')` or
 [console.my_client_identifier](package-console.md#function-my_client_identifier).
 If you use the APEX plug-in to log frontend errors then you could do this in
 pure JavaScript in the frontend, as the plug-in provides the information under
 `window.oic.clientIdentifier`.
+
+A last word about log levels. Some people use the levels `error`, `warning` and
+`info` in production for the operations team and levels `debug` and `trace` for
+debugging purposes. To support such use cases you can configure the default log
+level of CONSOLE from `error` to `warning` or `info` by using the
+[console.conf](package-console.md#procedure-conf) procedure.
 
 ### Log Methods
 
@@ -275,7 +284,7 @@ select * from console.view_last(50);
 ### Exit Log Level
 
 If you finished your debugging work you might want to exit the current log level
-and go back to the error level. You can do this by calling
+and go back to the default level. You can do this by calling
 [console.exit](package-console.md#procedure-exit). If you provide no client
 identifier, then CONSOLE tries to exit your own session.
 
