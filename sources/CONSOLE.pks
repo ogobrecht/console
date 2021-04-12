@@ -137,44 +137,44 @@ end;
 prompt - compile package body
 create or replace package body some_api is
 ------------------------------------------------------------------------------
-  procedure do_stuff is
-  --------------------------------------
-    procedure sub1 is
+    procedure do_stuff is
     --------------------------------------
-      procedure sub2 is
-      --------------------------------------
-        procedure sub3 is
+        procedure sub1 is
+        --------------------------------------
+            procedure sub2 is
+            --------------------------------------
+                procedure sub3 is
+                begin
+                  console.assert(1 = 2, 'Demo');
+                exception --sub3
+                  when others then
+                    console.error_save_stack;
+                    raise;
+                end;
+            --------------------------------------
+            begin
+              sub3;
+            exception --sub2
+              when others then
+                console.error_save_stack;
+                raise;
+            end;
+        --------------------------------------
         begin
-          raise value_error;
-        exception --sub3
+          sub2;
+        exception --sub1
           when others then
             console.error_save_stack;
-            raise;
+            raise no_data_found;
         end;
-      --------------------------------------
-      begin
-        sub3;
-      exception --sub2
-        when others then
-          console.error_save_stack;
-          raise;
-      end;
     --------------------------------------
     begin
-      sub2;
-    exception --sub1
+      sub1;
+    exception --do_stuff
       when others then
-        console.error_save_stack;
-        raise no_data_found;
+        console.error;
+        raise;
     end;
-  --------------------------------------
-  begin
-    sub1;
-  exception --do_stuff
-    when others then
-      console.error;
-      raise;
-  end;
 ------------------------------------------------------------------------------
 end;
 {{/}}
@@ -205,38 +205,40 @@ TEST ERROR_SAVE_STACK
 
 Call Stack
 ------------------------------------------------------------------------------------------------------------------------
-{{#}}# Saved Error Stack
+## Saved Error Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-06502 PL/SQL: numeric or value error)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
-- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 31, ORA-01403 no data found)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
-{{#}}# Call Stack
+## Call Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF, line 38
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
 - anonymous_block, line 2
 
-{{#}}# Error Stack
+## Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND.SOME_API", line 31
-- ORA-06502 PL/SQL: numeric or value error
-- ORA-06512 at "PLAYGROUND.SOME_API", line 23
-- ORA-06512 at "PLAYGROUND.SOME_API", line 15
-- ORA-06512 at "PLAYGROUND.SOME_API", line 11
-- ORA-06512 at "PLAYGROUND.SOME_API", line 19
-- ORA-06512 at "PLAYGROUND.SOME_API", line 27
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
+- ORA-20777 Assertion failed: Test assertion with line break.
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND_DATA.CONSOLE", line 750
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
 
-{{#}}# Error Backtrace
+## Error Backtrace
 
-- PLAYGROUND.SOME_API, line 31
-- PLAYGROUND.SOME_API, line 23
-- PLAYGROUND.SOME_API, line 15
-- PLAYGROUND.SOME_API, line 11
-- PLAYGROUND.SOME_API, line 19
-- PLAYGROUND.SOME_API, line 27
-- PLAYGROUND.SOME_API, line 35
+- PLAYGROUND_DATA.SOME_API, line 31
+- PLAYGROUND_DATA.SOME_API, line 23
+- PLAYGROUND_DATA.SOME_API, line 15
+- PLAYGROUND_DATA.CONSOLE, line 750
+- PLAYGROUND_DATA.SOME_API, line 11
+- PLAYGROUND_DATA.SOME_API, line 19
+- PLAYGROUND_DATA.SOME_API, line 27
+- PLAYGROUND_DATA.SOME_API, line 35
 ```
 
 **/
@@ -1593,16 +1595,17 @@ procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
 
 $if $$utils_public $then
 
-function  utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function  utl_get_error return varchar2;
-function  utl_logging_is_enabled (p_level integer) return boolean;
-function  utl_normalize_label (p_label varchar2) return varchar2;
-function  utl_read_global_conf return console_conf%rowtype result_cache;
-function  utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
-function  utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-procedure utl_check_context_availability;
-procedure utl_clear_all_context;
-procedure utl_clear_context (p_client_identifier varchar2);
+function utl_escape_md_tab_text (p_text varchar2) return varchar2;
+function utl_get_error return varchar2;
+function utl_logging_is_enabled (p_level integer) return boolean;
+function utl_normalize_label (p_label varchar2) return varchar2;
+function utl_read_global_conf return console_conf%rowtype result_cache;
+function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
+procedure utl_ctx_check_availability;
+procedure utl_ctx_clear (p_client_identifier varchar2);
+procedure utl_ctx_clear_all;
+procedure utl_ctx_set (p_attribute varchar2, p_value varchar2, p_client_identifier varchar2);
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
 --

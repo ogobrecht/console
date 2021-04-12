@@ -219,44 +219,44 @@ end;
 prompt - compile package body
 create or replace package body some_api is
 ------------------------------------------------------------------------------
-  procedure do_stuff is
-  --------------------------------------
-    procedure sub1 is
+    procedure do_stuff is
     --------------------------------------
-      procedure sub2 is
-      --------------------------------------
-        procedure sub3 is
+        procedure sub1 is
+        --------------------------------------
+            procedure sub2 is
+            --------------------------------------
+                procedure sub3 is
+                begin
+                  console.assert(1 = 2, 'Demo');
+                exception --sub3
+                  when others then
+                    console.error_save_stack;
+                    raise;
+                end;
+            --------------------------------------
+            begin
+              sub3;
+            exception --sub2
+              when others then
+                console.error_save_stack;
+                raise;
+            end;
+        --------------------------------------
         begin
-          raise value_error;
-        exception --sub3
+          sub2;
+        exception --sub1
           when others then
             console.error_save_stack;
-            raise;
+            raise no_data_found;
         end;
-      --------------------------------------
-      begin
-        sub3;
-      exception --sub2
-        when others then
-          console.error_save_stack;
-          raise;
-      end;
     --------------------------------------
     begin
-      sub2;
-    exception --sub1
+      sub1;
+    exception --do_stuff
       when others then
-        console.error_save_stack;
-        raise no_data_found;
+        console.error;
+        raise;
     end;
-  --------------------------------------
-  begin
-    sub1;
-  exception --do_stuff
-    when others then
-      console.error;
-      raise;
-  end;
 ------------------------------------------------------------------------------
 end;
 /
@@ -289,36 +289,38 @@ Call Stack
 ------------------------------------------------------------------------------------------------------------------------
 ## Saved Error Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-06502 PL/SQL: numeric or value error)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
-- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
-- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 31, ORA-01403 no data found)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
 ## Call Stack
 
-- PLAYGROUND.SOME_API.DO_STUFF, line 38
+- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
 - anonymous_block, line 2
 
 ## Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND.SOME_API", line 31
-- ORA-06502 PL/SQL: numeric or value error
-- ORA-06512 at "PLAYGROUND.SOME_API", line 23
-- ORA-06512 at "PLAYGROUND.SOME_API", line 15
-- ORA-06512 at "PLAYGROUND.SOME_API", line 11
-- ORA-06512 at "PLAYGROUND.SOME_API", line 19
-- ORA-06512 at "PLAYGROUND.SOME_API", line 27
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
+- ORA-20777 Assertion failed: Test assertion with line break.
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND_DATA.CONSOLE", line 750
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
 
 ## Error Backtrace
 
-- PLAYGROUND.SOME_API, line 31
-- PLAYGROUND.SOME_API, line 23
-- PLAYGROUND.SOME_API, line 15
-- PLAYGROUND.SOME_API, line 11
-- PLAYGROUND.SOME_API, line 19
-- PLAYGROUND.SOME_API, line 27
-- PLAYGROUND.SOME_API, line 35
+- PLAYGROUND_DATA.SOME_API, line 31
+- PLAYGROUND_DATA.SOME_API, line 23
+- PLAYGROUND_DATA.SOME_API, line 15
+- PLAYGROUND_DATA.CONSOLE, line 750
+- PLAYGROUND_DATA.SOME_API, line 11
+- PLAYGROUND_DATA.SOME_API, line 19
+- PLAYGROUND_DATA.SOME_API, line 27
+- PLAYGROUND_DATA.SOME_API, line 35
 ```
 
 SIGNATURE
