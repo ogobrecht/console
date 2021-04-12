@@ -49,7 +49,7 @@ a new version. An existing context does not need to be dropped.**
 - Has an optional [APEX plug-in](install/apex_plugin.sql) to log JavaScript
   errors in your client frontends. If you use another frontend technologies then
   have a look at the [JavScript sources for the APEX
-  plug-in](sources/apex_plugin_console.js) as an template for an own
+  plug-in](sources/apex_plugin_console.js) as a template for an own
   implementation.
 - Has an optional [APEX error handling
   function](docs/package-console.md#function-apex_error_handling) to log also

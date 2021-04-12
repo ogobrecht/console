@@ -72,6 +72,7 @@ Additional instrumentation methods:
 Additional methods to manage logging mode of sessions and to see the current
 status of the package console:
 
+- [console.conf](package-console.md#procedure-conf)
 - [console.init](package-console.md#procedure-init) &
   [exit](package-console.md#procedure-exit) &
   [exit_stale](package-console.md#procedure-exit_stale)
