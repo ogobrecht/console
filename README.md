@@ -27,12 +27,13 @@ a new version. An existing context does not need to be dropped.**
 
 - Save to run in production without configuration
   - Errors are always logged.
-  - Minimal resource consumption.
-  - Logging can be switched on when needed for specific sessions identified by
-    the client identifier without recompilation (no, there is no way to enable
-    logging for all sessions, for good reasons and if a session has no client
-    identifier, console is setting one for you).
-- Mostly API compatible with the [JavaScript Console
+  - If you like, you can change the default log level for all sessions from
+    `error` to `warning` or `info`.
+  - Debugging levels `debug` and `trace` can be set for specific sessions
+    identified by the client identifier without recompilation (no, there is no
+    way to enable debugging levels for all sessions, for good reasons and if a
+    session has no client identifier, console is setting one for you).
+- Method names are inspired by the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   Also see the [API overview](docs/api-overview.md) and for more details on the
   methods including examples the [documentation for the package
