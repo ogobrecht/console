@@ -48,7 +48,7 @@ begin
     p_subscribe_plugin_settings => true                                   ,
     p_version_identifier        => '1.0-beta2'                               ,
     p_about_url                 => 'https://github.com/ogobrecht/console' ,
-    p_files_version             => 101                                     );
+    p_files_version             => 103                                     );
 end;
 /
 
