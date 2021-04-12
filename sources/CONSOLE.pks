@@ -205,19 +205,19 @@ TEST ERROR_SAVE_STACK
 
 Call Stack
 ------------------------------------------------------------------------------------------------------------------------
-## Saved Error Stack
+{{#}}# Saved Error Stack
 
 - PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
 - PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
 - PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
 - PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
-## Call Stack
+{{#}}# Call Stack
 
 - PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
 - anonymous_block, line 2
 
-## Error Stack
+{{#}}# Error Stack
 
 - ORA-01403 no data found
 - ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
@@ -229,7 +229,7 @@ Call Stack
 - ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
 - ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
 
-## Error Backtrace
+{{#}}# Error Backtrace
 
 - PLAYGROUND_DATA.SOME_API, line 31
 - PLAYGROUND_DATA.SOME_API, line 23
