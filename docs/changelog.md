@@ -3,7 +3,7 @@
 ## v1.0-beta3 (2021-04-12)
 
 - New global configuration to be able to set the default log level and the conf
-  check interval to other values then 1 and 10 seconds (see
+  check interval to other values than 1 and 10 seconds (see
   [console.conf](package-console.md#procedure-conf))
 - Fixed: Saved call stack shows line numbers from the method console.assert
   instead of the calling code
