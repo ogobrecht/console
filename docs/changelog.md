@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.0-beta4 (2021-04-xx)
+## v1.0-beta4 (2021-04-25)
 
 - Add the ability to set specific PL/SQL units (packages, functions, procedures)
   to a different log level, if you want to monitor for example new code in all
