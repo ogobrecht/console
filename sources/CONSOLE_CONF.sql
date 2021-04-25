@@ -6,12 +6,16 @@ begin
     dbms_output.put_line('- Table CONSOLE_CONF not found, run creation command');
     execute immediate q'{
       create table console_conf (
-        conf_id           varchar2 (16 byte)  not null  ,
-        conf_by           varchar2 (64 byte)            ,
-        conf_sysdate      date                not null  ,
-        level_id          number   ( 1,0)     not null  ,
-        level_name        varchar2 (10 byte)  not null  ,
-        check_interval    number   ( 2,0)     not null  ,
+        conf_id              varchar2 (  16 byte)  not null  ,
+        conf_by              varchar2 (  64 byte)            ,
+        conf_sysdate         date                  not null  ,
+        level_id             number   (   1,0)     not null  ,
+        level_name           varchar2 (  10 byte)  not null  ,
+        check_interval       number   (   2,0)     not null  ,
+        units_level_warning  varchar2 (4000 byte)            ,
+        units_level_info     varchar2 (4000 byte)            ,
+        units_level_debug    varchar2 (4000 byte)            ,
+        units_level_trace    varchar2 (4000 byte)            ,
         --
         constraint  console_conf_pk   primary key ( conf_id                 )  ,
         constraint  console_conf_ck1  check       ( conf_id = 'GLOBAL_CONF' )  ,
@@ -29,12 +33,16 @@ begin
 end;
 /
 
-comment on table  console_conf                is 'Holds the global console configuration in a single record.';
-comment on column console_conf.conf_id        is 'The primary key - is secured by a check constraint which allows only one record in the table.';
-comment on column console_conf.conf_by        is 'The user who configured the console the last time.';
-comment on column console_conf.conf_sysdate   is 'The date when the console was configured the last time.';
-comment on column console_conf.level_id       is 'The defined global log level ID.';
-comment on column console_conf.level_name     is 'The defined log level name.';
-comment on column console_conf.check_interval is 'The number of seconds a session looks for a changed configuration.';
+comment on table  console_conf                     is 'Holds the global console configuration in a single record.';
+comment on column console_conf.conf_id             is 'The primary key - is secured by a check constraint which allows only one record in the table.';
+comment on column console_conf.conf_by             is 'The user who configured the console the last time.';
+comment on column console_conf.conf_sysdate        is 'The date when the console was configured the last time.';
+comment on column console_conf.level_id            is 'The defined global log level ID.';
+comment on column console_conf.level_name          is 'The defined log level name.';
+comment on column console_conf.check_interval      is 'The number of seconds a session looks for a changed configuration.';
+comment on column console_conf.units_level_warning is 'A comma separated list of units configured for level warning.';
+comment on column console_conf.units_level_info    is 'A comma separated list of units configured for level info.';
+comment on column console_conf.units_level_debug   is 'A comma separated list of units configured for level debug.';
+comment on column console_conf.units_level_trace   is 'A comma separated list of units configured for level trace.';
 
 
