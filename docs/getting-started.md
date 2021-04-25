@@ -223,12 +223,6 @@ If you use the APEX plug-in to log frontend errors then you could do this in
 pure JavaScript in the frontend, as the plug-in provides the information under
 `window.oic.clientIdentifier`.
 
-A last word about log levels. Some people use the levels `error`, `warning` and
-`info` in production for the operations team and levels `debug` and `trace` for
-debugging purposes. To support such use cases you can configure the default log
-level of CONSOLE from `error` to `warning` or `info` by using the
-[console.conf](package-console.md#procedure-conf) procedure.
-
 ### Log Methods
 
 As CONSOLE was designed for easy usage it shares many methods names with the
@@ -290,3 +284,37 @@ identifier, then CONSOLE tries to exit your own session.
 
 If you don't do it by yourself the daily cleanup job from CONSOLE will exit
 stale sessions from the table `CONSOLE_SESSIONS`.
+
+## Configure Default Log Level
+
+Some people use the levels `error`, `warning` and `info` in production for the
+operations team and levels `debug` and `trace` for debugging purposes. To
+support such use cases you can configure the default log level of CONSOLE for
+all sessions from `error` to `warning` or `info` by using the
+[console.conf](package-console.md#procedure-conf) procedure.
+
+EXAMPLE
+
+```sql
+--set all sessions to level warning
+exec console.conf(p_level => console.c_level_warning);
+```
+
+## Configure Different Log Levels for Specific PL/SQL Units
+
+If you have new package and you want only set the log level for this package to
+another level then the global default one then you can do this by using the
+[console.conf](package-console.md#procedure-conf) procedure.
+
+EXAMPLE
+
+```sql
+--set all session to level info and two new packages to debug
+begin
+  console.conf(
+    p_level             => console.c_level_info                       ,
+    p_check_interval    => 10                                         ,
+    p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API' );
+end;
+{{/}}
+```
