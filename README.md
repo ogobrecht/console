@@ -35,7 +35,7 @@ a new version. An existing context does not need to be dropped.**
     session has no client identifier, console is setting one for you).
   - You can set specific PL/SQL units (packages, functions, procedures) to a
     different log level, if you want to monitor for example new code in all
-    sessions (see [console.conf](package-console.md#procedure-conf)).
+    sessions (see [console.conf](docs/package-console.md#procedure-conf)).
 - Method names are inspired by the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   Also see the [API overview](docs/api-overview.md) and for more details on the
