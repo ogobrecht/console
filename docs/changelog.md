@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0-beta4 (2021-04-xx)
+
+- Add the ability to set specific PL/SQL units (packages, functions, procedures)
+  to a different log level, if you want to monitor for example new code in all
+  sessions (see [console.conf](package-console.md#procedure-conf))
+
 ## v1.0-beta3 (2021-04-12)
 
 - New global configuration to be able to set the default log level and the conf

@@ -215,7 +215,7 @@ Call Stack
 {{#}}# Call Stack
 
 - PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
-- anonymous_block, line 2
+- __anonymous_block, line 2
 
 {{#}}# Error Stack
 
@@ -906,8 +906,12 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level           integer default c_level_error, -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval  integer default 10             -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_level               integer default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval      integer default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_units_level_warning varchar2 default null         , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    varchar2 default null         , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   varchar2 default null         , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   varchar2 default null           -- Same as p_units_level_warning for level trace.
 );
 /**
 
@@ -1332,7 +1336,7 @@ between 0 and 4.
 
 --------------------------------------------------------------------------------
 
-function  get_scope return varchar2;
+function get_scope return varchar2;
 /**
 
 Get the current scope (method, line number) from the call stack.
@@ -1344,7 +1348,19 @@ log entry.
 
 --------------------------------------------------------------------------------
 
-function  get_call_stack return varchar2;
+function get_calling_unit return varchar2;
+/**
+
+Get the calling unit (OWNER.UNIT) from the call stack.
+
+Is used internally by console to check if unit is configured for current log
+level.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function get_call_stack return varchar2;
 /**
 
 Get the current call stack (and error stack/backtrace, if available).

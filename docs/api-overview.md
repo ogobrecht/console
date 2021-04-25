@@ -122,6 +122,7 @@ helpful for you:
   [get_runtime_milliseconds](package-console.md#function-get_runtime_milliseconds)
 - [console.get_level_name](package-console.md#function-get_level_name)
 - [console.get_scope](package-console.md#function-get_scope) &
+  [get_calling_unit](package-console.md#function-get_calling_unit) &
   [get_call_stack](package-console.md#function-get_call_stack)
 - [console.get_apex_env](package-console.md#function-get_apex_env) &
   [get_cgi_env](package-console.md#function-get_cgi_env) &
