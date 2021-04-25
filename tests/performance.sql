@@ -3,6 +3,7 @@ set serveroutput on verify off feedback off
 --configure logger and console
 exec logger.set_level(logger.g_error);
 exec console.conf(p_level => console.c_level_error, p_check_interval => 10);
+--exec console.conf(p_level => console.c_level_error, p_check_interval => 10, p_units_level_info => 'PLAYGROUND_DATA.SOME_API');
 
 --warm up logger and console
 begin
@@ -113,7 +114,7 @@ begin
   console.init(
     p_level          => console.c_level_info ,
     p_duration       => 90                   ,
-    p_cache_size     => 100                  ,
+    p_cache_size     => 0                    ,
     p_check_interval => 30                   );
   for i in 1 .. 10 loop
     logger.log ('warm up ' || to_char(i));
@@ -187,6 +188,25 @@ begin
   console.print( '- get_scope      : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
 end;
 /
+
+prompt
+prompt 1.000 GET_CALLING_UNIT CALLS (how many time you loose by fetching the calling unit from the call stack)
+declare
+  v_iterator pls_integer := 1000;
+  v_start    timestamp;
+  v_scope    varchar2(1000);
+  v_rt       number;
+begin
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_scope := console.get_calling_unit;
+  end loop;
+  v_rt := console.get_runtime_seconds(v_start);
+  --
+  console.print( '- get_cal*g_unit : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
+end;
+/
+
 
 /*
 prompt

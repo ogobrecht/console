@@ -70,6 +70,7 @@ Oracle Instrumentation Console
 - [Function get_runtime_milliseconds](#function-get_runtime_milliseconds)
 - [Function get_level_name](#function-get_level_name)
 - [Function get_scope](#function-get_scope)
+- [Function get_calling_unit](#function-get_calling_unit)
 - [Function get_call_stack](#function-get_call_stack)
 - [Function get_apex_env](#function-get_apex_env)
 - [Function get_cgi_env](#function-get_cgi_env)
@@ -106,7 +107,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta3'                            ;
+c_version constant varchar2 ( 20 byte ) := '1.0-beta4'                            ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -297,7 +298,7 @@ Call Stack
 ## Call Stack
 
 - PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
-- anonymous_block, line 2
+- __anonymous_block, line 2
 
 ## Error Stack
 
@@ -1202,8 +1203,12 @@ SIGNATURE
 
 ```sql
 procedure conf (
-  p_level           integer default c_level_error, -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval  integer default 10             -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_level               integer default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval      integer default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_units_level_warning varchar2 default null         , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    varchar2 default null         , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   varchar2 default null         , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   varchar2 default null           -- Same as p_units_level_warning for level trace.
 );
 ```
 
@@ -1680,7 +1685,21 @@ log entry.
 SIGNATURE
 
 ```sql
-function  get_scope return varchar2;
+function get_scope return varchar2;
+```
+
+
+## Function get_calling_unit
+
+Get the calling unit (OWNER.UNIT) from the call stack.
+
+Is used internally by console to check if unit is configured for current log
+level.
+
+SIGNATURE
+
+```sql
+function get_calling_unit return varchar2;
 ```
 
 
@@ -1695,7 +1714,7 @@ trace).
 SIGNATURE
 
 ```sql
-function  get_call_stack return varchar2;
+function get_call_stack return varchar2;
 ```
 
 

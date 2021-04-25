@@ -17,8 +17,6 @@ c_html_less_then       constant varchar2 ( 4 byte) := chr(38) || 'lt;';
 c_html_greater_then    constant varchar2 ( 4 byte) := chr(38) || 'gt;';
 c_timestamp_format     constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
 c_default_label        constant varchar2 ( 7 byte) := 'Default';
-c_anon_block_ora       constant varchar2 (17 byte) := '__anonymous_block';
-c_anonymous_block      constant varchar2 (15 byte) := 'anonymous_block';
 c_conf_id              constant varchar2 (11 byte) := 'GLOBAL_CONF';
 c_client_id_prefix     constant varchar2 ( 6 byte) := '{o,o} ';
 c_console_owner        constant varchar2 (30 byte) := user;
@@ -74,6 +72,17 @@ c_interval_day_to_second constant pls_integer := 183;
 c_ref                    constant pls_integer := 111;
 c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
+type timers_tab      is table of timestamp   index by t_vc128;
+type counters_tab    is table of pls_integer index by t_vc128;
+type saved_stack_tab is table of t_vc1k      index by binary_integer;
+type unit_list_tab   is table of t_vc4k      index by binary_integer;
+
+g_timers         timers_tab;
+g_counters       counters_tab;
+g_log_cache      tab_logs := new tab_logs();
+g_saved_stack    saved_stack_tab;
+g_prev_error_msg t_vc1k;
+
 g_conf_check_sysdate        date;
 g_conf_exit_sysdate         date;
 g_conf_context_is_available boolean;
@@ -86,16 +95,7 @@ g_conf_user_env             boolean;
 g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
-
-type tab_timers      is table of timestamp   index by t_vc128;
-type tab_counters    is table of pls_integer index by t_vc128;
-type tab_saved_stack is table of t_vc1k      index by binary_integer;
-
-g_timers         tab_timers;
-g_counters       tab_counters;
-g_log_cache      tab_logs := new tab_logs();
-g_saved_stack    tab_saved_stack;
-g_prev_error_msg t_vc1k;
+g_conf_unit_levels          unit_list_tab;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -857,7 +857,7 @@ is
       p_application_id => v_app_id,
       p_name           => p_constraint_name,
       p_language       => apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'),
-      p_message_text   => 'FIXME: Create message for constraint ' || p_constraint_name);
+      p_message_text   => 'DEVELOPER TODO: Change this message for constraint ' || p_constraint_name);
     commit;
   end;
   --
@@ -1075,11 +1075,60 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level           integer default c_level_error,
-  p_check_interval  integer default 10
-)
+  p_level               integer  default c_level_error ,
+  p_check_interval      integer  default 10            ,
+  p_units_level_warning varchar2 default null          ,
+  p_units_level_info    varchar2 default null          ,
+  p_units_level_debug   varchar2 default null          ,
+  p_units_level_trace   varchar2 default null          )
 is
-  v_row console_conf%rowtype;
+  pragma autonomous_transaction;
+  v_old_conf console_conf%rowtype;
+  v_conf     console_conf%rowtype;
+  v_sep      varchar2(1 byte) := ',';
+  --
+  procedure add_unit_to_level (
+    p_unit  varchar2    ,
+    p_level pls_integer )
+  is
+  begin
+    if p_level >= 2 then v_conf.units_level_warning := v_sep || p_unit; end if;
+    if p_level >= 3 then v_conf.units_level_info    := v_sep || p_unit; end if;
+    if p_level >= 4 then v_conf.units_level_debug   := v_sep || p_unit; end if;
+    if p_level >= 5 then v_conf.units_level_trace   := v_sep || p_unit; end if;
+  end add_unit_to_level;
+  --
+  procedure close_unit_levels is
+  begin
+    if v_conf.units_level_warning is not null then v_conf.units_level_warning := v_conf.units_level_warning || v_sep; end if;
+    if v_conf.units_level_info    is not null then v_conf.units_level_info    := v_conf.units_level_info    || v_sep; end if;
+    if v_conf.units_level_debug   is not null then v_conf.units_level_debug   := v_conf.units_level_debug   || v_sep; end if;
+    if v_conf.units_level_trace   is not null then v_conf.units_level_trace   := v_conf.units_level_trace   || v_sep; end if;
+  end close_unit_levels;
+  --
+  procedure normalize_units_and_levels (
+    p_units varchar2    ,
+    p_level pls_integer )
+  is
+    v_units t_vc32k;
+    v_unit  t_vc32k;
+    v_index pls_integer;
+  begin
+    if p_units is not null then
+      v_units := p_units;
+      loop
+        v_index := instr(v_units, v_sep);
+        if v_index > 0 then
+          add_unit_to_level( trim(substr(v_units, 1, v_index - 1)), p_level );
+          v_units := substr(v_units, v_index + 1);
+        else
+          add_unit_to_level( trim(v_units), p_level );
+          exit;
+        end if;
+      end loop;
+    end if;
+  end normalize_units_and_levels;
+  --
 begin
   assert (
     p_level in (1, 2, 3),
@@ -1092,21 +1141,32 @@ begin
     p_check_interval between 10 and 60,
     'Check interval needs to be between 10 and 60 (seconds). ' ||
     'Values between 1 and 10 seconds can only be set per session with the procedure init.');
-  v_row.conf_id        := c_conf_id;
-  v_row.conf_by        := substrb(
+  v_conf.conf_id        := c_conf_id;
+  v_conf.conf_by        := substrb(
                             coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')),
                             1,
                             64);
-  v_row.conf_sysdate   := sysdate;
-  v_row.level_id       := p_level;
-  v_row.level_name     := get_level_name(p_level);
-  v_row.check_interval := p_check_interval;
+  v_conf.conf_sysdate   := sysdate;
+  v_conf.level_id       := p_level;
+  v_conf.level_name     := get_level_name(p_level);
+  v_conf.check_interval := p_check_interval;
+  normalize_units_and_levels (p_units_level_warning, 2);
+  normalize_units_and_levels (p_units_level_info   , 3);
+  normalize_units_and_levels (p_units_level_debug  , 4);
+  normalize_units_and_levels (p_units_level_trace  , 5);
+  close_unit_levels;
   --
-  update console_conf set row = v_row where conf_id = c_conf_id;
+  v_old_conf := utl_read_global_conf;
+  --
+  update console_conf set row = v_conf where conf_id = c_conf_id;
   if sql%rowcount = 0 then
-    insert into console_conf values v_row;
+    insert into console_conf values v_conf;
   end if;
   commit;
+  --
+  if nvl(v_old_conf.level_id, 1) != v_conf.level_id then
+    utl_ctx_clear_all;
+  end if;
 end conf;
 
 --------------------------------------------------------------------------------
@@ -1597,11 +1657,7 @@ begin
     --ignore 1, is always this function (get_scope) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
-      --the replace changes `__anonymous_block` to `anonymous_block`
-      v_subprogram := replace (
-        utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) ),
-        c_anon_block_ora,
-        c_anonymous_block);
+      v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
       --exclude console package from the scope
       if instr ( upper(v_subprogram), 'CONSOLE.' ) = 0 then
         v_return := v_return
@@ -1613,6 +1669,29 @@ begin
   end if;
   return v_return;
 end get_scope;
+
+--------------------------------------------------------------------------------
+
+function get_calling_unit return varchar2 is
+  v_return     t_vc32k;
+  v_subprogram t_vc32k;
+begin
+  if utl_call_stack.dynamic_depth > 0 then
+    --ignore 1, is always this function (get_scope) itself
+    for i in 2 .. utl_call_stack.dynamic_depth
+    loop
+      v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
+      --exclude console package
+      if instr ( upper(v_subprogram), 'CONSOLE.' ) = 0 then
+        v_return := v_return
+          || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
+          || substr(v_subprogram, 1, instr(v_subprogram,'.') - 1 );
+      end if;
+      exit when v_return is not null;
+    end loop;
+  end if;
+  return v_return;
+end get_calling_unit;
 
 --------------------------------------------------------------------------------
 
@@ -1636,11 +1715,7 @@ begin
     --ignore 1, is always this function (get_call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
-      --the replace changes `__anonymous_block` to `anonymous_block`
-      v_subprogram := replace(
-        utl_call_stack.concatenate_subprogram ( utl_call_stack.subprogram(i) ),
-        c_anon_block_ora,
-        c_anonymous_block);
+      v_subprogram := utl_call_stack.concatenate_subprogram ( utl_call_stack.subprogram(i) );
       --exclude console package from the call stack
       if instr( upper(v_subprogram), 'CONSOLE.' ) = 0 then
         v_return := v_return
@@ -1670,7 +1745,7 @@ begin
     loop
       v_return := v_return
         || '- '
-        || coalesce( utl_call_stack.backtrace_unit(i), c_anonymous_block )
+        || coalesce( utl_call_stack.backtrace_unit(i), '__anonymous_block' )
         || ', line ' || utl_call_stack.backtrace_line(i) || c_lf;
     end loop;
     v_return := v_return || c_lf;
@@ -1794,6 +1869,10 @@ begin
   append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                               ) );
   append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                ) );
   append_row('g_conf_console_env',                to_yn( g_conf_console_env                            ) );
+  append_row('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           );
+  append_row('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           );
+  append_row('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           );
+  append_row('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           );
   append_row('g_counters.count',                to_char( g_counters.count                              ) );
   append_row('g_timers.count',                  to_char( g_timers.count                                ) );
   append_row('g_log_cache.count',               to_char( g_log_cache.count                             ) );
@@ -2235,7 +2314,12 @@ begin
   if g_conf_check_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
-  return g_conf_level >= p_level or sqlcode != 0;
+  return
+    g_conf_level >= p_level
+    or
+    sqlcode != 0
+    or
+    g_conf_unit_levels(p_level) is not null and instr(g_conf_unit_levels(p_level), ','||get_calling_unit||',') > 0;
 end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
@@ -2349,11 +2433,10 @@ end utl_ctx_clear;
 
 procedure utl_load_session_configuration is
   v_session_conf console_sessions%rowtype;
+  v_global_conf  console_conf%rowtype;
   --
   procedure set_default_config is
-    v_global_conf  console_conf%rowtype;
   begin
-    v_global_conf := utl_read_global_conf;
     --We have no real conf until now, so we fake 24 hours.
     --Conf will be re-evaluated at least every 10 seconds.
     g_conf_exit_sysdate   := sysdate + 1;
@@ -2392,10 +2475,12 @@ procedure utl_load_session_configuration is
   end load_config_from_table_row;
   --
 begin
-  --
-
+  v_global_conf := utl_read_global_conf;
+  g_conf_unit_levels(2) := v_global_conf.units_level_warning ;
+  g_conf_unit_levels(3) := v_global_conf.units_level_info    ;
+  g_conf_unit_levels(4) := v_global_conf.units_level_debug   ;
+  g_conf_unit_levels(5) := v_global_conf.units_level_trace   ;
   if g_conf_context_is_available then
-
     g_conf_exit_sysdate := to_date(sys_context(c_ctx_namespace, c_ctx_exit_sysdate), c_ctx_date_format);
     if g_conf_exit_sysdate is null then
       set_default_config;
@@ -2405,9 +2490,7 @@ begin
     else
       load_config_from_context;
     end if;
-
   else
-
     v_session_conf := utl_read_session_conf(g_conf_client_identifier);
     g_conf_exit_sysdate := v_session_conf.exit_sysdate;
     if g_conf_exit_sysdate is null or g_conf_exit_sysdate < sysdate then
@@ -2415,9 +2498,7 @@ begin
     else
       load_config_from_table_row;
     end if;
-
   end if;
-
   g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
 
 end utl_load_session_configuration;

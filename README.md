@@ -5,7 +5,7 @@
     /)__)   focused on easy installation and usage
     -"-"-   combined with nice features.
 
-*This is currently version 1.0-beta3. Feedback and help is welcome.*
+*This is currently version 1.0-beta4. Feedback and help is welcome.*
 
 **A T T E N T I O N: As long as we are in beta state you should always run the
 uninstallation script (`@uninstall/drop_console_objects.sql`) before you install
@@ -27,12 +27,15 @@ a new version. An existing context does not need to be dropped.**
 
 - Save to run in production without configuration
   - Errors are always logged.
-  - If you like, you can change the default log level for all sessions from
-    `error` to `warning` or `info`.
+  - You can change the default log level for all sessions from `error` to
+    `warning` or `info`.
   - Debugging levels `debug` and `trace` can be set for specific sessions
     identified by the client identifier without recompilation (no, there is no
     way to enable debugging levels for all sessions, for good reasons and if a
     session has no client identifier, console is setting one for you).
+  - You can set specific PL/SQL units (packages, functions, procedures) to a
+    different log level, if you want to monitor for example new code in all
+    sessions (see [console.conf](package-console.md#procedure-conf)).
 - Method names are inspired by the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
   Also see the [API overview](docs/api-overview.md) and for more details on the
@@ -59,6 +62,11 @@ a new version. An existing context does not need to be dropped.**
   automatically for you. If needed, you can overwrite the default scope.
 - Brings some useful helper functions - have a look at the [API
   overview](docs/api-overview.md).
+- Is extensible. Log methods `error`, `warn`, `info`, `debug` and `trace` are
+  all implemented as a procedure and a function returning the log ID. So you can
+  easily implement additional functionality which references the log entries
+  like an approval for certain errors or save additional information in a
+  specific table.
 
 ## Dependencies
 
