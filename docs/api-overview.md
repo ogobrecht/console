@@ -13,7 +13,7 @@
 # API Overview - Package CONSOLE
 
 For a more detailed overview of the public API methods including examples please
-see the [docs for the package console](package-console.md). You can also use the
+see the [package console methods](package-console.md). You can also use the
 links on the method names below.
 
 The console API is inspired by the [JavaScript Console
