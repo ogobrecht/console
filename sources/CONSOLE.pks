@@ -1531,8 +1531,6 @@ procedure flush_cache;
 
 Flushes the log cache and writes down the entries to the log table.
 
-Also see clob_append above.
-
 **/
 
 --------------------------------------------------------------------------------
@@ -1547,9 +1545,6 @@ size greater then zero (for example 1000) and you take a look at the log entries
 with the pipelined function `console.view_cache` or
 `console.view_last([numRows])` during development. By clearing the cache you can
 avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
 
 **/
 
