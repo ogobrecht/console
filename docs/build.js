@@ -38,7 +38,9 @@ glob('docs/*.md', function (err, files) {
         }
         else {
             if (file === 'docs/package-console.md') {
-                content = '<!-- nav --><!-- navstop -->' + content;
+                content = '<!-- nav --><!-- navstop -->\n\n' +
+                    'NOTE: This method overview is generated from the package specification in `sources/CONSOLE.pks`.\n\n' +
+                    content;
             }
             content = content.replace(navRegex, renderNavigation('top'));
             content = toc.insert(content, {maxdepth: 2, bullets: '-'});
