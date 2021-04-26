@@ -1167,6 +1167,7 @@ begin
   if nvl(v_old_conf.level_id, 1) != v_conf.level_id then
     utl_ctx_clear_all;
   end if;
+  utl_load_session_configuration;
 end conf;
 
 --------------------------------------------------------------------------------
@@ -2107,8 +2108,12 @@ end;
 function view_status return tab_key_value pipelined is
   v_row rec_key_value;
 begin
+  if g_conf_check_sysdate < sysdate then
+    utl_load_session_configuration;
+  end if;
   pipe row(new rec_key_value('c_version',                       to_char( c_version                                      )) );
   pipe row(new rec_key_value('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
+  pipe row(new rec_key_value('c_ctx_namespace',                          c_ctx_namespace                                 ) );
   pipe row(new rec_key_value('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
   pipe row(new rec_key_value('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
   pipe row(new rec_key_value('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
@@ -2121,6 +2126,10 @@ begin
   pipe row(new rec_key_value('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
   pipe row(new rec_key_value('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
   pipe row(new rec_key_value('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
+  pipe row(new rec_key_value('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           ) );
+  pipe row(new rec_key_value('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           ) );
+  pipe row(new rec_key_value('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           ) );
+  pipe row(new rec_key_value('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           ) );
   pipe row(new rec_key_value('g_counters.count',                to_char( g_counters.count                               )) );
   pipe row(new rec_key_value('g_timers.count',                  to_char( g_timers.count                                 )) );
   pipe row(new rec_key_value('g_log_cache.count',               to_char( g_log_cache.count                              )) );
