@@ -1,7 +1,28 @@
+<!-- nav -->
+
+[Index](README.md)
+| [Installation](installation.md)
+| [Getting Started](getting-started.md)
+| [API Overview](api-overview.md)
+| [Package Console](package-console.md)
+| [Changelog](changelog.md)
+| [Uninstallation](uninstallation.md)
+
+<!-- navstop -->
+
 # Getting Started
 
 After you have [installed the console objects](installation.md) you can start to
 use it to instrument your code.
+
+<!-- toc -->
+
+- [Minimal - Log Only Errors](#minimal---log-only-errors)
+- [Debugging During Development or Analyzing Problems](#debugging-during-development-or-analyzing-problems)
+- [Configure Default Log Level](#configure-default-log-level)
+- [Configure Different Log Levels for Specific PL/SQL Units](#configure-different-log-levels-for-specific-plsql-units)
+
+<!-- tocstop -->
 
 ## Minimal - Log Only Errors
 
@@ -296,24 +317,23 @@ all sessions from `error` to `warning` or `info` by using the
 EXAMPLE
 
 ```sql
---set all sessions to level warning
+--set global log level to warning
 exec console.conf(p_level => console.c_level_warning);
 ```
 
 ## Configure Different Log Levels for Specific PL/SQL Units
 
-If you have new package and you want only set the log level for this package to
-another level then the global default one then you can do this by using the
+If you have a new package and you want only set the log level for this package
+to another level then the global one, you can do this by using the
 [console.conf](package-console.md#procedure-conf) procedure.
 
 EXAMPLE
 
 ```sql
---set all session to level info and two new packages to debug
+--set global log level to info and for two new packages to debug
 begin
   console.conf(
     p_level             => console.c_level_info                       ,
-    p_check_interval    => 10                                         ,
     p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API' );
 end;
 {{/}}

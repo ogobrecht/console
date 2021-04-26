@@ -1,3 +1,15 @@
+<!-- nav -->
+
+[Index](README.md)
+| [Installation](installation.md)
+| [Getting Started](getting-started.md)
+| [API Overview](api-overview.md)
+| [Package Console](package-console.md)
+| [Changelog](changelog.md)
+| [Uninstallation](uninstallation.md)
+
+<!-- navstop -->
+
 # API Overview - Package CONSOLE
 
 For a more detailed overview of the public API methods including examples please

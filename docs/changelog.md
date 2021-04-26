@@ -1,3 +1,15 @@
+<!-- nav -->
+
+[Index](README.md)
+| [Installation](installation.md)
+| [Getting Started](getting-started.md)
+| [API Overview](api-overview.md)
+| [Package Console](package-console.md)
+| [Changelog](changelog.md)
+| [Uninstallation](uninstallation.md)
+
+<!-- navstop -->
+
 # Changelog
 
 ## v1.0-beta4 (2021-04-25)
