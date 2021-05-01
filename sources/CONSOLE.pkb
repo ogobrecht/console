@@ -95,6 +95,7 @@ g_conf_user_env             boolean;
 g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
+g_conf_enable_ascii_art     boolean;
 g_conf_unit_levels          unit_list_tab;
 
 -------------------------------------------------------------------------------
@@ -844,26 +845,35 @@ is
   v_constraint_name t_vc256;
   v_message         clob;
   v_app_id          pls_integer;
+  v_app_page_id     pls_integer;
   --
   function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
   begin
     return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
   end;
   --
-  procedure create_apex_lang_message ( p_constraint_name varchar2 ) is
+  function create_apex_lang_message (
+    p_constraint_name varchar2
+  ) return varchar2
+  is
     pragma autonomous_transaction;
+    v_message varchar2(4000) :=
+      'DEVELOPER TODO: Change this message in APEX > Application Builder > Shared Components > Text Messages for constraint ' ||
+      p_constraint_name;
   begin
     apex_lang.create_message(
       p_application_id => v_app_id,
       p_name           => p_constraint_name,
       p_language       => apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'),
-      p_message_text   => 'DEVELOPER TODO: Change this message for constraint ' || p_constraint_name);
+      p_message_text   => v_message);
     commit;
+    return v_message;
   end;
   --
 begin
-  v_app_id := v('APP_ID');
-  v_result := apex_error.init_error_result (p_error => p_error);
+  v_app_id      := v('APP_ID');
+  v_app_page_id := v('APP_PAGE_ID');
+  v_result      := apex_error.init_error_result (p_error => p_error);
 
   -- If it's an internal error raised by APEX, like an invalid statement or
   -- code which can't be executed, the error text might contain security sensitive
@@ -883,16 +893,16 @@ begin
         case when p_error.error_statement is not null then p_error.error_statement || c_lf end;
         --FIXME what about other attributes like p_error.component?
       v_reference_id := error (
-        p_message         => v_message               ,
-        p_call_stack      => false                   ,
-        p_apex_env        => true                    ,
-        p_user_error_code => p_error.ora_sqlcode     ,
-        p_user_call_stack => p_error.error_backtrace );
+        p_message         => v_message                                                            ,
+        p_call_stack      => false                                                                ,
+        p_apex_env        => true                                                                 ,
+        p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
+        p_user_error_code => p_error.ora_sqlcode                                                  ,
+        p_user_call_stack => p_error.error_backtrace                                              );
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
-      v_result.message :=
-        $if $$apex_fun $then
-        replace(replace(q'[<pre>
+      v_result.message := case when g_conf_enable_ascii_art then replace(replace(
+q'[<pre>
 
                 \|||/
                 (o o)
@@ -905,13 +915,12 @@ begin
                 || ||
                ooO Ooo
 
-</pre>]', '#APP_ID##', rpad(v_app_id, 9, ' ')),
-          '#LOG_ID##########', rpad(to_char(v_reference_id), 17, ' ')) ||
-        $end
+</pre>]', '#APP_ID##'        , rpad(v_app_id,                 9, ' ') ),
+          '#LOG_ID##########', rpad(to_char(v_reference_id), 17, ' ') )  end ||
         'An unexpected internal application error has occurred. ' ||
         'Please get in contact with your Oracle APEX support team and provide ' ||
-        '"Application ID ' || to_char(v_app_id) || '" and "Log ID ' ||
-         to_char(v_reference_id) || '" for further investigation.';
+        '"App ID ' || to_char(v_app_id) ||
+        ', Log ID ' || to_char(v_reference_id) || '" for further investigation.';
       v_result.additional_info := null;
     end if;
   else
@@ -943,11 +952,12 @@ begin
     -- If we don't find the constraint in our lookup table we fallback to
     -- the original ORA error message.
     if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
-      v_constraint_name :=  extract_constraint_name(p_error.ora_sqlerrm);
+      v_constraint_name := extract_constraint_name(p_error.ora_sqlerrm);
       v_result.message := apex_lang.message( v_constraint_name );
       if v_result.message = v_constraint_name then
         --Idea by Roel Hartman: https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html
-        create_apex_lang_message (v_constraint_name);
+        --Also see this video by Anton and Neelesh: https://www.insum.ca/episode-22-error-handling/
+        v_result.message := create_apex_lang_message (v_constraint_name);
       end if;
     end if;
 
@@ -1080,7 +1090,8 @@ procedure conf (
   p_units_level_warning varchar2 default null          ,
   p_units_level_info    varchar2 default null          ,
   p_units_level_debug   varchar2 default null          ,
-  p_units_level_trace   varchar2 default null          )
+  p_units_level_trace   varchar2 default null          ,
+  p_enable_ascii_art    boolean  default false         )
 is
   pragma autonomous_transaction;
   v_old_conf console_conf%rowtype;
@@ -1141,15 +1152,14 @@ begin
     p_check_interval between 10 and 60,
     'Check interval needs to be between 10 and 60 (seconds). ' ||
     'Values between 1 and 10 seconds can only be set per session with the procedure init.');
-  v_conf.conf_id        := c_conf_id;
-  v_conf.conf_by        := substrb(
-                            coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')),
-                            1,
-                            64);
-  v_conf.conf_sysdate   := sysdate;
-  v_conf.level_id       := p_level;
-  v_conf.level_name     := get_level_name(p_level);
-  v_conf.check_interval := p_check_interval;
+  v_conf.conf_id          := c_conf_id;
+  v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
+  v_conf.conf_sysdate     := sysdate;
+  v_conf.level_id         := p_level;
+  v_conf.level_name       := get_level_name(p_level);
+  v_conf.check_interval   := p_check_interval;
+  v_conf.enable_ascii_art := to_yn(p_enable_ascii_art);
+  --
   normalize_units_and_levels (p_units_level_warning, 2);
   normalize_units_and_levels (p_units_level_info   , 3);
   normalize_units_and_levels (p_units_level_debug  , 4);
@@ -1874,6 +1884,7 @@ begin
   append_row('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           );
   append_row('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           );
   append_row('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           );
+  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                       ) );
   append_row('g_counters.count',                to_char( g_counters.count                              ) );
   append_row('g_timers.count',                  to_char( g_timers.count                                ) );
   append_row('g_log_cache.count',               to_char( g_log_cache.count                             ) );
@@ -2130,6 +2141,7 @@ begin
   pipe row(new rec_key_value('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           ) );
   pipe row(new rec_key_value('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           ) );
   pipe row(new rec_key_value('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           ) );
+  pipe row(new rec_key_value('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
   pipe row(new rec_key_value('g_counters.count',                to_char( g_counters.count                               )) );
   pipe row(new rec_key_value('g_timers.count',                  to_char( g_timers.count                                 )) );
   pipe row(new rec_key_value('g_log_cache.count',               to_char( g_log_cache.count                              )) );
@@ -2444,6 +2456,16 @@ procedure utl_load_session_configuration is
   v_session_conf console_sessions%rowtype;
   v_global_conf  console_conf%rowtype;
   --
+  procedure load_global_conf is
+  begin
+    v_global_conf := utl_read_global_conf;
+    g_conf_unit_levels(2)   :=           v_global_conf.units_level_warning   ;
+    g_conf_unit_levels(3)   :=           v_global_conf.units_level_info      ;
+    g_conf_unit_levels(4)   :=           v_global_conf.units_level_debug     ;
+    g_conf_unit_levels(5)   :=           v_global_conf.units_level_trace     ;
+    g_conf_enable_ascii_art := to_bool ( v_global_conf.enable_ascii_art    ) ;
+  end load_global_conf;
+  --
   procedure set_default_config is
   begin
     --We have no real conf until now, so we fake 24 hours.
@@ -2484,11 +2506,8 @@ procedure utl_load_session_configuration is
   end load_config_from_table_row;
   --
 begin
-  v_global_conf := utl_read_global_conf;
-  g_conf_unit_levels(2) := v_global_conf.units_level_warning ;
-  g_conf_unit_levels(3) := v_global_conf.units_level_info    ;
-  g_conf_unit_levels(4) := v_global_conf.units_level_debug   ;
-  g_conf_unit_levels(5) := v_global_conf.units_level_trace   ;
+  load_global_conf;
+  --
   if g_conf_context_is_available then
     g_conf_exit_sysdate := to_date(sys_context(c_ctx_namespace, c_ctx_exit_sysdate), c_ctx_date_format);
     if g_conf_exit_sysdate is null then
@@ -2508,6 +2527,7 @@ begin
       load_config_from_table_row;
     end if;
   end if;
+  --
   g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
 
 end utl_load_session_configuration;
