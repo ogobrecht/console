@@ -843,7 +843,7 @@ is
   v_result          apex_error.t_error_result;
   v_reference_id    number;
   v_constraint_name t_vc256;
-  v_message         clob;
+  v_log_message     clob;
   v_app_id          pls_integer;
   v_app_page_id     pls_integer;
   --
@@ -857,18 +857,18 @@ is
   ) return varchar2
   is
     pragma autonomous_transaction;
-    v_message varchar2(4000) :=
-      'DEVELOPER TODO: Change this message in APEX > Application Builder > Shared Components > Text Messages for constraint ' ||
-      p_constraint_name;
+    v_message_text varchar2(4000) :=
+      'DEVELOPER TODO: Change the message in APEX > Application Builder > Shared Components > Text Messages for constraint ' ||
+      p_constraint_name || '.';
   begin
     apex_lang.create_message(
       p_application_id => v_app_id,
       p_name           => p_constraint_name,
-      p_language       => apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'),
-      p_message_text   => v_message);
+      p_language       => nvl(apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'), 'en'),
+      p_message_text   => v_message_text);
     commit;
-    return v_message;
-  end;
+    return v_message_text;
+  end create_apex_lang_message;
   --
 begin
   v_app_id      := v('APP_ID');
@@ -887,18 +887,23 @@ begin
     if not p_error.is_common_runtime_error then
       -- log error for example with an autonomous transaction and return
       -- v_reference_id as reference#
-      v_message :=
-        case when p_error.message is not null then p_error.message || c_lf end ||
-        case when p_error.additional_info is not null then p_error.additional_info || c_lf end ||
-        case when p_error.error_statement is not null then p_error.error_statement || c_lf end;
+      v_log_message :=
+        case when p_error.message         is not null then p_error.message         || c_lflf end ||
+        case when p_error.additional_info is not null then p_error.additional_info || c_lflf end ||
+        --case when p_error.component       is not null then p_error.component       || c_lflf end ||
+        case when p_error.error_statement is not null then
+          'ERROR STATEMENT' || c_lflf ||
+          '```sql' || c_lf ||
+          p_error.error_statement || c_lf ||
+          '```' || c_lf end;
         --FIXME what about other attributes like p_error.component?
       v_reference_id := error (
-        p_message         => v_message                                                            ,
-        p_call_stack      => false                                                                ,
-        p_apex_env        => true                                                                 ,
+        p_message         => v_log_message                                                                ,
+        p_call_stack      => false                                                                        ,
+        p_apex_env        => true                                                                         ,
         p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
-        p_user_error_code => p_error.ora_sqlcode                                                  ,
-        p_user_call_stack => p_error.error_backtrace                                              );
+        p_user_error_code => p_error.ora_sqlcode                                                          ,
+        p_user_call_stack => p_error.error_backtrace                                                      );
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
       v_result.message := case when g_conf_enable_ascii_art then replace(replace(
@@ -958,6 +963,24 @@ q'[<pre>
         --Idea by Roel Hartman: https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html
         --Also see this video by Anton and Neelesh: https://www.insum.ca/episode-22-error-handling/
         v_result.message := create_apex_lang_message (v_constraint_name);
+        --log an error, that the developers get information that they need to change the text message
+        v_log_message :=
+          case when p_error.message         is not null then p_error.message   || c_lflf end ||
+          --case when p_error.component       is not null then p_error.component || c_lflf end ||
+          case when p_error.error_statement is not null then
+            'ERROR STATEMENT' || c_lflf ||
+            '```sql' || c_lf ||
+            p_error.error_statement || c_lf ||
+            '```' || c_lf end;
+          --FIXME what about other attributes like p_error.component?
+        error (
+          p_message         => v_result.message || c_lflf || v_log_message                                  ,
+          p_permanent       => true                                                                         ,
+          p_call_stack      => false                                                                        ,
+          p_apex_env        => true                                                                         ,
+          p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
+          p_user_error_code => p_error.ora_sqlcode                                                          ,
+          p_user_call_stack => p_error.error_backtrace                                                      );
       end if;
     end if;
 
