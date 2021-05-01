@@ -74,6 +74,7 @@ comment on column console_logs.log_id            is 'Primary key based on a sequ
 comment on column console_logs.log_systime       is 'Log systimestamp.';
 comment on column console_logs.level_id          is 'Level ID. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).';
 comment on column console_logs.level_name        is 'Level name. Can be Permanent, Error, Warning, Info or Verbose.';
+comment on column console_logs.permanent         is 'If Y the log entry will not be deleted when calling CONSOLE.PURGE or CONSOLE.PURGE_ALL.';
 comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number). Couls also be an external scope provided by the user.';
 comment on column console_logs.message           is 'The log message itself.';
 comment on column console_logs.error_code        is 'The error code. Is normally the SQLCODE, but could also be a user error code when log entry was coming from external (user interface, ETL preprocessing, whatever...)';
