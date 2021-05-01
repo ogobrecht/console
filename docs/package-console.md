@@ -1234,12 +1234,13 @@ SIGNATURE
 
 ```sql
 procedure conf (
-  p_level               integer default c_level_error , -- Level 1 (error), 2 (warning) or 3 (info).
-  p_check_interval      integer default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning varchar2 default null         , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    varchar2 default null         , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   varchar2 default null         , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   varchar2 default null           -- Same as p_units_level_warning for level trace.
+  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning) or 3 (info).
+  p_check_interval      integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_units_level_warning varchar2 default null          , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    varchar2 default null          , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   varchar2 default null          , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   varchar2 default null          , -- Same as p_units_level_warning for level trace.
+  p_enable_ascii_art    boolean  default false           -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 ```
 

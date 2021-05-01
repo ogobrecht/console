@@ -3786,11 +3786,11 @@ begin
   append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                               ) );
   append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                ) );
   append_row('g_conf_console_env',                to_yn( g_conf_console_env                            ) );
+  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                       ) );
   append_row('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           );
   append_row('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           );
   append_row('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           );
   append_row('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           );
-  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                       ) );
   append_row('g_counters.count',                to_char( g_counters.count                              ) );
   append_row('g_timers.count',                  to_char( g_timers.count                                ) );
   append_row('g_log_cache.count',               to_char( g_log_cache.count                             ) );
@@ -4043,11 +4043,11 @@ begin
   pipe row(new rec_key_value('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
   pipe row(new rec_key_value('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
   pipe row(new rec_key_value('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
+  pipe row(new rec_key_value('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
   pipe row(new rec_key_value('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           ) );
   pipe row(new rec_key_value('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           ) );
   pipe row(new rec_key_value('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           ) );
   pipe row(new rec_key_value('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           ) );
-  pipe row(new rec_key_value('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
   pipe row(new rec_key_value('g_counters.count',                to_char( g_counters.count                               )) );
   pipe row(new rec_key_value('g_timers.count',                  to_char( g_timers.count                                 )) );
   pipe row(new rec_key_value('g_log_cache.count',               to_char( g_log_cache.count                              )) );

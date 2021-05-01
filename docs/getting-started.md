@@ -21,6 +21,8 @@ use it to instrument your code.
 - [Debugging During Development or Analyzing Problems](#debugging-during-development-or-analyzing-problems)
 - [Configure Default Log Level](#configure-default-log-level)
 - [Configure Different Log Levels for Specific PL/SQL Units](#configure-different-log-levels-for-specific-plsql-units)
+- [APEX Backend - Error Handling Function](#apex-backend---error-handling-function)
+- [APEX Frontend - Track User JavaScript Errors](#apex-frontend---track-user-javascript-errors)
 
 <!-- tocstop -->
 
@@ -338,3 +340,42 @@ begin
 end;
 {{/}}
 ```
+
+## APEX Backend - Error Handling Function
+
+If you have APEX installed, CONSOLE ships with an error handling function. You
+can register this function in your app under Application Builder > Edit
+Application Properties > Error Handling > Error Handling Function:
+`console.apex_error_handling`.
+
+For more info see the [official
+docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
+
+The error handling function logs the technical error to the table CONSOLE_LOGS
+and writes a friendly message to the end user. It uses the APEX text message
+feature for the user friendly messages in case of constraint violations as
+described in [this video](https://www.insum.ca/episode-22-error-handling/) by
+Anton and Neelesh of Insum, which based on an idea by Roel Hartman in [this blog
+post](https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html).
+
+The community rocks...
+
+## APEX Frontend - Track User JavaScript Errors
+
+For APEX you can use the provided plug-in to log frontend JavaScript errors in
+the end users browser.
+
+You need to make sure console is eihter installed in the app parsing schema or
+you have a synonym called `console` created in the parsing schema which points
+to the installed package console in a different schema.
+
+Then you can install the plug-in under `install/apex_plugin.sql` and create a
+Dynamic Action on page zero (for all pages):
+
+- Event: Page Load
+- Action: Oracle Instrumentation Console [Plug-In]
+- No further customization needed (it loads only one JavaScript file)
+
+If you are interested what the plug-in is doing then have a look under
+`sources/apex_plugin_console.js`. This is currently a minimal implementation and
+can be improved in the future.

@@ -12,6 +12,13 @@
 
 # Changelog
 
+## v1.0-beta5 (2021-05-xx)
+
+- Fix table CONSOLE_CONF (remove `organization index`)
+- New parameter for conf method
+- Add missing table comments
+- Improved docs
+
 ## v1.0-beta4 (2021-04-25)
 
 - Add the ability to set specific PL/SQL units (packages, functions, procedures)
