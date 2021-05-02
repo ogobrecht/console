@@ -1,12 +1,9 @@
 <!-- nav -->
 
-[Index](README.md)
-| [Installation](installation.md)
-| [Getting Started](getting-started.md)
-| [API Overview](api-overview.md)
-| [Package Console](package-console.md)
-| [Changelog](changelog.md)
-| [Uninstallation](uninstallation.md)
+[Index](README.md) | [Installation](installation.md) | [Getting
+Started](getting-started.md) | [API Overview](api-overview.md) | [Package
+Console](package-console.md) | [Changelog](changelog.md) |
+[Uninstallation](uninstallation.md)
 
 <!-- navstop -->
 
@@ -18,11 +15,15 @@ use it to instrument your code.
 <!-- toc -->
 
 - [Minimal - Log Only Errors](#minimal---log-only-errors)
-- [Debugging During Development or Analyzing Problems](#debugging-during-development-or-analyzing-problems)
+- [Debugging During Development or Analyzing
+  Problems](#debugging-during-development-or-analyzing-problems)
 - [Configure Default Log Level](#configure-default-log-level)
-- [Configure Different Log Levels for Specific PL/SQL Units](#configure-different-log-levels-for-specific-plsql-units)
-- [APEX Backend - Error Handling Function](#apex-backend---error-handling-function)
-- [APEX Frontend - Track User JavaScript Errors](#apex-frontend---track-user-javascript-errors)
+- [Configure Different Log Levels for Specific PL/SQL
+  Units](#configure-different-log-levels-for-specific-plsql-units)
+- [APEX Backend - Error Handling
+  Function](#apex-backend---error-handling-function)
+- [APEX Frontend - Track User JavaScript
+  Errors](#apex-frontend---track-user-javascript-errors)
 
 <!-- tocstop -->
 
@@ -182,12 +183,13 @@ Call Stack
 
 ### Init Log Level
 
-CONSOLE runs per default only in log level `error` (1). In this level all calls
-to log methods in levels warning, info, debug and trace are simply ignored. This
-is fine for production as you can leave your instrumentation calls unchanged but
-if you want CONSOLE to really log those levels then you have to call
-[console.init](package-console.md#procedure-init) to change the log level for
-your own or other sessions.
+CONSOLE runs per default only in log level `error` (1, you can change this - see
+[here](package-console.md#procedure-conf)). In this level all calls to log
+methods in levels warning (2), info (3), debug (4) and trace (5) are simply
+ignored. This is fine for production as you can leave your instrumentation calls
+unchanged but if you want CONSOLE to really log those levels then you have to
+call [console.init](package-console.md#procedure-init) to change the log level
+for your own or other sessions.
 
 Please note that you should not use `console.init` in your business logic. It is
 a helper method and should only used in scripts to change the log level for
@@ -323,6 +325,9 @@ EXAMPLE
 exec console.conf(p_level => console.c_level_warning);
 ```
 
+There are more parameters to the [conf
+procedure](package-console.md#procedure-conf).
+
 ## Configure Different Log Levels for Specific PL/SQL Units
 
 If you have a new package and you want only set the log level for this package
@@ -341,6 +346,46 @@ end;
 {{/}}
 ```
 
+## View Console Status
+
+Console ships with a pipelined function which shows its status in the current
+session. You can use it for your own session or place it somewhere in an
+frontend (like an APEX report) to see its status in an user session.
+
+An example:
+
+```sql
+select * from table(console.view_status);
+```
+
+| KEY                         | VALUE               |
+|-----------------------------|---------------------|
+| c_version                   | 1.0-beta4           |
+| g_conf_context_is_available | N                   |
+| c_ctx_namespace             | CONSOLE_PLAYGROUND  |
+| g_conf_check_sysdate        | 2021-05-02 13:06:55 |
+| g_conf_exit_sysdate         | 2021-05-03 13:06:45 |
+| g_conf_client_identifier    | {o,o} 1EA16A180002  |
+| g_conf_level                | 1                   |
+| get_level_name              | g_conf_level),error |
+| g_conf_cache_size           | 0                   |
+| g_conf_check_interval       | 10                  |
+| g_conf_call_stack           | N                   |
+| g_conf_user_env             | N                   |
+| g_conf_apex_env             | N                   |
+| g_conf_cgi_env              | N                   |
+| g_conf_console_env          | N                   |
+| g_conf_enable_ascii_art     | N                   |
+| g_conf_unit_levels(2)       |                     |
+| g_conf_unit_levels(3)       |                     |
+| g_conf_unit_levels(4)       |                     |
+| g_conf_unit_levels(5)       |                     |
+| g_counters.count            | 0                   |
+| g_timers.count              | 0                   |
+| g_log_cache.count           | 0                   |
+| g_saved_stack.count         | 0                   |
+| g_prev_error_msg            |                     |
+
 ## APEX Backend - Error Handling Function
 
 If you have APEX installed, CONSOLE ships with an error handling function. You
@@ -355,7 +400,8 @@ The error handling function logs the technical error to the table CONSOLE_LOGS
 and writes a friendly message to the end user. It uses the APEX text message
 feature for the user friendly messages in case of constraint violations as
 described in [this video](https://www.insum.ca/episode-22-error-handling/) by
-Anton and Neelesh of Insum, which based on an idea by Roel Hartman in [this blog
+Anton and Neelesh of Insum, which is based on an idea by Roel Hartman in [this
+blog
 post](https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html).
 
 The community rocks...
@@ -365,9 +411,9 @@ The community rocks...
 For APEX you can use the provided plug-in to log frontend JavaScript errors in
 the end users browser.
 
-You need to make sure console is eihter installed in the app parsing schema or
+You need to make sure console is either installed in the app parsing schema or
 you have a synonym called `console` created in the parsing schema which points
-to the installed package console in a different schema.
+to the package console.
 
 Then you can install the plug-in under `install/apex_plugin.sql` and create a
 Dynamic Action on page zero (for all pages):
