@@ -1354,6 +1354,17 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 
 --------------------------------------------------------------------------------
 
+function to_string ( p_bool boolean ) return varchar2;
+/**
+
+Converts a boolean value to a string.
+
+Returns `true` when the input is true and `false` if the input is false or null.
+
+**/
+
+--------------------------------------------------------------------------------
+
 function to_bool ( p_string varchar2 ) return boolean;
 /**
 
@@ -1418,6 +1429,18 @@ begin
 end;
 {{/}}
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_md_code_block (
+  p_text  varchar2 )
+return varchar2;
+/**
+
+Converts the given text to a Markdown code block by indent each line with four
+spaces.
 
 **/
 
@@ -2747,16 +2770,35 @@ function apex_error_handling (
 return apex_error.t_error_result
 is
   v_result          apex_error.t_error_result;
-  v_reference_id    number;
+  v_log_id          number;
   v_constraint_name t_vc256;
-  v_log_message     clob;
-  v_app_id          pls_integer;
-  v_app_page_id     pls_integer;
+  v_app_id          pls_integer := v('APP_ID');
+  v_app_page_id     pls_integer := v('APP_PAGE_ID');
   --
   function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
   begin
     return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
   end;
+  --
+  function get_ascii_art return varchar2 is
+  begin
+    return case when g_conf_enable_ascii_art then replace(replace(
+q'[<pre>
+
+                \|||/
+                (o o)
+    ,-------ooO--(_)------------.
+    | Ooops, there was an ERROR |
+    | Application ID: #APP_ID## |
+    | Log ID: #LOG_ID########## |
+    '----------------Ooo--------'
+               |__|__|
+                || ||
+               ooO Ooo
+
+</pre>]', '#APP_ID##'        , rpad(v_app_id,           9, ' ') ),
+          '#LOG_ID##########', rpad(to_char(v_log_id), 17, ' ') )  end;
+  end get_ascii_art;
   --
   function create_apex_lang_message (
     p_constraint_name varchar2
@@ -2776,136 +2818,152 @@ is
     return v_message_text;
   end create_apex_lang_message;
   --
+  function get_md_li_pre (p_text varchar2) return varchar2 is
+    v_fences varchar2(30) := '    ```';
+  begin
+    return
+      c_lf ||
+      v_fences || c_lf ||
+      to_md_code_block(p_text) || c_lf ||
+      v_fences;
+  end get_md_li_pre;
+  --
+  function remove_linebreaks (p_text varchar2) return varchar2 is
+  begin
+    return replace(replace(p_text, c_crlf, c_lf), c_lf, ' ');
+  end remove_linebreaks;
+  --
+  function get_log_message (
+    p_text varchar2 )
+  return clob is
+    v_clob  clob;
+    v_cache varchar2(32767);
+  begin
+    clob_append ( v_clob, v_cache, p_text                   || c_lflf                                         );
+    clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                         );
+    clob_append ( v_clob, v_cache, '1. is_internal_error: ' || to_string(p_error.is_internal_error)   || c_lf );
+    clob_append ( v_clob, v_cache, '2. apex_error_code: '   || p_error.apex_error_code                || c_lf );
+    clob_append ( v_clob, v_cache, '3. original message: '  || p_error.message                        || c_lf );
+    clob_append ( v_clob, v_cache, '4. ora_sqlcode: '       || p_error.ora_sqlcode                    || c_lf );
+    clob_append ( v_clob, v_cache, '5. ora_sqlerrm: '       || remove_linebreaks(p_error.ora_sqlerrm) || c_lf );
+    clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                 || c_lf );
+    clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                   || c_lf );
+    clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                 || c_lf );
+    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace) || c_lf );
+    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement) || c_lf );
+    clob_flush_cache ( v_clob, v_cache );
+    return v_clob;
+  end get_log_message;
+  --
 begin
-  v_app_id      := v('APP_ID');
-  v_app_page_id := v('APP_PAGE_ID');
-  v_result      := apex_error.init_error_result (p_error => p_error);
+  v_result := apex_error.init_error_result (p_error => p_error);
 
-  -- If it's an internal error raised by APEX, like an invalid statement or
-  -- code which can't be executed, the error text might contain security sensitive
-  -- information. To avoid this security problem we can rewrite the error to
-  -- a generic error message and log the original error message for further
+  -- If it's an internal error raised by APEX, like an invalid statement or code
+  -- which can't be executed, the error text might contain security sensitive
+  -- information. To avoid this security problem we can rewrite the error to a
+  -- generic error message and log the original error message for further
   -- investigation by the help desk.
   if p_error.is_internal_error then
-    -- mask all errors that are not common runtime errors (Access Denied
-    -- errors raised by application / page authorization and all errors
-    -- regarding session and session state)
+
+    -- Mask all errors that are not common runtime errors (Access Denied errors
+    -- raised by application / page authorization and all errors regarding
+    -- session and session state).
     if not p_error.is_common_runtime_error then
-      -- log error for example with an autonomous transaction and return
-      -- v_reference_id as reference#
-      v_log_message :=
-        case when p_error.message         is not null then p_error.message         || c_lflf end ||
-        case when p_error.additional_info is not null then p_error.additional_info || c_lflf end ||
-        --case when p_error.component       is not null then p_error.component       || c_lflf end ||
-        case when p_error.error_statement is not null then
-          'ERROR STATEMENT' || c_lflf ||
-          '```sql' || c_lf ||
-          p_error.error_statement || c_lf ||
-          '```' || c_lf end;
-        --FIXME what about other attributes like p_error.component?
-      v_reference_id := error (
-        p_message         => v_log_message                                                                ,
+
+      -- Log error and return log ID as reference.
+      v_log_id := error (
+        p_message         => get_log_message ('Unexpected internal application error.')                   ,
         p_call_stack      => false                                                                        ,
         p_apex_env        => true                                                                         ,
         p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
         p_user_error_code => p_error.ora_sqlcode                                                          ,
-        p_user_call_stack => p_error.error_backtrace                                                      );
+        p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                    );
+
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
-      v_result.message := case when g_conf_enable_ascii_art then replace(replace(
-q'[<pre>
-
-                \|||/
-                (o o)
-    ,-------ooO--(_)------------.
-    | Ooops, there was an ERROR |
-    | Application ID: #APP_ID## |
-    | Log ID: #LOG_ID########## |
-    '----------------Ooo--------'
-               |__|__|
-                || ||
-               ooO Ooo
-
-</pre>]', '#APP_ID##'        , rpad(v_app_id,                 9, ' ') ),
-          '#LOG_ID##########', rpad(to_char(v_reference_id), 17, ' ') )  end ||
+      v_result.message := get_ascii_art ||
         'An unexpected internal application error has occurred. ' ||
         'Please get in contact with your Oracle APEX support team and provide ' ||
-        '"App ID ' || to_char(v_app_id) ||
-        ', Log ID ' || to_char(v_reference_id) || '" for further investigation.';
+        '"App ID ' || to_char(v_app_id) || ', Log ID ' || to_char(v_log_id) ||
+        '" for further investigation.';
       v_result.additional_info := null;
+
     end if;
+
   else
-    -- Always show the error as inline error
-    -- Note: If you have created manual tabular forms (using the package
-    --       apex_item/htmldb_item in the SQL statement) you should still
-    --       use "On error page" on that pages to avoid loosing entered data
+
+    -- Always show the error as inline error.
+    --
+    -- NOTE: If you have created manual tabular forms (using the package
+    --       apex_item/htmldb_item in the SQL statement) you should still use
+    --       "On error page" on that pages to avoid loosing entered data.
     v_result.display_location :=
       case when v_result.display_location = apex_error.c_on_error_page
         then apex_error.c_inline_in_notification
         else v_result.display_location
       end;
 
-    --
-    -- Note: If you want to have friendlier ORA error messages, you can also define
-    --       a text message with the name pattern APEX.ERROR.ORA-number
+    -- NOTE: If you want to have friendlier ORA error messages, you can also
+    --       define a text message with the name pattern APEX.ERROR.ORA-number
     --       There is no need to implement custom code for that.
     --
-
     -- If it's a constraint violation like
     --
-    --   -) ORA-00001: unique constraint violated
-    --   -) ORA-02091: transaction rolled back (-> can hide a deferred constraint)
-    --   -) ORA-02290: check constraint violated
-    --   -) ORA-02291: integrity constraint violated - parent key not found
-    --   -) ORA-02292: integrity constraint violated - child record found
+    -- * ORA-00001: unique constraint violated
+    -- * ORA-02091: transaction rolled back (-> can hide a deferred constraint)
+    -- * ORA-02290: check constraint violated
+    -- * ORA-02291: integrity constraint violated - parent key not found
+    -- * ORA-02292: integrity constraint violated - child record found
     --
-    -- we try to get a friendly error message from our constraint lookup configuration.
-    -- If we don't find the constraint in our lookup table we fallback to
-    -- the original ORA error message.
+    -- We try to get a friendly error message from APEX text messages. If we
+    -- don't find the constraint name there we create a new text message, that
+    -- has to be changed by the developers.
     if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
       v_constraint_name := extract_constraint_name(p_error.ora_sqlerrm);
       v_result.message := apex_lang.message( v_constraint_name );
+
       if v_result.message = v_constraint_name then
-        --Idea by Roel Hartman: https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html
-        --Also see this video by Anton and Neelesh: https://www.insum.ca/episode-22-error-handling/
+
+        -- * Idea by Roel Hartman:
+        --   https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html
+        -- * Also see this video by Anton and Neelesh:
+        --   https://www.insum.ca/episode-22-error-handling/
         v_result.message := create_apex_lang_message (v_constraint_name);
-        --log an error, that the developers get information that they need to change the text message
-        v_log_message :=
-          case when p_error.message         is not null then p_error.message   || c_lflf end ||
-          --case when p_error.component       is not null then p_error.component || c_lflf end ||
-          case when p_error.error_statement is not null then
-            'ERROR STATEMENT' || c_lflf ||
-            '```sql' || c_lf ||
-            p_error.error_statement || c_lf ||
-            '```' || c_lf end;
-          --FIXME what about other attributes like p_error.component?
+
+        -- Log a permanent error, so developers get information that they need
+        -- to change the text message.
         error (
-          p_message         => v_result.message || c_lflf || v_log_message                                  ,
+          p_message         => get_log_message (v_result.message)                                           ,
           p_permanent       => true                                                                         ,
           p_call_stack      => false                                                                        ,
           p_apex_env        => true                                                                         ,
           p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
           p_user_error_code => p_error.ora_sqlcode                                                          ,
-          p_user_call_stack => p_error.error_backtrace                                                      );
+          p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                    );
+
       end if;
+
     end if;
 
-    -- If an ORA error has been raised, for example a raise_application_error(-20xxx, '...')
-    -- in a table trigger or in a PL/SQL package called by a process and we
-    -- haven't found the error in our lookup table, then we just want to see
-    -- the actual error text and not the full error stack with all the ORA error numbers.
+    -- If an ORA error has been raised, for example a
+    -- raise_application_error(-20xxx, '...') in a table trigger or in a PL/SQL
+    -- package called by a process and we haven't found the error in our lookup
+    -- table, then we just want to see the actual error text and not the full
+    -- error stack with all the ORA error numbers.
     if p_error.ora_sqlcode is not null and v_result.message = p_error.message then
       v_result.message := apex_error.get_first_ora_error_text (p_error => p_error);
     end if;
 
     -- If no associated page item/tabular form column has been set, we can use
     -- apex_error.auto_set_associated_item to automatically guess the affected
-    -- error field by examine the ORA error for constraint names or column names.
+    -- error field by examine the ORA error for constraint names or column
+    -- names.
     if v_result.page_item_name is null and v_result.column_alias is null then
       apex_error.auto_set_associated_item (
         p_error        => p_error,
         p_error_result => v_result );
     end if;
+
   end if;
 
   return v_result;
@@ -3288,6 +3346,15 @@ end;
 
 --------------------------------------------------------------------------------
 
+function to_string (
+  p_bool boolean )
+return varchar2 is
+begin
+  return case when p_bool then 'true' else 'false' end;
+end;
+
+--------------------------------------------------------------------------------
+
 function to_bool (
   p_string varchar2 )
 return boolean is
@@ -3439,6 +3506,20 @@ begin
   close_cursor(v_cursor_id);
   return v_clob;
 end to_html_table;
+
+--------------------------------------------------------------------------------
+
+function to_md_code_block (
+  p_text varchar2 )
+return varchar2 is
+begin
+  return
+    '    ' ||
+    rtrim(
+      trim( replace(replace(p_text, c_crlf, c_lf), c_lf, c_lf||'    ') ),
+      c_lf
+    );
+end;
 
 --------------------------------------------------------------------------------
 

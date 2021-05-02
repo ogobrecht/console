@@ -73,8 +73,10 @@ Oracle Instrumentation Console
 - [Function context_is_available_yn](#function-context_is_available_yn)
 - [Function version](#function-version)
 - [Function to_yn](#function-to_yn)
+- [Function to_string](#function-to_string)
 - [Function to_bool](#function-to_bool)
 - [Function to_html_table](#function-to_html_table)
+- [Function to_md_code_block](#function-to_md_code_block)
 - [Function to_md_tab_header](#function-to_md_tab_header)
 - [Function to_md_tab_data](#function-to_md_tab_data)
 - [Function to_unibar](#function-to_unibar)
@@ -1438,6 +1440,19 @@ function to_yn ( p_bool boolean ) return varchar2;
 ```
 
 
+## Function to_string
+
+Converts a boolean value to a string.
+
+Returns `true` when the input is true and `false` if the input is false or null.
+
+SIGNATURE
+
+```sql
+function to_string ( p_bool boolean ) return varchar2;
+```
+
+
 ## Function to_bool
 
 Converts a string to a boolean value.
@@ -1508,6 +1523,20 @@ function to_html_table (
   p_max_rows          integer  default 100  ,
   p_max_column_length integer  default 1000 )
 return clob;
+```
+
+
+## Function to_md_code_block
+
+Converts the given text to a Markdown code block by indent each line with four
+spaces.
+
+SIGNATURE
+
+```sql
+function to_md_code_block (
+  p_text  varchar2 )
+return varchar2;
 ```
 
 

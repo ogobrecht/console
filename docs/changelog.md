@@ -17,6 +17,7 @@
 - Fix table CONSOLE_CONF (remove `organization index`)
 - New parameter for conf method
 - Add missing table comments
+- Improved APEX error handler function
 - Improved docs
 
 ## v1.0-beta4 (2021-04-25)

@@ -1109,6 +1109,17 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 
 --------------------------------------------------------------------------------
 
+function to_string ( p_bool boolean ) return varchar2;
+/**
+
+Converts a boolean value to a string.
+
+Returns `true` when the input is true and `false` if the input is false or null.
+
+**/
+
+--------------------------------------------------------------------------------
+
 function to_bool ( p_string varchar2 ) return boolean;
 /**
 
@@ -1173,6 +1184,18 @@ begin
 end;
 {{/}}
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_md_code_block (
+  p_text  varchar2 )
+return varchar2;
+/**
+
+Converts the given text to a Markdown code block by indent each line with four
+spaces.
 
 **/
 
