@@ -1,9 +1,12 @@
 <!-- nav -->
 
-[Index](README.md) | [Installation](installation.md) | [Getting
-Started](getting-started.md) | [API Overview](api-overview.md) | [Package
-Console](package-console.md) | [Changelog](changelog.md) |
-[Uninstallation](uninstallation.md)
+[Index](README.md)
+| [Installation](installation.md)
+| [Getting Started](getting-started.md)
+| [API Overview](api-overview.md)
+| [Package Console](package-console.md)
+| [Changelog](changelog.md)
+| [Uninstallation](uninstallation.md)
 
 <!-- navstop -->
 
@@ -15,15 +18,12 @@ use it to instrument your code.
 <!-- toc -->
 
 - [Minimal - Log Only Errors](#minimal---log-only-errors)
-- [Debugging During Development or Analyzing
-  Problems](#debugging-during-development-or-analyzing-problems)
+- [Debugging During Development or Analyzing Problems](#debugging-during-development-or-analyzing-problems)
 - [Configure Default Log Level](#configure-default-log-level)
-- [Configure Different Log Levels for Specific PL/SQL
-  Units](#configure-different-log-levels-for-specific-plsql-units)
-- [APEX Backend - Error Handling
-  Function](#apex-backend---error-handling-function)
-- [APEX Frontend - Track User JavaScript
-  Errors](#apex-frontend---track-user-javascript-errors)
+- [Configure Different Log Levels for Specific PL/SQL Units](#configure-different-log-levels-for-specific-plsql-units)
+- [View Console Status](#view-console-status)
+- [APEX Backend - Error Handling Function](#apex-backend---error-handling-function)
+- [APEX Frontend - Track User JavaScript Errors](#apex-frontend---track-user-javascript-errors)
 
 <!-- tocstop -->
 

@@ -12,7 +12,7 @@
 
 # Changelog
 
-## v1.0-beta5 (2021-05-xx)
+## v1.0-beta5 (2021-05-02)
 
 - Fix table CONSOLE_CONF (remove `organization index`)
 - New parameter for conf method
