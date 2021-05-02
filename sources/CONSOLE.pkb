@@ -95,6 +95,7 @@ g_conf_user_env             boolean;
 g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
+g_conf_enable_ascii_art     boolean;
 g_conf_unit_levels          unit_list_tab;
 
 -------------------------------------------------------------------------------
@@ -840,60 +841,21 @@ function apex_error_handling (
 return apex_error.t_error_result
 is
   v_result          apex_error.t_error_result;
-  v_reference_id    number;
+  v_log_id          number;
   v_constraint_name t_vc256;
-  v_message         clob;
-  v_app_id          pls_integer;
+  v_app_id          pls_integer := v('APP_ID');
+  v_app_page_id     pls_integer := v('APP_PAGE_ID');
   --
   function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
   begin
     return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
   end;
   --
-  procedure create_apex_lang_message ( p_constraint_name varchar2 ) is
-    pragma autonomous_transaction;
-  begin
-    apex_lang.create_message(
-      p_application_id => v_app_id,
-      p_name           => p_constraint_name,
-      p_language       => apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'),
-      p_message_text   => 'DEVELOPER TODO: Change this message for constraint ' || p_constraint_name);
-    commit;
-  end;
-  --
-begin
-  v_app_id := v('APP_ID');
-  v_result := apex_error.init_error_result (p_error => p_error);
-
-  -- If it's an internal error raised by APEX, like an invalid statement or
-  -- code which can't be executed, the error text might contain security sensitive
-  -- information. To avoid this security problem we can rewrite the error to
-  -- a generic error message and log the original error message for further
-  -- investigation by the help desk.
-  if p_error.is_internal_error then
-    -- mask all errors that are not common runtime errors (Access Denied
-    -- errors raised by application / page authorization and all errors
-    -- regarding session and session state)
-    if not p_error.is_common_runtime_error then
-      -- log error for example with an autonomous transaction and return
-      -- v_reference_id as reference#
-      v_message :=
-        case when p_error.message is not null then p_error.message || c_lf end ||
-        case when p_error.additional_info is not null then p_error.additional_info || c_lf end ||
-        case when p_error.error_statement is not null then p_error.error_statement || c_lf end;
-        --FIXME what about other attributes like p_error.component?
-      v_reference_id := error (
-        p_message         => v_message               ,
-        p_call_stack      => false                   ,
-        p_apex_env        => true                    ,
-        p_user_error_code => p_error.ora_sqlcode     ,
-        p_user_call_stack => p_error.error_backtrace );
-      -- Change the message to the generic error message which doesn't expose
-      -- any sensitive information.
-      v_result.message :=
-        $if $$apex_fun $then
-        replace(replace(q'[<pre>
-
+  function get_ascii_art (
+    p_type varchar2 )
+  return varchar2 is
+    v_return varchar2(1000 byte);
+    v_troll  varchar2(1000 byte) := q'[
                 \|||/
                 (o o)
     ,-------ooO--(_)------------.
@@ -903,70 +865,183 @@ begin
     '----------------Ooo--------'
                |__|__|
                 || ||
-               ooO Ooo
+               ooO Ooo   ]' || c_lf;
+  begin
+    if g_conf_enable_ascii_art then
+      v_return :=
+        case p_type when 'html' then '<pre>' when 'md' then c_lflf||'```' end             ||
+        replace(replace(v_troll,
+          '#APP_ID##'        , rpad( v_app_id                             ,  9, ' ') ),
+          '#LOG_ID##########', rpad( nvl(to_char(v_log_id), 'this.log_id'), 17, ' ') )  ||
+        case p_type when 'html' then '</pre>' when 'md' then '```' end          ;
+    end if;
+    return v_return;
+  end get_ascii_art;
+  --
+  function create_apex_lang_message (
+    p_constraint_name varchar2
+  ) return varchar2
+  is
+    pragma autonomous_transaction;
+    v_message_text varchar2(4000) :=
+      'DEVELOPER TODO: Change the message in APEX > Application Builder > Shared Components > Text Messages for constraint ' ||
+      p_constraint_name || '.';
+  begin
+    apex_lang.create_message(
+      p_application_id => v_app_id,
+      p_name           => p_constraint_name,
+      p_language       => nvl(apex_util.get_preference('FSP_LANGUAGE_PREFERENCE'), 'en'),
+      p_message_text   => v_message_text);
+    commit;
+    return v_message_text;
+  end create_apex_lang_message;
+  --
+  function get_md_li_pre (p_text varchar2) return varchar2 is
+    v_fences varchar2(30) := '    ```';
+  begin
+    return
+      c_lf ||
+      v_fences || c_lf ||
+      to_md_code_block(p_text) || c_lf ||
+      v_fences;
+  end get_md_li_pre;
+  --
+  function remove_linebreaks (p_text varchar2) return varchar2 is
+  begin
+    return replace(replace(p_text, c_crlf, c_lf), c_lf, ' ');
+  end remove_linebreaks;
+  --
+  function get_log_message (
+    p_text varchar2 )
+  return clob is
+    v_clob  clob;
+    v_cache varchar2(32767);
+  begin
+    clob_append ( v_clob, v_cache, p_text                   || c_lflf                                         );
+    clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                         );
+    clob_append ( v_clob, v_cache, '1. is_internal_error: ' || to_string(p_error.is_internal_error)   || c_lf );
+    clob_append ( v_clob, v_cache, '2. apex_error_code: '   || p_error.apex_error_code                || c_lf );
+    clob_append ( v_clob, v_cache, '3. original message: '  || p_error.message                        || c_lf );
+    clob_append ( v_clob, v_cache, '4. ora_sqlcode: '       || p_error.ora_sqlcode                    || c_lf );
+    clob_append ( v_clob, v_cache, '5. ora_sqlerrm: '       || remove_linebreaks(p_error.ora_sqlerrm) || c_lf );
+    clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                 || c_lf );
+    clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                   || c_lf );
+    clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                 || c_lf );
+    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace) || c_lf );
+    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement) || c_lf );
+    clob_flush_cache ( v_clob, v_cache );
+    return v_clob;
+  end get_log_message;
+  --
+begin
+  v_result := apex_error.init_error_result (p_error => p_error);
 
-</pre>]', '#APP_ID##', rpad(v_app_id, 9, ' ')),
-          '#LOG_ID##########', rpad(to_char(v_reference_id), 17, ' ')) ||
-        $end
+  -- If it's an internal error raised by APEX, like an invalid statement or code
+  -- which can't be executed, the error text might contain security sensitive
+  -- information. To avoid this security problem we can rewrite the error to a
+  -- generic error message and log the original error message for further
+  -- investigation by the help desk.
+  if p_error.is_internal_error then
+
+    -- Mask all errors that are not common runtime errors (Access Denied errors
+    -- raised by application / page authorization and all errors regarding
+    -- session and session state).
+    if not p_error.is_common_runtime_error then
+
+      -- Log error and return log ID as reference.
+      v_log_id := error (
+        p_message         => get_log_message('Unexpected internal application error.' || get_ascii_art('md')) ,
+        p_call_stack      => false                                                                            ,
+        p_apex_env        => true                                                                             ,
+        p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id     ,
+        p_user_error_code => p_error.ora_sqlcode                                                              ,
+        p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                        );
+
+      -- Change the message to the generic error message which doesn't expose
+      -- any sensitive information.
+      v_result.message := get_ascii_art('html') ||
         'An unexpected internal application error has occurred. ' ||
         'Please get in contact with your Oracle APEX support team and provide ' ||
-        '"Application ID ' || to_char(v_app_id) || '" and "Log ID ' ||
-         to_char(v_reference_id) || '" for further investigation.';
+        '"App ID ' || to_char(v_app_id) || ', Log ID ' || to_char(v_log_id) ||
+        '" for further investigation.';
       v_result.additional_info := null;
+
     end if;
+
   else
-    -- Always show the error as inline error
-    -- Note: If you have created manual tabular forms (using the package
-    --       apex_item/htmldb_item in the SQL statement) you should still
-    --       use "On error page" on that pages to avoid loosing entered data
+
+    -- Always show the error as inline error.
+    --
+    -- NOTE: If you have created manual tabular forms (using the package
+    --       apex_item/htmldb_item in the SQL statement) you should still use
+    --       "On error page" on that pages to avoid loosing entered data.
     v_result.display_location :=
       case when v_result.display_location = apex_error.c_on_error_page
         then apex_error.c_inline_in_notification
         else v_result.display_location
       end;
 
-    --
-    -- Note: If you want to have friendlier ORA error messages, you can also define
-    --       a text message with the name pattern APEX.ERROR.ORA-number
+    -- NOTE: If you want to have friendlier ORA error messages, you can also
+    --       define a text message with the name pattern APEX.ERROR.ORA-number
     --       There is no need to implement custom code for that.
     --
-
     -- If it's a constraint violation like
     --
-    --   -) ORA-00001: unique constraint violated
-    --   -) ORA-02091: transaction rolled back (-> can hide a deferred constraint)
-    --   -) ORA-02290: check constraint violated
-    --   -) ORA-02291: integrity constraint violated - parent key not found
-    --   -) ORA-02292: integrity constraint violated - child record found
+    -- * ORA-00001: unique constraint violated
+    -- * ORA-02091: transaction rolled back (-> can hide a deferred constraint)
+    -- * ORA-02290: check constraint violated
+    -- * ORA-02291: integrity constraint violated - parent key not found
+    -- * ORA-02292: integrity constraint violated - child record found
     --
-    -- we try to get a friendly error message from our constraint lookup configuration.
-    -- If we don't find the constraint in our lookup table we fallback to
-    -- the original ORA error message.
+    -- We try to get a friendly error message from APEX text messages. If we
+    -- don't find the constraint name there we create a new text message, that
+    -- has to be changed by the developers.
     if p_error.ora_sqlcode in (-1, -2091, -2290, -2291, -2292) then
-      v_constraint_name :=  extract_constraint_name(p_error.ora_sqlerrm);
+      v_constraint_name := extract_constraint_name(p_error.ora_sqlerrm);
       v_result.message := apex_lang.message( v_constraint_name );
+
       if v_result.message = v_constraint_name then
-        --Idea by Roel Hartman: https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html
-        create_apex_lang_message (v_constraint_name);
+
+        -- * Idea by Roel Hartman:
+        --   https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html
+        -- * Also see this video by Anton and Neelesh:
+        --   https://www.insum.ca/episode-22-error-handling/
+        v_result.message := create_apex_lang_message (v_constraint_name);
+
+        -- Log a permanent error, so developers get information that they need
+        -- to change the text message.
+        error (
+          p_message         => get_log_message (v_result.message)                                           ,
+          p_permanent       => true                                                                         ,
+          p_call_stack      => false                                                                        ,
+          p_apex_env        => true                                                                         ,
+          p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
+          p_user_error_code => p_error.ora_sqlcode                                                          ,
+          p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                    );
+
       end if;
+
     end if;
 
-    -- If an ORA error has been raised, for example a raise_application_error(-20xxx, '...')
-    -- in a table trigger or in a PL/SQL package called by a process and we
-    -- haven't found the error in our lookup table, then we just want to see
-    -- the actual error text and not the full error stack with all the ORA error numbers.
+    -- If an ORA error has been raised, for example a
+    -- raise_application_error(-20xxx, '...') in a table trigger or in a PL/SQL
+    -- package called by a process and we haven't found the error in our lookup
+    -- table, then we just want to see the actual error text and not the full
+    -- error stack with all the ORA error numbers.
     if p_error.ora_sqlcode is not null and v_result.message = p_error.message then
       v_result.message := apex_error.get_first_ora_error_text (p_error => p_error);
     end if;
 
     -- If no associated page item/tabular form column has been set, we can use
     -- apex_error.auto_set_associated_item to automatically guess the affected
-    -- error field by examine the ORA error for constraint names or column names.
+    -- error field by examine the ORA error for constraint names or column
+    -- names.
     if v_result.page_item_name is null and v_result.column_alias is null then
       apex_error.auto_set_associated_item (
         p_error        => p_error,
         p_error_result => v_result );
     end if;
+
   end if;
 
   return v_result;
@@ -1080,7 +1155,8 @@ procedure conf (
   p_units_level_warning varchar2 default null          ,
   p_units_level_info    varchar2 default null          ,
   p_units_level_debug   varchar2 default null          ,
-  p_units_level_trace   varchar2 default null          )
+  p_units_level_trace   varchar2 default null          ,
+  p_enable_ascii_art    boolean  default false         )
 is
   pragma autonomous_transaction;
   v_old_conf console_conf%rowtype;
@@ -1141,15 +1217,14 @@ begin
     p_check_interval between 10 and 60,
     'Check interval needs to be between 10 and 60 (seconds). ' ||
     'Values between 1 and 10 seconds can only be set per session with the procedure init.');
-  v_conf.conf_id        := c_conf_id;
-  v_conf.conf_by        := substrb(
-                            coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')),
-                            1,
-                            64);
-  v_conf.conf_sysdate   := sysdate;
-  v_conf.level_id       := p_level;
-  v_conf.level_name     := get_level_name(p_level);
-  v_conf.check_interval := p_check_interval;
+  v_conf.conf_id          := c_conf_id;
+  v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
+  v_conf.conf_sysdate     := sysdate;
+  v_conf.level_id         := p_level;
+  v_conf.level_name       := get_level_name(p_level);
+  v_conf.check_interval   := p_check_interval;
+  v_conf.enable_ascii_art := to_yn(p_enable_ascii_art);
+  --
   normalize_units_and_levels (p_units_level_warning, 2);
   normalize_units_and_levels (p_units_level_info   , 3);
   normalize_units_and_levels (p_units_level_debug  , 4);
@@ -1167,6 +1242,7 @@ begin
   if nvl(v_old_conf.level_id, 1) != v_conf.level_id then
     utl_ctx_clear_all;
   end if;
+  utl_load_session_configuration;
 end conf;
 
 --------------------------------------------------------------------------------
@@ -1348,6 +1424,15 @@ end;
 
 --------------------------------------------------------------------------------
 
+function to_string (
+  p_bool boolean )
+return varchar2 is
+begin
+  return case when p_bool then 'true' else 'false' end;
+end;
+
+--------------------------------------------------------------------------------
+
 function to_bool (
   p_string varchar2 )
 return boolean is
@@ -1499,6 +1584,20 @@ begin
   close_cursor(v_cursor_id);
   return v_clob;
 end to_html_table;
+
+--------------------------------------------------------------------------------
+
+function to_md_code_block (
+  p_text varchar2 )
+return varchar2 is
+begin
+  return
+    '    ' ||
+    rtrim(
+      trim( replace(replace(p_text, c_crlf, c_lf), c_lf, c_lf||'    ') ),
+      c_lf
+    );
+end;
 
 --------------------------------------------------------------------------------
 
@@ -1869,6 +1968,7 @@ begin
   append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                               ) );
   append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                ) );
   append_row('g_conf_console_env',                to_yn( g_conf_console_env                            ) );
+  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                       ) );
   append_row('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           );
   append_row('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           );
   append_row('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           );
@@ -2107,8 +2207,12 @@ end;
 function view_status return tab_key_value pipelined is
   v_row rec_key_value;
 begin
+  if g_conf_check_sysdate < sysdate then
+    utl_load_session_configuration;
+  end if;
   pipe row(new rec_key_value('c_version',                       to_char( c_version                                      )) );
   pipe row(new rec_key_value('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
+  pipe row(new rec_key_value('c_ctx_namespace',                          c_ctx_namespace                                 ) );
   pipe row(new rec_key_value('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
   pipe row(new rec_key_value('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
   pipe row(new rec_key_value('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
@@ -2121,6 +2225,11 @@ begin
   pipe row(new rec_key_value('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
   pipe row(new rec_key_value('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
   pipe row(new rec_key_value('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
+  pipe row(new rec_key_value('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
+  pipe row(new rec_key_value('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           ) );
+  pipe row(new rec_key_value('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           ) );
+  pipe row(new rec_key_value('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           ) );
+  pipe row(new rec_key_value('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           ) );
   pipe row(new rec_key_value('g_counters.count',                to_char( g_counters.count                               )) );
   pipe row(new rec_key_value('g_timers.count',                  to_char( g_timers.count                                 )) );
   pipe row(new rec_key_value('g_log_cache.count',               to_char( g_log_cache.count                              )) );
@@ -2435,6 +2544,16 @@ procedure utl_load_session_configuration is
   v_session_conf console_sessions%rowtype;
   v_global_conf  console_conf%rowtype;
   --
+  procedure load_global_conf is
+  begin
+    v_global_conf := utl_read_global_conf;
+    g_conf_unit_levels(2)   :=           v_global_conf.units_level_warning   ;
+    g_conf_unit_levels(3)   :=           v_global_conf.units_level_info      ;
+    g_conf_unit_levels(4)   :=           v_global_conf.units_level_debug     ;
+    g_conf_unit_levels(5)   :=           v_global_conf.units_level_trace     ;
+    g_conf_enable_ascii_art := to_bool ( v_global_conf.enable_ascii_art    ) ;
+  end load_global_conf;
+  --
   procedure set_default_config is
   begin
     --We have no real conf until now, so we fake 24 hours.
@@ -2475,11 +2594,8 @@ procedure utl_load_session_configuration is
   end load_config_from_table_row;
   --
 begin
-  v_global_conf := utl_read_global_conf;
-  g_conf_unit_levels(2) := v_global_conf.units_level_warning ;
-  g_conf_unit_levels(3) := v_global_conf.units_level_info    ;
-  g_conf_unit_levels(4) := v_global_conf.units_level_debug   ;
-  g_conf_unit_levels(5) := v_global_conf.units_level_trace   ;
+  load_global_conf;
+  --
   if g_conf_context_is_available then
     g_conf_exit_sysdate := to_date(sys_context(c_ctx_namespace, c_ctx_exit_sysdate), c_ctx_date_format);
     if g_conf_exit_sysdate is null then
@@ -2499,6 +2615,7 @@ begin
       load_config_from_table_row;
     end if;
   end if;
+  --
   g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
 
 end utl_load_session_configuration;

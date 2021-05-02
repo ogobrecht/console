@@ -37,16 +37,16 @@ begin
     p_plugin_type               => 'DYNAMIC ACTION'                       ,
     p_name                      => 'COM.OGOBRECHT.CONSOLE'                ,
     p_display_name              => 'Oracle Instrumentation Console'       ,
-    p_category                  => 'NOTIFICATION'                         , --FIXME: was this available in APEX 5.1.4?
+    p_category                  => 'COMPONENT'                            , --FIXME: was this available in APEX 5.1.4?
     p_supported_ui_types        => 'DESKTOP:JQM_SMARTPHONE'               ,
     p_api_version               => 2                                      ,
     p_render_function           => 'console.apex_plugin_render'           ,
     p_ajax_function             => 'console.apex_plugin_ajax'             ,
     p_substitute_attributes     => true                                   ,
     p_subscribe_plugin_settings => true                                   ,
-    p_version_identifier        => '#CONSOLE_VERSION#'                               ,
+    p_version_identifier        => '#CONSOLE_VERSION#'                    ,
     p_about_url                 => 'https://github.com/ogobrecht/console' ,
-    p_files_version             => #FILE_VERSION#                                     );
+    p_files_version             => #FILE_VERSION#                         );
 end;
 /
 

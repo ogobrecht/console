@@ -16,15 +16,15 @@ begin
         units_level_info     varchar2 (4000 byte)            ,
         units_level_debug    varchar2 (4000 byte)            ,
         units_level_trace    varchar2 (4000 byte)            ,
+        enable_ascii_art     varchar2 (   1 byte)  not null  ,
         --
-        constraint  console_conf_pk   primary key ( conf_id                 )  ,
-        constraint  console_conf_ck1  check       ( conf_id = 'GLOBAL_CONF' )  ,
-        --
-        constraint  console_conf_ck2  check ( level_id   in (1, 2, 3)                                          )  ,
-        constraint  console_conf_ck3  check ( level_name =  decode(level_id, 1,'error', 2,'warning', 3,'info') )  ,
-        --
-        constraint  console_conf_ck4  check ( check_interval between 10 and 60 )
-      ) organization index
+        constraint  console_conf_pk   primary key ( conf_id )                                                    ,
+        constraint  console_conf_ck1  check ( conf_id = 'GLOBAL_CONF' )                                          ,
+        constraint  console_conf_ck2  check ( level_id in (1, 2, 3) )                                            ,
+        constraint  console_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info') )  ,
+        constraint  console_conf_ck4  check ( check_interval between 10 and 60 )                                 ,
+        constraint  console_conf_ck5  check ( enable_ascii_art in ('Y','N') )
+      )
     }';
   else
     dbms_output.put_line('- Table CONSOLE_CONF found, no action required');
@@ -44,5 +44,6 @@ comment on column console_conf.units_level_warning is 'A comma separated list of
 comment on column console_conf.units_level_info    is 'A comma separated list of units configured for level info.';
 comment on column console_conf.units_level_debug   is 'A comma separated list of units configured for level debug.';
 comment on column console_conf.units_level_trace   is 'A comma separated list of units configured for level trace.';
+comment on column console_conf.enable_ascii_art    is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
 
 

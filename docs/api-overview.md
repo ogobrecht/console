@@ -1,7 +1,19 @@
+<!-- nav -->
+
+[Index](README.md)
+| [Installation](installation.md)
+| [Getting Started](getting-started.md)
+| [API Overview](api-overview.md)
+| [Package Console](package-console.md)
+| [Changelog](changelog.md)
+| [Uninstallation](uninstallation.md)
+
+<!-- navstop -->
+
 # API Overview - Package CONSOLE
 
 For a more detailed overview of the public API methods including examples please
-see the [docs for the package console](package-console.md). You can also use the
+see the [package console methods](package-console.md). You can also use the
 links on the method names below.
 
 The console API is inspired by the [JavaScript Console
@@ -112,6 +124,7 @@ Additional helper methods (mostly used by console internally) which might also
 helpful for you:
 
 - [console.to_yn](package-console.md#function-to_yn) &
+  [to_string](package-console.md#function-to_bool) &
   [to_bool](package-console.md#function-to_bool)
 - [console.to_html_table](package-console.md#function-to_html_table)
 - [console.to_md_tab_header](package-console.md#function-to_md_tab_header) &

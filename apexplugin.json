@@ -1,6 +1,6 @@
 {
   "name": "console",
-  "version": "1.0-beta4",
+  "version": "1.0-beta5",
   "description": "Oracle Instrumentation Console",
   "keywords": [
     "oracle",
@@ -41,7 +41,7 @@
     }
   },
   "jsFile": {
-    "md5Hash": "b0113aafb87be2044b7d28b0848bcfd0",
-    "version": 105
+    "md5Hash": "0253fa2a20bbaaab96defa6d526786cc",
+    "version": 112
   }
 }

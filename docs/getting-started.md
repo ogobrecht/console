@@ -1,7 +1,31 @@
+<!-- nav -->
+
+[Index](README.md)
+| [Installation](installation.md)
+| [Getting Started](getting-started.md)
+| [API Overview](api-overview.md)
+| [Package Console](package-console.md)
+| [Changelog](changelog.md)
+| [Uninstallation](uninstallation.md)
+
+<!-- navstop -->
+
 # Getting Started
 
 After you have [installed the console objects](installation.md) you can start to
 use it to instrument your code.
+
+<!-- toc -->
+
+- [Minimal - Log Only Errors](#minimal---log-only-errors)
+- [Debugging During Development or Analyzing Problems](#debugging-during-development-or-analyzing-problems)
+- [Configure Default Log Level](#configure-default-log-level)
+- [Configure Different Log Levels for Specific PL/SQL Units](#configure-different-log-levels-for-specific-plsql-units)
+- [View Console Status](#view-console-status)
+- [APEX Backend - Error Handling Function](#apex-backend---error-handling-function)
+- [APEX Frontend - Track User JavaScript Errors](#apex-frontend---track-user-javascript-errors)
+
+<!-- tocstop -->
 
 ## Minimal - Log Only Errors
 
@@ -159,12 +183,13 @@ Call Stack
 
 ### Init Log Level
 
-CONSOLE runs per default only in log level `error` (1). In this level all calls
-to log methods in levels warning, info, debug and trace are simply ignored. This
-is fine for production as you can leave your instrumentation calls unchanged but
-if you want CONSOLE to really log those levels then you have to call
-[console.init](package-console.md#procedure-init) to change the log level for
-your own or other sessions.
+CONSOLE runs per default only in log level `error` (1, you can change this - see
+[here](package-console.md#procedure-conf)). In this level all calls to log
+methods in levels warning (2), info (3), debug (4) and trace (5) are simply
+ignored. This is fine for production as you can leave your instrumentation calls
+unchanged but if you want CONSOLE to really log those levels then you have to
+call [console.init](package-console.md#procedure-init) to change the log level
+for your own or other sessions.
 
 Please note that you should not use `console.init` in your business logic. It is
 a helper method and should only used in scripts to change the log level for
@@ -222,12 +247,6 @@ example write this in the footer of every page by calling
 If you use the APEX plug-in to log frontend errors then you could do this in
 pure JavaScript in the frontend, as the plug-in provides the information under
 `window.oic.clientIdentifier`.
-
-A last word about log levels. Some people use the levels `error`, `warning` and
-`info` in production for the operations team and levels `debug` and `trace` for
-debugging purposes. To support such use cases you can configure the default log
-level of CONSOLE from `error` to `warning` or `info` by using the
-[console.conf](package-console.md#procedure-conf) procedure.
 
 ### Log Methods
 
@@ -290,3 +309,119 @@ identifier, then CONSOLE tries to exit your own session.
 
 If you don't do it by yourself the daily cleanup job from CONSOLE will exit
 stale sessions from the table `CONSOLE_SESSIONS`.
+
+## Configure Default Log Level
+
+Some people use the levels `error`, `warning` and `info` in production for the
+operations team and levels `debug` and `trace` for debugging purposes. To
+support such use cases you can configure the default log level of CONSOLE for
+all sessions from `error` to `warning` or `info` by using the
+[console.conf](package-console.md#procedure-conf) procedure.
+
+EXAMPLE
+
+```sql
+--set global log level to warning
+exec console.conf(p_level => console.c_level_warning);
+```
+
+There are more parameters to the [conf
+procedure](package-console.md#procedure-conf).
+
+## Configure Different Log Levels for Specific PL/SQL Units
+
+If you have a new package and you want only set the log level for this package
+to another level then the global one, you can do this by using the
+[console.conf](package-console.md#procedure-conf) procedure.
+
+EXAMPLE
+
+```sql
+--set global log level to info and for two new packages to debug
+begin
+  console.conf(
+    p_level             => console.c_level_info                       ,
+    p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API' );
+end;
+{{/}}
+```
+
+## View Console Status
+
+Console ships with a pipelined function which shows its status in the current
+session. You can use it for your own session or place it somewhere in an
+frontend (like an APEX report) to see its status in an user session.
+
+An example:
+
+```sql
+select * from table(console.view_status);
+```
+
+| KEY                         | VALUE               |
+|-----------------------------|---------------------|
+| c_version                   | 1.0-beta4           |
+| g_conf_context_is_available | N                   |
+| c_ctx_namespace             | CONSOLE_PLAYGROUND  |
+| g_conf_check_sysdate        | 2021-05-02 13:06:55 |
+| g_conf_exit_sysdate         | 2021-05-03 13:06:45 |
+| g_conf_client_identifier    | {o,o} 1EA16A180002  |
+| g_conf_level                | 1                   |
+| get_level_name              | g_conf_level),error |
+| g_conf_cache_size           | 0                   |
+| g_conf_check_interval       | 10                  |
+| g_conf_call_stack           | N                   |
+| g_conf_user_env             | N                   |
+| g_conf_apex_env             | N                   |
+| g_conf_cgi_env              | N                   |
+| g_conf_console_env          | N                   |
+| g_conf_enable_ascii_art     | N                   |
+| g_conf_unit_levels(2)       |                     |
+| g_conf_unit_levels(3)       |                     |
+| g_conf_unit_levels(4)       |                     |
+| g_conf_unit_levels(5)       |                     |
+| g_counters.count            | 0                   |
+| g_timers.count              | 0                   |
+| g_log_cache.count           | 0                   |
+| g_saved_stack.count         | 0                   |
+| g_prev_error_msg            |                     |
+
+## APEX Backend - Error Handling Function
+
+If you have APEX installed, CONSOLE ships with an error handling function. You
+can register this function in your app under Application Builder > Edit
+Application Properties > Error Handling > Error Handling Function:
+`console.apex_error_handling`.
+
+For more info see the [official
+docs](https://docs.oracle.com/en/database/oracle/application-express/20.2/aeapi/Example-of-an-Error-Handling-Function.html#GUID-2CD75881-1A59-4787-B04B-9AAEC14E1A82).
+
+The error handling function logs the technical error to the table CONSOLE_LOGS
+and writes a friendly message to the end user. It uses the APEX text message
+feature for the user friendly messages in case of constraint violations as
+described in [this video](https://www.insum.ca/episode-22-error-handling/) by
+Anton and Neelesh of Insum, which is based on an idea by Roel Hartman in [this
+blog
+post](https://roelhartman.blogspot.com/2021/02/stop-using-validations-for-checking.html).
+
+The community rocks...
+
+## APEX Frontend - Track User JavaScript Errors
+
+For APEX you can use the provided plug-in to log frontend JavaScript errors in
+the end users browser.
+
+You need to make sure console is either installed in the app parsing schema or
+you have a synonym called `console` created in the parsing schema which points
+to the package console.
+
+Then you can install the plug-in under `install/apex_plugin.sql` and create a
+Dynamic Action on page zero (for all pages):
+
+- Event: Page Load
+- Action: Oracle Instrumentation Console [Plug-In]
+- No further customization needed (it loads only one JavaScript file)
+
+If you are interested what the plug-in is doing then have a look under
+`sources/apex_plugin_console.js`. This is currently a minimal implementation and
+can be improved in the future.

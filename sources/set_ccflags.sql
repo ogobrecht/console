@@ -3,7 +3,6 @@
 prompt - Set compiler flags
 declare
   v_apex_installed varchar2(5) := 'FALSE'; -- Do not change (is set dynamically).
-  v_apex_fun       varchar2(5) := 'FALSE'; -- Bring some fun into the APEX error handling ;-)
   v_utils_public   varchar2(5) := 'FALSE'; -- Make utilities public available (for testing or other usages).
 begin
 
@@ -22,7 +21,6 @@ begin
 
   execute immediate 'alter session set plsql_ccflags = '''
     || 'APEX_INSTALLED:' || v_apex_installed || ','
-    || 'APEX_FUN:      ' || v_apex_fun       || ','
     || 'UTILS_PUBLIC:'   || v_utils_public   || '''';
 
 end;

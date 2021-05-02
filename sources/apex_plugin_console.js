@@ -29,7 +29,7 @@ oic.init = function () {
             {
                 x01: level,
                 x02: message,
-                x03: 'APEX JS: ' + scope,
+                x03: 'APEX FRONTEND JAVASCRIPT: ' + scope,
                 x04: stack,
                 x05: navigator.userAgent,
                 p_debug: false

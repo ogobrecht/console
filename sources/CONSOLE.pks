@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta4'                            ;
+c_version constant varchar2 ( 20 byte ) := '1.0-beta5'                            ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -906,16 +906,34 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               integer default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval      integer default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning varchar2 default null         , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    varchar2 default null         , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   varchar2 default null         , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   varchar2 default null           -- Same as p_units_level_warning for level trace.
+  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning) or 3 (info).
+  p_check_interval      integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_units_level_warning varchar2 default null          , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    varchar2 default null          , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   varchar2 default null          , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   varchar2 default null          , -- Same as p_units_level_warning for level trace.
+  p_enable_ascii_art    boolean  default false           -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 /**
 
 Set the global console configuration.
+
+EXAMPLE
+
+```sql
+--set all sessions to level warning
+exec console.conf(p_level => console.c_level_warning);
+
+--set all session to level info and two new packages to debug
+begin
+  console.conf(
+    p_level             => console.c_level_info,
+    p_check_interval    => 10,
+    p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API'
+  );
+end;
+{{/}}
+```
 
 **/
 
@@ -1091,6 +1109,17 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 
 --------------------------------------------------------------------------------
 
+function to_string ( p_bool boolean ) return varchar2;
+/**
+
+Converts a boolean value to a string.
+
+Returns `true` when the input is true and `false` if the input is false or null.
+
+**/
+
+--------------------------------------------------------------------------------
+
 function to_bool ( p_string varchar2 ) return boolean;
 /**
 
@@ -1155,6 +1184,18 @@ begin
 end;
 {{/}}
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function to_md_code_block (
+  p_text  varchar2 )
+return varchar2;
+/**
+
+Converts the given text to a Markdown code block by indent each line with four
+spaces.
 
 **/
 
@@ -1514,8 +1555,6 @@ procedure flush_cache;
 
 Flushes the log cache and writes down the entries to the log table.
 
-Also see clob_append above.
-
 **/
 
 --------------------------------------------------------------------------------
@@ -1530,9 +1569,6 @@ size greater then zero (for example 1000) and you take a look at the log entries
 with the pipelined function `console.view_cache` or
 `console.view_last([numRows])` during development. By clearing the cache you can
 avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
 
 **/
 
