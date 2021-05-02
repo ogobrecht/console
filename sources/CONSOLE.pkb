@@ -851,11 +851,11 @@ is
     return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
   end;
   --
-  function get_ascii_art return varchar2 is
-  begin
-    return case when g_conf_enable_ascii_art then replace(replace(
-q'[<pre>
-
+  function get_ascii_art (
+    p_type varchar2 )
+  return varchar2 is
+    v_return varchar2(1000 byte);
+    v_troll  varchar2(1000 byte) := q'[
                 \|||/
                 (o o)
     ,-------ooO--(_)------------.
@@ -865,10 +865,17 @@ q'[<pre>
     '----------------Ooo--------'
                |__|__|
                 || ||
-               ooO Ooo
-
-</pre>]', '#APP_ID##'        , rpad(v_app_id,           9, ' ') ),
-          '#LOG_ID##########', rpad(to_char(v_log_id), 17, ' ') )  end;
+               ooO Ooo   ]' || c_lf;
+  begin
+    if g_conf_enable_ascii_art then
+      v_return :=
+        case p_type when 'html' then '<pre>' when 'md' then c_lflf||'```' end             ||
+        replace(replace(v_troll,
+          '#APP_ID##'        , rpad( v_app_id                             ,  9, ' ') ),
+          '#LOG_ID##########', rpad( nvl(to_char(v_log_id), 'this.log_id'), 17, ' ') )  ||
+        case p_type when 'html' then '</pre>' when 'md' then '```' end          ;
+    end if;
+    return v_return;
   end get_ascii_art;
   --
   function create_apex_lang_message (
@@ -943,16 +950,16 @@ begin
 
       -- Log error and return log ID as reference.
       v_log_id := error (
-        p_message         => get_log_message ('Unexpected internal application error.')                   ,
-        p_call_stack      => false                                                                        ,
-        p_apex_env        => true                                                                         ,
-        p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
-        p_user_error_code => p_error.ora_sqlcode                                                          ,
-        p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                    );
+        p_message         => get_log_message('Unexpected internal application error.' || get_ascii_art('md')) ,
+        p_call_stack      => false                                                                            ,
+        p_apex_env        => true                                                                             ,
+        p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id     ,
+        p_user_error_code => p_error.ora_sqlcode                                                              ,
+        p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                        );
 
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
-      v_result.message := get_ascii_art ||
+      v_result.message := get_ascii_art('html') ||
         'An unexpected internal application error has occurred. ' ||
         'Please get in contact with your Oracle APEX support team and provide ' ||
         '"App ID ' || to_char(v_app_id) || ', Log ID ' || to_char(v_log_id) ||
