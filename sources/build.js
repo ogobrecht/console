@@ -28,7 +28,7 @@ fs.writeFileSync('install/create_console_objects.sql',
     '--DO NOT CHANGE THIS FILE - IT IS GENERATED WITH THE BUILD SCRIPT sources/build.js\n' +
     fs.readFileSync('sources/install_template.sql', 'utf8')
         .replace('@set_ccflags.sql', function () { return fs.readFileSync('sources/set_ccflags.sql', 'utf8') })
-        .replace('@CONSOLE_CONF.sql', function () { return fs.readFileSync('sources/CONSOLE_CONF.sql', 'utf8') })
+        .replace('@CONSOLE_GLOBAL_CONF.sql', function () { return fs.readFileSync('sources/CONSOLE_GLOBAL_CONF.sql', 'utf8') })
         .replace('@CONSOLE_LOGS.sql', function () { return fs.readFileSync('sources/CONSOLE_LOGS.sql', 'utf8') })
         .replace('@CONSOLE_SESSIONS.sql', function () { return fs.readFileSync('sources/CONSOLE_SESSIONS.sql', 'utf8') })
         .replace('@CONSOLE.pks', function () { return fs.readFileSync('sources/CONSOLE.pks', 'utf8') })

@@ -45,7 +45,7 @@ comment on column console_sessions.init_by             is 'The user who initiate
 comment on column console_sessions.init_sysdate        is 'The logging start date for the nominated client identifier.';
 comment on column console_sessions.exit_sysdate        is 'The planned logging end date for the nominated client identifier.';
 comment on column console_sessions.client_identifier   is 'The client identifier provided by the application or console itself (this is the primary key).';
-comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_CONF.';
+comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_GLOBAL_CONF.';
 comment on column console_sessions.level_name          is 'The defined log level name.';
 comment on column console_sessions.check_interval      is 'The number of seconds a session looks for a changed configuration. Defaults to 10.';
 comment on column console_sessions.cache_size          is 'The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX.';

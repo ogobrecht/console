@@ -1651,7 +1651,7 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_global_conf return console_conf%rowtype result_cache;
+function utl_read_global_conf return console_global_conf%rowtype result_cache;
 function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;

@@ -41,11 +41,11 @@ end;
 declare
   v_count pls_integer;
 begin
-  select count(*) into v_count from user_tables where table_name = 'CONSOLE_CONF';
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_GLOBAL_CONF';
   if v_count = 0 then
-    dbms_output.put_line('- Table CONSOLE_CONF not found, run creation command');
+    dbms_output.put_line('- Table CONSOLE_GLOBAL_CONF not found, run creation command');
     execute immediate q'{
-      create table console_conf (
+      create table console_global_conf (
         conf_id              varchar2 (  16 byte)  not null  ,
         conf_by              varchar2 (  64 byte)            ,
         conf_sysdate         date                  not null  ,
@@ -58,33 +58,33 @@ begin
         units_level_trace    varchar2 (4000 byte)            ,
         enable_ascii_art     varchar2 (   1 byte)  not null  ,
         --
-        constraint  console_conf_pk   primary key ( conf_id )                                                    ,
-        constraint  console_conf_ck1  check ( conf_id = 'GLOBAL_CONF' )                                          ,
-        constraint  console_conf_ck2  check ( level_id in (1, 2, 3) )                                            ,
-        constraint  console_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info') )  ,
-        constraint  console_conf_ck4  check ( check_interval between 10 and 60 )                                 ,
-        constraint  console_conf_ck5  check ( enable_ascii_art in ('Y','N') )
+        constraint  console_global_conf_pk   primary key ( conf_id )                                                    ,
+        constraint  console_global_conf_ck1  check ( conf_id = 'GLOBAL_CONF' )                                          ,
+        constraint  console_global_conf_ck2  check ( level_id in (1, 2, 3) )                                            ,
+        constraint  console_global_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info') )  ,
+        constraint  console_global_conf_ck4  check ( check_interval between 10 and 60 )                                 ,
+        constraint  console_global_conf_ck5  check ( enable_ascii_art in ('Y','N') )
       )
     }';
   else
-    dbms_output.put_line('- Table CONSOLE_CONF found, no action required');
+    dbms_output.put_line('- Table CONSOLE_GLOBAL_CONF found, no action required');
   end if;
 
 end;
 /
 
-comment on table  console_conf                     is 'Holds the global console configuration in a single record.';
-comment on column console_conf.conf_id             is 'The primary key - is secured by a check constraint which allows only one record in the table.';
-comment on column console_conf.conf_by             is 'The user who configured the console the last time.';
-comment on column console_conf.conf_sysdate        is 'The date when the console was configured the last time.';
-comment on column console_conf.level_id            is 'The defined global log level ID.';
-comment on column console_conf.level_name          is 'The defined log level name.';
-comment on column console_conf.check_interval      is 'The number of seconds a session looks for a changed configuration.';
-comment on column console_conf.units_level_warning is 'A comma separated list of units configured for level warning.';
-comment on column console_conf.units_level_info    is 'A comma separated list of units configured for level info.';
-comment on column console_conf.units_level_debug   is 'A comma separated list of units configured for level debug.';
-comment on column console_conf.units_level_trace   is 'A comma separated list of units configured for level trace.';
-comment on column console_conf.enable_ascii_art    is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
+comment on table  console_global_conf                     is 'Holds the global console configuration in a single record.';
+comment on column console_global_conf.conf_id             is 'The primary key - is secured by a check constraint which allows only one record in the table.';
+comment on column console_global_conf.conf_by             is 'The user who configured the console the last time.';
+comment on column console_global_conf.conf_sysdate        is 'The date when the console was configured the last time.';
+comment on column console_global_conf.level_id            is 'The defined global log level ID.';
+comment on column console_global_conf.level_name          is 'The defined log level name.';
+comment on column console_global_conf.check_interval      is 'The number of seconds a session looks for a changed configuration.';
+comment on column console_global_conf.units_level_warning is 'A comma separated list of units configured for level warning.';
+comment on column console_global_conf.units_level_info    is 'A comma separated list of units configured for level info.';
+comment on column console_global_conf.units_level_debug   is 'A comma separated list of units configured for level debug.';
+comment on column console_global_conf.units_level_trace   is 'A comma separated list of units configured for level trace.';
+comment on column console_global_conf.enable_ascii_art    is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
 
 
 
@@ -229,7 +229,7 @@ comment on column console_sessions.init_by             is 'The user who initiate
 comment on column console_sessions.init_sysdate        is 'The logging start date for the nominated client identifier.';
 comment on column console_sessions.exit_sysdate        is 'The planned logging end date for the nominated client identifier.';
 comment on column console_sessions.client_identifier   is 'The client identifier provided by the application or console itself (this is the primary key).';
-comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_CONF.';
+comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_GLOBAL_CONF.';
 comment on column console_sessions.level_name          is 'The defined log level name.';
 comment on column console_sessions.check_interval      is 'The number of seconds a session looks for a changed configuration. Defaults to 10.';
 comment on column console_sessions.cache_size          is 'The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX.';
@@ -1896,7 +1896,7 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_global_conf return console_conf%rowtype result_cache;
+function utl_read_global_conf return console_global_conf%rowtype result_cache;
 function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
@@ -2037,7 +2037,7 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_global_conf return console_conf%rowtype result_cache;
+function utl_read_global_conf return console_global_conf%rowtype result_cache;
 function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
@@ -3088,8 +3088,8 @@ procedure conf (
   p_enable_ascii_art    boolean  default false         )
 is
   pragma autonomous_transaction;
-  v_old_conf console_conf%rowtype;
-  v_conf     console_conf%rowtype;
+  v_old_conf console_global_conf%rowtype;
+  v_conf     console_global_conf%rowtype;
   v_sep      varchar2(1 byte) := ',';
   --
   procedure add_unit_to_level (
@@ -3162,9 +3162,9 @@ begin
   --
   v_old_conf := utl_read_global_conf;
   --
-  update console_conf set row = v_conf where conf_id = c_conf_id;
+  update console_global_conf set row = v_conf where conf_id = c_conf_id;
   if sql%rowcount = 0 then
-    insert into console_conf values v_conf;
+    insert into console_global_conf values v_conf;
   end if;
   commit;
   --
@@ -4376,12 +4376,12 @@ select id, name, cache_id, type, status, invalidations, scan_count
    and status != 'Invalid';
 */
 function utl_read_global_conf
-return console_conf%rowtype result_cache is
-  v_row console_conf%rowtype;
+return console_global_conf%rowtype result_cache is
+  v_row console_global_conf%rowtype;
 begin
   select *
     into v_row
-    from console_conf
+    from console_global_conf
    where conf_id = c_conf_id;
   return v_row;
 exception
@@ -4471,7 +4471,7 @@ end utl_ctx_clear;
 
 procedure utl_load_session_configuration is
   v_session_conf console_sessions%rowtype;
-  v_global_conf  console_conf%rowtype;
+  v_global_conf  console_global_conf%rowtype;
   --
   procedure load_global_conf is
   begin

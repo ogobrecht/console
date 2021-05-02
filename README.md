@@ -50,23 +50,23 @@ a new version. An existing context does not need to be dropped.**
   the help of
   [console.error_save_stack](docs/package-console.md#procedure-error_save_stack)
   in the nested methods. This might be the most powerful feature...
+- No need to provide manually a scope for your log entries - console does this
+  automatically for you. If needed, you can overwrite the default scope.
+- Has an optional [APEX error handling
+  function](docs/package-console.md#function-apex_error_handling) to log also
+  internal errors of the APEX engine.
 - Has an optional [APEX plug-in](install/apex_plugin.sql) to log JavaScript
   errors in your client frontends. If you use another frontend technologies then
   have a look at the [JavScript sources for the APEX
   plug-in](sources/apex_plugin_console.js) as a template for an own
   implementation.
-- Has an optional [APEX error handling
-  function](docs/package-console.md#function-apex_error_handling) to log also
-  internal errors of the APEX engine.
-- No need to provide manually a scope for your log entries - console does this
-  automatically for you. If needed, you can overwrite the default scope.
-- Brings some useful helper functions - have a look at the [API
-  overview](docs/api-overview.md).
 - Is extensible. Log methods `error`, `warn`, `info`, `debug` and `trace` are
   all implemented as a procedure and a function returning the log ID. So you can
   easily implement additional functionality which references the log entries
   like an approval for certain errors or save additional information in a
   specific table.
+- Brings some useful helper functions - have a look at the [API
+  overview](docs/api-overview.md).
 
 ## Dependencies
 

@@ -108,7 +108,7 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_global_conf return console_conf%rowtype result_cache;
+function utl_read_global_conf return console_global_conf%rowtype result_cache;
 function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
@@ -1159,8 +1159,8 @@ procedure conf (
   p_enable_ascii_art    boolean  default false         )
 is
   pragma autonomous_transaction;
-  v_old_conf console_conf%rowtype;
-  v_conf     console_conf%rowtype;
+  v_old_conf console_global_conf%rowtype;
+  v_conf     console_global_conf%rowtype;
   v_sep      varchar2(1 byte) := ',';
   --
   procedure add_unit_to_level (
@@ -1233,9 +1233,9 @@ begin
   --
   v_old_conf := utl_read_global_conf;
   --
-  update console_conf set row = v_conf where conf_id = c_conf_id;
+  update console_global_conf set row = v_conf where conf_id = c_conf_id;
   if sql%rowcount = 0 then
-    insert into console_conf values v_conf;
+    insert into console_global_conf values v_conf;
   end if;
   commit;
   --
@@ -2447,12 +2447,12 @@ select id, name, cache_id, type, status, invalidations, scan_count
    and status != 'Invalid';
 */
 function utl_read_global_conf
-return console_conf%rowtype result_cache is
-  v_row console_conf%rowtype;
+return console_global_conf%rowtype result_cache is
+  v_row console_global_conf%rowtype;
 begin
   select *
     into v_row
-    from console_conf
+    from console_global_conf
    where conf_id = c_conf_id;
   return v_row;
 exception
@@ -2542,7 +2542,7 @@ end utl_ctx_clear;
 
 procedure utl_load_session_configuration is
   v_session_conf console_sessions%rowtype;
-  v_global_conf  console_conf%rowtype;
+  v_global_conf  console_global_conf%rowtype;
   --
   procedure load_global_conf is
   begin
