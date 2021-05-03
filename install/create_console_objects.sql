@@ -2835,29 +2835,24 @@ is
       v_fences;
   end get_md_li_pre;
   --
-  function remove_linebreaks (p_text varchar2) return varchar2 is
-  begin
-    return replace(replace(p_text, c_crlf, c_lf), c_lf, ' ');
-  end remove_linebreaks;
-  --
   function get_log_message (
     p_text varchar2 )
   return clob is
     v_clob  clob;
     v_cache varchar2(32767);
   begin
-    clob_append ( v_clob, v_cache, p_text                   || c_lflf                                         );
-    clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                         );
-    clob_append ( v_clob, v_cache, '1. is_internal_error: ' || to_string(p_error.is_internal_error)   || c_lf );
-    clob_append ( v_clob, v_cache, '2. apex_error_code: '   || p_error.apex_error_code                || c_lf );
-    clob_append ( v_clob, v_cache, '3. original message: '  || p_error.message                        || c_lf );
-    clob_append ( v_clob, v_cache, '4. ora_sqlcode: '       || p_error.ora_sqlcode                    || c_lf );
-    clob_append ( v_clob, v_cache, '5. ora_sqlerrm: '       || remove_linebreaks(p_error.ora_sqlerrm) || c_lf );
-    clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                 || c_lf );
-    clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                   || c_lf );
-    clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                 || c_lf );
-    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace) || c_lf );
-    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement) || c_lf );
+    clob_append ( v_clob, v_cache, p_text                   || c_lflf                                              );
+    clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                              );
+    clob_append ( v_clob, v_cache, '1. is_internal_error: ' || to_string(p_error.is_internal_error)        || c_lf );
+    clob_append ( v_clob, v_cache, '2. apex_error_code: '   || p_error.apex_error_code                     || c_lf );
+    clob_append ( v_clob, v_cache, '3. original message: '  || p_error.message                             || c_lf );
+    clob_append ( v_clob, v_cache, '4. ora_sqlcode: '       || p_error.ora_sqlcode                         || c_lf );
+    clob_append ( v_clob, v_cache, '5. ora_sqlerrm: '       || utl_replace_linebreaks(p_error.ora_sqlerrm) || c_lf );
+    clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                      || c_lf );
+    clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                        || c_lf );
+    clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                      || c_lf );
+    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace)      || c_lf );
+    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement)      || c_lf );
     clob_flush_cache ( v_clob, v_cache );
     return v_clob;
   end get_log_message;
@@ -4748,7 +4743,20 @@ begin
   if v_count = 0 then
     -- without execute immediate this script will raise an error when the package console is not valid
     execute immediate 'select console.version from dual' into v_console_version;
-    execute immediate q'[begin console.info('{o,o} CONSOLE v]' || v_console_version || q'[ installed'); end;]';
+    execute immediate replace( q'[
+      -- We are doing a direct insert to create a log entry independent of the current log level.
+      declare
+        v_row console_logs%rowtype;
+      begin
+        v_row.log_systime := systimestamp;
+        v_row.level_id    := 3;
+        v_row.level_name  := console.get_level_name(3);
+        v_row.permanent   := 'Y';
+        v_row.scope       := 'Library Installation';
+        v_row.message     := '{o,o} CONSOLE v#CONSOLE_VERSION# installed';
+        insert into console_logs values v_row;
+        commit;
+      end;]', '#CONSOLE_VERSION#', v_console_version);
     dbms_output.put_line('>           ');
     dbms_output.put_line('>   .___.   ');
     dbms_output.put_line('>   {o,o}   ');

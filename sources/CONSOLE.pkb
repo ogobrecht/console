@@ -906,29 +906,24 @@ is
       v_fences;
   end get_md_li_pre;
   --
-  function remove_linebreaks (p_text varchar2) return varchar2 is
-  begin
-    return replace(replace(p_text, c_crlf, c_lf), c_lf, ' ');
-  end remove_linebreaks;
-  --
   function get_log_message (
     p_text varchar2 )
   return clob is
     v_clob  clob;
     v_cache varchar2(32767);
   begin
-    clob_append ( v_clob, v_cache, p_text                   || c_lflf                                         );
-    clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                         );
-    clob_append ( v_clob, v_cache, '1. is_internal_error: ' || to_string(p_error.is_internal_error)   || c_lf );
-    clob_append ( v_clob, v_cache, '2. apex_error_code: '   || p_error.apex_error_code                || c_lf );
-    clob_append ( v_clob, v_cache, '3. original message: '  || p_error.message                        || c_lf );
-    clob_append ( v_clob, v_cache, '4. ora_sqlcode: '       || p_error.ora_sqlcode                    || c_lf );
-    clob_append ( v_clob, v_cache, '5. ora_sqlerrm: '       || remove_linebreaks(p_error.ora_sqlerrm) || c_lf );
-    clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                 || c_lf );
-    clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                   || c_lf );
-    clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                 || c_lf );
-    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace) || c_lf );
-    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement) || c_lf );
+    clob_append ( v_clob, v_cache, p_text                   || c_lflf                                              );
+    clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                              );
+    clob_append ( v_clob, v_cache, '1. is_internal_error: ' || to_string(p_error.is_internal_error)        || c_lf );
+    clob_append ( v_clob, v_cache, '2. apex_error_code: '   || p_error.apex_error_code                     || c_lf );
+    clob_append ( v_clob, v_cache, '3. original message: '  || p_error.message                             || c_lf );
+    clob_append ( v_clob, v_cache, '4. ora_sqlcode: '       || p_error.ora_sqlcode                         || c_lf );
+    clob_append ( v_clob, v_cache, '5. ora_sqlerrm: '       || utl_replace_linebreaks(p_error.ora_sqlerrm) || c_lf );
+    clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                      || c_lf );
+    clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                        || c_lf );
+    clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                      || c_lf );
+    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace)      || c_lf );
+    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement)      || c_lf );
     clob_flush_cache ( v_clob, v_cache );
     return v_clob;
   end get_log_message;
