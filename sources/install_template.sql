@@ -12,7 +12,7 @@ prompt - Project page https://github.com/ogobrecht/console
 @set_ccflags.sql
 @CONSOLE_GLOBAL_CONF.sql
 @CONSOLE_LOGS.sql
-@CONSOLE_SESSIONS.sql
+@CONSOLE_CLIENT_PREFS.sql
 prompt - Package CONSOLE (spec)
 @CONSOLE.pks
 prompt - Package CONSOLE (body)

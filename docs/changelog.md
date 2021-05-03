@@ -12,6 +12,13 @@
 
 # Changelog
 
+## v1.0-beta6 (2021-05-xx)
+
+- Rename table CONSOLE_CONF to CONSOLE_GLOBAL_CONF
+- Rename table CONSOLE_SESSIONS to CONSOLE_CLIENT_PREFS
+- Fix script for install log entry
+
+
 ## v1.0-beta5 (2021-05-02)
 
 - Fix table CONSOLE_CONF (remove `organization index`)

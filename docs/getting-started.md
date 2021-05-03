@@ -308,7 +308,7 @@ and go back to the default level. You can do this by calling
 identifier, then CONSOLE tries to exit your own session.
 
 If you don't do it by yourself the daily cleanup job from CONSOLE will exit
-stale sessions from the table `CONSOLE_SESSIONS`.
+stale sessions from the table `CONSOLE_CLIENT_PREFS`.
 
 ## Configure Default Log Level
 

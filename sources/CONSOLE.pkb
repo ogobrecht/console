@@ -109,7 +109,7 @@ function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
 function utl_read_global_conf return console_global_conf%rowtype result_cache;
-function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function utl_read_session_conf (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
 procedure utl_ctx_clear (p_client_identifier varchar2);
@@ -1255,7 +1255,7 @@ procedure init (
   p_console_env       boolean  default false        )
 is
   pragma autonomous_transaction;
-  v_row console_sessions%rowtype;
+  v_row console_client_prefs%rowtype;
   --
 begin
   assert (
@@ -1288,9 +1288,9 @@ begin
   v_row.cgi_env           := to_yn ( p_cgi_env     );
   v_row.console_env       := to_yn ( p_console_env );
   --
-  update console_sessions set row = v_row where client_identifier = v_row.client_identifier;
+  update console_client_prefs set row = v_row where client_identifier = v_row.client_identifier;
   if sql%rowcount = 0 then
-    insert into console_sessions values v_row;
+    insert into console_client_prefs values v_row;
   end if;
   commit;
   --
@@ -1351,7 +1351,7 @@ is
   pragma autonomous_transaction;
 begin
   assert(p_client_identifier is not null, 'Client identifier must not be null.');
-  delete from console_sessions where client_identifier = p_client_identifier;
+  delete from console_client_prefs where client_identifier = p_client_identifier;
   commit;
   utl_ctx_clear( p_client_identifier );
   -- If we monitor our own session, wee need to load the configuration
@@ -1380,7 +1380,7 @@ procedure exit_stale is
 begin
   for i in (
     select client_identifier
-      from console_sessions
+      from console_client_prefs
      where exit_sysdate < sysdate - 1/24 )
   loop
     exit_(i.client_identifier);
@@ -2458,12 +2458,12 @@ end utl_read_global_conf;
 
 function utl_read_session_conf (
   p_client_identifier varchar2 )
-return console_sessions%rowtype result_cache is
-  v_row console_sessions%rowtype;
+return console_client_prefs%rowtype result_cache is
+  v_row console_client_prefs%rowtype;
 begin
   select *
     into v_row
-    from console_sessions
+    from console_client_prefs
    where client_identifier = p_client_identifier;
   return v_row;
 exception
@@ -2536,7 +2536,7 @@ end utl_ctx_clear;
 --------------------------------------------------------------------------------
 
 procedure utl_load_session_configuration is
-  v_session_conf console_sessions%rowtype;
+  v_session_conf console_client_prefs%rowtype;
   v_global_conf  console_global_conf%rowtype;
   --
   procedure load_global_conf is

@@ -56,11 +56,11 @@ begin
            table_name
       from user_tables
      where table_name in (
-       'CONSOLE_CLIENT_PREFERENCES',
-       'CONSOLE_CONF',
+       'CONSOLE_CLIENT_PREFS',
+       'CONSOLE_CONF',         -- replaced by console_global_conf
        'CONSOLE_GLOBAL_CONF',
        'CONSOLE_LOGS',
-       'CONSOLE_SESSIONS'
+       'CONSOLE_SESSIONS'      -- replaced by console_client_prefs
        ) )
   loop
     --FIXME: Should we really check for permanent entries?

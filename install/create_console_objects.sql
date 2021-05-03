@@ -185,11 +185,11 @@ comment on column console_logs.os_user_agent     is 'Operating system user agent
 declare
   v_count pls_integer;
 begin
-  select count(*) into v_count from user_tables where table_name = 'CONSOLE_SESSIONS';
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_CLIENT_PREFS';
   if v_count = 0 then
-    dbms_output.put_line('- Table CONSOLE_SESSIONS not found, run creation command');
+    dbms_output.put_line('- Table CONSOLE_CLIENT_PREFS not found, run creation command');
     execute immediate q'{
-      create table console_sessions (
+      create table console_client_prefs (
         client_identifier varchar2 (64 byte)  not null  ,
         init_by           varchar2 (64 byte)            ,
         init_sysdate      date                not null  ,
@@ -204,40 +204,40 @@ begin
         cgi_env           varchar2 ( 1 byte)  not null  ,
         console_env       varchar2 ( 1 byte)  not null  ,
         --
-        constraint  console_sessions_pk   primary key ( client_identifier          )  ,
-        constraint  console_sessions_ck1  check       ( call_stack  in ('Y','N')   )  ,
-        constraint  console_sessions_ck2  check       ( user_env    in ('Y','N')   )  ,
-        constraint  console_sessions_ck3  check       ( apex_env    in ('Y','N')   )  ,
-        constraint  console_sessions_ck4  check       ( cgi_env     in ('Y','N')   )  ,
-        constraint  console_sessions_ck5  check       ( console_env in ('Y','N')   )  ,
+        constraint  console_client_prefs_pk   primary key ( client_identifier          )  ,
+        constraint  console_client_prefs_ck1  check       ( call_stack  in ('Y','N')   )  ,
+        constraint  console_client_prefs_ck2  check       ( user_env    in ('Y','N')   )  ,
+        constraint  console_client_prefs_ck3  check       ( apex_env    in ('Y','N')   )  ,
+        constraint  console_client_prefs_ck4  check       ( cgi_env     in ('Y','N')   )  ,
+        constraint  console_client_prefs_ck5  check       ( console_env in ('Y','N')   )  ,
         --
-        constraint  console_sessions_ck6  check       ( level_id   in (1, 2, 3, 4, 5)                                                          )  ,
-        constraint  console_sessions_ck7  check       ( level_name =  decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
+        constraint  console_client_prefs_ck6  check       ( level_id   in (1, 2, 3, 4, 5)                                                          )  ,
+        constraint  console_client_prefs_ck7  check       ( level_name =  decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
         --
-        constraint  console_sessions_ck8  check       ( check_interval between 1 and 60 )
+        constraint  console_client_prefs_ck8  check       ( check_interval between 1 and 60 )
       ) organization index
     }';
   else
-    dbms_output.put_line('- Table CONSOLE_SESSIONS found, no action required');
+    dbms_output.put_line('- Table CONSOLE_CLIENT_PREFS found, no action required');
   end if;
 
 end;
 /
 
-comment on table  console_sessions                     is 'Holds the sessions that are initialized for debugging. Used to manage the global context.';
-comment on column console_sessions.init_by             is 'The user who initiated the logging.';
-comment on column console_sessions.init_sysdate        is 'The logging start date for the nominated client identifier.';
-comment on column console_sessions.exit_sysdate        is 'The planned logging end date for the nominated client identifier.';
-comment on column console_sessions.client_identifier   is 'The client identifier provided by the application or console itself (this is the primary key).';
-comment on column console_sessions.level_id            is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_GLOBAL_CONF.';
-comment on column console_sessions.level_name          is 'The defined log level name.';
-comment on column console_sessions.check_interval      is 'The number of seconds a session looks for a changed configuration. Defaults to 10.';
-comment on column console_sessions.cache_size          is 'The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX.';
-comment on column console_sessions.call_stack          is 'Should the call_stack be included.';
-comment on column console_sessions.user_env            is 'Should the user environment be included.';
-comment on column console_sessions.apex_env            is 'Should the APEX environment be included.';
-comment on column console_sessions.cgi_env             is 'Should the CGI environment be included.';
-comment on column console_sessions.console_env         is 'Should the console environment be included.';
+comment on table  console_client_prefs                   is 'Holds the sessions that are initialized for debugging. Used to manage the global context.';
+comment on column console_client_prefs.init_by           is 'The user who initiated the logging.';
+comment on column console_client_prefs.init_sysdate      is 'The logging start date for the nominated client identifier.';
+comment on column console_client_prefs.exit_sysdate      is 'The planned logging end date for the nominated client identifier.';
+comment on column console_client_prefs.client_identifier is 'The client identifier provided by the application or console itself (this is the primary key).';
+comment on column console_client_prefs.level_id          is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_GLOBAL_CONF.';
+comment on column console_client_prefs.level_name        is 'The defined log level name.';
+comment on column console_client_prefs.check_interval    is 'The number of seconds a session looks for a changed configuration. Defaults to 10.';
+comment on column console_client_prefs.cache_size        is 'The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX.';
+comment on column console_client_prefs.call_stack        is 'Should the call_stack be included.';
+comment on column console_client_prefs.user_env          is 'Should the user environment be included.';
+comment on column console_client_prefs.apex_env          is 'Should the APEX environment be included.';
+comment on column console_client_prefs.cgi_env           is 'Should the CGI environment be included.';
+comment on column console_client_prefs.console_env       is 'Should the console environment be included.';
 
 
 
@@ -251,11 +251,11 @@ c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error     constant pls_integer := 1 ;
-c_level_warning   constant pls_integer := 2 ;
-c_level_info      constant pls_integer := 3 ;
-c_level_debug     constant pls_integer := 4 ;
-c_level_trace     constant pls_integer := 5 ;
+c_level_error   constant pls_integer := 1 ;
+c_level_warning constant pls_integer := 2 ;
+c_level_info    constant pls_integer := 3 ;
+c_level_debug   constant pls_integer := 4 ;
+c_level_trace   constant pls_integer := 5 ;
 
 /**
 
@@ -452,38 +452,38 @@ Call Stack
 ------------------------------------------------------------------------------------------------------------------------
 {{#}}# Saved Error Stack
 
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
 {{#}}# Call Stack
 
-- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
+- PLAYGROUND.SOME_API.DO_STUFF, line 38
 - __anonymous_block, line 2
 
 {{#}}# Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
+- ORA-06512 at "PLAYGROUND.SOME_API", line 31
 - ORA-20777 Assertion failed: Test assertion with line break.
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 23
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 15
-- ORA-06512 at "PLAYGROUND_DATA.CONSOLE", line 750
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 11
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
+- ORA-06512 at "PLAYGROUND.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND.CONSOLE", line 750
+- ORA-06512 at "PLAYGROUND.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND.SOME_API", line 27
 
 {{#}}# Error Backtrace
 
-- PLAYGROUND_DATA.SOME_API, line 31
-- PLAYGROUND_DATA.SOME_API, line 23
-- PLAYGROUND_DATA.SOME_API, line 15
-- PLAYGROUND_DATA.CONSOLE, line 750
-- PLAYGROUND_DATA.SOME_API, line 11
-- PLAYGROUND_DATA.SOME_API, line 19
-- PLAYGROUND_DATA.SOME_API, line 27
-- PLAYGROUND_DATA.SOME_API, line 35
+- PLAYGROUND.SOME_API, line 31
+- PLAYGROUND.SOME_API, line 23
+- PLAYGROUND.SOME_API, line 15
+- PLAYGROUND.CONSOLE, line 750
+- PLAYGROUND.SOME_API, line 11
+- PLAYGROUND.SOME_API, line 19
+- PLAYGROUND.SOME_API, line 27
+- PLAYGROUND.SOME_API, line 35
 ```
 
 **/
@@ -1278,7 +1278,7 @@ MANAGING LOGGING MODES OF SESSIONS.
 procedure exit_stale;
 /**
 
-Stops the logging for all sessions in the table console_sessions which have a
+Stops the logging for all sessions in the table console_client_prefs which have a
 exit date older than one hour.
 
 This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
@@ -1879,7 +1879,7 @@ procedure cleanup_job_create (
 );
 /**
 Creates a cleanup job which deletes old log entries from console_logs and stale
-debug sessions from console_sessions.
+debug sessions from console_client_prefs.
 **/
 procedure cleanup_job_drop;    /** Drops the cleanup job (if it exists).    **/
 procedure cleanup_job_enable;  /** Enables the cleanup job (if it exists).  **/
@@ -1897,7 +1897,7 @@ function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
 function utl_read_global_conf return console_global_conf%rowtype result_cache;
-function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function utl_read_session_conf (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
 procedure utl_ctx_clear (p_client_identifier varchar2);
@@ -2038,7 +2038,7 @@ function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
 function utl_read_global_conf return console_global_conf%rowtype result_cache;
-function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function utl_read_session_conf (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
 procedure utl_ctx_clear (p_client_identifier varchar2);
@@ -3184,7 +3184,7 @@ procedure init (
   p_console_env       boolean  default false        )
 is
   pragma autonomous_transaction;
-  v_row console_sessions%rowtype;
+  v_row console_client_prefs%rowtype;
   --
 begin
   assert (
@@ -3217,9 +3217,9 @@ begin
   v_row.cgi_env           := to_yn ( p_cgi_env     );
   v_row.console_env       := to_yn ( p_console_env );
   --
-  update console_sessions set row = v_row where client_identifier = v_row.client_identifier;
+  update console_client_prefs set row = v_row where client_identifier = v_row.client_identifier;
   if sql%rowcount = 0 then
-    insert into console_sessions values v_row;
+    insert into console_client_prefs values v_row;
   end if;
   commit;
   --
@@ -3280,7 +3280,7 @@ is
   pragma autonomous_transaction;
 begin
   assert(p_client_identifier is not null, 'Client identifier must not be null.');
-  delete from console_sessions where client_identifier = p_client_identifier;
+  delete from console_client_prefs where client_identifier = p_client_identifier;
   commit;
   utl_ctx_clear( p_client_identifier );
   -- If we monitor our own session, wee need to load the configuration
@@ -3309,7 +3309,7 @@ procedure exit_stale is
 begin
   for i in (
     select client_identifier
-      from console_sessions
+      from console_client_prefs
      where exit_sysdate < sysdate - 1/24 )
   loop
     exit_(i.client_identifier);
@@ -4387,12 +4387,12 @@ end utl_read_global_conf;
 
 function utl_read_session_conf (
   p_client_identifier varchar2 )
-return console_sessions%rowtype result_cache is
-  v_row console_sessions%rowtype;
+return console_client_prefs%rowtype result_cache is
+  v_row console_client_prefs%rowtype;
 begin
   select *
     into v_row
-    from console_sessions
+    from console_client_prefs
    where client_identifier = p_client_identifier;
   return v_row;
 exception
@@ -4465,7 +4465,7 @@ end utl_ctx_clear;
 --------------------------------------------------------------------------------
 
 procedure utl_load_session_configuration is
-  v_session_conf console_sessions%rowtype;
+  v_session_conf console_client_prefs%rowtype;
   v_global_conf  console_global_conf%rowtype;
   --
   procedure load_global_conf is

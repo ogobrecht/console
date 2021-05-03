@@ -128,11 +128,11 @@ c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error     constant pls_integer := 1 ;
-c_level_warning   constant pls_integer := 2 ;
-c_level_info      constant pls_integer := 3 ;
-c_level_debug     constant pls_integer := 4 ;
-c_level_trace     constant pls_integer := 5 ;
+c_level_error   constant pls_integer := 1 ;
+c_level_warning constant pls_integer := 2 ;
+c_level_info    constant pls_integer := 3 ;
+c_level_debug   constant pls_integer := 4 ;
+c_level_trace   constant pls_integer := 5 ;
 ```
 
 
@@ -306,38 +306,38 @@ Call Stack
 ------------------------------------------------------------------------------------------------------------------------
 ## Saved Error Stack
 
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
 ## Call Stack
 
-- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
+- PLAYGROUND.SOME_API.DO_STUFF, line 38
 - __anonymous_block, line 2
 
 ## Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
+- ORA-06512 at "PLAYGROUND.SOME_API", line 31
 - ORA-20777 Assertion failed: Test assertion with line break.
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 23
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 15
-- ORA-06512 at "PLAYGROUND_DATA.CONSOLE", line 750
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 11
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
+- ORA-06512 at "PLAYGROUND.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND.CONSOLE", line 750
+- ORA-06512 at "PLAYGROUND.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND.SOME_API", line 27
 
 ## Error Backtrace
 
-- PLAYGROUND_DATA.SOME_API, line 31
-- PLAYGROUND_DATA.SOME_API, line 23
-- PLAYGROUND_DATA.SOME_API, line 15
-- PLAYGROUND_DATA.CONSOLE, line 750
-- PLAYGROUND_DATA.SOME_API, line 11
-- PLAYGROUND_DATA.SOME_API, line 19
-- PLAYGROUND_DATA.SOME_API, line 27
-- PLAYGROUND_DATA.SOME_API, line 35
+- PLAYGROUND.SOME_API, line 31
+- PLAYGROUND.SOME_API, line 23
+- PLAYGROUND.SOME_API, line 15
+- PLAYGROUND.CONSOLE, line 750
+- PLAYGROUND.SOME_API, line 11
+- PLAYGROUND.SOME_API, line 19
+- PLAYGROUND.SOME_API, line 27
+- PLAYGROUND.SOME_API, line 35
 ```
 
 SIGNATURE
@@ -1354,7 +1354,7 @@ procedure exit (
 
 ## Procedure exit_stale
 
-Stops the logging for all sessions in the table console_sessions which have a
+Stops the logging for all sessions in the table console_client_prefs which have a
 exit date older than one hour.
 
 This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
@@ -2031,7 +2031,7 @@ procedure purge_all;
 ## Procedure cleanup_job_create
 
 Creates a cleanup job which deletes old log entries from console_logs and stale
-debug sessions from console_sessions.
+debug sessions from console_client_prefs.
 
 SIGNATURE
 
