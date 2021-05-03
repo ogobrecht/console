@@ -1151,7 +1151,7 @@ procedure conf (
   p_units_level_info    varchar2 default null          ,
   p_units_level_debug   varchar2 default null          ,
   p_units_level_trace   varchar2 default null          ,
-  p_enable_ascii_art    boolean  default false         )
+  p_enable_ascii_art    boolean  default true          )
 is
   pragma autonomous_transaction;
   v_old_conf console_global_conf%rowtype;
