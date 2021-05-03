@@ -4476,11 +4476,11 @@ procedure utl_load_session_configuration is
   procedure load_global_conf is
   begin
     v_global_conf := utl_read_global_conf;
-    g_conf_unit_levels(2)   :=           v_global_conf.units_level_warning   ;
-    g_conf_unit_levels(3)   :=           v_global_conf.units_level_info      ;
-    g_conf_unit_levels(4)   :=           v_global_conf.units_level_debug     ;
-    g_conf_unit_levels(5)   :=           v_global_conf.units_level_trace     ;
-    g_conf_enable_ascii_art := to_bool ( v_global_conf.enable_ascii_art    ) ;
+    g_conf_unit_levels(2)   :=                    v_global_conf.units_level_warning      ;
+    g_conf_unit_levels(3)   :=                    v_global_conf.units_level_info         ;
+    g_conf_unit_levels(4)   :=                    v_global_conf.units_level_debug        ;
+    g_conf_unit_levels(5)   :=                    v_global_conf.units_level_trace        ;
+    g_conf_enable_ascii_art := to_bool ( coalesce(v_global_conf.enable_ascii_art, 'Y') ) ;
   end load_global_conf;
   --
   procedure set_default_config is

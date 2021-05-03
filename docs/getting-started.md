@@ -361,33 +361,33 @@ An example:
 select * from table(console.view_status);
 ```
 
-| KEY                         | VALUE               |
-|-----------------------------|---------------------|
-| c_version                   | 1.0-beta5           |
-| g_conf_context_is_available | N                   |
-| c_ctx_namespace             | CONSOLE_PLAYGROUND  |
-| g_conf_check_sysdate        | 2021-05-02 13:06:55 |
-| g_conf_exit_sysdate         | 2021-05-03 13:06:45 |
-| g_conf_client_identifier    | {o,o} 1EA16A180002  |
-| g_conf_level                | 1                   |
-| get_level_name              | g_conf_level),error |
-| g_conf_cache_size           | 0                   |
-| g_conf_check_interval       | 10                  |
-| g_conf_call_stack           | N                   |
-| g_conf_user_env             | N                   |
-| g_conf_apex_env             | N                   |
-| g_conf_cgi_env              | N                   |
-| g_conf_console_env          | N                   |
-| g_conf_enable_ascii_art     | N                   |
-| g_conf_unit_levels(2)       |                     |
-| g_conf_unit_levels(3)       |                     |
-| g_conf_unit_levels(4)       |                     |
-| g_conf_unit_levels(5)       |                     |
-| g_counters.count            | 0                   |
-| g_timers.count              | 0                   |
-| g_log_cache.count           | 0                   |
-| g_saved_stack.count         | 0                   |
-| g_prev_error_msg            |                     |
+| KEY                          | VALUE               |
+|------------------------------|---------------------|
+| c_version                    | 1.0-beta5           |
+| g_conf_context_is_available  | N                   |
+| c_ctx_namespace              | CONSOLE_PLAYGROUND  |
+| g_conf_check_sysdate         | 2021-05-02 13:06:55 |
+| g_conf_exit_sysdate          | 2021-05-03 13:06:45 |
+| g_conf_client_identifier     | {o,o} 1EA16A180002  |
+| g_conf_level                 | 1                   |
+| get_level_name(g_conf_level) | error               |
+| g_conf_cache_size            | 0                   |
+| g_conf_check_interval        | 10                  |
+| g_conf_call_stack            | N                   |
+| g_conf_user_env              | N                   |
+| g_conf_apex_env              | N                   |
+| g_conf_cgi_env               | N                   |
+| g_conf_console_env           | N                   |
+| g_conf_enable_ascii_art      | Y                   |
+| g_conf_unit_levels(2)        |                     |
+| g_conf_unit_levels(3)        |                     |
+| g_conf_unit_levels(4)        |                     |
+| g_conf_unit_levels(5)        |                     |
+| g_counters.count             | 0                   |
+| g_timers.count               | 0                   |
+| g_log_cache.count            | 0                   |
+| g_saved_stack.count          | 0                   |
+| g_prev_error_msg             |                     |
 
 ## APEX Backend - Error Handling Function
 
