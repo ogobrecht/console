@@ -18,7 +18,6 @@
 - Rename table CONSOLE_SESSIONS to CONSOLE_CLIENT_PREFS
 - Fix script for install log entry
 
-
 ## v1.0-beta5 (2021-05-02)
 
 - Fix table CONSOLE_CONF (remove `organization index`)

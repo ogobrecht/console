@@ -1157,11 +1157,14 @@ procedure conf (
   p_units_level_info    varchar2 default null          , -- Same as p_units_level_warning for level info.
   p_units_level_debug   varchar2 default null          , -- Same as p_units_level_warning for level debug.
   p_units_level_trace   varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    boolean  default false           -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_enable_ascii_art    boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 /**
 
 Set the global console configuration.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
 
 EXAMPLE
 
@@ -1198,21 +1201,21 @@ procedure init (
 );
 /**
 
-Starts the logging for a specific session.
+Init/set the preferences for a specific session/client_identifier and duration.
 
-To avoid spoiling the context with very long input the p_client_identifier parameter is
-truncated after 64 characters before using it.
+To avoid spoiling the context with very long input the parameter
+p_client_identifier is truncated after 64 characters before using it.
 
 For easier usage there is an overloaded procedure available which uses always
-your own client identifier.
+your own session/client_identifier.
 
 DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
+MANAGING CLIENT PREFERENCES.
 
 EXAMPLES
 
 ```sql
--- Dive into your own session with the default level of 3 (info) and the
+-- Dive into your own session with the default log level of 3 (info) and the
 -- default duration of 60 (minutes).
 exec console.init;
 
@@ -1250,7 +1253,8 @@ procedure init (
   p_console_env    boolean default false          -- Should the console environment be included.
 );
 /**
-An overloaded procedure for easier initialization of the own session in an development IDE.
+An overloaded procedure for easier initialization of the own
+session/client_identifier in an development IDE.
 **/
 
 procedure exit (
@@ -1258,34 +1262,35 @@ procedure exit (
 );
 /**
 
-Stops the logging for a specific session.
+Exit/unset the preferences for a specific session/client_identifier.
 
-If you stop your own session then this has an immediate effect as we can clear
-the configuration cache in our package. If you stop another session then it can
-take some seconds until the other session is reloading the cached configuration
-from the context (if available) or the sessions table. The default cache
-duration is ten seconds.
+If you exit/unset your own client preferencs then this has an immediate effect
+as we can unset the preferences in our package state. If you exit another
+session/client_identifier then it can take some seconds until the other
+session/client_identifier is reloading the configuration from the context (if
+available) or the client_prefs table. The default check interval for a changed
+configuration is ten seconds.
 
-Stopping the logging mode means also the cached log entries will be flushed to
+Exit/unset the preferences means also the cached log entries will be flushed to
 the logging table CONSOLE_LOGS. If you do not need the cached entries you can
 delete them in advance by calling the `clear` procedure.
 
 DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
+MANAGING CLIENT PREFERENCES.
 
 **/
 
 procedure exit_stale;
 /**
 
-Stops the logging for all sessions in the table console_client_prefs which have a
-exit date older than one hour.
+Exit/unset the preferences for all sessions in the table console_client_prefs
+which have a exit date in the past for at least one hour.
 
 This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
 runs per default at 1 o'clock after midnight.
 
 DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
+MANAGING CLIENT PREFERENCES.
 
 **/
 
@@ -3080,7 +3085,7 @@ procedure conf (
   p_units_level_info    varchar2 default null          ,
   p_units_level_debug   varchar2 default null          ,
   p_units_level_trace   varchar2 default null          ,
-  p_enable_ascii_art    boolean  default false         )
+  p_enable_ascii_art    boolean  default true          )
 is
   pragma autonomous_transaction;
   v_old_conf console_global_conf%rowtype;
