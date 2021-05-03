@@ -1896,8 +1896,8 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
+function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
 function utl_read_global_conf return console_global_conf%rowtype result_cache;
-function utl_read_session_conf (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
 procedure utl_ctx_clear (p_client_identifier varchar2);
@@ -2037,8 +2037,8 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
+function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
 function utl_read_global_conf return console_global_conf%rowtype result_cache;
-function utl_read_session_conf (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
 procedure utl_ctx_clear (p_client_identifier varchar2);
@@ -4385,7 +4385,7 @@ exception
 end utl_read_global_conf;
 
 
-function utl_read_session_conf (
+function utl_read_client_prefs (
   p_client_identifier varchar2 )
 return console_client_prefs%rowtype result_cache is
   v_row console_client_prefs%rowtype;
@@ -4398,7 +4398,7 @@ begin
 exception
   when no_data_found then
     return v_row;
-end utl_read_session_conf;
+end utl_read_client_prefs;
 
 --------------------------------------------------------------------------------
 
@@ -4531,7 +4531,7 @@ begin
       load_config_from_context;
     end if;
   else
-    v_session_conf := utl_read_session_conf(g_conf_client_identifier);
+    v_session_conf := utl_read_client_prefs(g_conf_client_identifier);
     g_conf_exit_sysdate := v_session_conf.exit_sysdate;
     if g_conf_exit_sysdate is null or g_conf_exit_sysdate < sysdate then
       set_default_config;
