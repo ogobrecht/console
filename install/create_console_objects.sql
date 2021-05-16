@@ -58,11 +58,11 @@ begin
         units_level_trace    varchar2 (4000 byte)            ,
         enable_ascii_art     varchar2 (   1 byte)  not null  ,
         --
-        constraint  console_global_conf_pk   primary key ( conf_id )                                                    ,
-        constraint  console_global_conf_ck1  check ( conf_id = 'GLOBAL_CONF' )                                          ,
-        constraint  console_global_conf_ck2  check ( level_id in (1, 2, 3) )                                            ,
-        constraint  console_global_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info') )  ,
-        constraint  console_global_conf_ck4  check ( check_interval between 10 and 60 )                                 ,
+        constraint  console_global_conf_pk   primary key ( conf_id )                                                                          ,
+        constraint  console_global_conf_ck1  check ( conf_id = 'GLOBAL_CONF' )                                                                ,
+        constraint  console_global_conf_ck2  check ( level_id in (1, 2, 3, 4, 5) )                                                            ,
+        constraint  console_global_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
+        constraint  console_global_conf_ck4  check ( check_interval between 10 and 60 )                                                       ,
         constraint  console_global_conf_ck5  check ( enable_ascii_art in ('Y','N') )
       )
     }';
@@ -276,11 +276,13 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type rec_key_value is record(
+type key_value_rec is record(
   key    varchar2 ( 128 byte)  ,
   value  varchar2 (4000 byte)  );
-type tab_key_value is table of rec_key_value;
-type tab_logs      is table of console_logs%rowtype;
+type key_value_tab is table of key_value_rec;
+type logs_tab      is table of console_logs%rowtype;
+type vc2_tab       is table of varchar2(32767);
+type vc2_tab_i     is table of varchar2(32767) index by pls_integer;
 
 
 --------------------------------------------------------------------------------
@@ -315,7 +317,7 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows integer default 100) return tab_logs pipelined;
+function view_last (p_log_rows integer default 100) return logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -1151,7 +1153,7 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning) or 3 (info).
+  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_check_interval      integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_units_level_warning varchar2 default null          , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
   p_units_level_info    varchar2 default null          , -- Same as p_units_level_warning for level info.
@@ -1181,6 +1183,111 @@ begin
   );
 end;
 {{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_level (
+  p_level integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+);
+/**
+
+Set the global level.
+
+A shortcut for the procedure `console.conf` to only set the level without
+interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--set all sessions to level warning
+exec console.conf_level(2);
+
+--same with using a constant
+exec console.conf_level(console.c_level_warning);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_check_interval (
+  p_check_interval integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+);
+/**
+
+Set the global check interval.
+
+A shortcut for the procedure `console.conf` to only set the check interval
+without interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--set all sessions to a check interval of 30 seconds
+exec console.conf_check_interval(30);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_units (
+  p_units_level_warning varchar2 default null , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    varchar2 default null , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   varchar2 default null , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   varchar2 default null   -- Same as p_units_level_warning for level trace.
+);
+/**
+
+Set the global levels for code units under special observation.
+
+A shortcut for the procedure `console.conf` to only set unit levels without
+interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--special observation of two new packages
+exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_ascii_art (
+  p_enable_ascii_art  boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
+);
+/**
+
+Set the global ascii art status.
+
+A shortcut for the procedure `console.conf` to only set the ascii art status
+without interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--enable the usage of ascii art
+exec console.conf_ascii_art(true);
+
+--disable the usage of ascii art
+exec console.conf_ascii_art(false);
 ```
 
 **/
@@ -1343,6 +1450,77 @@ Returns the version information from the console package.
 ```sql
 select console.version from dual;
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function split_to_table (
+  p_string varchar2,            -- The string to split into a table.
+  p_sep    varchar2 default ',' -- The separator.
+) return vc2_tab pipelined;
+/**
+
+Splits a string into a (pipelined) SQL table of varchar2.
+
+If the separator is null the string will be splitted into its characters.
+
+EXAMPLE
+
+```sql
+select * from console.split_to_table('1,2,3');
+```
+
+| COLUMN_VALUE |
+|--------------|
+| 1            |
+| 2            |
+| 3            |
+
+**/
+
+--------------------------------------------------------------------------------
+
+function split (
+  p_string varchar2,            -- The string to split into an array.
+  p_sep    varchar2 default ',' -- The separator.
+) return vc2_tab_i;
+/**
+
+Splits a string into a PL/SQL associative array.
+
+If the separator is null the string will be splitted into its characters.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_array console.vc2_tab_i;
+begin
+  v_array := console.split('A,B,C');
+  for i in 1 .. v_array.count loop
+    console.print(i||': '||v_array(i));
+  end loop;
+end;
+{{/}}
+
+1: A
+2: B
+3: C
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function join (
+  p_table vc2_tab_i,           -- The PL/SQL array to join into a string.
+  p_sep   varchar2 default ',' -- The separator.
+) return varchar2;
+/**
+
+Joins a PL/SQL associative array into a string.
 
 **/
 
@@ -1769,7 +1947,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_cache return tab_logs pipelined;
+function view_cache return logs_tab pipelined;
 /**
 
 View the content of the log cache.
@@ -1824,7 +2002,7 @@ avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 --------------------------------------------------------------------------------
 
-function view_status return tab_key_value pipelined;
+function view_status return key_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
@@ -2013,7 +2191,7 @@ type unit_list_tab   is table of t_vc4k      index by binary_integer;
 
 g_timers         timers_tab;
 g_counters       counters_tab;
-g_log_cache      tab_logs := new tab_logs();
+g_log_cache      logs_tab := new logs_tab();
 g_saved_stack    saved_stack_tab;
 g_prev_error_msg t_vc1k;
 
@@ -2030,7 +2208,7 @@ g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
 g_conf_enable_ascii_art     boolean;
-g_conf_unit_levels          unit_list_tab;
+g_conf_units_level          unit_list_tab;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -2076,7 +2254,7 @@ $end
 function my_client_identifier return varchar2 is
 begin
   return g_conf_client_identifier;
-end;
+end my_client_identifier;
 
 --------------------------------------------------------------------------------
 
@@ -2088,7 +2266,7 @@ end my_log_level;
 --------------------------------------------------------------------------------
 
 function view_last (p_log_rows integer default 100)
-return tab_logs pipelined is
+return logs_tab pipelined is
   v_count pls_integer := 0;
   v_left  pls_integer;
 begin
@@ -3088,57 +3266,62 @@ procedure conf (
   p_enable_ascii_art    boolean  default true          )
 is
   pragma autonomous_transaction;
-  v_old_conf console_global_conf%rowtype;
-  v_conf     console_global_conf%rowtype;
-  v_sep      varchar2(1 byte) := ',';
+  v_old_conf      console_global_conf%rowtype;
+  v_conf          console_global_conf%rowtype;
+  type            unit_tab is table of varchar2(1) index by varchar2(1000);
+  v_units_level_2 unit_tab;
+  v_units_level_3 unit_tab;
+  v_units_level_4 unit_tab;
+  v_units_level_5 unit_tab;
   --
-  procedure add_unit_to_level (
-    p_unit  varchar2    ,
-    p_level pls_integer )
-  is
-  begin
-    if p_level >= 2 then v_conf.units_level_warning := v_sep || p_unit; end if;
-    if p_level >= 3 then v_conf.units_level_info    := v_sep || p_unit; end if;
-    if p_level >= 4 then v_conf.units_level_debug   := v_sep || p_unit; end if;
-    if p_level >= 5 then v_conf.units_level_trace   := v_sep || p_unit; end if;
-  end add_unit_to_level;
-  --
-  procedure close_unit_levels is
-  begin
-    if v_conf.units_level_warning is not null then v_conf.units_level_warning := v_conf.units_level_warning || v_sep; end if;
-    if v_conf.units_level_info    is not null then v_conf.units_level_info    := v_conf.units_level_info    || v_sep; end if;
-    if v_conf.units_level_debug   is not null then v_conf.units_level_debug   := v_conf.units_level_debug   || v_sep; end if;
-    if v_conf.units_level_trace   is not null then v_conf.units_level_trace   := v_conf.units_level_trace   || v_sep; end if;
-  end close_unit_levels;
-  --
-  procedure normalize_units_and_levels (
+  procedure distribute_units_to_levels (
     p_units varchar2    ,
     p_level pls_integer )
   is
-    v_units t_vc32k;
-    v_unit  t_vc32k;
-    v_index pls_integer;
+    v_units vc2_tab_i;
   begin
     if p_units is not null then
-      v_units := p_units;
-      loop
-        v_index := instr(v_units, v_sep);
-        if v_index > 0 then
-          add_unit_to_level( trim(substr(v_units, 1, v_index - 1)), p_level );
-          v_units := substr(v_units, v_index + 1);
-        else
-          add_unit_to_level( trim(v_units), p_level );
-          exit;
+      v_units := split(p_units);
+      for i in 1 .. v_units.count loop
+        if trim(v_units(i)) is not null then
+          if p_level >= 2 then v_units_level_2( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
+          if p_level >= 3 then v_units_level_3( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
+          if p_level >= 4 then v_units_level_4( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
+          if p_level >= 5 then v_units_level_5( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
         end if;
       end loop;
     end if;
-  end normalize_units_and_levels;
+  end distribute_units_to_levels;
+  --
+  function join_units (
+    p_level pls_integer )
+  return varchar2 is
+    v_units  unit_tab;
+    v_return varchar2(32767);
+    v_index  varchar2(1000);
+  begin
+    v_units :=
+      case p_level
+        when 2 then v_units_level_2
+        when 3 then v_units_level_3
+        when 4 then v_units_level_4
+        when 5 then v_units_level_5
+      end;
+    if v_units.count > 0 then
+      v_index := v_units.first;
+      while v_index is not null loop
+        v_return := v_return || v_index || ','; -- we join here our index (the unique unit names)
+        v_index := v_units.next(v_index);
+      end loop;
+      v_return := ',' || v_return;
+    end if;
+    return v_return;
+  end join_units;
   --
 begin
   assert (
-    p_level in (1, 2, 3),
-    'Level needs to be 1 (error), 2 (warning) or 3 (info). ' ||
-    'Levels 4 (debug) and 5 (trace) can only be set per session with the procedure init.');
+    p_level in (1, 2, 3, 4, 5),
+    'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
   assert (
     c_console_owner = sys_context('USERENV','SESSION_USER'),
     'Setting of the global console configuration is only allowed for the owner of the console package.');
@@ -3154,11 +3337,15 @@ begin
   v_conf.check_interval   := p_check_interval;
   v_conf.enable_ascii_art := to_yn(p_enable_ascii_art);
   --
-  normalize_units_and_levels (p_units_level_warning, 2);
-  normalize_units_and_levels (p_units_level_info   , 3);
-  normalize_units_and_levels (p_units_level_debug  , 4);
-  normalize_units_and_levels (p_units_level_trace  , 5);
-  close_unit_levels;
+  distribute_units_to_levels (p_units_level_warning, 2);
+  distribute_units_to_levels (p_units_level_info   , 3);
+  distribute_units_to_levels (p_units_level_debug  , 4);
+  distribute_units_to_levels (p_units_level_trace  , 5);
+  --
+  v_conf.units_level_warning := join_units(2);
+  v_conf.units_level_info    := join_units(3);
+  v_conf.units_level_debug   := join_units(4);
+  v_conf.units_level_trace   := join_units(5);
   --
   v_old_conf := utl_read_global_conf;
   --
@@ -3173,6 +3360,87 @@ begin
   end if;
   utl_load_session_configuration;
 end conf;
+
+--------------------------------------------------------------------------------
+
+procedure conf_level (
+  p_level  integer  default c_level_error )
+is
+  v_conf console_global_conf%rowtype;
+begin
+  v_conf := utl_read_global_conf;
+  if p_level != v_conf.level_id then
+    conf (
+      p_level               => p_level                          ,
+      p_check_interval      => v_conf.check_interval            ,
+      p_units_level_warning => v_conf.units_level_warning       ,
+      p_units_level_info    => v_conf.units_level_info          ,
+      p_units_level_debug   => v_conf.units_level_debug         ,
+      p_units_level_trace   => v_conf.units_level_trace         ,
+      p_enable_ascii_art    => to_bool(v_conf.enable_ascii_art) );
+  end if;
+end conf_level;
+
+--------------------------------------------------------------------------------
+
+procedure conf_check_interval (
+  p_check_interval  integer  default 10  )
+is
+  v_conf console_global_conf%rowtype;
+begin
+  v_conf := utl_read_global_conf;
+  if p_check_interval != v_conf.check_interval then
+    conf (
+      p_level               => v_conf.level_id                  ,
+      p_check_interval      => p_check_interval                 ,
+      p_units_level_warning => v_conf.units_level_warning       ,
+      p_units_level_info    => v_conf.units_level_info          ,
+      p_units_level_debug   => v_conf.units_level_debug         ,
+      p_units_level_trace   => v_conf.units_level_trace         ,
+      p_enable_ascii_art    => to_bool(v_conf.enable_ascii_art) );
+  end if;
+end conf_check_interval;
+
+--------------------------------------------------------------------------------
+
+procedure conf_units (
+  p_units_level_warning varchar2 default null ,
+  p_units_level_info    varchar2 default null ,
+  p_units_level_debug   varchar2 default null ,
+  p_units_level_trace   varchar2 default null )
+is
+  v_conf console_global_conf%rowtype;
+begin
+  v_conf := utl_read_global_conf;
+  conf (
+    p_level               => v_conf.level_id                  ,
+    p_check_interval      => v_conf.check_interval            ,
+    p_units_level_warning => p_units_level_warning            ,
+    p_units_level_info    => p_units_level_info               ,
+    p_units_level_debug   => p_units_level_debug              ,
+    p_units_level_trace   => p_units_level_trace              ,
+    p_enable_ascii_art    => to_bool(v_conf.enable_ascii_art) );
+end conf_units;
+
+--------------------------------------------------------------------------------
+
+procedure conf_ascii_art (
+  p_enable_ascii_art  boolean  default true  )
+is
+  v_conf console_global_conf%rowtype;
+begin
+  v_conf := utl_read_global_conf;
+  if p_enable_ascii_art != to_bool(v_conf.enable_ascii_art) then
+    conf (
+      p_level               => v_conf.level_id                  ,
+      p_check_interval      => v_conf.check_interval            ,
+      p_units_level_warning => v_conf.units_level_warning       ,
+      p_units_level_info    => v_conf.units_level_info          ,
+      p_units_level_debug   => v_conf.units_level_debug         ,
+      p_units_level_trace   => v_conf.units_level_trace         ,
+      p_enable_ascii_art    => p_enable_ascii_art               );
+  end if;
+end conf_ascii_art;
 
 --------------------------------------------------------------------------------
 
@@ -3326,21 +3594,85 @@ end exit_stale;
 function context_is_available return boolean is
 begin
   return g_conf_context_is_available;
-end;
+end context_is_available;
 
 --------------------------------------------------------------------------------
 
 function context_is_available_yn return varchar2 is
 begin
   return to_yn(g_conf_context_is_available);
-end;
+end context_is_available_yn;
 
 --------------------------------------------------------------------------------
 
 function version return varchar2 is
 begin
   return c_version;
-end;
+end version;
+
+--------------------------------------------------------------------------------
+
+function split_to_table (
+  p_string varchar2,
+  p_sep    varchar2 default ','
+) return vc2_tab pipelined is
+  v_array vc2_tab_i;
+begin
+  if p_string is not null then
+    v_array := split(p_string, p_sep);
+    for i in 1 .. v_array.count loop
+        pipe row ( v_array(i) );
+    end loop;
+  end if;
+end split_to_table;
+
+--------------------------------------------------------------------------------
+
+function split (
+  p_string varchar2,
+  p_sep    varchar2 default ','
+) return vc2_tab_i is
+  v_str        varchar2(32767);
+  v_idx        pls_integer;
+  v_sep_length pls_integer;
+  v_return     vc2_tab_i;
+begin
+  if p_string is not null then
+    if p_sep is null then
+      for i in 1 .. length(p_string) loop
+        v_return(v_return.count + 1) := substr(p_string, i, 1);
+      end loop;
+    else
+      v_str := p_string;
+      v_sep_length := length(p_sep);
+      loop
+        v_idx := instr(v_str, p_sep);
+        if v_idx > 0 then
+          v_return(v_return.count + 1) := substr(v_str, 1, v_idx - 1);
+          v_str := substr(v_str, v_idx + v_sep_length);
+        else
+          v_return(v_return.count + 1) := v_str;
+          exit;
+        end if;
+      end loop;
+    end if;
+  end if;
+  return v_return;
+end split;
+
+--------------------------------------------------------------------------------
+
+function join (
+  p_table vc2_tab_i,
+  p_sep   varchar2 default ','
+) return varchar2 is
+  v_return varchar2(32767);
+begin
+  for i in 1 .. p_table.count loop
+    v_return := v_return || p_sep || p_table(i);
+  end loop;
+  return v_return;
+end join;
 
 --------------------------------------------------------------------------------
 
@@ -3349,7 +3681,7 @@ function to_yn (
 return varchar2 is
 begin
   return case when p_bool then 'Y' else 'N' end;
-end;
+end to_yn;
 
 --------------------------------------------------------------------------------
 
@@ -3358,7 +3690,7 @@ function to_string (
 return varchar2 is
 begin
   return case when p_bool then 'true' else 'false' end;
-end;
+end to_string;
 
 --------------------------------------------------------------------------------
 
@@ -3371,7 +3703,7 @@ begin
       then true
       else false
     end;
-end;
+end to_bool;
 
 --------------------------------------------------------------------------------
 
@@ -3526,7 +3858,7 @@ begin
       trim( replace(replace(p_text, c_crlf, c_lf), c_lf, c_lf||'    ') ),
       c_lf
     );
-end;
+end to_md_code_block;
 
 --------------------------------------------------------------------------------
 
@@ -3543,7 +3875,7 @@ begin
     case when nvl(length(v_key),   0) < 30 then rpad(nvl(v_key  ,' '), 30, ' ') else v_key   end || ' | ' ||
     case when nvl(length(v_value), 0) < 43 then rpad(nvl(v_value,' '), 43, ' ') else v_value end || ' |'  || c_lf ||
     '| ------------------------------ | ------------------------------------------- |' || c_lf;
-end;
+end to_md_tab_header;
 
 --------------------------------------------------------------------------------
 
@@ -3565,7 +3897,7 @@ begin
       case when nvl(length(v_key),   0) < 30 then rpad(nvl(v_key  ,' '), 30, ' ') else v_key   end || ' | ' ||
       case when nvl(length(v_value), 0) < 43 then rpad(nvl(v_value,' '), 43, ' ') else v_value end || ' |'  || c_lf;
   end if;
-end;
+end to_md_tab_data;
 
 --------------------------------------------------------------------------------
 
@@ -3631,7 +3963,7 @@ end to_unibar;
 procedure print ( p_message in varchar2 ) is
 begin
   dbms_output.put_line(p_message);
-end;
+end print;
 
 --------------------------------------------------------------------------------
 
@@ -3898,10 +4230,10 @@ begin
   append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                ) );
   append_row('g_conf_console_env',                to_yn( g_conf_console_env                            ) );
   append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                       ) );
-  append_row('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           );
-  append_row('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           );
-  append_row('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           );
-  append_row('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           );
+  append_row('g_conf_units_level(2)',                    g_conf_units_level(2)                           );
+  append_row('g_conf_units_level(3)',                    g_conf_units_level(3)                           );
+  append_row('g_conf_units_level(4)',                    g_conf_units_level(4)                           );
+  append_row('g_conf_units_level(5)',                    g_conf_units_level(5)                           );
   append_row('g_counters.count',                to_char( g_counters.count                              ) );
   append_row('g_timers.count',                  to_char( g_timers.count                                ) );
   append_row('g_log_cache.count',               to_char( g_log_cache.count                             ) );
@@ -4081,7 +4413,7 @@ begin
       dbms_lob.writeappend(p_clob, length(p_text), p_text);
     end if;
   end if;
-end;
+end clob_append;
 
 --------------------------------------------------------------------------------
 
@@ -4102,7 +4434,7 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
-function view_cache return tab_logs pipelined is
+function view_cache return logs_tab pipelined is
 begin
   for i in reverse 1 .. g_log_cache.count loop
     pipe row(g_log_cache(i));
@@ -4129,41 +4461,41 @@ procedure clear (
 is
 begin
   g_log_cache.delete;
-end;
+end clear;
 
 --------------------------------------------------------------------------------
 
-function view_status return tab_key_value pipelined is
-  v_row rec_key_value;
+function view_status return key_value_tab pipelined is
+  v_row key_value_rec;
 begin
   if g_conf_check_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
-  pipe row(new rec_key_value('c_version',                       to_char( c_version                                      )) );
-  pipe row(new rec_key_value('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
-  pipe row(new rec_key_value('c_ctx_namespace',                          c_ctx_namespace                                 ) );
-  pipe row(new rec_key_value('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
-  pipe row(new rec_key_value('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
-  pipe row(new rec_key_value('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
-  pipe row(new rec_key_value('g_conf_level',                    to_char( g_conf_level                                   )) );
-  pipe row(new rec_key_value('get_level_name(g_conf_level)',    to_char( get_level_name(g_conf_level)                   )) );
-  pipe row(new rec_key_value('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
-  pipe row(new rec_key_value('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
-  pipe row(new rec_key_value('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
-  pipe row(new rec_key_value('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
-  pipe row(new rec_key_value('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
-  pipe row(new rec_key_value('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
-  pipe row(new rec_key_value('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
-  pipe row(new rec_key_value('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
-  pipe row(new rec_key_value('g_conf_unit_levels(2)',                    g_conf_unit_levels(2)                           ) );
-  pipe row(new rec_key_value('g_conf_unit_levels(3)',                    g_conf_unit_levels(3)                           ) );
-  pipe row(new rec_key_value('g_conf_unit_levels(4)',                    g_conf_unit_levels(4)                           ) );
-  pipe row(new rec_key_value('g_conf_unit_levels(5)',                    g_conf_unit_levels(5)                           ) );
-  pipe row(new rec_key_value('g_counters.count',                to_char( g_counters.count                               )) );
-  pipe row(new rec_key_value('g_timers.count',                  to_char( g_timers.count                                 )) );
-  pipe row(new rec_key_value('g_log_cache.count',               to_char( g_log_cache.count                              )) );
-  pipe row(new rec_key_value('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
-  pipe row(new rec_key_value('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
+  pipe row(new key_value_rec('c_version',                       to_char( c_version                                      )) );
+  pipe row(new key_value_rec('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
+  pipe row(new key_value_rec('c_ctx_namespace',                          c_ctx_namespace                                 ) );
+  pipe row(new key_value_rec('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
+  pipe row(new key_value_rec('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
+  pipe row(new key_value_rec('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
+  pipe row(new key_value_rec('g_conf_level',                    to_char( g_conf_level                                   )) );
+  pipe row(new key_value_rec('get_level_name(g_conf_level)',    to_char( get_level_name(g_conf_level)                   )) );
+  pipe row(new key_value_rec('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
+  pipe row(new key_value_rec('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
+  pipe row(new key_value_rec('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
+  pipe row(new key_value_rec('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
+  pipe row(new key_value_rec('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
+  pipe row(new key_value_rec('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
+  pipe row(new key_value_rec('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
+  pipe row(new key_value_rec('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
+  pipe row(new key_value_rec('g_conf_units_level(2)',                    g_conf_units_level(2)                           ) );
+  pipe row(new key_value_rec('g_conf_units_level(3)',                    g_conf_units_level(3)                           ) );
+  pipe row(new key_value_rec('g_conf_units_level(4)',                    g_conf_units_level(4)                           ) );
+  pipe row(new key_value_rec('g_conf_units_level(5)',                    g_conf_units_level(5)                           ) );
+  pipe row(new key_value_rec('g_counters.count',                to_char( g_counters.count                               )) );
+  pipe row(new key_value_rec('g_timers.count',                  to_char( g_timers.count                                 )) );
+  pipe row(new key_value_rec('g_log_cache.count',               to_char( g_log_cache.count                              )) );
+  pipe row(new key_value_rec('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
+  pipe row(new key_value_rec('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
 end view_status;
 
 --------------------------------------------------------------------------------
@@ -4185,7 +4517,7 @@ begin
       and permanent = 'N'
       and log_systime <= sysdate - p_min_days;
   commit;
-end;
+end purge;
 
 --------------------------------------------------------------------------------
 
@@ -4319,7 +4651,7 @@ begin
     c_lf,     ' '),
     c_cr,     ' '),
     '|', '&#124;');
-end;
+end utl_escape_md_tab_text;
 
 --------------------------------------------------------------------------------
 
@@ -4357,7 +4689,7 @@ begin
     or
     sqlcode != 0
     or
-    g_conf_unit_levels(p_level) is not null and instr(g_conf_unit_levels(p_level), ','||get_calling_unit||',') > 0;
+    g_conf_units_level(p_level) is not null and instr(g_conf_units_level(p_level), ','||get_calling_unit||',') > 0;
 end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
@@ -4365,7 +4697,7 @@ end utl_logging_is_enabled;
 function utl_normalize_label (p_label varchar2) return varchar2 is
 begin
   return coalesce(substrb(p_label, 1, 128), c_default_label);
-end;
+end utl_normalize_label;
 
 --------------------------------------------------------------------------------
 
@@ -4416,7 +4748,7 @@ begin
     c_crlf, p_replace_with),
     c_lf,   p_replace_with),
     c_cr,   p_replace_with);
-end;
+end utl_replace_linebreaks;
 
 --------------------------------------------------------------------------------
 
@@ -4476,10 +4808,10 @@ procedure utl_load_session_configuration is
   procedure load_global_conf is
   begin
     v_global_conf := utl_read_global_conf;
-    g_conf_unit_levels(2)   :=                    v_global_conf.units_level_warning      ;
-    g_conf_unit_levels(3)   :=                    v_global_conf.units_level_info         ;
-    g_conf_unit_levels(4)   :=                    v_global_conf.units_level_debug        ;
-    g_conf_unit_levels(5)   :=                    v_global_conf.units_level_trace        ;
+    g_conf_units_level(2)   :=                    v_global_conf.units_level_warning      ;
+    g_conf_units_level(3)   :=                    v_global_conf.units_level_info         ;
+    g_conf_units_level(4)   :=                    v_global_conf.units_level_debug        ;
+    g_conf_units_level(5)   :=                    v_global_conf.units_level_trace        ;
     g_conf_enable_ascii_art := to_bool ( coalesce(v_global_conf.enable_ascii_art, 'Y') ) ;
   end load_global_conf;
   --

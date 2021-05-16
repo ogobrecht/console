@@ -31,11 +31,13 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type rec_key_value is record(
+type key_value_rec is record(
   key    varchar2 ( 128 byte)  ,
   value  varchar2 (4000 byte)  );
-type tab_key_value is table of rec_key_value;
-type tab_logs      is table of console_logs%rowtype;
+type key_value_tab is table of key_value_rec;
+type logs_tab      is table of console_logs%rowtype;
+type vc2_tab       is table of varchar2(32767);
+type vc2_tab_i     is table of varchar2(32767) index by pls_integer;
 
 
 --------------------------------------------------------------------------------
@@ -70,7 +72,7 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows integer default 100) return tab_logs pipelined;
+function view_last (p_log_rows integer default 100) return logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -906,7 +908,7 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning) or 3 (info).
+  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_check_interval      integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_units_level_warning varchar2 default null          , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
   p_units_level_info    varchar2 default null          , -- Same as p_units_level_warning for level info.
@@ -936,6 +938,111 @@ begin
   );
 end;
 {{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_level (
+  p_level integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+);
+/**
+
+Set the global level.
+
+A shortcut for the procedure `console.conf` to only set the level without
+interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--set all sessions to level warning
+exec console.conf_level(2);
+
+--same with using a constant
+exec console.conf_level(console.c_level_warning);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_check_interval (
+  p_check_interval integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+);
+/**
+
+Set the global check interval.
+
+A shortcut for the procedure `console.conf` to only set the check interval
+without interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--set all sessions to a check interval of 30 seconds
+exec console.conf_check_interval(30);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_units (
+  p_units_level_warning varchar2 default null , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    varchar2 default null , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   varchar2 default null , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   varchar2 default null   -- Same as p_units_level_warning for level trace.
+);
+/**
+
+Set the global levels for code units under special observation.
+
+A shortcut for the procedure `console.conf` to only set unit levels without
+interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--special observation of two new packages
+exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_ascii_art (
+  p_enable_ascii_art  boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
+);
+/**
+
+Set the global ascii art status.
+
+A shortcut for the procedure `console.conf` to only set the ascii art status
+without interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--enable the usage of ascii art
+exec console.conf_ascii_art(true);
+
+--disable the usage of ascii art
+exec console.conf_ascii_art(false);
 ```
 
 **/
@@ -1098,6 +1205,77 @@ Returns the version information from the console package.
 ```sql
 select console.version from dual;
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function split_to_table (
+  p_string varchar2,            -- The string to split into a table.
+  p_sep    varchar2 default ',' -- The separator.
+) return vc2_tab pipelined;
+/**
+
+Splits a string into a (pipelined) SQL table of varchar2.
+
+If the separator is null the string will be splitted into its characters.
+
+EXAMPLE
+
+```sql
+select * from console.split_to_table('1,2,3');
+```
+
+| COLUMN_VALUE |
+|--------------|
+| 1            |
+| 2            |
+| 3            |
+
+**/
+
+--------------------------------------------------------------------------------
+
+function split (
+  p_string varchar2,            -- The string to split into an array.
+  p_sep    varchar2 default ',' -- The separator.
+) return vc2_tab_i;
+/**
+
+Splits a string into a PL/SQL associative array.
+
+If the separator is null the string will be splitted into its characters.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_array console.vc2_tab_i;
+begin
+  v_array := console.split('A,B,C');
+  for i in 1 .. v_array.count loop
+    console.print(i||': '||v_array(i));
+  end loop;
+end;
+{{/}}
+
+1: A
+2: B
+3: C
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function join (
+  p_table vc2_tab_i,           -- The PL/SQL array to join into a string.
+  p_sep   varchar2 default ',' -- The separator.
+) return varchar2;
+/**
+
+Joins a PL/SQL associative array into a string.
 
 **/
 
@@ -1524,7 +1702,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_cache return tab_logs pipelined;
+function view_cache return logs_tab pipelined;
 /**
 
 View the content of the log cache.
@@ -1579,7 +1757,7 @@ avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 --------------------------------------------------------------------------------
 
-function view_status return tab_key_value pipelined;
+function view_status return key_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,

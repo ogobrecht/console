@@ -379,10 +379,10 @@ select * from table(console.view_status);
 | g_conf_cgi_env               | N                   |
 | g_conf_console_env           | N                   |
 | g_conf_enable_ascii_art      | Y                   |
-| g_conf_unit_levels(2)        |                     |
-| g_conf_unit_levels(3)        |                     |
-| g_conf_unit_levels(4)        |                     |
-| g_conf_unit_levels(5)        |                     |
+| g_conf_units_level(2)        |                     |
+| g_conf_units_level(3)        |                     |
+| g_conf_units_level(4)        |                     |
+| g_conf_units_level(5)        |                     |
 | g_counters.count             | 0                   |
 | g_timers.count               | 0                   |
 | g_log_cache.count            | 0                   |
