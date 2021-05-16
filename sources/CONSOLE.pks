@@ -1,16 +1,16 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta5'                            ;
+c_version constant varchar2 ( 20 byte ) := '1.0-beta6'                            ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error     constant pls_integer := 1 ;
-c_level_warning   constant pls_integer := 2 ;
-c_level_info      constant pls_integer := 3 ;
-c_level_debug     constant pls_integer := 4 ;
-c_level_trace     constant pls_integer := 5 ;
+c_level_error   constant pls_integer := 1 ;
+c_level_warning constant pls_integer := 2 ;
+c_level_info    constant pls_integer := 3 ;
+c_level_debug   constant pls_integer := 4 ;
+c_level_trace   constant pls_integer := 5 ;
 
 /**
 
@@ -31,11 +31,13 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type rec_key_value is record(
+type key_value_rec is record(
   key    varchar2 ( 128 byte)  ,
   value  varchar2 (4000 byte)  );
-type tab_key_value is table of rec_key_value;
-type tab_logs      is table of console_logs%rowtype;
+type key_value_tab is table of key_value_rec;
+type logs_tab      is table of console_logs%rowtype;
+type vc2_tab       is table of varchar2(32767);
+type vc2_tab_i     is table of varchar2(32767) index by pls_integer;
 
 
 --------------------------------------------------------------------------------
@@ -70,7 +72,7 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows integer default 100) return tab_logs pipelined;
+function view_last (p_log_rows integer default 100) return logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -207,38 +209,38 @@ Call Stack
 ------------------------------------------------------------------------------------------------------------------------
 {{#}}# Saved Error Stack
 
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
-- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
+- PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
+- PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
 {{#}}# Call Stack
 
-- PLAYGROUND_DATA.SOME_API.DO_STUFF, line 38
+- PLAYGROUND.SOME_API.DO_STUFF, line 38
 - __anonymous_block, line 2
 
 {{#}}# Error Stack
 
 - ORA-01403 no data found
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 31
+- ORA-06512 at "PLAYGROUND.SOME_API", line 31
 - ORA-20777 Assertion failed: Test assertion with line break.
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 23
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 15
-- ORA-06512 at "PLAYGROUND_DATA.CONSOLE", line 750
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 11
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 19
-- ORA-06512 at "PLAYGROUND_DATA.SOME_API", line 27
+- ORA-06512 at "PLAYGROUND.SOME_API", line 23
+- ORA-06512 at "PLAYGROUND.SOME_API", line 15
+- ORA-06512 at "PLAYGROUND.CONSOLE", line 750
+- ORA-06512 at "PLAYGROUND.SOME_API", line 11
+- ORA-06512 at "PLAYGROUND.SOME_API", line 19
+- ORA-06512 at "PLAYGROUND.SOME_API", line 27
 
 {{#}}# Error Backtrace
 
-- PLAYGROUND_DATA.SOME_API, line 31
-- PLAYGROUND_DATA.SOME_API, line 23
-- PLAYGROUND_DATA.SOME_API, line 15
-- PLAYGROUND_DATA.CONSOLE, line 750
-- PLAYGROUND_DATA.SOME_API, line 11
-- PLAYGROUND_DATA.SOME_API, line 19
-- PLAYGROUND_DATA.SOME_API, line 27
-- PLAYGROUND_DATA.SOME_API, line 35
+- PLAYGROUND.SOME_API, line 31
+- PLAYGROUND.SOME_API, line 23
+- PLAYGROUND.SOME_API, line 15
+- PLAYGROUND.CONSOLE, line 750
+- PLAYGROUND.SOME_API, line 11
+- PLAYGROUND.SOME_API, line 19
+- PLAYGROUND.SOME_API, line 27
+- PLAYGROUND.SOME_API, line 35
 ```
 
 **/
@@ -906,17 +908,20 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning) or 3 (info).
+  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
   p_check_interval      integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_units_level_warning varchar2 default null          , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
   p_units_level_info    varchar2 default null          , -- Same as p_units_level_warning for level info.
   p_units_level_debug   varchar2 default null          , -- Same as p_units_level_warning for level debug.
   p_units_level_trace   varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    boolean  default false           -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_enable_ascii_art    boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 /**
 
 Set the global console configuration.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
 
 EXAMPLE
 
@@ -939,6 +944,111 @@ end;
 
 --------------------------------------------------------------------------------
 
+procedure conf_level (
+  p_level integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+);
+/**
+
+Set the global level.
+
+A shortcut for the procedure `console.conf` to only set the level without
+interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--set all sessions to level warning
+exec console.conf_level(2);
+
+--same with using a constant
+exec console.conf_level(console.c_level_warning);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_check_interval (
+  p_check_interval integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+);
+/**
+
+Set the global check interval.
+
+A shortcut for the procedure `console.conf` to only set the check interval
+without interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--set all sessions to a check interval of 30 seconds
+exec console.conf_check_interval(30);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_units (
+  p_units_level_warning varchar2 default null , -- A comma separated list of units names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    varchar2 default null , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   varchar2 default null , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   varchar2 default null   -- Same as p_units_level_warning for level trace.
+);
+/**
+
+Set the global levels for code units under special observation.
+
+A shortcut for the procedure `console.conf` to only set unit levels without
+interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--special observation of two new packages
+exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure conf_ascii_art (
+  p_enable_ascii_art  boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
+);
+/**
+
+Set the global ascii art status.
+
+A shortcut for the procedure `console.conf` to only set the ascii art status
+without interfering other settings.
+
+DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
+MANAGING GLOBAL PREFERENCES.
+
+EXAMPLE
+
+```sql
+--enable the usage of ascii art
+exec console.conf_ascii_art(true);
+
+--disable the usage of ascii art
+exec console.conf_ascii_art(false);
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure init (
   p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
   p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
@@ -953,21 +1063,21 @@ procedure init (
 );
 /**
 
-Starts the logging for a specific session.
+Init/set the preferences for a specific session/client_identifier and duration.
 
-To avoid spoiling the context with very long input the p_client_identifier parameter is
-truncated after 64 characters before using it.
+To avoid spoiling the context with very long input the parameter
+p_client_identifier is truncated after 64 characters before using it.
 
 For easier usage there is an overloaded procedure available which uses always
-your own client identifier.
+your own session/client_identifier.
 
 DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
+MANAGING CLIENT PREFERENCES.
 
 EXAMPLES
 
 ```sql
--- Dive into your own session with the default level of 3 (info) and the
+-- Dive into your own session with the default log level of 3 (info) and the
 -- default duration of 60 (minutes).
 exec console.init;
 
@@ -1005,7 +1115,8 @@ procedure init (
   p_console_env    boolean default false          -- Should the console environment be included.
 );
 /**
-An overloaded procedure for easier initialization of the own session in an development IDE.
+An overloaded procedure for easier initialization of the own
+session/client_identifier in an development IDE.
 **/
 
 procedure exit (
@@ -1013,34 +1124,35 @@ procedure exit (
 );
 /**
 
-Stops the logging for a specific session.
+Exit/unset the preferences for a specific session/client_identifier.
 
-If you stop your own session then this has an immediate effect as we can clear
-the configuration cache in our package. If you stop another session then it can
-take some seconds until the other session is reloading the cached configuration
-from the context (if available) or the sessions table. The default cache
-duration is ten seconds.
+If you exit/unset your own client preferencs then this has an immediate effect
+as we can unset the preferences in our package state. If you exit another
+session/client_identifier then it can take some seconds until the other
+session/client_identifier is reloading the configuration from the context (if
+available) or the client_prefs table. The default check interval for a changed
+configuration is ten seconds.
 
-Stopping the logging mode means also the cached log entries will be flushed to
+Exit/unset the preferences means also the cached log entries will be flushed to
 the logging table CONSOLE_LOGS. If you do not need the cached entries you can
 delete them in advance by calling the `clear` procedure.
 
 DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
+MANAGING CLIENT PREFERENCES.
 
 **/
 
 procedure exit_stale;
 /**
 
-Stops the logging for all sessions in the table console_sessions which have a
-exit date older than one hour.
+Exit/unset the preferences for all sessions in the table console_client_prefs
+which have a exit date in the past for at least one hour.
 
 This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
 runs per default at 1 o'clock after midnight.
 
 DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING LOGGING MODES OF SESSIONS.
+MANAGING CLIENT PREFERENCES.
 
 **/
 
@@ -1093,6 +1205,77 @@ Returns the version information from the console package.
 ```sql
 select console.version from dual;
 ```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function split_to_table (
+  p_string varchar2,            -- The string to split into a table.
+  p_sep    varchar2 default ',' -- The separator.
+) return vc2_tab pipelined;
+/**
+
+Splits a string into a (pipelined) SQL table of varchar2.
+
+If the separator is null the string will be splitted into its characters.
+
+EXAMPLE
+
+```sql
+select * from console.split_to_table('1,2,3');
+```
+
+| COLUMN_VALUE |
+|--------------|
+| 1            |
+| 2            |
+| 3            |
+
+**/
+
+--------------------------------------------------------------------------------
+
+function split (
+  p_string varchar2,            -- The string to split into an array.
+  p_sep    varchar2 default ',' -- The separator.
+) return vc2_tab_i;
+/**
+
+Splits a string into a PL/SQL associative array.
+
+If the separator is null the string will be splitted into its characters.
+
+EXAMPLE
+
+```sql
+set serveroutput on
+declare
+  v_array console.vc2_tab_i;
+begin
+  v_array := console.split('A,B,C');
+  for i in 1 .. v_array.count loop
+    console.print(i||': '||v_array(i));
+  end loop;
+end;
+{{/}}
+
+1: A
+2: B
+3: C
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function join (
+  p_table vc2_tab_i,           -- The PL/SQL array to join into a string.
+  p_sep   varchar2 default ',' -- The separator.
+) return varchar2;
+/**
+
+Joins a PL/SQL associative array into a string.
 
 **/
 
@@ -1519,7 +1702,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_cache return tab_logs pipelined;
+function view_cache return logs_tab pipelined;
 /**
 
 View the content of the log cache.
@@ -1574,7 +1757,7 @@ avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 --------------------------------------------------------------------------------
 
-function view_status return tab_key_value pipelined;
+function view_status return key_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
@@ -1634,7 +1817,7 @@ procedure cleanup_job_create (
 );
 /**
 Creates a cleanup job which deletes old log entries from console_logs and stale
-debug sessions from console_sessions.
+debug sessions from console_client_prefs.
 **/
 procedure cleanup_job_drop;    /** Drops the cleanup job (if it exists).    **/
 procedure cleanup_job_enable;  /** Enables the cleanup job (if it exists).  **/
@@ -1651,8 +1834,8 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_get_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_global_conf return console_conf%rowtype result_cache;
-function utl_read_session_conf (p_client_identifier varchar2) return console_sessions%rowtype result_cache;
+function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
+function utl_read_global_conf return console_global_conf%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
 procedure utl_ctx_check_availability;
 procedure utl_ctx_clear (p_client_identifier varchar2);

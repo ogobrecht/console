@@ -12,6 +12,17 @@
 
 # Changelog
 
+## v1.0-beta6 (2021-05-16)
+
+- Rename table CONSOLE_CONF to CONSOLE_GLOBAL_CONF
+- Rename table CONSOLE_SESSIONS to CONSOLE_CLIENT_PREFS
+- Allow all levels for global configuration
+- New shortcuts for global configuration (conf_level, conf_units,
+  conf_check_interval...)
+- New helpers `split_to_table`, `split` & `join`
+- Fix script for install log entry
+- Fix configure multiple units for specific level
+
 ## v1.0-beta5 (2021-05-02)
 
 - Fix table CONSOLE_CONF (remove `organization index`)

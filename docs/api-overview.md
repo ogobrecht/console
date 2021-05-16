@@ -123,8 +123,11 @@ Additional housekeeping methods:
 Additional helper methods (mostly used by console internally) which might also
 helpful for you:
 
+- [console.split_to_table](package-console.md#function-split_to_table) &
+  [split](package-console.md#function-split) &
+  [join](package-console.md#function-join)
 - [console.to_yn](package-console.md#function-to_yn) &
-  [to_string](package-console.md#function-to_bool) &
+  [to_string](package-console.md#function-to_string) &
   [to_bool](package-console.md#function-to_bool)
 - [console.to_html_table](package-console.md#function-to_html_table)
 - [console.to_md_tab_header](package-console.md#function-to_md_tab_header) &

@@ -19,7 +19,7 @@ use it to instrument your code.
 
 - [Minimal - Log Only Errors](#minimal---log-only-errors)
 - [Debugging During Development or Analyzing Problems](#debugging-during-development-or-analyzing-problems)
-- [Configure Default Log Level](#configure-default-log-level)
+- [Configure Default Log Level (set global configuration)](#configure-default-log-level-set-global-configuration)
 - [Configure Different Log Levels for Specific PL/SQL Units](#configure-different-log-levels-for-specific-plsql-units)
 - [View Console Status](#view-console-status)
 - [APEX Backend - Error Handling Function](#apex-backend---error-handling-function)
@@ -37,7 +37,8 @@ table with many entries from every nested method call to try to get the most
 detailed information. On the other hand if you handle the errors only in the
 outermost methods of your business logic then you loose context information
 because the error backtrace from Oracle tells you only the package names and
-line numbers where the error was bubbling up in your code.
+line numbers where the error was bubbling up in your code - the method names are
+missing in the backtrace.
 
 We try to bridge this gap with a special helper method called
 [console.error_save_stack](package-console.md#procedure-error_save_stack). This
@@ -181,19 +182,20 @@ Call Stack
 > Log certain information with different log methods. Enable logging with
 > `console.init`.
 
-### Init Log Level
+### Init Log Level (set client preferences)
 
-CONSOLE runs per default only in log level `error` (1, you can change this - see
-[here](package-console.md#procedure-conf)). In this level all calls to log
-methods in levels warning (2), info (3), debug (4) and trace (5) are simply
-ignored. This is fine for production as you can leave your instrumentation calls
-unchanged but if you want CONSOLE to really log those levels then you have to
-call [console.init](package-console.md#procedure-init) to change the log level
-for your own or other sessions.
+CONSOLE runs per default only in log level `error` (level 1, you can change this
+with [console.conf](package-console.md#procedure-conf)). In this level `error`
+all calls to log methods in levels warning (2), info (3), debug (4) and trace
+(5) are simply ignored. This is fine for production as you can leave your
+instrumentation calls unchanged but if you want CONSOLE to really log those
+levels then you have to call [console.init](package-console.md#procedure-init)
+to change the log level (and other preferences) for your own or other
+sessions/client identifiers.
 
 Please note that you should not use `console.init` in your business logic. It is
-a helper method and should only used in scripts to change the log level for
-sessions.
+a helper method and should only used in scripts to manage the preferences for
+specific client identifiers.
 
 Some examples:
 
@@ -226,10 +228,11 @@ A session is identified by the client identifier. This information can be found
 in many adminstrative view from Oracle (for example in the v$session view). Some
 applications like APEX providing a unique identifier for a user. This is good,
 otherwise in a shared environment it would be impossible to change the log level
-only for a specific user.
+for a specific end user without impacting other end users as the
+sessions/resources are shared.
 
-For your own session in a development IDE you don't need to care about how your
-session is identified.
+For your own dedicated session in a development IDE you don't need to care about
+how your session is identified.
 
 What can you do if you want to debug a session from another user, if a session
 has no client identifier set?
@@ -281,7 +284,7 @@ useful, if you use the possibility to cache log entries in the packages state
 from the cache and the log table `CONSOLE_LOGS` in descending order:
 
 ```sql
---init logging for own session
+--init preferences for own session/client_identifier
 exec console.init(
   p_level          => c_level_debug ,
   p_duration       => 90            , -- in minutes
@@ -300,23 +303,23 @@ end;
 select * from console.view_last(50);
 ```
 
-### Exit Log Level
+### Exit Log Level (unset client preferences)
 
-If you finished your debugging work you might want to exit the current log level
-and go back to the default level. You can do this by calling
-[console.exit](package-console.md#procedure-exit). If you provide no client
-identifier, then CONSOLE tries to exit your own session.
+If you finished your debugging work you might want to exit/unset the current
+preferences and go back to the global preferences/configuration. You can do this
+by calling [console.exit](package-console.md#procedure-exit). If you provide no
+client identifier, then CONSOLE tries to exit your own session.
 
 If you don't do it by yourself the daily cleanup job from CONSOLE will exit
-stale sessions from the table `CONSOLE_SESSIONS`.
+stale sessions from the table `CONSOLE_CLIENT_PREFS`.
 
-## Configure Default Log Level
+## Configure Default Log Level (set global configuration)
 
 Some people use the levels `error`, `warning` and `info` in production for the
 operations team and levels `debug` and `trace` for debugging purposes. To
-support such use cases you can configure the default log level of CONSOLE for
-all sessions from `error` to `warning` or `info` by using the
-[console.conf](package-console.md#procedure-conf) procedure.
+support such use cases you can configure the default log level (and other
+options) of CONSOLE for all sessions from `error` to `warning` or `info` by
+using the [console.conf](package-console.md#procedure-conf) procedure.
 
 EXAMPLE
 
@@ -358,33 +361,33 @@ An example:
 select * from table(console.view_status);
 ```
 
-| KEY                         | VALUE               |
-|-----------------------------|---------------------|
-| c_version                   | 1.0-beta4           |
-| g_conf_context_is_available | N                   |
-| c_ctx_namespace             | CONSOLE_PLAYGROUND  |
-| g_conf_check_sysdate        | 2021-05-02 13:06:55 |
-| g_conf_exit_sysdate         | 2021-05-03 13:06:45 |
-| g_conf_client_identifier    | {o,o} 1EA16A180002  |
-| g_conf_level                | 1                   |
-| get_level_name              | g_conf_level),error |
-| g_conf_cache_size           | 0                   |
-| g_conf_check_interval       | 10                  |
-| g_conf_call_stack           | N                   |
-| g_conf_user_env             | N                   |
-| g_conf_apex_env             | N                   |
-| g_conf_cgi_env              | N                   |
-| g_conf_console_env          | N                   |
-| g_conf_enable_ascii_art     | N                   |
-| g_conf_unit_levels(2)       |                     |
-| g_conf_unit_levels(3)       |                     |
-| g_conf_unit_levels(4)       |                     |
-| g_conf_unit_levels(5)       |                     |
-| g_counters.count            | 0                   |
-| g_timers.count              | 0                   |
-| g_log_cache.count           | 0                   |
-| g_saved_stack.count         | 0                   |
-| g_prev_error_msg            |                     |
+| KEY                          | VALUE               |
+|------------------------------|---------------------|
+| c_version                    | 1.0-beta5           |
+| g_conf_context_is_available  | N                   |
+| c_ctx_namespace              | CONSOLE_PLAYGROUND  |
+| g_conf_check_sysdate         | 2021-05-02 13:06:55 |
+| g_conf_exit_sysdate          | 2021-05-03 13:06:45 |
+| g_conf_client_identifier     | {o,o} 1EA16A180002  |
+| g_conf_level                 | 1                   |
+| get_level_name(g_conf_level) | error               |
+| g_conf_cache_size            | 0                   |
+| g_conf_check_interval        | 10                  |
+| g_conf_call_stack            | N                   |
+| g_conf_user_env              | N                   |
+| g_conf_apex_env              | N                   |
+| g_conf_cgi_env               | N                   |
+| g_conf_console_env           | N                   |
+| g_conf_enable_ascii_art      | Y                   |
+| g_conf_units_level(2)        |                     |
+| g_conf_units_level(3)        |                     |
+| g_conf_units_level(4)        |                     |
+| g_conf_units_level(5)        |                     |
+| g_counters.count             | 0                   |
+| g_timers.count               | 0                   |
+| g_log_cache.count            | 0                   |
+| g_saved_stack.count          | 0                   |
+| g_prev_error_msg             |                     |
 
 ## APEX Backend - Error Handling Function
 
