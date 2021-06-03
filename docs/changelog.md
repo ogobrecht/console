@@ -12,6 +12,11 @@
 
 # Changelog
 
+## v1.0-beta7 (2021-06-xx)
+
+- Rename table column `CONSOLE_LOGS.LOG_SYSTIME` to `CONSOLE_LOGS.LOG_TIME` and
+  change the data type from `timstamp` to `timestamp with local time zone`
+
 ## v1.0-beta6 (2021-05-16)
 
 - Rename table CONSOLE_CONF to CONSOLE_GLOBAL_CONF

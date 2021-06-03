@@ -166,7 +166,7 @@ begin
   if v_count < p_log_rows then
     v_left := p_log_rows - v_count;
     for i in (select * from console_logs
-              order by log_systime desc
+              order by log_time desc
               fetch first v_left rows only)
     loop
           pipe row(i);
@@ -2403,7 +2403,7 @@ begin
   delete from console_logs
     where level_id >= p_min_level
       and permanent = 'N'
-      and log_systime <= sysdate - p_min_days;
+      and log_time <= localtimestamp - p_min_days;
   commit;
 end purge;
 
@@ -2413,7 +2413,7 @@ procedure purge_all is
 begin
   purge(
     p_min_level => 1,
-    p_min_days  => -1 -- to be sure we delete everything (sysdate - -1 is the same time tomorrow)
+    p_min_days  => -1 -- to be sure we delete everything (localtimestamp - -1 is the same time tomorrow)
   );
 end purge_all;
 
@@ -2858,7 +2858,7 @@ begin
 
   clob_flush_cache(v_row.message, v_cache);
 
-  v_row.log_systime       := systimestamp;
+  v_row.log_time          := localtimestamp;
   v_row.level_id          := p_level;
   v_row.level_name        := get_level_name(p_level);
   v_row.permanent         := to_yn(p_permanent);
