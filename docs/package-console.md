@@ -208,7 +208,7 @@ select * from console.view_last(50);
 SIGNATURE
 
 ```sql
-function view_last (p_log_rows integer default 100) return logs_tab pipelined;
+function view_last (p_log_rows in integer default 100) return logs_tab pipelined;
 ```
 
 
@@ -363,17 +363,17 @@ SIGNATURE
 
 ```sql
 procedure error (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  );
 ```
 
 
@@ -385,17 +385,17 @@ SIGNATURE
 
 ```sql
 function error (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
 ```
 
@@ -408,17 +408,17 @@ SIGNATURE
 
 ```sql
 procedure warn (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  );
 ```
 
 
@@ -430,17 +430,17 @@ SIGNATURE
 
 ```sql
 function warn (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
 ```
 
@@ -453,17 +453,17 @@ SIGNATURE
 
 ```sql
 procedure info (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  );
 ```
 
 
@@ -475,17 +475,17 @@ SIGNATURE
 
 ```sql
 function info (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
 ```
 
@@ -498,17 +498,17 @@ SIGNATURE
 
 ```sql
 procedure log(
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  );
 ```
 
 
@@ -520,17 +520,17 @@ SIGNATURE
 
 ```sql
 function log(
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
 ```
 
@@ -543,17 +543,17 @@ SIGNATURE
 
 ```sql
 procedure debug (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  );
 ```
 
 
@@ -565,17 +565,17 @@ SIGNATURE
 
 ```sql
 function debug (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
 ```
 
@@ -588,17 +588,17 @@ SIGNATURE
 
 ```sql
 procedure trace (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default true  ,
-  p_cgi_env         boolean  default true  ,
-  p_console_env     boolean  default true  ,
-  p_user_env        boolean  default true  ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  );
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default true  ,
+  p_cgi_env         in boolean  default true  ,
+  p_console_env     in boolean  default true  ,
+  p_user_env        in boolean  default true  ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  );
 ```
 
 
@@ -610,17 +610,17 @@ SIGNATURE
 
 ```sql
 function trace (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default true  ,
-  p_cgi_env         boolean  default true  ,
-  p_console_env     boolean  default true  ,
-  p_user_env        boolean  default true  ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default true  ,
+  p_cgi_env         in boolean  default true  ,
+  p_console_env     in boolean  default true  ,
+  p_user_env        in boolean  default true  ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
 ```
 
@@ -635,7 +635,7 @@ value.
 SIGNATURE
 
 ```sql
-procedure count ( p_label varchar2 default null );
+procedure count ( p_label in varchar2 default null );
 ```
 
 
@@ -649,7 +649,7 @@ log the counter value.
 SIGNATURE
 
 ```sql
-procedure count_log ( p_label varchar2 default null );
+procedure count_log ( p_label in varchar2 default null );
 ```
 
 
@@ -683,7 +683,7 @@ exec console.exit;
 SIGNATURE
 
 ```sql
-procedure count_end ( p_label varchar2 default null );
+procedure count_end ( p_label in varchar2 default null );
 ```
 
 
@@ -717,7 +717,7 @@ end;
 SIGNATURE
 
 ```sql
-function count_end ( p_label varchar2 default null ) return varchar2;
+function count_end ( p_label in varchar2 default null ) return varchar2;
 ```
 
 
@@ -731,7 +731,7 @@ time.
 SIGNATURE
 
 ```sql
-procedure time ( p_label varchar2 default null );
+procedure time ( p_label in varchar2 default null );
 ```
 
 
@@ -775,7 +775,7 @@ exec console.exit;
 SIGNATURE
 
 ```sql
-procedure time_log ( p_label varchar2 default null );
+procedure time_log ( p_label in varchar2 default null );
 ```
 
 
@@ -809,7 +809,7 @@ exec console.exit;
 SIGNATURE
 
 ```sql
-procedure time_end ( p_label varchar2 default null );
+procedure time_end ( p_label in varchar2 default null );
 ```
 
 
@@ -843,7 +843,7 @@ end;
 SIGNATURE
 
 ```sql
-function time_end ( p_label varchar2 default null ) return varchar2;
+function time_end ( p_label in varchar2 default null ) return varchar2;
 ```
 
 
@@ -886,11 +886,11 @@ SIGNATURE
 
 ```sql
 procedure table# (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 );
+  p_data_cursor       in sys_refcursor         ,
+  p_comment           in varchar2 default null ,
+  p_include_row_num   in boolean  default true ,
+  p_max_rows          in integer  default 100  ,
+  p_max_column_length in integer  default 1000 );
 ```
 
 
@@ -922,8 +922,8 @@ SIGNATURE
 
 ```sql
 procedure assert (
-  p_expression boolean,
-  p_message    varchar2
+  p_expression in boolean,
+  p_message    in varchar2
 );
 ```
 
@@ -990,7 +990,7 @@ end;
 SIGNATURE
 
 ```sql
-procedure action ( p_action varchar2 );
+procedure action ( p_action in varchar2 );
 ```
 
 
@@ -1010,8 +1010,8 @@ SIGNATURE
 
 ```sql
 procedure module (
-  p_module varchar2,
-  p_action varchar2 default null
+  p_module in varchar2,
+  p_action in varchar2 default null
 );
 ```
 
@@ -1195,8 +1195,8 @@ SIGNATURE
 
 ```sql
 function apex_plugin_render (
-  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
-  p_plugin          in  apex_plugin.t_plugin         )
+  p_dynamic_action in apex_plugin.t_dynamic_action ,
+  p_plugin         in apex_plugin.t_plugin         )
 return apex_plugin.t_dynamic_action_render_result;
 ```
 
@@ -1213,8 +1213,8 @@ SIGNATURE
 
 ```sql
 function apex_plugin_ajax (
-  p_dynamic_action  in  apex_plugin.t_dynamic_action ,
-  p_plugin          in  apex_plugin.t_plugin         )
+  p_dynamic_action in apex_plugin.t_dynamic_action ,
+  p_plugin         in apex_plugin.t_plugin         )
 return apex_plugin.t_dynamic_action_ajax_result;
 ```
 
@@ -1247,13 +1247,13 @@ SIGNATURE
 
 ```sql
 procedure conf (
-  p_level               integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval      integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning varchar2 default null          , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    varchar2 default null          , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   varchar2 default null          , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_level               in integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval      in integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_units_level_warning in varchar2 default null          , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    in varchar2 default null          , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   in varchar2 default null          , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   in varchar2 default null          , -- Same as p_units_level_warning for level trace.
+  p_enable_ascii_art    in boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 ```
 
@@ -1282,7 +1282,7 @@ SIGNATURE
 
 ```sql
 procedure conf_level (
-  p_level integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_level in integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
 );
 ```
 
@@ -1308,7 +1308,7 @@ SIGNATURE
 
 ```sql
 procedure conf_check_interval (
-  p_check_interval integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_check_interval in integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
 );
 ```
 
@@ -1334,10 +1334,10 @@ SIGNATURE
 
 ```sql
 procedure conf_units (
-  p_units_level_warning varchar2 default null , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    varchar2 default null , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   varchar2 default null , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   varchar2 default null   -- Same as p_units_level_warning for level trace.
+  p_units_level_warning in varchar2 default null , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
+  p_units_level_info    in varchar2 default null , -- Same as p_units_level_warning for level info.
+  p_units_level_debug   in varchar2 default null , -- Same as p_units_level_warning for level debug.
+  p_units_level_trace   in varchar2 default null   -- Same as p_units_level_warning for level trace.
 );
 ```
 
@@ -1366,7 +1366,7 @@ SIGNATURE
 
 ```sql
 procedure conf_ascii_art (
-  p_enable_ascii_art  boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_enable_ascii_art in boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 ```
 
@@ -1415,16 +1415,16 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_client_identifier varchar2                      , -- The client identifier provided by the application or console itself.
-  p_level             integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration          integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack        boolean  default false        , -- Should the call stack be included.
-  p_user_env          boolean  default false        , -- Should the user environment be included.
-  p_apex_env          boolean  default false        , -- Should the APEX environment be included.
-  p_cgi_env           boolean  default false        , -- Should the CGI environment be included.
-  p_console_env       boolean  default false          -- Should the console environment be included.
+  p_client_identifier in varchar2                      , -- The client identifier provided by the application or console itself.
+  p_level             in integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration          in integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        in integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval    in integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack        in boolean  default false        , -- Should the call stack be included.
+  p_user_env          in boolean  default false        , -- Should the user environment be included.
+  p_apex_env          in boolean  default false        , -- Should the APEX environment be included.
+  p_cgi_env           in boolean  default false        , -- Should the CGI environment be included.
+  p_console_env       in boolean  default false          -- Should the console environment be included.
 );
 ```
 
@@ -1438,15 +1438,15 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_level          integer default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration       integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size     integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack     boolean default false        , -- Should the call stack be included.
-  p_user_env       boolean default false        , -- Should the user environment be included.
-  p_apex_env       boolean default false        , -- Should the APEX environment be included.
-  p_cgi_env        boolean default false        , -- Should the CGI environment be included.
-  p_console_env    boolean default false          -- Should the console environment be included.
+  p_level          in integer default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration       in integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size     in integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval in integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack     in boolean default false        , -- Should the call stack be included.
+  p_user_env       in boolean default false        , -- Should the user environment be included.
+  p_apex_env       in boolean default false        , -- Should the APEX environment be included.
+  p_cgi_env        in boolean default false        , -- Should the CGI environment be included.
+  p_console_env    in boolean default false          -- Should the console environment be included.
 );
 ```
 
@@ -1473,7 +1473,7 @@ SIGNATURE
 
 ```sql
 procedure exit (
-  p_client_identifier varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
+  p_client_identifier in varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
 );
 ```
 
@@ -1575,8 +1575,8 @@ SIGNATURE
 
 ```sql
 function split_to_table (
-  p_string varchar2,            -- The string to split into a table.
-  p_sep    varchar2 default ',' -- The separator.
+  p_string in varchar2,            -- The string to split into a table.
+  p_sep    in varchar2 default ',' -- The separator.
 ) return vc2_tab pipelined;
 ```
 
@@ -1610,8 +1610,8 @@ SIGNATURE
 
 ```sql
 function split (
-  p_string varchar2,            -- The string to split into an array.
-  p_sep    varchar2 default ',' -- The separator.
+  p_string in varchar2,            -- The string to split into an array.
+  p_sep    in varchar2 default ',' -- The separator.
 ) return vc2_tab_i;
 ```
 
@@ -1624,8 +1624,8 @@ SIGNATURE
 
 ```sql
 function join (
-  p_table vc2_tab_i,           -- The PL/SQL array to join into a string.
-  p_sep   varchar2 default ',' -- The separator.
+  p_table in vc2_tab_i,           -- The PL/SQL array to join into a string.
+  p_sep   in varchar2 default ',' -- The separator.
 ) return varchar2;
 ```
 
@@ -1639,7 +1639,7 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 SIGNATURE
 
 ```sql
-function to_yn ( p_bool boolean ) return varchar2;
+function to_yn ( p_bool in boolean ) return varchar2;
 ```
 
 
@@ -1652,7 +1652,7 @@ Returns `true` when the input is true and `false` if the input is false or null.
 SIGNATURE
 
 ```sql
-function to_string ( p_bool boolean ) return varchar2;
+function to_string ( p_bool in boolean ) return varchar2;
 ```
 
 
@@ -1666,7 +1666,7 @@ all other cases (also on null) false is returned.
 SIGNATURE
 
 ```sql
-function to_bool ( p_string varchar2 ) return boolean;
+function to_bool ( p_string in varchar2 ) return boolean;
 ```
 
 
@@ -1720,11 +1720,11 @@ SIGNATURE
 
 ```sql
 function to_html_table (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 )
+  p_data_cursor       in sys_refcursor         ,
+  p_comment           in varchar2 default null ,
+  p_include_row_num   in boolean  default true ,
+  p_max_rows          in integer  default 100  ,
+  p_max_column_length in integer  default 1000 )
 return clob;
 ```
 
@@ -1738,7 +1738,7 @@ SIGNATURE
 
 ```sql
 function to_md_code_block (
-  p_text  varchar2 )
+  p_text in varchar2 )
 return varchar2;
 ```
 
@@ -1758,8 +1758,8 @@ SIGNATURE
 
 ```sql
 function to_md_tab_header (
-  p_key              varchar2 default 'Attribute' ,
-  p_value            varchar2 default 'Value'     )
+  p_key   in varchar2 default 'Attribute' ,
+  p_value in varchar2 default 'Value'     )
 return varchar2;
 ```
 
@@ -1782,10 +1782,10 @@ SIGNATURE
 
 ```sql
 function to_md_tab_data (
-  p_key              varchar2               ,
-  p_value            varchar2               ,
-  p_value_max_length integer  default 1000  ,
-  p_show_null_values boolean  default false )
+  p_key              in varchar2               ,
+  p_value            in varchar2               ,
+  p_value_max_length in integer  default 1000  ,
+  p_show_null_values in boolean  default false )
 return varchar2;
 ```
 
@@ -1821,10 +1821,10 @@ SIGNATURE
 
 ```sql
 function to_unibar (
-  p_value                   in  number,
-  p_scale                   in  number default 1,
-  p_width_block_characters  in  number default 25,
-  p_fill_scale              in  number default 0
+  p_value                   in number            ,
+  p_scale                   in number default 1  ,
+  p_width_block_characters  in number default 25 ,
+  p_fill_scale              in number default 0
 ) return varchar2 deterministic;
 ```
 
@@ -1900,7 +1900,7 @@ end;
 SIGNATURE
 
 ```sql
-function  runtime ( p_start timestamp ) return varchar2;
+function  runtime ( p_start in timestamp ) return varchar2;
 ```
 
 
@@ -1928,7 +1928,7 @@ end;
 SIGNATURE
 
 ```sql
-function runtime_seconds ( p_start timestamp ) return number;
+function runtime_seconds ( p_start in timestamp ) return number;
 ```
 
 
@@ -1956,7 +1956,7 @@ end;
 SIGNATURE
 
 ```sql
-function runtime_milliseconds ( p_start timestamp ) return number;
+function runtime_milliseconds ( p_start in timestamp ) return number;
 ```
 
 
@@ -1968,7 +1968,7 @@ between 0 and 4.
 SIGNATURE
 
 ```sql
-function level_name (p_level integer) return varchar2 deterministic;
+function level_name (p_level in integer) return varchar2 deterministic;
 ```
 
 
@@ -2196,7 +2196,7 @@ avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 SIGNATURE
 
 ```sql
-procedure clear ( p_client_identifier varchar2 default my_client_identifier );
+procedure clear ( p_client_identifier in varchar2 default my_client_identifier );
 ```
 
 
@@ -2240,8 +2240,8 @@ SIGNATURE
 
 ```sql
 procedure purge (
-  p_min_level integer default c_level_info, -- Delete log entries greater or equal the given level.
-  p_min_days  number  default 30 );         -- Delete log entries older than the given minimum days.
+  p_min_level in integer default c_level_info, -- Delete log entries greater or equal the given level.
+  p_min_days  in number  default 30 );         -- Delete log entries older than the given minimum days.
 ```
 
 
@@ -2273,9 +2273,9 @@ SIGNATURE
 
 ```sql
 procedure cleanup_job_create (
-  p_repeat_interval varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
-  p_min_level       integer  default c_level_info           , -- Delete log entries greater or equal the given level.
-  p_min_days        number   default 30                       -- Delete log entries older than the given minimum days.
+  p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
+  p_min_level       in integer  default c_level_info           , -- Delete log entries greater or equal the given level.
+  p_min_days        in number   default 30                       -- Delete log entries older than the given minimum days.
 );
 ```
 
