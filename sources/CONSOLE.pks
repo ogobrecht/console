@@ -766,7 +766,7 @@ function format (
 return varchar2;
 /**
 
-Formats a message after the following rules:
+Formats a message with the following rules:
 
 1. Replace all occurrences of `%0` .. `%9` by id with the corresponding
    parameters `p0` .. `p9`
@@ -1471,7 +1471,38 @@ Writing dbms_output.put_line is very annoying for me...
 
 --------------------------------------------------------------------------------
 
-function  get_runtime ( p_start timestamp ) return varchar2;
+procedure printf (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null );
+/**
+
+A shorthand for
+
+```
+begin
+  console.print(console.format('A string with %s %s.', 'dynamic', 'content'));
+  --is equivalent to
+  console.printf('A string with %s %s.', 'dynamic', 'content');
+end;
+{{/}}
+```
+
+Also see [console.format](#function-format)
+
+**/
+
+--------------------------------------------------------------------------------
+
+function  runtime ( p_start timestamp ) return varchar2;
 /**
 
 Returns a string in the format hh24:mi:ss.ff6 (for example 00:00:01.123456).
@@ -1489,7 +1520,7 @@ begin
 
   --do your stuff here
 
-  dbms_output.put_line('Runtime: ' || console.get_runtime(v_start));
+  dbms_output.put_line('Runtime: ' || console.runtime(v_start));
 end;
 {{/}}
 ```
@@ -1498,7 +1529,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_seconds ( p_start timestamp ) return number;
+function runtime_seconds ( p_start timestamp ) return number;
 /**
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
@@ -1515,7 +1546,7 @@ begin
   --do your stuff here
 
   dbms_output.put_line (
-    'Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)) );
+    'Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)) );
 end;
 {{/}}
 ```
@@ -1524,7 +1555,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_milliseconds ( p_start timestamp ) return number;
+function runtime_milliseconds ( p_start timestamp ) return number;
 /**
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
@@ -1541,7 +1572,7 @@ begin
   --do your stuff here
 
   dbms_output.put_line (
-    'Runtime (milliseconds): ' || to_char(console.get_runtime_milliseconds(v_start)) );
+    'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(v_start)) );
 end;
 {{/}}
 ```
@@ -1550,7 +1581,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_level_name (p_level integer) return varchar2 deterministic;
+function level_name (p_level integer) return varchar2 deterministic;
 /**
 
 Returns the level name for a given level id and null, if the level is not
@@ -1560,7 +1591,7 @@ between 0 and 4.
 
 --------------------------------------------------------------------------------
 
-function get_scope return varchar2;
+function scope return varchar2;
 /**
 
 Get the current scope (method, line number) from the call stack.
@@ -1572,7 +1603,7 @@ log entry.
 
 --------------------------------------------------------------------------------
 
-function get_calling_unit return varchar2;
+function calling_unit return varchar2;
 /**
 
 Get the calling unit (OWNER.UNIT) from the call stack.
@@ -1584,7 +1615,7 @@ level.
 
 --------------------------------------------------------------------------------
 
-function get_call_stack return varchar2;
+function call_stack return varchar2;
 /**
 
 Get the current call stack (and error stack/backtrace, if available).
@@ -1597,7 +1628,7 @@ trace).
 
 --------------------------------------------------------------------------------
 
-function get_apex_env return clob;
+function apex_env return clob;
 /**
 
 Get the current APEX environment.
@@ -1609,7 +1640,7 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function get_cgi_env return varchar2;
+function cgi_env return varchar2;
 /**
 
 Get the current CGI environment.
@@ -1621,7 +1652,7 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function get_user_env return varchar2;
+function user_env return varchar2;
 /**
 
 Get the current user environment.
@@ -1633,7 +1664,7 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function get_console_env return varchar2;
+function console_env return varchar2;
 /**
 
 Get the current console environment.
@@ -1668,7 +1699,7 @@ begin
     console.clob_append(v_clob, v_cache, 'a');
   end loop;
   console.clob_flush_cache(v_clob, v_cache);
-  dbms_output.put_line('Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)));
+  dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)));
   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
 end;
 {{/}}
@@ -1831,7 +1862,7 @@ procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
 $if $$utils_public $then
 
 function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_get_error return varchar2;
+function utl_last_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
 function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;

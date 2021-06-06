@@ -88,17 +88,18 @@ Oracle Instrumentation Console
 - [Function to_md_tab_data](#function-to_md_tab_data)
 - [Function to_unibar](#function-to_unibar)
 - [Procedure print](#procedure-print)
-- [Function get_runtime](#function-get_runtime)
-- [Function get_runtime_seconds](#function-get_runtime_seconds)
-- [Function get_runtime_milliseconds](#function-get_runtime_milliseconds)
-- [Function get_level_name](#function-get_level_name)
-- [Function get_scope](#function-get_scope)
-- [Function get_calling_unit](#function-get_calling_unit)
-- [Function get_call_stack](#function-get_call_stack)
-- [Function get_apex_env](#function-get_apex_env)
-- [Function get_cgi_env](#function-get_cgi_env)
-- [Function get_user_env](#function-get_user_env)
-- [Function get_console_env](#function-get_console_env)
+- [Procedure printf](#procedure-printf)
+- [Function runtime](#function-runtime)
+- [Function runtime_seconds](#function-runtime_seconds)
+- [Function runtime_milliseconds](#function-runtime_milliseconds)
+- [Function level_name](#function-level_name)
+- [Function scope](#function-scope)
+- [Function calling_unit](#function-calling_unit)
+- [Function call_stack](#function-call_stack)
+- [Function apex_env](#function-apex_env)
+- [Function cgi_env](#function-cgi_env)
+- [Function user_env](#function-user_env)
+- [Function console_env](#function-console_env)
 - [Procedure clob_append](#procedure-clob_append)
 - [Procedure clob_append](#procedure-clob_append-1)
 - [Procedure clob_flush_cache](#procedure-clob_flush_cache)
@@ -929,7 +930,7 @@ procedure assert (
 
 ## Function format
 
-Formats a message after the following rules:
+Formats a message with the following rules:
 
 1. Replace all occurrences of `%0` .. `%9` by id with the corresponding
    parameters `p0` .. `p9`
@@ -1841,7 +1842,40 @@ procedure print ( p_message in varchar2 );
 ```
 
 
-## Function get_runtime
+## Procedure printf
+
+A shorthand for
+
+```
+begin
+  console.print(console.format('A string with %s %s.', 'dynamic', 'content'));
+  --is equivalent to
+  console.printf('A string with %s %s.', 'dynamic', 'content');
+end;
+/
+```
+
+Also see [console.format](#function-format)
+
+SIGNATURE
+
+```sql
+procedure printf (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null );
+```
+
+
+## Function runtime
 
 Returns a string in the format hh24:mi:ss.ff6 (for example 00:00:01.123456).
 
@@ -1858,7 +1892,7 @@ begin
 
   --do your stuff here
 
-  dbms_output.put_line('Runtime: ' || console.get_runtime(v_start));
+  dbms_output.put_line('Runtime: ' || console.runtime(v_start));
 end;
 /
 ```
@@ -1866,11 +1900,11 @@ end;
 SIGNATURE
 
 ```sql
-function  get_runtime ( p_start timestamp ) return varchar2;
+function  runtime ( p_start timestamp ) return varchar2;
 ```
 
 
-## Function get_runtime_seconds
+## Function runtime_seconds
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
 returns the exracted seconds.
@@ -1886,7 +1920,7 @@ begin
   --do your stuff here
 
   dbms_output.put_line (
-    'Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)) );
+    'Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)) );
 end;
 /
 ```
@@ -1894,11 +1928,11 @@ end;
 SIGNATURE
 
 ```sql
-function get_runtime_seconds ( p_start timestamp ) return number;
+function runtime_seconds ( p_start timestamp ) return number;
 ```
 
 
-## Function get_runtime_milliseconds
+## Function runtime_milliseconds
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
 returns the exracted milliseconds.
@@ -1914,7 +1948,7 @@ begin
   --do your stuff here
 
   dbms_output.put_line (
-    'Runtime (milliseconds): ' || to_char(console.get_runtime_milliseconds(v_start)) );
+    'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(v_start)) );
 end;
 /
 ```
@@ -1922,11 +1956,11 @@ end;
 SIGNATURE
 
 ```sql
-function get_runtime_milliseconds ( p_start timestamp ) return number;
+function runtime_milliseconds ( p_start timestamp ) return number;
 ```
 
 
-## Function get_level_name
+## Function level_name
 
 Returns the level name for a given level id and null, if the level is not
 between 0 and 4.
@@ -1934,11 +1968,11 @@ between 0 and 4.
 SIGNATURE
 
 ```sql
-function get_level_name (p_level integer) return varchar2 deterministic;
+function level_name (p_level integer) return varchar2 deterministic;
 ```
 
 
-## Function get_scope
+## Function scope
 
 Get the current scope (method, line number) from the call stack.
 
@@ -1948,11 +1982,11 @@ log entry.
 SIGNATURE
 
 ```sql
-function get_scope return varchar2;
+function scope return varchar2;
 ```
 
 
-## Function get_calling_unit
+## Function calling_unit
 
 Get the calling unit (OWNER.UNIT) from the call stack.
 
@@ -1962,11 +1996,11 @@ level.
 SIGNATURE
 
 ```sql
-function get_calling_unit return varchar2;
+function calling_unit return varchar2;
 ```
 
 
-## Function get_call_stack
+## Function call_stack
 
 Get the current call stack (and error stack/backtrace, if available).
 
@@ -1977,11 +2011,11 @@ trace).
 SIGNATURE
 
 ```sql
-function get_call_stack return varchar2;
+function call_stack return varchar2;
 ```
 
 
-## Function get_apex_env
+## Function apex_env
 
 Get the current APEX environment.
 
@@ -1991,11 +2025,11 @@ when requested by one of the logging methods.
 SIGNATURE
 
 ```sql
-function get_apex_env return clob;
+function apex_env return clob;
 ```
 
 
-## Function get_cgi_env
+## Function cgi_env
 
 Get the current CGI environment.
 
@@ -2005,11 +2039,11 @@ when requested by one of the logging methods.
 SIGNATURE
 
 ```sql
-function get_cgi_env return varchar2;
+function cgi_env return varchar2;
 ```
 
 
-## Function get_user_env
+## Function user_env
 
 Get the current user environment.
 
@@ -2019,11 +2053,11 @@ when requested by one of the logging methods.
 SIGNATURE
 
 ```sql
-function get_user_env return varchar2;
+function user_env return varchar2;
 ```
 
 
-## Function get_console_env
+## Function console_env
 
 Get the current console environment.
 
@@ -2033,7 +2067,7 @@ when requested by one of the logging methods.
 SIGNATURE
 
 ```sql
-function get_console_env return varchar2;
+function console_env return varchar2;
 ```
 
 
@@ -2057,7 +2091,7 @@ begin
     console.clob_append(v_clob, v_cache, 'a');
   end loop;
   console.clob_flush_cache(v_clob, v_cache);
-  dbms_output.put_line('Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)));
+  dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)));
   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
 end;
 /

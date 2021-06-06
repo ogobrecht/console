@@ -370,7 +370,7 @@ select * from table(console.view_status);
 | g_conf_exit_sysdate          | 2021-05-03 13:06:45 |
 | g_conf_client_identifier     | {o,o} 1EA16A180002  |
 | g_conf_level                 | 1                   |
-| get_level_name(g_conf_level) | error               |
+| level_name(g_conf_level) | error               |
 | g_conf_cache_size            | 0                   |
 | g_conf_check_interval        | 10                  |
 | g_conf_call_stack            | N                   |

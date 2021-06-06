@@ -16,6 +16,10 @@
 
 - Rename table column `CONSOLE_LOGS.LOG_SYSTIME` to `CONSOLE_LOGS.LOG_TIME` and
   change the data type from `timstamp` to `timestamp with local time zone`
+- New procedure `printf`
+- Remove prefix `get_` from all helper functions after reading [Stevens article
+  about naming
+  conventions](https://www.insum.ca/feuertip-11-what-makes-an-effective-naming-convention/)
 
 ## v1.0-beta6 (2021-05-16)
 

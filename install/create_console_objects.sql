@@ -1011,7 +1011,7 @@ function format (
 return varchar2;
 /**
 
-Formats a message after the following rules:
+Formats a message with the following rules:
 
 1. Replace all occurrences of `%0` .. `%9` by id with the corresponding
    parameters `p0` .. `p9`
@@ -1716,7 +1716,38 @@ Writing dbms_output.put_line is very annoying for me...
 
 --------------------------------------------------------------------------------
 
-function  get_runtime ( p_start timestamp ) return varchar2;
+procedure printf (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null );
+/**
+
+A shorthand for
+
+```
+begin
+  console.print(console.format('A string with %s %s.', 'dynamic', 'content'));
+  --is equivalent to
+  console.printf('A string with %s %s.', 'dynamic', 'content');
+end;
+{{/}}
+```
+
+Also see [console.format](#function-format)
+
+**/
+
+--------------------------------------------------------------------------------
+
+function  runtime ( p_start timestamp ) return varchar2;
 /**
 
 Returns a string in the format hh24:mi:ss.ff6 (for example 00:00:01.123456).
@@ -1734,7 +1765,7 @@ begin
 
   --do your stuff here
 
-  dbms_output.put_line('Runtime: ' || console.get_runtime(v_start));
+  dbms_output.put_line('Runtime: ' || console.runtime(v_start));
 end;
 {{/}}
 ```
@@ -1743,7 +1774,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_seconds ( p_start timestamp ) return number;
+function runtime_seconds ( p_start timestamp ) return number;
 /**
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
@@ -1760,7 +1791,7 @@ begin
   --do your stuff here
 
   dbms_output.put_line (
-    'Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)) );
+    'Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)) );
 end;
 {{/}}
 ```
@@ -1769,7 +1800,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_milliseconds ( p_start timestamp ) return number;
+function runtime_milliseconds ( p_start timestamp ) return number;
 /**
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
@@ -1786,7 +1817,7 @@ begin
   --do your stuff here
 
   dbms_output.put_line (
-    'Runtime (milliseconds): ' || to_char(console.get_runtime_milliseconds(v_start)) );
+    'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(v_start)) );
 end;
 {{/}}
 ```
@@ -1795,7 +1826,7 @@ end;
 
 --------------------------------------------------------------------------------
 
-function get_level_name (p_level integer) return varchar2 deterministic;
+function level_name (p_level integer) return varchar2 deterministic;
 /**
 
 Returns the level name for a given level id and null, if the level is not
@@ -1805,7 +1836,7 @@ between 0 and 4.
 
 --------------------------------------------------------------------------------
 
-function get_scope return varchar2;
+function scope return varchar2;
 /**
 
 Get the current scope (method, line number) from the call stack.
@@ -1817,7 +1848,7 @@ log entry.
 
 --------------------------------------------------------------------------------
 
-function get_calling_unit return varchar2;
+function calling_unit return varchar2;
 /**
 
 Get the calling unit (OWNER.UNIT) from the call stack.
@@ -1829,7 +1860,7 @@ level.
 
 --------------------------------------------------------------------------------
 
-function get_call_stack return varchar2;
+function call_stack return varchar2;
 /**
 
 Get the current call stack (and error stack/backtrace, if available).
@@ -1842,7 +1873,7 @@ trace).
 
 --------------------------------------------------------------------------------
 
-function get_apex_env return clob;
+function apex_env return clob;
 /**
 
 Get the current APEX environment.
@@ -1854,7 +1885,7 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function get_cgi_env return varchar2;
+function cgi_env return varchar2;
 /**
 
 Get the current CGI environment.
@@ -1866,7 +1897,7 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function get_user_env return varchar2;
+function user_env return varchar2;
 /**
 
 Get the current user environment.
@@ -1878,7 +1909,7 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function get_console_env return varchar2;
+function console_env return varchar2;
 /**
 
 Get the current console environment.
@@ -1913,7 +1944,7 @@ begin
     console.clob_append(v_clob, v_cache, 'a');
   end loop;
   console.clob_flush_cache(v_clob, v_cache);
-  dbms_output.put_line('Runtime (seconds): ' || to_char(console.get_runtime_seconds(v_start)));
+  dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)));
   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
 end;
 {{/}}
@@ -2076,7 +2107,7 @@ procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
 $if $$utils_public $then
 
 function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_get_error return varchar2;
+function utl_last_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
 function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
@@ -2191,7 +2222,7 @@ type unit_list_tab   is table of t_vc4k      index by binary_integer;
 
 g_timers         timers_tab;
 g_counters       counters_tab;
-g_log_cache      logs_tab := new logs_tab();
+g_log_cache      logs_tab;
 g_saved_stack    saved_stack_tab;
 g_prev_error_msg t_vc1k;
 
@@ -2217,7 +2248,7 @@ g_conf_units_level          unit_list_tab;
 $if not $$utils_public $then
 
 function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_get_error return varchar2;
+function utl_last_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
 function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
@@ -2290,7 +2321,7 @@ end view_last;
 
 procedure error_save_stack is
 begin
-  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1024);
+  g_saved_stack(g_saved_stack.count + 1) := substrb(scope || utl_last_error, 1, 1024);
 end error_save_stack;
 
 --------------------------------------------------------------------------------
@@ -2786,7 +2817,7 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
+        p_message => v_label || ': ' || runtime (g_timers(v_label)) );
     end if;
   else
     warn('Timer `' || v_label || '` does not exist.');
@@ -2804,7 +2835,7 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || get_runtime (g_timers(v_label)) || ' - timer ended' );
+        p_message => v_label || ': ' || runtime (g_timers(v_label)) || ' - timer ended' );
     end if;
     g_timers.delete(v_label);
   else
@@ -2821,7 +2852,7 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    v_return :=  get_runtime(g_timers(v_label));
+    v_return :=  runtime(g_timers(v_label));
     g_timers.delete(v_label);
   else
     v_return := 'Timer `' || v_label || '` does not exist.';
@@ -2963,8 +2994,8 @@ is
     return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
   end;
   --
-  function get_ascii_art (
-    p_type varchar2 )
+  function ascii_art (
+    p_type varchar2 ) -- html, md
   return varchar2 is
     v_return varchar2(1000 byte);
     v_troll  varchar2(1000 byte) := q'[
@@ -2988,7 +3019,7 @@ is
         case p_type when 'html' then '</pre>' when 'md' then '```' end          ;
     end if;
     return v_return;
-  end get_ascii_art;
+  end ascii_art;
   --
   function create_apex_lang_message (
     p_constraint_name varchar2
@@ -3008,7 +3039,7 @@ is
     return v_message_text;
   end create_apex_lang_message;
   --
-  function get_md_li_pre (p_text varchar2) return varchar2 is
+  function to_md_li_pre (p_text varchar2) return varchar2 is
     v_fences varchar2(30) := '    ```';
   begin
     return
@@ -3016,9 +3047,9 @@ is
       v_fences || c_lf ||
       to_md_code_block(p_text) || c_lf ||
       v_fences;
-  end get_md_li_pre;
+  end to_md_li_pre;
   --
-  function get_log_message (
+  function log_message (
     p_text varchar2 )
   return clob is
     v_clob  clob;
@@ -3034,11 +3065,11 @@ is
     clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                      || c_lf );
     clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                        || c_lf );
     clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                      || c_lf );
-    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace)      || c_lf );
-    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement)      || c_lf );
+    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || to_md_li_pre(p_error.error_backtrace)       || c_lf );
+    clob_append ( v_clob, v_cache, '10. error_statement: '  || to_md_li_pre(p_error.error_statement)       || c_lf );
     clob_flush_cache ( v_clob, v_cache );
     return v_clob;
-  end get_log_message;
+  end log_message;
   --
 begin
   v_result := apex_error.init_error_result (p_error => p_error);
@@ -3057,7 +3088,7 @@ begin
 
       -- Log error and return log ID as reference.
       v_log_id := error (
-        p_message         => get_log_message('Unexpected internal application error.' || get_ascii_art('md')) ,
+        p_message         => log_message('Unexpected internal application error.' || ascii_art('md')) ,
         p_call_stack      => false                                                                            ,
         p_apex_env        => true                                                                             ,
         p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id     ,
@@ -3066,7 +3097,7 @@ begin
 
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
-      v_result.message := get_ascii_art('html') ||
+      v_result.message := ascii_art('html') ||
         'An unexpected internal application error has occurred. ' ||
         'Please get in contact with your Oracle APEX support team and provide ' ||
         '"App ID ' || to_char(v_app_id) || ', Log ID ' || to_char(v_log_id) ||
@@ -3118,7 +3149,7 @@ begin
         -- Log a permanent error, so developers get information that they need
         -- to change the text message.
         error (
-          p_message         => get_log_message (v_result.message)                                           ,
+          p_message         => log_message (v_result.message)                                           ,
           p_permanent       => true                                                                         ,
           p_call_stack      => false                                                                        ,
           p_apex_env        => true                                                                         ,
@@ -3333,7 +3364,7 @@ begin
   v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
   v_conf.conf_sysdate     := sysdate;
   v_conf.level_id         := p_level;
-  v_conf.level_name       := get_level_name(p_level);
+  v_conf.level_name       := level_name(p_level);
   v_conf.check_interval   := p_check_interval;
   v_conf.enable_ascii_art := to_yn(p_enable_ascii_art);
   --
@@ -3481,7 +3512,7 @@ begin
   v_row.exit_sysdate      := sysdate + 1/24/60 * p_duration;
   v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
   v_row.level_id          := p_level;
-  v_row.level_name        := get_level_name(p_level);
+  v_row.level_name        := level_name(p_level);
   v_row.cache_size        := p_cache_size;
   v_row.check_interval    := p_check_interval;
   v_row.call_stack        := to_yn ( p_call_stack  );
@@ -3967,16 +3998,47 @@ end print;
 
 --------------------------------------------------------------------------------
 
-function get_runtime ( p_start timestamp ) return varchar2 is
+procedure printf (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null )
+is
+begin
+  dbms_output.put_line(
+    console.format(
+      p_message => p_message ,
+      p0        => p0        ,
+      p1        => p1        ,
+      p2        => p2        ,
+      p3        => p3        ,
+      p4        => p4        ,
+      p5        => p5        ,
+      p6        => p6        ,
+      p7        => p7        ,
+      p8        => p8        ,
+      p9        => p9        ));
+end printf;
+
+--------------------------------------------------------------------------------
+
+function runtime ( p_start timestamp ) return varchar2 is
   v_runtime t_vc32;
 begin
   v_runtime := to_char(localtimestamp - p_start);
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
-end get_runtime;
+end runtime;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_seconds ( p_start timestamp ) return number is
+function runtime_seconds ( p_start timestamp ) return number is
   v_runtime interval day to second;
 begin
   v_runtime := localtimestamp - p_start;
@@ -3984,18 +4046,18 @@ begin
     extract(hour   from v_runtime) * 3600 +
     extract(minute from v_runtime) *   60 +
     extract(second from v_runtime)        ;
-end get_runtime_seconds;
+end runtime_seconds;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_milliseconds ( p_start timestamp ) return number is
+function runtime_milliseconds ( p_start timestamp ) return number is
 begin
-  return get_runtime_seconds(p_start) * 1000;
-end get_runtime_milliseconds;
+  return runtime_seconds(p_start) * 1000;
+end runtime_milliseconds;
 
 --------------------------------------------------------------------------------
 
-function get_level_name (p_level integer) return varchar2 deterministic is
+function level_name (p_level integer) return varchar2 deterministic is
 begin
   return case p_level
     when 1 then 'error'
@@ -4005,16 +4067,16 @@ begin
     when 5 then 'trace'
     else null
   end;
-end get_level_name;
+end level_name;
 
 --------------------------------------------------------------------------------
 
-function get_scope return varchar2 is
+function scope return varchar2 is
   v_return     t_vc32k;
   v_subprogram t_vc32k;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_scope) itself
+    --ignore 1, is always this function (scope) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
@@ -4028,16 +4090,16 @@ begin
     end loop;
   end if;
   return v_return;
-end get_scope;
+end scope;
 
 --------------------------------------------------------------------------------
 
-function get_calling_unit return varchar2 is
+function calling_unit return varchar2 is
   v_return     t_vc32k;
   v_subprogram t_vc32k;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_scope) itself
+    --ignore 1, is always this function (scope) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
@@ -4051,11 +4113,11 @@ begin
     end loop;
   end if;
   return v_return;
-end get_calling_unit;
+end calling_unit;
 
 --------------------------------------------------------------------------------
 
-function get_call_stack return varchar2
+function call_stack return varchar2
 is
   v_return     t_vc32k;
   v_subprogram t_vc32k;
@@ -4072,7 +4134,7 @@ begin
 
   if utl_call_stack.dynamic_depth > 0 then
     v_return := v_return || '## Call Stack' || c_lflf;
-    --ignore 1, is always this function (get_call_stack) itself
+    --ignore 1, is always this function (call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       v_subprogram := utl_call_stack.concatenate_subprogram ( utl_call_stack.subprogram(i) );
@@ -4112,11 +4174,11 @@ begin
   end if;
 
   return v_return || chr(10);
-end get_call_stack;
+end call_stack;
 
 --------------------------------------------------------------------------------
 
-function get_apex_env return clob
+function apex_env return clob
 is
   v_clob        clob;
   v_cache       t_vc32k;
@@ -4177,11 +4239,11 @@ begin
 
   $end
   return v_clob;
-end get_apex_env;
+end apex_env;
 
 --------------------------------------------------------------------------------
 
-function get_cgi_env return varchar2
+function cgi_env return varchar2
 is
   v_return t_vc32k;
 begin
@@ -4198,11 +4260,11 @@ exception
   when value_error then
     --> we simply return here what we already have and forget about the rest...
     return v_return;
-end get_cgi_env;
+end cgi_env;
 
 --------------------------------------------------------------------------------
 
-function get_console_env return varchar2
+function console_env return varchar2
 is
   v_return t_vc32k;
   v_index t_vc128;
@@ -4221,7 +4283,7 @@ begin
   append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
   append_row('g_conf_client_identifier',                 g_conf_client_identifier                        );
   append_row('g_conf_level',                    to_char( g_conf_level                                  ) );
-  append_row('get_level_name(g_conf_level)',             get_level_name(g_conf_level)                    );
+  append_row('level_name(g_conf_level)',             level_name(g_conf_level)                    );
   append_row('g_conf_cache_size',               to_char( g_conf_cache_size                             ) );
   append_row('g_conf_check_interval',           to_char( g_conf_check_interval                         ) );
   append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                             ) );
@@ -4269,11 +4331,11 @@ exception
   when value_error then
     --> we simply return here what we already have and forget about the rest...
     return v_return;
-end get_console_env;
+end console_env;
 
 --------------------------------------------------------------------------------
 
-function get_user_env return varchar2
+function user_env return varchar2
 is
   v_return t_vc32k;
   invalid_user_env_key exception;
@@ -4376,7 +4438,7 @@ exception
   when value_error then
     --> we simply return here what we already have and forget about the rest...
     return v_return;
-end get_user_env;
+end user_env;
 
 --------------------------------------------------------------------------------
 
@@ -4478,7 +4540,7 @@ begin
   pipe row(new key_value_rec('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
   pipe row(new key_value_rec('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
   pipe row(new key_value_rec('g_conf_level',                    to_char( g_conf_level                                   )) );
-  pipe row(new key_value_rec('get_level_name(g_conf_level)',    to_char( get_level_name(g_conf_level)                   )) );
+  pipe row(new key_value_rec('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                   )) );
   pipe row(new key_value_rec('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
   pipe row(new key_value_rec('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
   pipe row(new key_value_rec('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
@@ -4655,7 +4717,7 @@ end utl_escape_md_tab_text;
 
 --------------------------------------------------------------------------------
 
-function utl_get_error return varchar2 is
+function utl_last_error return varchar2 is
   v_return t_vc32k;
 begin
   if utl_call_stack.error_depth > 0 and utl_call_stack.backtrace_depth > 0 then
@@ -4673,7 +4735,7 @@ begin
   end if;
 
   return v_return;
-end utl_get_error;
+end utl_last_error;
 
 --------------------------------------------------------------------------------
 
@@ -4689,7 +4751,7 @@ begin
     or
     sqlcode != 0
     or
-    g_conf_units_level(p_level) is not null and instr(g_conf_units_level(p_level), ','||get_calling_unit||',') > 0;
+    g_conf_units_level(p_level) is not null and instr(g_conf_units_level(p_level), ','||calling_unit||',') > 0;
 end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
@@ -4916,7 +4978,7 @@ begin
   v_row.scope :=
     case
       when p_user_scope is not null then substrb(p_user_scope, 1, 256)
-      else substrb(get_scope, 1, 256)
+      else substrb(scope, 1, 256)
     end;
 
   -- This is the very first (possible) assignment to the row.message variable,
@@ -4944,7 +5006,7 @@ begin
     if sqlcode != 0 and g_saved_stack.count > 0 then
       error_save_stack;
     end if;
-    v_row.call_stack := substrb(get_call_stack, 1, 4000);
+    v_row.call_stack := substrb(call_stack, 1, 4000);
     if p_level = 1 then
       --We finally logged the saved stack, so we need to reset it.
       g_saved_stack.delete;
@@ -4953,26 +5015,26 @@ begin
   end if;
 
   if p_apex_env or g_conf_apex_env then
-    clob_append(v_row.message, v_cache, get_apex_env);
+    clob_append(v_row.message, v_cache, apex_env);
   end if;
 
   if p_cgi_env or g_conf_cgi_env then
-    clob_append(v_row.message, v_cache, get_cgi_env);
+    clob_append(v_row.message, v_cache, cgi_env);
   end if;
 
   if p_console_env or g_conf_console_env then
-    clob_append(v_row.message, v_cache, get_console_env);
+    clob_append(v_row.message, v_cache, console_env);
   end if;
 
   if p_user_env or g_conf_user_env then
-    clob_append(v_row.message, v_cache, get_user_env);
+    clob_append(v_row.message, v_cache, user_env);
   end if;
 
   clob_flush_cache(v_row.message, v_cache);
 
   v_row.log_time          := localtimestamp;
   v_row.level_id          := p_level;
-  v_row.level_name        := get_level_name(p_level);
+  v_row.level_name        := level_name(p_level);
   v_row.permanent         := to_yn(p_permanent);
   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
   v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
@@ -5002,6 +5064,7 @@ end utl_create_log_entry;
 
 --package inizialization
 begin
+  g_log_cache := new logs_tab();
   utl_set_client_identifier;
   utl_ctx_check_availability;
   utl_load_session_configuration;
@@ -5087,7 +5150,7 @@ begin
       begin
         v_row.log_time    := localtimestamp;
         v_row.level_id    := 3;
-        v_row.level_name  := console.get_level_name(3);
+        v_row.level_name  := console.level_name(3);
         v_row.permanent   := 'Y';
         v_row.scope       := 'Library Installation';
         v_row.message     := '{o,o} CONSOLE v#CONSOLE_VERSION# installed';
