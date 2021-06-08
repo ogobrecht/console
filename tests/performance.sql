@@ -123,7 +123,7 @@ begin
   -- test logger
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    logger.log('test ' || to_char(i));
+    logger.log('test ' || to_char(i), p_extra => 'Test performance with clob column used');
   end loop;
   v_rt_logger := console.runtime_seconds(v_start);
   -- test console

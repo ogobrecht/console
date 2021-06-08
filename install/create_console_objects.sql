@@ -996,6 +996,82 @@ end;
 
 --------------------------------------------------------------------------------
 
+procedure add_param ( p_name in varchar2, p_value in varchar2                       );
+/**
+
+Add a parameter to the package internal parameter collection which will be
+included in the next log call (error, warn, info, log, debug or trace)
+
+The procedure is overloaded to support different parameter types - in case of
+VARCHAR2 and CLOB the value is shortened to 4000 byte.
+
+```sql
+procedure add_param ( p_name in varchar2, p_value in varchar2                       );
+procedure add_param ( p_name in varchar2, p_value in number                         );
+procedure add_param ( p_name in varchar2, p_value in date                           );
+procedure add_param ( p_name in varchar2, p_value in timestamp                      );
+procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
+procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in boolean                        );
+procedure add_param ( p_name in varchar2, p_value in clob                           );
+```
+
+EXAMPLE
+
+```sql
+--create demo procedure
+create or replace procedure demo_proc (
+  p1  varchar2,
+  p2  number,
+  p3  date,
+  p4  timestamp,
+  p5  timestamp with time zone,
+  p6  timestamp with local time zone,
+  p7  boolean
+) is
+begin
+  raise_application_error(-20999, 'Test error.');
+exception
+  when others then
+    console.add_param('p1', p1);
+    console.add_param('p2', p2);
+    console.add_param('p3', p3);
+    console.add_param('p4', p4);
+    console.add_param('p5', p5);
+    console.add_param('p6', p6);
+    console.add_param('p7', p7);
+    console.error;
+    raise;
+end demo_proc;
+{{/}}
+
+--run demo procedure
+begin
+  demo_proc (
+    p1 => 'test'         ,
+    p2 => 1.23           ,
+    p3 => sysdate        ,
+    p4 => systimestamp   ,
+    p5 => systimestamp   ,
+    p6 => localtimestamp ,
+    p7 => true           );
+end;
+{{/}}
+```
+
+**/
+
+
+procedure add_param ( p_name in varchar2, p_value in number                         );
+procedure add_param ( p_name in varchar2, p_value in date                           );
+procedure add_param ( p_name in varchar2, p_value in timestamp                      );
+procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
+procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in boolean                        );
+procedure add_param ( p_name in varchar2, p_value in clob                           );
+
+--------------------------------------------------------------------------------
+
 function format (
   p_message in varchar2              ,
   p0        in varchar2 default null ,
@@ -2215,15 +2291,20 @@ c_interval_day_to_second constant pls_integer := 183;
 c_ref                    constant pls_integer := 111;
 c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
-type timers_tab      is table of timestamp   index by t_vc128;
-type counters_tab    is table of pls_integer index by t_vc128;
-type saved_stack_tab is table of t_vc1k      index by binary_integer;
-type unit_list_tab   is table of t_vc4k      index by binary_integer;
+type t_params_row is record (
+   name   varchar2( 128 byte) ,
+   value  varchar2(4000 byte) );
+type t_params_tab      is table of t_params_row index by binary_integer;
+type t_timers_tab      is table of timestamp    index by t_vc128;
+type t_counters_tab    is table of pls_integer  index by t_vc128;
+type t_saved_stack_tab is table of t_vc1k       index by binary_integer;
+type t_unit_list_tab   is table of t_vc4k       index by binary_integer;
 
-g_timers         timers_tab;
-g_counters       counters_tab;
+g_params         t_params_tab;
+g_timers         t_timers_tab;
+g_counters       t_counters_tab;
 g_log_cache      logs_tab;
-g_saved_stack    saved_stack_tab;
+g_saved_stack    t_saved_stack_tab;
 g_prev_error_msg t_vc1k;
 
 g_conf_check_sysdate        date;
@@ -2239,7 +2320,7 @@ g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
 g_conf_enable_ascii_art     boolean;
-g_conf_units_level          unit_list_tab;
+g_conf_units_level          t_unit_list_tab;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -2420,6 +2501,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end warn;
 
@@ -2453,6 +2536,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end warn;
@@ -2488,6 +2573,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end info;
 
@@ -2521,6 +2608,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end info;
@@ -2544,7 +2633,7 @@ is
 begin
   if utl_logging_is_enabled (c_level_info) then
     v_log_id := utl_create_log_entry (
-      p_level           => c_level_info    ,
+      p_level           => c_level_info      ,
       p_message         => p_message         ,
       p_permanent       => p_permanent       ,
       p_call_stack      => p_call_stack      ,
@@ -2556,6 +2645,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end log;
 
@@ -2589,6 +2680,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end log;
@@ -2624,6 +2717,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end debug;
 
@@ -2657,6 +2752,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end debug;
@@ -2692,6 +2789,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end trace;
 
@@ -2725,6 +2824,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end trace;
@@ -2931,6 +3032,110 @@ begin
   -- positional replacements
   return sys.utl_lms.format_message(v_message, p0, p1, p2, p3, p4, p5, p6, p7, p8, p9);
 end format;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in varchar2 )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := substrb(p_value, 1, 4000);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in number   )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := to_char(p_value);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in date     )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ss');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2  ,
+  p_value in timestamp )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2                 ,
+  p_value in timestamp with time zone )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2                       ,
+  p_value in timestamp with local time zone )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in boolean  )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := to_string(p_value);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in clob     )
+is
+  v_param t_params_row;
+begin
+  v_param.name  := substrb(p_name, 1, 128);
+  v_param.value := substrb(p_value, 1, 4000);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
 
 --------------------------------------------------------------------------------
 
@@ -4995,13 +5200,30 @@ begin
       else null
     end;
 
+  -- Add params, if any
+  if g_params.count > 0 then
+    clob_append(v_row.message, v_cache, '## Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
+    for i in 1 .. g_params.count loop
+      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).name, g_params(i).value, 2000));
+    end loop;
+    g_params.delete;
+    clob_append(
+      v_row.message,
+      v_cache,
+      c_lf ||
+      'VARCHAR and CLOB parameters are shortened to 2000 characters and additionally'  || c_lf   ||
+      'escaped for Markdown table columns (replacing all line endings with whitespace' || c_lf   ||
+      'and the pipe character with `&#124;`). If you need your full parameter text'    || c_lf   ||
+      'then please use the `p_message` CLOB parameter in the log methods error, warn,' || c_lf   ||
+      'info, log, debug and trace to pull in what you need.'                           || c_lflf );
+  end if;
+
   v_row.error_code :=
     case
       when p_user_error_code is not null then p_user_error_code
       when sqlcode != 0 then sqlcode
       else null
     end;
-
 
   if p_user_call_stack is not null then
     v_row.call_stack := substrb(p_user_call_stack, 1, 4000);

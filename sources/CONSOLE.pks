@@ -751,6 +751,82 @@ end;
 
 --------------------------------------------------------------------------------
 
+procedure add_param ( p_name in varchar2, p_value in varchar2                       );
+/**
+
+Add a parameter to the package internal parameter collection which will be
+included in the next log call (error, warn, info, log, debug or trace)
+
+The procedure is overloaded to support different parameter types - in case of
+VARCHAR2 and CLOB the value is shortened to 4000 byte.
+
+```sql
+procedure add_param ( p_name in varchar2, p_value in varchar2                       );
+procedure add_param ( p_name in varchar2, p_value in number                         );
+procedure add_param ( p_name in varchar2, p_value in date                           );
+procedure add_param ( p_name in varchar2, p_value in timestamp                      );
+procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
+procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in boolean                        );
+procedure add_param ( p_name in varchar2, p_value in clob                           );
+```
+
+EXAMPLE
+
+```sql
+--create demo procedure
+create or replace procedure demo_proc (
+  p1  varchar2,
+  p2  number,
+  p3  date,
+  p4  timestamp,
+  p5  timestamp with time zone,
+  p6  timestamp with local time zone,
+  p7  boolean
+) is
+begin
+  raise_application_error(-20999, 'Test error.');
+exception
+  when others then
+    console.add_param('p1', p1);
+    console.add_param('p2', p2);
+    console.add_param('p3', p3);
+    console.add_param('p4', p4);
+    console.add_param('p5', p5);
+    console.add_param('p6', p6);
+    console.add_param('p7', p7);
+    console.error;
+    raise;
+end demo_proc;
+{{/}}
+
+--run demo procedure
+begin
+  demo_proc (
+    p1 => 'test'         ,
+    p2 => 1.23           ,
+    p3 => sysdate        ,
+    p4 => systimestamp   ,
+    p5 => systimestamp   ,
+    p6 => localtimestamp ,
+    p7 => true           );
+end;
+{{/}}
+```
+
+**/
+
+
+procedure add_param ( p_name in varchar2, p_value in number                         );
+procedure add_param ( p_name in varchar2, p_value in date                           );
+procedure add_param ( p_name in varchar2, p_value in timestamp                      );
+procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
+procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in boolean                        );
+procedure add_param ( p_name in varchar2, p_value in clob                           );
+
+--------------------------------------------------------------------------------
+
 function format (
   p_message in varchar2              ,
   p0        in varchar2 default null ,

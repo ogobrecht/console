@@ -65,6 +65,7 @@ The main instrumentation methods:
 - [console.table#](package-console.md#procedure-table) (level info)
 - [console.assert](package-console.md#procedure-assert)
 - [console.format](package-console.md#function-format)
+- [console.add_param](package-console.md#procedure-add_param)
 
 Additional instrumentation methods:
 
