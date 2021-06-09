@@ -1,21 +1,18 @@
 <!-- nav -->
 
-[Index](README.md)
-| [Installation](installation.md)
-| [Getting Started](getting-started.md)
-| [API Overview](api-overview.md)
-| [Package Console](package-console.md)
-| [Changelog](changelog.md)
-| [Uninstallation](uninstallation.md)
+[Index](README.md) | [Installation](installation.md) | [Getting
+Started](getting-started.md) | [API Overview](api-overview.md) | [Package
+Console](package-console.md) | [Changelog](changelog.md) |
+[Uninstallation](uninstallation.md)
 
 <!-- navstop -->
 
 # Changelog
 
-## v1.0-beta7 (2021-06-xx)
+## v1.0-beta7 (2021-06-09)
 
-- New overloaded procedure `add_param` to collect parameters before the call one
-  of the log methods error, warn, info, log, debug and trace
+- New overloaded procedure `add_param` to collect parameters before the call to
+  one of the log methods error, warn, info, log, debug and trace
 - New procedure `printf`
 - Rename table column `CONSOLE_LOGS.LOG_SYSTIME` to `CONSOLE_LOGS.LOG_TIME` and
   change the data type from `timstamp` to `timestamp with local time zone`
