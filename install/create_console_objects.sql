@@ -276,13 +276,23 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type key_value_rec is record(
-  key    varchar2 ( 128 byte)  ,
-  value  varchar2 (4000 byte)  );
-type key_value_tab is table of key_value_rec;
-type logs_tab      is table of console_logs%rowtype;
-type vc2_tab       is table of varchar2(32767);
-type vc2_tab_i     is table of varchar2(32767) index by pls_integer;
+subtype t_vc1   is varchar2 (    1 char);
+subtype t_vc32  is varchar2 (   32 char);
+subtype t_vc64  is varchar2 (   64 char);
+subtype t_vc128 is varchar2 (  128 char);
+subtype t_vc256 is varchar2 (  256 char);
+subtype t_vc1k  is varchar2 ( 1024 char);
+subtype t_vc4k  is varchar2 ( 4096 char);
+subtype t_vc32k is varchar2 (32767 char);
+
+type t_key_value_row is record(
+  key    t_vc128 ,
+  value  t_vc4k  );
+type t_key_value_tab   is table of t_key_value_row;
+type t_key_value_tab_i is table of t_key_value_row index by pls_integer;
+type t_logs_tab        is table of console_logs%rowtype;
+type t_vc2_tab         is table of t_vc32k;
+type t_vc2_tab_i       is table of t_vc32k index by pls_integer;
 
 
 --------------------------------------------------------------------------------
@@ -317,7 +327,7 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows in integer default 100) return logs_tab pipelined;
+function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -1002,8 +1012,13 @@ procedure add_param ( p_name in varchar2, p_value in varchar2                   
 Add a parameter to the package internal parameter collection which will be
 included in the next log call (error, warn, info, log, debug or trace)
 
-The procedure is overloaded to support different parameter types - in case of
-VARCHAR2 and CLOB the value is shortened to 4000 byte.
+The procedure is overloaded to support different parameter types.
+
+VARCHAR and CLOB parameters are shortened to 2000 characters and additionally
+escaped for Markdown table columns (replacing all line endings with whitespace
+and the pipe character with `&#124;`). If you need your full parameter text then
+please use the `p_message` CLOB parameter in the log methods error, warn, info,
+log, debug and trace to do your own parameter handling.
 
 ```sql
 procedure add_param ( p_name in varchar2, p_value in varchar2                       );
@@ -1534,7 +1549,7 @@ select console.version from dual;
 function split_to_table (
   p_string in varchar2,            -- The string to split into a table.
   p_sep    in varchar2 default ',' -- The separator.
-) return vc2_tab pipelined;
+) return t_vc2_tab pipelined;
 /**
 
 Splits a string into a (pipelined) SQL table of varchar2.
@@ -1560,7 +1575,7 @@ select * from console.split_to_table('1,2,3');
 function split (
   p_string in varchar2,            -- The string to split into an array.
   p_sep    in varchar2 default ',' -- The separator.
-) return vc2_tab_i;
+) return t_vc2_tab_i;
 /**
 
 Splits a string into a PL/SQL associative array.
@@ -1572,7 +1587,7 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_array console.vc2_tab_i;
+  v_array console.t_vc2_tab_i;
 begin
   v_array := console.split('A,B,C');
   for i in 1 .. v_array.count loop
@@ -1591,7 +1606,7 @@ end;
 --------------------------------------------------------------------------------
 
 function join (
-  p_table in vc2_tab_i,           -- The PL/SQL array to join into a string.
+  p_table in t_vc2_tab_i,           -- The PL/SQL array to join into a string.
   p_sep   in varchar2 default ',' -- The separator.
 ) return varchar2;
 /**
@@ -2054,7 +2069,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_cache return logs_tab pipelined;
+function view_cache return t_logs_tab pipelined;
 /**
 
 View the content of the log cache.
@@ -2109,7 +2124,7 @@ avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 --------------------------------------------------------------------------------
 
-function view_status return key_value_tab pipelined;
+function view_status return t_key_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
@@ -2254,14 +2269,6 @@ c_ctx_apex_env         constant varchar2 ( 8 byte) := 'APEX_ENV';
 c_ctx_cgi_env          constant varchar2 ( 7 byte) := 'CGI_ENV';
 c_ctx_console_env      constant varchar2 (11 byte) := 'CONSOLE_ENV';
 
-subtype t_vc32  is varchar2 (   32 byte);
-subtype t_vc64  is varchar2 (   64 byte);
-subtype t_vc128 is varchar2 (  128 byte);
-subtype t_vc256 is varchar2 (  256 byte);
-subtype t_vc1k  is varchar2 ( 1024 byte);
-subtype t_vc4k  is varchar2 ( 4096 byte);
-subtype t_vc32k is varchar2 (32767 byte);
-
 -- numeric type identfiers
 c_number                 constant pls_integer :=   2; -- float
 c_binary_float           constant pls_integer := 100;
@@ -2291,19 +2298,15 @@ c_interval_day_to_second constant pls_integer := 183;
 c_ref                    constant pls_integer := 111;
 c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
-type t_params_row is record (
-   name   varchar2( 128 byte) ,
-   value  varchar2(4000 byte) );
-type t_params_tab      is table of t_params_row index by binary_integer;
-type t_timers_tab      is table of timestamp    index by t_vc128;
-type t_counters_tab    is table of pls_integer  index by t_vc128;
-type t_saved_stack_tab is table of t_vc1k       index by binary_integer;
-type t_unit_list_tab   is table of t_vc4k       index by binary_integer;
+type t_timers_tab      is table of timestamp   index by t_vc128;
+type t_counters_tab    is table of pls_integer index by t_vc128;
+type t_saved_stack_tab is table of t_vc1k      index by binary_integer;
+type t_unit_list_tab   is table of t_vc4k      index by binary_integer;
 
-g_params         t_params_tab;
+g_params         t_key_value_tab_i;
 g_timers         t_timers_tab;
 g_counters       t_counters_tab;
-g_log_cache      logs_tab;
+g_log_cache      t_logs_tab;
 g_saved_stack    t_saved_stack_tab;
 g_prev_error_msg t_vc1k;
 
@@ -2379,7 +2382,7 @@ end my_log_level;
 
 function view_last (
   p_log_rows in integer default 100 )
-return logs_tab pipelined is
+return t_logs_tab pipelined is
   v_count pls_integer := 0;
   v_left  pls_integer;
 begin
@@ -2403,7 +2406,7 @@ end view_last;
 
 procedure error_save_stack is
 begin
-  g_saved_stack(g_saved_stack.count + 1) := substrb(scope || utl_last_error, 1, 1024);
+  g_saved_stack(g_saved_stack.count + 1) := substr(scope || utl_last_error, 1, 1024);
 end error_save_stack;
 
 --------------------------------------------------------------------------------
@@ -3039,10 +3042,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in varchar2 )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
-  v_param.value := substrb(p_value, 1, 4000);
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := substr(p_value, 1, 4000);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -3052,9 +3055,9 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in number   )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
+  v_param.key   := substr(p_name, 1, 128);
   v_param.value := to_char(p_value);
   g_params(g_params.count + 1) := v_param;
 end add_param;
@@ -3065,9 +3068,9 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in date     )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
+  v_param.key   := substr(p_name, 1, 128);
   v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ss');
   g_params(g_params.count + 1) := v_param;
 end add_param;
@@ -3078,9 +3081,9 @@ procedure add_param (
   p_name  in varchar2  ,
   p_value in timestamp )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
+  v_param.key   := substr(p_name, 1, 128);
   v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff');
   g_params(g_params.count + 1) := v_param;
 end add_param;
@@ -3091,9 +3094,9 @@ procedure add_param (
   p_name  in varchar2                 ,
   p_value in timestamp with time zone )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
+  v_param.key   := substr(p_name, 1, 128);
   v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
   g_params(g_params.count + 1) := v_param;
 end add_param;
@@ -3104,9 +3107,9 @@ procedure add_param (
   p_name  in varchar2                       ,
   p_value in timestamp with local time zone )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
+  v_param.key   := substr(p_name, 1, 128);
   v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
   g_params(g_params.count + 1) := v_param;
 end add_param;
@@ -3117,9 +3120,9 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in boolean  )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
+  v_param.key   := substr(p_name, 1, 128);
   v_param.value := to_string(p_value);
   g_params(g_params.count + 1) := v_param;
 end add_param;
@@ -3130,10 +3133,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in clob     )
 is
-  v_param t_params_row;
+  v_param t_key_value_row;
 begin
-  v_param.name  := substrb(p_name, 1, 128);
-  v_param.value := substrb(p_value, 1, 4000);
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := substr(p_value, 1, 4000);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -3205,8 +3208,8 @@ is
   function ascii_art (
     p_type in varchar2 ) -- html, md
   return varchar2 is
-    v_return varchar2(1000 byte);
-    v_troll  varchar2(1000 byte) := q'[
+    v_return t_vc1k;
+    v_troll  t_vc1k := q'[
                 \|||/
                 (o o)
     ,-------ooO--(_)------------.
@@ -3234,7 +3237,7 @@ is
   ) return varchar2
   is
     pragma autonomous_transaction;
-    v_message_text varchar2(4000) :=
+    v_message_text t_vc1k :=
       'DEVELOPER TODO: Change the message in APEX > Application Builder > Shared Components > Text Messages for constraint ' ||
       p_constraint_name || '.';
   begin
@@ -3250,7 +3253,7 @@ is
   function to_md_li_pre (
     p_text in varchar2)
   return varchar2 is
-    v_fences varchar2(30) := '    ```';
+    v_fences t_vc32 := '    ```';
   begin
     return
       c_lf ||
@@ -3263,7 +3266,7 @@ is
     p_text in varchar2 )
   return clob is
     v_clob  clob;
-    v_cache varchar2(32767);
+    v_cache t_vc32k;
   begin
     clob_append ( v_clob, v_cache, p_text                   || c_lflf                                              );
     clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                              );
@@ -3509,7 +3512,7 @@ is
   pragma autonomous_transaction;
   v_old_conf      console_global_conf%rowtype;
   v_conf          console_global_conf%rowtype;
-  type            unit_tab is table of varchar2(1) index by varchar2(1000);
+  type            unit_tab is table of t_vc1 index by t_vc1k;
   v_units_level_2 unit_tab;
   v_units_level_3 unit_tab;
   v_units_level_4 unit_tab;
@@ -3519,7 +3522,7 @@ is
     p_units in varchar2    ,
     p_level in pls_integer )
   is
-    v_units vc2_tab_i;
+    v_units t_vc2_tab_i;
   begin
     if p_units is not null then
       v_units := split(p_units);
@@ -3538,8 +3541,8 @@ is
     p_level in pls_integer )
   return varchar2 is
     v_units  unit_tab;
-    v_return varchar2(32767);
-    v_index  varchar2(1000);
+    v_return t_vc32k;
+    v_index  t_vc1k;
   begin
     v_units :=
       case p_level
@@ -3856,8 +3859,8 @@ end version;
 function split_to_table (
   p_string in varchar2,
   p_sep    in varchar2 default ','
-) return vc2_tab pipelined is
-  v_array vc2_tab_i;
+) return t_vc2_tab pipelined is
+  v_array t_vc2_tab_i;
 begin
   if p_string is not null then
     v_array := split(p_string, p_sep);
@@ -3872,11 +3875,11 @@ end split_to_table;
 function split (
   p_string in varchar2,
   p_sep    in varchar2 default ','
-) return vc2_tab_i is
-  v_str        varchar2(32767);
+) return t_vc2_tab_i is
+  v_str        t_vc32k;
   v_idx        pls_integer;
   v_sep_length pls_integer;
-  v_return     vc2_tab_i;
+  v_return     t_vc2_tab_i;
 begin
   if p_string is not null then
     if p_sep is null then
@@ -3904,10 +3907,10 @@ end split;
 --------------------------------------------------------------------------------
 
 function join (
-  p_table in vc2_tab_i,
+  p_table in t_vc2_tab_i,
   p_sep   in varchar2 default ','
 ) return varchar2 is
-  v_return varchar2(32767);
+  v_return t_vc32k;
 begin
   for i in 1 .. p_table.count loop
     v_return := v_return || p_sep || p_table(i);
@@ -4143,15 +4146,13 @@ end to_md_tab_data;
 --------------------------------------------------------------------------------
 
 function to_unibar (
-  p_value                   in number,
-  p_scale                   in number default 1,
-  p_width_block_characters  in number default 25,
-  p_fill_scale              in number default 0
-) return varchar2
-  deterministic
-is
-  v_return               varchar2(1000);
-  v_value_one_character  number;
+  p_value                  in number            ,
+  p_scale                  in number default 1  ,
+  p_width_block_characters in number default 25 ,
+  p_fill_scale             in number default 0  )
+return varchar2 deterministic is
+  v_return              t_vc1k;
+  v_value_one_character number;
 begin
   if p_value is not null then
   -- calculate the value of one character
@@ -4706,7 +4707,7 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
-function view_cache return logs_tab pipelined is
+function view_cache return t_logs_tab pipelined is
 begin
   for i in reverse 1 .. g_log_cache.count loop
     pipe row(g_log_cache(i));
@@ -4737,37 +4738,37 @@ end clear;
 
 --------------------------------------------------------------------------------
 
-function view_status return key_value_tab pipelined is
-  v_row key_value_rec;
+function view_status return t_key_value_tab pipelined is
+  v_row t_key_value_row;
 begin
   if g_conf_check_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
-  pipe row(new key_value_rec('c_version',                       to_char( c_version                                      )) );
-  pipe row(new key_value_rec('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
-  pipe row(new key_value_rec('c_ctx_namespace',                          c_ctx_namespace                                 ) );
-  pipe row(new key_value_rec('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
-  pipe row(new key_value_rec('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
-  pipe row(new key_value_rec('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
-  pipe row(new key_value_rec('g_conf_level',                    to_char( g_conf_level                                   )) );
-  pipe row(new key_value_rec('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                   )) );
-  pipe row(new key_value_rec('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
-  pipe row(new key_value_rec('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
-  pipe row(new key_value_rec('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
-  pipe row(new key_value_rec('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
-  pipe row(new key_value_rec('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
-  pipe row(new key_value_rec('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
-  pipe row(new key_value_rec('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
-  pipe row(new key_value_rec('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
-  pipe row(new key_value_rec('g_conf_units_level(2)',                    g_conf_units_level(2)                           ) );
-  pipe row(new key_value_rec('g_conf_units_level(3)',                    g_conf_units_level(3)                           ) );
-  pipe row(new key_value_rec('g_conf_units_level(4)',                    g_conf_units_level(4)                           ) );
-  pipe row(new key_value_rec('g_conf_units_level(5)',                    g_conf_units_level(5)                           ) );
-  pipe row(new key_value_rec('g_counters.count',                to_char( g_counters.count                               )) );
-  pipe row(new key_value_rec('g_timers.count',                  to_char( g_timers.count                                 )) );
-  pipe row(new key_value_rec('g_log_cache.count',               to_char( g_log_cache.count                              )) );
-  pipe row(new key_value_rec('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
-  pipe row(new key_value_rec('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
+  pipe row(new t_key_value_row('c_version',                       to_char( c_version                                      )) );
+  pipe row(new t_key_value_row('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
+  pipe row(new t_key_value_row('c_ctx_namespace',                          c_ctx_namespace                                 ) );
+  pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
+  pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
+  pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
+  pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                                   )) );
+  pipe row(new t_key_value_row('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                   )) );
+  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
+  pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
+  pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
+  pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
+  pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
+  pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
+  pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
+  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
+  pipe row(new t_key_value_row('g_conf_units_level(2)',                    g_conf_units_level(2)                           ) );
+  pipe row(new t_key_value_row('g_conf_units_level(3)',                    g_conf_units_level(3)                           ) );
+  pipe row(new t_key_value_row('g_conf_units_level(4)',                    g_conf_units_level(4)                           ) );
+  pipe row(new t_key_value_row('g_conf_units_level(5)',                    g_conf_units_level(5)                           ) );
+  pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                               )) );
+  pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                                 )) );
+  pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                              )) );
+  pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
+  pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
 end view_status;
 
 --------------------------------------------------------------------------------
@@ -4968,7 +4969,7 @@ end utl_logging_is_enabled;
 
 function utl_normalize_label (p_label varchar2) return varchar2 is
 begin
-  return coalesce(substrb(p_label, 1, 128), c_default_label);
+  return coalesce(substr(p_label, 1, 128), c_default_label);
 end utl_normalize_label;
 
 --------------------------------------------------------------------------------
@@ -5204,18 +5205,11 @@ begin
   if g_params.count > 0 then
     clob_append(v_row.message, v_cache, '## Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
     for i in 1 .. g_params.count loop
-      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).name, g_params(i).value, 2000));
+      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).key, g_params(i).value, 2000));
     end loop;
+    clob_append(v_row.message, v_cache, c_lf);
     g_params.delete;
-    clob_append(
-      v_row.message,
-      v_cache,
-      c_lf ||
-      'VARCHAR and CLOB parameters are shortened to 2000 characters and additionally'  || c_lf   ||
-      'escaped for Markdown table columns (replacing all line endings with whitespace' || c_lf   ||
-      'and the pipe character with `&#124;`). If you need your full parameter text'    || c_lf   ||
-      'then please use the `p_message` CLOB parameter in the log methods error, warn,' || c_lf   ||
-      'info, log, debug and trace to pull in what you need.'                           || c_lflf );
+
   end if;
 
   v_row.error_code :=
@@ -5291,7 +5285,7 @@ end utl_create_log_entry;
 
 --package inizialization
 begin
-  g_log_cache := new logs_tab();
+  g_log_cache := new t_logs_tab();
   utl_set_client_identifier;
   utl_ctx_check_availability;
   utl_load_session_configuration;

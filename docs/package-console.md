@@ -209,7 +209,7 @@ select * from console.view_last(50);
 SIGNATURE
 
 ```sql
-function view_last (p_log_rows in integer default 100) return logs_tab pipelined;
+function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
 ```
 
 
@@ -934,8 +934,13 @@ procedure assert (
 Add a parameter to the package internal parameter collection which will be
 included in the next log call (error, warn, info, log, debug or trace)
 
-The procedure is overloaded to support different parameter types - in case of
-VARCHAR2 and CLOB the value is shortened to 4000 byte.
+The procedure is overloaded to support different parameter types.
+
+VARCHAR and CLOB parameters are shortened to 2000 characters and additionally
+escaped for Markdown table columns (replacing all line endings with whitespace
+and the pipe character with `&#124;`). If you need your full parameter text then
+please use the `p_message` CLOB parameter in the log methods error, warn, info,
+log, debug and trace to do your own parameter handling.
 
 ```sql
 procedure add_param ( p_name in varchar2, p_value in varchar2                       );
@@ -1647,7 +1652,7 @@ SIGNATURE
 function split_to_table (
   p_string in varchar2,            -- The string to split into a table.
   p_sep    in varchar2 default ',' -- The separator.
-) return vc2_tab pipelined;
+) return t_vc2_tab pipelined;
 ```
 
 
@@ -1662,7 +1667,7 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_array console.vc2_tab_i;
+  v_array console.t_vc2_tab_i;
 begin
   v_array := console.split('A,B,C');
   for i in 1 .. v_array.count loop
@@ -1682,7 +1687,7 @@ SIGNATURE
 function split (
   p_string in varchar2,            -- The string to split into an array.
   p_sep    in varchar2 default ',' -- The separator.
-) return vc2_tab_i;
+) return t_vc2_tab_i;
 ```
 
 
@@ -1694,7 +1699,7 @@ SIGNATURE
 
 ```sql
 function join (
-  p_table in vc2_tab_i,           -- The PL/SQL array to join into a string.
+  p_table in t_vc2_tab_i,           -- The PL/SQL array to join into a string.
   p_sep   in varchar2 default ',' -- The separator.
 ) return varchar2;
 ```
@@ -2238,7 +2243,7 @@ select * from console.view_cache();
 SIGNATURE
 
 ```sql
-function view_cache return logs_tab pipelined;
+function view_cache return t_logs_tab pipelined;
 ```
 
 
@@ -2284,7 +2289,7 @@ select * from console.view_status();
 SIGNATURE
 
 ```sql
-function view_status return key_value_tab pipelined;
+function view_status return t_key_value_tab pipelined;
 ```
 
 

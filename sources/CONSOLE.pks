@@ -31,13 +31,23 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-type key_value_rec is record(
-  key    varchar2 ( 128 byte)  ,
-  value  varchar2 (4000 byte)  );
-type key_value_tab is table of key_value_rec;
-type logs_tab      is table of console_logs%rowtype;
-type vc2_tab       is table of varchar2(32767);
-type vc2_tab_i     is table of varchar2(32767) index by pls_integer;
+subtype t_vc1   is varchar2 (    1 char);
+subtype t_vc32  is varchar2 (   32 char);
+subtype t_vc64  is varchar2 (   64 char);
+subtype t_vc128 is varchar2 (  128 char);
+subtype t_vc256 is varchar2 (  256 char);
+subtype t_vc1k  is varchar2 ( 1024 char);
+subtype t_vc4k  is varchar2 ( 4096 char);
+subtype t_vc32k is varchar2 (32767 char);
+
+type t_key_value_row is record(
+  key    t_vc128 ,
+  value  t_vc4k  );
+type t_key_value_tab   is table of t_key_value_row;
+type t_key_value_tab_i is table of t_key_value_row index by pls_integer;
+type t_logs_tab        is table of console_logs%rowtype;
+type t_vc2_tab         is table of t_vc32k;
+type t_vc2_tab_i       is table of t_vc32k index by pls_integer;
 
 
 --------------------------------------------------------------------------------
@@ -72,7 +82,7 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows in integer default 100) return logs_tab pipelined;
+function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -757,8 +767,13 @@ procedure add_param ( p_name in varchar2, p_value in varchar2                   
 Add a parameter to the package internal parameter collection which will be
 included in the next log call (error, warn, info, log, debug or trace)
 
-The procedure is overloaded to support different parameter types - in case of
-VARCHAR2 and CLOB the value is shortened to 4000 byte.
+The procedure is overloaded to support different parameter types.
+
+VARCHAR and CLOB parameters are shortened to 2000 characters and additionally
+escaped for Markdown table columns (replacing all line endings with whitespace
+and the pipe character with `&#124;`). If you need your full parameter text then
+please use the `p_message` CLOB parameter in the log methods error, warn, info,
+log, debug and trace to do your own parameter handling.
 
 ```sql
 procedure add_param ( p_name in varchar2, p_value in varchar2                       );
@@ -1289,7 +1304,7 @@ select console.version from dual;
 function split_to_table (
   p_string in varchar2,            -- The string to split into a table.
   p_sep    in varchar2 default ',' -- The separator.
-) return vc2_tab pipelined;
+) return t_vc2_tab pipelined;
 /**
 
 Splits a string into a (pipelined) SQL table of varchar2.
@@ -1315,7 +1330,7 @@ select * from console.split_to_table('1,2,3');
 function split (
   p_string in varchar2,            -- The string to split into an array.
   p_sep    in varchar2 default ',' -- The separator.
-) return vc2_tab_i;
+) return t_vc2_tab_i;
 /**
 
 Splits a string into a PL/SQL associative array.
@@ -1327,7 +1342,7 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_array console.vc2_tab_i;
+  v_array console.t_vc2_tab_i;
 begin
   v_array := console.split('A,B,C');
   for i in 1 .. v_array.count loop
@@ -1346,7 +1361,7 @@ end;
 --------------------------------------------------------------------------------
 
 function join (
-  p_table in vc2_tab_i,           -- The PL/SQL array to join into a string.
+  p_table in t_vc2_tab_i,           -- The PL/SQL array to join into a string.
   p_sep   in varchar2 default ',' -- The separator.
 ) return varchar2;
 /**
@@ -1809,7 +1824,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_cache return logs_tab pipelined;
+function view_cache return t_logs_tab pipelined;
 /**
 
 View the content of the log cache.
@@ -1864,7 +1879,7 @@ avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 --------------------------------------------------------------------------------
 
-function view_status return key_value_tab pipelined;
+function view_status return t_key_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
