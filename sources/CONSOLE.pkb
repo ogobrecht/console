@@ -35,14 +35,6 @@ c_ctx_apex_env         constant varchar2 ( 8 byte) := 'APEX_ENV';
 c_ctx_cgi_env          constant varchar2 ( 7 byte) := 'CGI_ENV';
 c_ctx_console_env      constant varchar2 (11 byte) := 'CONSOLE_ENV';
 
-subtype t_vc32  is varchar2 (   32 byte);
-subtype t_vc64  is varchar2 (   64 byte);
-subtype t_vc128 is varchar2 (  128 byte);
-subtype t_vc256 is varchar2 (  256 byte);
-subtype t_vc1k  is varchar2 ( 1024 byte);
-subtype t_vc4k  is varchar2 ( 4096 byte);
-subtype t_vc32k is varchar2 (32767 byte);
-
 -- numeric type identfiers
 c_number                 constant pls_integer :=   2; -- float
 c_binary_float           constant pls_integer := 100;
@@ -72,15 +64,16 @@ c_interval_day_to_second constant pls_integer := 183;
 c_ref                    constant pls_integer := 111;
 c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
-type timers_tab      is table of timestamp   index by t_vc128;
-type counters_tab    is table of pls_integer index by t_vc128;
-type saved_stack_tab is table of t_vc1k      index by binary_integer;
-type unit_list_tab   is table of t_vc4k      index by binary_integer;
+type t_timers_tab      is table of timestamp   index by t_vc128;
+type t_counters_tab    is table of pls_integer index by t_vc128;
+type t_saved_stack_tab is table of t_vc1k      index by binary_integer;
+type t_unit_list_tab   is table of t_vc4k      index by binary_integer;
 
-g_timers         timers_tab;
-g_counters       counters_tab;
-g_log_cache      logs_tab := new logs_tab();
-g_saved_stack    saved_stack_tab;
+g_params         t_key_value_tab_i;
+g_timers         t_timers_tab;
+g_counters       t_counters_tab;
+g_log_cache      t_logs_tab;
+g_saved_stack    t_saved_stack_tab;
 g_prev_error_msg t_vc1k;
 
 g_conf_check_sysdate        date;
@@ -96,7 +89,7 @@ g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
 g_conf_enable_ascii_art     boolean;
-g_conf_units_level          unit_list_tab;
+g_conf_units_level          t_unit_list_tab;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -105,7 +98,7 @@ g_conf_units_level          unit_list_tab;
 $if not $$utils_public $then
 
 function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_get_error return varchar2;
+function utl_last_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
 function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
@@ -119,18 +112,18 @@ procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
 --
 function utl_create_log_entry (
-  p_level           integer                ,
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_level           in integer                ,
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
 
 $end
@@ -153,8 +146,9 @@ end my_log_level;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows integer default 100)
-return logs_tab pipelined is
+function view_last (
+  p_log_rows in integer default 100 )
+return t_logs_tab pipelined is
   v_count pls_integer := 0;
   v_left  pls_integer;
 begin
@@ -166,7 +160,7 @@ begin
   if v_count < p_log_rows then
     v_left := p_log_rows - v_count;
     for i in (select * from console_logs
-              order by log_systime desc
+              order by log_time desc
               fetch first v_left rows only)
     loop
           pipe row(i);
@@ -178,23 +172,23 @@ end view_last;
 
 procedure error_save_stack is
 begin
-  g_saved_stack(g_saved_stack.count + 1) := substrb(get_scope || utl_get_error, 1, 1024);
+  g_saved_stack(g_saved_stack.count + 1) := substr(scope || utl_last_error, 1, 1024);
 end error_save_stack;
 
 --------------------------------------------------------------------------------
 
 procedure error (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 is
   v_log_id console_logs.log_id%type;
 begin
@@ -214,17 +208,17 @@ begin
 end error;
 
 function error (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
 is
   v_log_id console_logs.log_id%type;
@@ -248,17 +242,17 @@ end error;
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 is
   v_log_id console_logs.log_id%type;
 begin
@@ -276,21 +270,23 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end warn;
 
 function warn (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
 is
   v_log_id console_logs.log_id%type;
@@ -309,6 +305,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end warn;
@@ -316,17 +314,17 @@ end warn;
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 is
   v_log_id console_logs.log_id%type;
 begin
@@ -344,21 +342,23 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end info;
 
 function info (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
 is
   v_log_id console_logs.log_id%type;
@@ -377,6 +377,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end info;
@@ -384,23 +386,23 @@ end info;
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 is
   v_log_id console_logs.log_id%type;
 begin
   if utl_logging_is_enabled (c_level_info) then
     v_log_id := utl_create_log_entry (
-      p_level           => c_level_info    ,
+      p_level           => c_level_info      ,
       p_message         => p_message         ,
       p_permanent       => p_permanent       ,
       p_call_stack      => p_call_stack      ,
@@ -412,21 +414,23 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end log;
 
 function log (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
 is
   v_log_id console_logs.log_id%type;
@@ -445,6 +449,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end log;
@@ -452,17 +458,17 @@ end log;
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 is
   v_log_id console_logs.log_id%type;
 begin
@@ -480,21 +486,23 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end debug;
 
 function debug (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
 is
   v_log_id console_logs.log_id%type;
@@ -513,6 +521,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end debug;
@@ -520,17 +530,17 @@ end debug;
 --------------------------------------------------------------------------------
 
 procedure trace (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default true  ,
-  p_cgi_env         boolean  default true  ,
-  p_console_env     boolean  default true  ,
-  p_user_env        boolean  default true  ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default true  ,
+  p_cgi_env         in boolean  default true  ,
+  p_console_env     in boolean  default true  ,
+  p_user_env        in boolean  default true  ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 is
   v_log_id console_logs.log_id%type;
 begin
@@ -548,21 +558,23 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
 end trace;
 
 function trace (
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default true  ,
-  p_apex_env        boolean  default true  ,
-  p_cgi_env         boolean  default true  ,
-  p_console_env     boolean  default true  ,
-  p_user_env        boolean  default true  ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default true  ,
+  p_apex_env        in boolean  default true  ,
+  p_cgi_env         in boolean  default true  ,
+  p_console_env     in boolean  default true  ,
+  p_user_env        in boolean  default true  ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
 is
   v_log_id console_logs.log_id%type;
@@ -581,6 +593,8 @@ begin
       p_user_scope      => p_user_scope      ,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
+  else
+    g_params.delete;
   end if;
   return v_log_id;
 end trace;
@@ -588,7 +602,7 @@ end trace;
 --------------------------------------------------------------------------------
 
 procedure count (
-  p_label varchar2 default null )
+  p_label in varchar2 default null )
 is
   v_label t_vc128;
 begin
@@ -601,7 +615,7 @@ begin
 end count;
 
 procedure count_log (
-  p_label  varchar2 default null )
+  p_label in varchar2 default null )
 is
   v_label  t_vc128;
   v_log_id console_logs.log_id%type;
@@ -619,7 +633,7 @@ begin
 end count_log;
 
 procedure count_end (
-  p_label  varchar2 default null )
+  p_label in varchar2 default null )
 is
   v_label  t_vc128;
   v_log_id console_logs.log_id%type;
@@ -638,7 +652,7 @@ begin
 end count_end;
 
 function count_end (
-  p_label varchar2 default null )
+  p_label in varchar2 default null )
 return varchar2
 is
   v_label  t_vc128;
@@ -657,14 +671,14 @@ end count_end;
 --------------------------------------------------------------------------------
 
 procedure time (
-  p_label varchar2 default null )
+  p_label in varchar2 default null )
 is
 begin
   g_timers(utl_normalize_label(p_label)) := localtimestamp;
 end time;
 
 procedure time_log (
-  p_label varchar2 default null )
+  p_label in varchar2 default null )
 is
   v_label  t_vc128;
   v_log_id console_logs.log_id%type;
@@ -674,7 +688,7 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || get_runtime (g_timers(v_label)) );
+        p_message => v_label || ': ' || runtime (g_timers(v_label)) );
     end if;
   else
     warn('Timer `' || v_label || '` does not exist.');
@@ -682,7 +696,7 @@ begin
 end time_log;
 
 procedure time_end (
-  p_label varchar2 default null )
+  p_label in varchar2 default null )
 is
   v_label  t_vc128;
   v_log_id console_logs.log_id%type;
@@ -692,7 +706,7 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || get_runtime (g_timers(v_label)) || ' - timer ended' );
+        p_message => v_label || ': ' || runtime (g_timers(v_label)) || ' - timer ended' );
     end if;
     g_timers.delete(v_label);
   else
@@ -701,7 +715,7 @@ begin
 end time_end;
 
 function time_end (
-  p_label varchar2 default null )
+  p_label in varchar2 default null )
 return varchar2
 is
   v_label  t_vc128;
@@ -709,7 +723,7 @@ is
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
-    v_return :=  get_runtime(g_timers(v_label));
+    v_return :=  runtime(g_timers(v_label));
     g_timers.delete(v_label);
   else
     v_return := 'Timer `' || v_label || '` does not exist.';
@@ -720,11 +734,11 @@ end time_end;
 --------------------------------------------------------------------------------
 
 procedure table# (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 )
+  p_data_cursor       in sys_refcursor         ,
+  p_comment           in varchar2 default null ,
+  p_include_row_num   in boolean  default true ,
+  p_max_rows          in integer  default 100  ,
+  p_max_column_length in integer  default 1000 )
 is
   v_log_id console_logs.log_id%type;
 begin
@@ -743,8 +757,8 @@ end table#;
 --------------------------------------------------------------------------------
 
 procedure assert (
-  p_expression boolean  ,
-  p_message    varchar2 )
+  p_expression in boolean  ,
+  p_message    in varchar2 )
 is
 begin
   if not p_expression then
@@ -790,8 +804,112 @@ end format;
 
 --------------------------------------------------------------------------------
 
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in varchar2 )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := substr(p_value, 1, 4000);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in number   )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := to_char(p_value);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in date     )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ss');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2  ,
+  p_value in timestamp )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2                 ,
+  p_value in timestamp with time zone )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2                       ,
+  p_value in timestamp with local time zone )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in boolean  )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := to_string(p_value);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in clob     )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := substr(p_value, 1, 4000);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
 procedure action (
-  p_action varchar2 )
+  p_action in varchar2 )
 is
 begin
   dbms_application_info.set_action (
@@ -801,8 +919,8 @@ end action;
 --------------------------------------------------------------------------------
 
 procedure module (
-  p_module varchar2,
-  p_action varchar2 default null
+  p_module in varchar2,
+  p_action in varchar2 default null
 )
 is
 begin
@@ -846,16 +964,18 @@ is
   v_app_id          pls_integer := v('APP_ID');
   v_app_page_id     pls_integer := v('APP_PAGE_ID');
   --
-  function extract_constraint_name(p_sqlerrm varchar2) return varchar2 is
+  function extract_constraint_name(
+    p_sqlerrm in varchar2)
+  return varchar2 is
   begin
     return regexp_substr(p_sqlerrm, '\(\S+?\.(\S+?)\)', 1, 1, 'i', 1);
   end;
   --
-  function get_ascii_art (
-    p_type varchar2 )
+  function ascii_art (
+    p_type in varchar2 ) -- html, md
   return varchar2 is
-    v_return varchar2(1000 byte);
-    v_troll  varchar2(1000 byte) := q'[
+    v_return t_vc1k;
+    v_troll  t_vc1k := q'[
                 \|||/
                 (o o)
     ,-------ooO--(_)------------.
@@ -876,14 +996,14 @@ is
         case p_type when 'html' then '</pre>' when 'md' then '```' end          ;
     end if;
     return v_return;
-  end get_ascii_art;
+  end ascii_art;
   --
   function create_apex_lang_message (
-    p_constraint_name varchar2
+    p_constraint_name in varchar2
   ) return varchar2
   is
     pragma autonomous_transaction;
-    v_message_text varchar2(4000) :=
+    v_message_text t_vc1k :=
       'DEVELOPER TODO: Change the message in APEX > Application Builder > Shared Components > Text Messages for constraint ' ||
       p_constraint_name || '.';
   begin
@@ -896,21 +1016,23 @@ is
     return v_message_text;
   end create_apex_lang_message;
   --
-  function get_md_li_pre (p_text varchar2) return varchar2 is
-    v_fences varchar2(30) := '    ```';
+  function to_md_li_pre (
+    p_text in varchar2)
+  return varchar2 is
+    v_fences t_vc32 := '    ```';
   begin
     return
       c_lf ||
       v_fences || c_lf ||
       to_md_code_block(p_text) || c_lf ||
       v_fences;
-  end get_md_li_pre;
+  end to_md_li_pre;
   --
-  function get_log_message (
-    p_text varchar2 )
+  function log_message (
+    p_text in varchar2 )
   return clob is
     v_clob  clob;
-    v_cache varchar2(32767);
+    v_cache t_vc32k;
   begin
     clob_append ( v_clob, v_cache, p_text                   || c_lflf                                              );
     clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                              );
@@ -922,11 +1044,11 @@ is
     clob_append ( v_clob, v_cache, '6. component.type: '    || p_error.component.type                      || c_lf );
     clob_append ( v_clob, v_cache, '7. component.id: '      || p_error.component.id                        || c_lf );
     clob_append ( v_clob, v_cache, '8. component.name: '    || p_error.component.name                      || c_lf );
-    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || get_md_li_pre(p_error.error_backtrace)      || c_lf );
-    clob_append ( v_clob, v_cache, '10. error_statement: '  || get_md_li_pre(p_error.error_statement)      || c_lf );
+    clob_append ( v_clob, v_cache, '9. error_backtrace: '   || to_md_li_pre(p_error.error_backtrace)       || c_lf );
+    clob_append ( v_clob, v_cache, '10. error_statement: '  || to_md_li_pre(p_error.error_statement)       || c_lf );
     clob_flush_cache ( v_clob, v_cache );
     return v_clob;
-  end get_log_message;
+  end log_message;
   --
 begin
   v_result := apex_error.init_error_result (p_error => p_error);
@@ -945,7 +1067,7 @@ begin
 
       -- Log error and return log ID as reference.
       v_log_id := error (
-        p_message         => get_log_message('Unexpected internal application error.' || get_ascii_art('md')) ,
+        p_message         => log_message('Unexpected internal application error.' || ascii_art('md')) ,
         p_call_stack      => false                                                                            ,
         p_apex_env        => true                                                                             ,
         p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id     ,
@@ -954,7 +1076,7 @@ begin
 
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
-      v_result.message := get_ascii_art('html') ||
+      v_result.message := ascii_art('html') ||
         'An unexpected internal application error has occurred. ' ||
         'Please get in contact with your Oracle APEX support team and provide ' ||
         '"App ID ' || to_char(v_app_id) || ', Log ID ' || to_char(v_log_id) ||
@@ -1006,7 +1128,7 @@ begin
         -- Log a permanent error, so developers get information that they need
         -- to change the text message.
         error (
-          p_message         => get_log_message (v_result.message)                                           ,
+          p_message         => log_message (v_result.message)                                           ,
           p_permanent       => true                                                                         ,
           p_call_stack      => false                                                                        ,
           p_apex_env        => true                                                                         ,
@@ -1145,28 +1267,28 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               integer  default c_level_error ,
-  p_check_interval      integer  default 10            ,
-  p_units_level_warning varchar2 default null          ,
-  p_units_level_info    varchar2 default null          ,
-  p_units_level_debug   varchar2 default null          ,
-  p_units_level_trace   varchar2 default null          ,
-  p_enable_ascii_art    boolean  default true          )
+  p_level               in integer  default c_level_error ,
+  p_check_interval      in integer  default 10            ,
+  p_units_level_warning in varchar2 default null          ,
+  p_units_level_info    in varchar2 default null          ,
+  p_units_level_debug   in varchar2 default null          ,
+  p_units_level_trace   in varchar2 default null          ,
+  p_enable_ascii_art    in boolean  default true          )
 is
   pragma autonomous_transaction;
   v_old_conf      console_global_conf%rowtype;
   v_conf          console_global_conf%rowtype;
-  type            unit_tab is table of varchar2(1) index by varchar2(1000);
+  type            unit_tab is table of t_vc1 index by t_vc1k;
   v_units_level_2 unit_tab;
   v_units_level_3 unit_tab;
   v_units_level_4 unit_tab;
   v_units_level_5 unit_tab;
   --
   procedure distribute_units_to_levels (
-    p_units varchar2    ,
-    p_level pls_integer )
+    p_units in varchar2    ,
+    p_level in pls_integer )
   is
-    v_units vc2_tab_i;
+    v_units t_vc2_tab_i;
   begin
     if p_units is not null then
       v_units := split(p_units);
@@ -1182,11 +1304,11 @@ is
   end distribute_units_to_levels;
   --
   function join_units (
-    p_level pls_integer )
+    p_level in pls_integer )
   return varchar2 is
     v_units  unit_tab;
-    v_return varchar2(32767);
-    v_index  varchar2(1000);
+    v_return t_vc32k;
+    v_index  t_vc1k;
   begin
     v_units :=
       case p_level
@@ -1221,7 +1343,7 @@ begin
   v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
   v_conf.conf_sysdate     := sysdate;
   v_conf.level_id         := p_level;
-  v_conf.level_name       := get_level_name(p_level);
+  v_conf.level_name       := level_name(p_level);
   v_conf.check_interval   := p_check_interval;
   v_conf.enable_ascii_art := to_yn(p_enable_ascii_art);
   --
@@ -1252,7 +1374,7 @@ end conf;
 --------------------------------------------------------------------------------
 
 procedure conf_level (
-  p_level  integer  default c_level_error )
+  p_level in integer default c_level_error )
 is
   v_conf console_global_conf%rowtype;
 begin
@@ -1272,7 +1394,7 @@ end conf_level;
 --------------------------------------------------------------------------------
 
 procedure conf_check_interval (
-  p_check_interval  integer  default 10  )
+  p_check_interval in integer default 10 )
 is
   v_conf console_global_conf%rowtype;
 begin
@@ -1292,10 +1414,10 @@ end conf_check_interval;
 --------------------------------------------------------------------------------
 
 procedure conf_units (
-  p_units_level_warning varchar2 default null ,
-  p_units_level_info    varchar2 default null ,
-  p_units_level_debug   varchar2 default null ,
-  p_units_level_trace   varchar2 default null )
+  p_units_level_warning in varchar2 default null ,
+  p_units_level_info    in varchar2 default null ,
+  p_units_level_debug   in varchar2 default null ,
+  p_units_level_trace   in varchar2 default null )
 is
   v_conf console_global_conf%rowtype;
 begin
@@ -1313,7 +1435,7 @@ end conf_units;
 --------------------------------------------------------------------------------
 
 procedure conf_ascii_art (
-  p_enable_ascii_art  boolean  default true  )
+  p_enable_ascii_art in boolean default true )
 is
   v_conf console_global_conf%rowtype;
 begin
@@ -1333,16 +1455,16 @@ end conf_ascii_art;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier varchar2                      ,
-  p_level             integer  default c_level_info ,
-  p_duration          integer  default 60           ,
-  p_cache_size        integer  default 0            ,
-  p_check_interval    integer  default 10           ,
-  p_call_stack        boolean  default false        ,
-  p_user_env          boolean  default false        ,
-  p_apex_env          boolean  default false        ,
-  p_cgi_env           boolean  default false        ,
-  p_console_env       boolean  default false        )
+  p_client_identifier in varchar2                      ,
+  p_level             in integer  default c_level_info ,
+  p_duration          in integer  default 60           ,
+  p_cache_size        in integer  default 0            ,
+  p_check_interval    in integer  default 10           ,
+  p_call_stack        in boolean  default false        ,
+  p_user_env          in boolean  default false        ,
+  p_apex_env          in boolean  default false        ,
+  p_cgi_env           in boolean  default false        ,
+  p_console_env       in boolean  default false        )
 is
   pragma autonomous_transaction;
   v_row console_client_prefs%rowtype;
@@ -1369,7 +1491,7 @@ begin
   v_row.exit_sysdate      := sysdate + 1/24/60 * p_duration;
   v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
   v_row.level_id          := p_level;
-  v_row.level_name        := get_level_name(p_level);
+  v_row.level_name        := level_name(p_level);
   v_row.cache_size        := p_cache_size;
   v_row.check_interval    := p_check_interval;
   v_row.call_stack        := to_yn ( p_call_stack  );
@@ -1407,15 +1529,15 @@ begin
 end init;
 
 procedure init (
-  p_level          integer default c_level_info ,
-  p_duration       integer default 60           ,
-  p_cache_size     integer default 0            ,
-  p_check_interval integer default 10           ,
-  p_call_stack     boolean default false        ,
-  p_user_env       boolean default false        ,
-  p_apex_env       boolean default false        ,
-  p_cgi_env        boolean default false        ,
-  p_console_env    boolean default false        )
+  p_level          in integer default c_level_info ,
+  p_duration       in integer default 60           ,
+  p_cache_size     in integer default 0            ,
+  p_check_interval in integer default 10           ,
+  p_call_stack     in boolean default false        ,
+  p_user_env       in boolean default false        ,
+  p_apex_env       in boolean default false        ,
+  p_cgi_env        in boolean default false        ,
+  p_console_env    in boolean default false        )
 is
 begin
   init (
@@ -1436,7 +1558,7 @@ end init;
 -- call to "exit" would not compile, to "exit_" it is ok. Also see calls to
 -- "exit_" in the next two procedures.
 procedure exit_ (
-  p_client_identifier varchar2 )
+  p_client_identifier in varchar2 )
 is
   pragma autonomous_transaction;
 begin
@@ -1458,7 +1580,7 @@ end exit_;
 --------------------------------------------------------------------------------
 
 procedure exit (
-  p_client_identifier varchar2 default my_client_identifier )
+  p_client_identifier in varchar2 default my_client_identifier )
 is
 begin
   exit_(p_client_identifier);
@@ -1501,10 +1623,10 @@ end version;
 --------------------------------------------------------------------------------
 
 function split_to_table (
-  p_string varchar2,
-  p_sep    varchar2 default ','
-) return vc2_tab pipelined is
-  v_array vc2_tab_i;
+  p_string in varchar2,
+  p_sep    in varchar2 default ','
+) return t_vc2_tab pipelined is
+  v_array t_vc2_tab_i;
 begin
   if p_string is not null then
     v_array := split(p_string, p_sep);
@@ -1517,13 +1639,13 @@ end split_to_table;
 --------------------------------------------------------------------------------
 
 function split (
-  p_string varchar2,
-  p_sep    varchar2 default ','
-) return vc2_tab_i is
-  v_str        varchar2(32767);
+  p_string in varchar2,
+  p_sep    in varchar2 default ','
+) return t_vc2_tab_i is
+  v_str        t_vc32k;
   v_idx        pls_integer;
   v_sep_length pls_integer;
-  v_return     vc2_tab_i;
+  v_return     t_vc2_tab_i;
 begin
   if p_string is not null then
     if p_sep is null then
@@ -1551,10 +1673,10 @@ end split;
 --------------------------------------------------------------------------------
 
 function join (
-  p_table vc2_tab_i,
-  p_sep   varchar2 default ','
+  p_table in t_vc2_tab_i,
+  p_sep   in varchar2 default ','
 ) return varchar2 is
-  v_return varchar2(32767);
+  v_return t_vc32k;
 begin
   for i in 1 .. p_table.count loop
     v_return := v_return || p_sep || p_table(i);
@@ -1565,7 +1687,7 @@ end join;
 --------------------------------------------------------------------------------
 
 function to_yn (
-  p_bool boolean )
+  p_bool in boolean )
 return varchar2 is
 begin
   return case when p_bool then 'Y' else 'N' end;
@@ -1574,7 +1696,7 @@ end to_yn;
 --------------------------------------------------------------------------------
 
 function to_string (
-  p_bool boolean )
+  p_bool in boolean )
 return varchar2 is
 begin
   return case when p_bool then 'true' else 'false' end;
@@ -1583,7 +1705,7 @@ end to_string;
 --------------------------------------------------------------------------------
 
 function to_bool (
-  p_string varchar2 )
+  p_string in varchar2 )
 return boolean is
 begin
   return
@@ -1596,11 +1718,11 @@ end to_bool;
 --------------------------------------------------------------------------------
 
 function to_html_table (
-  p_data_cursor       sys_refcursor         ,
-  p_comment           varchar2 default null ,
-  p_include_row_num   boolean  default true ,
-  p_max_rows          integer  default 100  ,
-  p_max_column_length integer  default 1000 )
+  p_data_cursor       in sys_refcursor         ,
+  p_comment           in varchar2 default null ,
+  p_include_row_num   in boolean  default true ,
+  p_max_rows          in integer  default 100  ,
+  p_max_column_length in integer  default 1000 )
 return clob is
   v_data_cursor        sys_refcursor := p_data_cursor;
   v_cursor_id          integer;
@@ -1624,7 +1746,7 @@ return clob is
     when invalid_cursor then null;
   end close_cursor;
   --
-  function escape ( p_text varchar2 ) return varchar2 is
+  function escape ( p_text in varchar2 ) return varchar2 is
   begin
     return replace(replace(replace(p_text,
       c_ampersand, c_html_ampersand    ),
@@ -1737,7 +1859,7 @@ end to_html_table;
 --------------------------------------------------------------------------------
 
 function to_md_code_block (
-  p_text varchar2 )
+  p_text in varchar2 )
 return varchar2 is
 begin
   return
@@ -1751,8 +1873,8 @@ end to_md_code_block;
 --------------------------------------------------------------------------------
 
 function to_md_tab_header (
-  p_key   varchar2 default 'Attribute' ,
-  p_value varchar2 default 'Value'     )
+  p_key   in varchar2 default 'Attribute' ,
+  p_value in varchar2 default 'Value'     )
 return varchar2 is
   v_key   t_vc32k;
   v_value t_vc32k;
@@ -1768,10 +1890,10 @@ end to_md_tab_header;
 --------------------------------------------------------------------------------
 
 function to_md_tab_data (
-  p_key              varchar2               ,
-  p_value            varchar2               ,
-  p_value_max_length integer  default 1000  ,
-  p_show_null_values boolean  default false )
+  p_key              in varchar2               ,
+  p_value            in varchar2               ,
+  p_value_max_length in integer  default 1000  ,
+  p_show_null_values in boolean  default false )
 return varchar2 is
   v_key   t_vc32k;
   v_value t_vc32k;
@@ -1790,15 +1912,13 @@ end to_md_tab_data;
 --------------------------------------------------------------------------------
 
 function to_unibar (
-  p_value                   in  number,
-  p_scale                   in  number default 1,
-  p_width_block_characters  in  number default 25,
-  p_fill_scale              in  number default 0
-) return varchar2
-  deterministic
-is
-  v_return               varchar2(1000);
-  v_value_one_character  number;
+  p_value                  in number            ,
+  p_scale                  in number default 1  ,
+  p_width_block_characters in number default 25 ,
+  p_fill_scale             in number default 0  )
+return varchar2 deterministic is
+  v_return              t_vc1k;
+  v_value_one_character number;
 begin
   if p_value is not null then
   -- calculate the value of one character
@@ -1855,16 +1975,47 @@ end print;
 
 --------------------------------------------------------------------------------
 
-function get_runtime ( p_start timestamp ) return varchar2 is
+procedure printf (
+  p_message in varchar2              ,
+  p0        in varchar2 default null ,
+  p1        in varchar2 default null ,
+  p2        in varchar2 default null ,
+  p3        in varchar2 default null ,
+  p4        in varchar2 default null ,
+  p5        in varchar2 default null ,
+  p6        in varchar2 default null ,
+  p7        in varchar2 default null ,
+  p8        in varchar2 default null ,
+  p9        in varchar2 default null )
+is
+begin
+  dbms_output.put_line(
+    console.format(
+      p_message => p_message ,
+      p0        => p0        ,
+      p1        => p1        ,
+      p2        => p2        ,
+      p3        => p3        ,
+      p4        => p4        ,
+      p5        => p5        ,
+      p6        => p6        ,
+      p7        => p7        ,
+      p8        => p8        ,
+      p9        => p9        ));
+end printf;
+
+--------------------------------------------------------------------------------
+
+function runtime ( p_start in timestamp ) return varchar2 is
   v_runtime t_vc32;
 begin
   v_runtime := to_char(localtimestamp - p_start);
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
-end get_runtime;
+end runtime;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_seconds ( p_start timestamp ) return number is
+function runtime_seconds ( p_start in timestamp ) return number is
   v_runtime interval day to second;
 begin
   v_runtime := localtimestamp - p_start;
@@ -1872,18 +2023,18 @@ begin
     extract(hour   from v_runtime) * 3600 +
     extract(minute from v_runtime) *   60 +
     extract(second from v_runtime)        ;
-end get_runtime_seconds;
+end runtime_seconds;
 
 --------------------------------------------------------------------------------
 
-function get_runtime_milliseconds ( p_start timestamp ) return number is
+function runtime_milliseconds ( p_start in timestamp ) return number is
 begin
-  return get_runtime_seconds(p_start) * 1000;
-end get_runtime_milliseconds;
+  return runtime_seconds(p_start) * 1000;
+end runtime_milliseconds;
 
 --------------------------------------------------------------------------------
 
-function get_level_name (p_level integer) return varchar2 deterministic is
+function level_name (p_level in integer) return varchar2 deterministic is
 begin
   return case p_level
     when 1 then 'error'
@@ -1893,16 +2044,16 @@ begin
     when 5 then 'trace'
     else null
   end;
-end get_level_name;
+end level_name;
 
 --------------------------------------------------------------------------------
 
-function get_scope return varchar2 is
+function scope return varchar2 is
   v_return     t_vc32k;
   v_subprogram t_vc32k;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_scope) itself
+    --ignore 1, is always this function (scope) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
@@ -1916,16 +2067,16 @@ begin
     end loop;
   end if;
   return v_return;
-end get_scope;
+end scope;
 
 --------------------------------------------------------------------------------
 
-function get_calling_unit return varchar2 is
+function calling_unit return varchar2 is
   v_return     t_vc32k;
   v_subprogram t_vc32k;
 begin
   if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (get_scope) itself
+    --ignore 1, is always this function (scope) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
@@ -1939,11 +2090,11 @@ begin
     end loop;
   end if;
   return v_return;
-end get_calling_unit;
+end calling_unit;
 
 --------------------------------------------------------------------------------
 
-function get_call_stack return varchar2
+function call_stack return varchar2
 is
   v_return     t_vc32k;
   v_subprogram t_vc32k;
@@ -1960,7 +2111,7 @@ begin
 
   if utl_call_stack.dynamic_depth > 0 then
     v_return := v_return || '## Call Stack' || c_lflf;
-    --ignore 1, is always this function (get_call_stack) itself
+    --ignore 1, is always this function (call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
       v_subprogram := utl_call_stack.concatenate_subprogram ( utl_call_stack.subprogram(i) );
@@ -2000,11 +2151,11 @@ begin
   end if;
 
   return v_return || chr(10);
-end get_call_stack;
+end call_stack;
 
 --------------------------------------------------------------------------------
 
-function get_apex_env return clob
+function apex_env return clob
 is
   v_clob        clob;
   v_cache       t_vc32k;
@@ -2065,11 +2216,11 @@ begin
 
   $end
   return v_clob;
-end get_apex_env;
+end apex_env;
 
 --------------------------------------------------------------------------------
 
-function get_cgi_env return varchar2
+function cgi_env return varchar2
 is
   v_return t_vc32k;
 begin
@@ -2086,11 +2237,11 @@ exception
   when value_error then
     --> we simply return here what we already have and forget about the rest...
     return v_return;
-end get_cgi_env;
+end cgi_env;
 
 --------------------------------------------------------------------------------
 
-function get_console_env return varchar2
+function console_env return varchar2
 is
   v_return t_vc32k;
   v_index t_vc128;
@@ -2109,7 +2260,7 @@ begin
   append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
   append_row('g_conf_client_identifier',                 g_conf_client_identifier                        );
   append_row('g_conf_level',                    to_char( g_conf_level                                  ) );
-  append_row('get_level_name(g_conf_level)',             get_level_name(g_conf_level)                    );
+  append_row('level_name(g_conf_level)',             level_name(g_conf_level)                    );
   append_row('g_conf_cache_size',               to_char( g_conf_cache_size                             ) );
   append_row('g_conf_check_interval',           to_char( g_conf_check_interval                         ) );
   append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                             ) );
@@ -2157,11 +2308,11 @@ exception
   when value_error then
     --> we simply return here what we already have and forget about the rest...
     return v_return;
-end get_console_env;
+end console_env;
 
 --------------------------------------------------------------------------------
 
-function get_user_env return varchar2
+function user_env return varchar2
 is
   v_return t_vc32k;
   invalid_user_env_key exception;
@@ -2264,7 +2415,7 @@ exception
   when value_error then
     --> we simply return here what we already have and forget about the rest...
     return v_return;
-end get_user_env;
+end user_env;
 
 --------------------------------------------------------------------------------
 
@@ -2322,7 +2473,7 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
-function view_cache return logs_tab pipelined is
+function view_cache return t_logs_tab pipelined is
 begin
   for i in reverse 1 .. g_log_cache.count loop
     pipe row(g_log_cache(i));
@@ -2345,7 +2496,7 @@ end flush_cache;
 --------------------------------------------------------------------------------
 
 procedure clear (
-  p_client_identifier varchar2 default my_client_identifier )
+  p_client_identifier in varchar2 default my_client_identifier )
 is
 begin
   g_log_cache.delete;
@@ -2353,44 +2504,44 @@ end clear;
 
 --------------------------------------------------------------------------------
 
-function view_status return key_value_tab pipelined is
-  v_row key_value_rec;
+function view_status return t_key_value_tab pipelined is
+  v_row t_key_value_row;
 begin
   if g_conf_check_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
-  pipe row(new key_value_rec('c_version',                       to_char( c_version                                      )) );
-  pipe row(new key_value_rec('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
-  pipe row(new key_value_rec('c_ctx_namespace',                          c_ctx_namespace                                 ) );
-  pipe row(new key_value_rec('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
-  pipe row(new key_value_rec('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
-  pipe row(new key_value_rec('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
-  pipe row(new key_value_rec('g_conf_level',                    to_char( g_conf_level                                   )) );
-  pipe row(new key_value_rec('get_level_name(g_conf_level)',    to_char( get_level_name(g_conf_level)                   )) );
-  pipe row(new key_value_rec('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
-  pipe row(new key_value_rec('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
-  pipe row(new key_value_rec('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
-  pipe row(new key_value_rec('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
-  pipe row(new key_value_rec('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
-  pipe row(new key_value_rec('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
-  pipe row(new key_value_rec('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
-  pipe row(new key_value_rec('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
-  pipe row(new key_value_rec('g_conf_units_level(2)',                    g_conf_units_level(2)                           ) );
-  pipe row(new key_value_rec('g_conf_units_level(3)',                    g_conf_units_level(3)                           ) );
-  pipe row(new key_value_rec('g_conf_units_level(4)',                    g_conf_units_level(4)                           ) );
-  pipe row(new key_value_rec('g_conf_units_level(5)',                    g_conf_units_level(5)                           ) );
-  pipe row(new key_value_rec('g_counters.count',                to_char( g_counters.count                               )) );
-  pipe row(new key_value_rec('g_timers.count',                  to_char( g_timers.count                                 )) );
-  pipe row(new key_value_rec('g_log_cache.count',               to_char( g_log_cache.count                              )) );
-  pipe row(new key_value_rec('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
-  pipe row(new key_value_rec('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
+  pipe row(new t_key_value_row('c_version',                       to_char( c_version                                      )) );
+  pipe row(new t_key_value_row('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
+  pipe row(new t_key_value_row('c_ctx_namespace',                          c_ctx_namespace                                 ) );
+  pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
+  pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
+  pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
+  pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                                   )) );
+  pipe row(new t_key_value_row('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                   )) );
+  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
+  pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
+  pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
+  pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
+  pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
+  pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
+  pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
+  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
+  pipe row(new t_key_value_row('g_conf_units_level(2)',                    g_conf_units_level(2)                           ) );
+  pipe row(new t_key_value_row('g_conf_units_level(3)',                    g_conf_units_level(3)                           ) );
+  pipe row(new t_key_value_row('g_conf_units_level(4)',                    g_conf_units_level(4)                           ) );
+  pipe row(new t_key_value_row('g_conf_units_level(5)',                    g_conf_units_level(5)                           ) );
+  pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                               )) );
+  pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                                 )) );
+  pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                              )) );
+  pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
+  pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
 end view_status;
 
 --------------------------------------------------------------------------------
 
 procedure purge (
-  p_min_level integer default c_level_info,
-  p_min_days  number  default 30 )
+  p_min_level in integer default c_level_info,
+  p_min_days  in number  default 30 )
 is
   pragma autonomous_transaction;
 begin
@@ -2403,7 +2554,7 @@ begin
   delete from console_logs
     where level_id >= p_min_level
       and permanent = 'N'
-      and log_systime <= sysdate - p_min_days;
+      and log_time <= localtimestamp - p_min_days;
   commit;
 end purge;
 
@@ -2413,16 +2564,16 @@ procedure purge_all is
 begin
   purge(
     p_min_level => 1,
-    p_min_days  => -1 -- to be sure we delete everything (sysdate - -1 is the same time tomorrow)
+    p_min_days  => -1 -- to be sure we delete everything (localtimestamp - -1 is the same time tomorrow)
   );
 end purge_all;
 
 --------------------------------------------------------------------------------
 
 procedure cleanup_job_create (
-  p_repeat_interval varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,
-  p_min_level       integer  default c_level_info           ,
-  p_min_days        number   default 30                     )
+  p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,
+  p_min_level       in integer  default c_level_info           ,
+  p_min_days        in number   default 30                     )
 is
 begin
   execute immediate replace(replace(replace(replace(q'[
@@ -2532,7 +2683,7 @@ end cleanup_job_run;
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function utl_escape_md_tab_text (p_text varchar2) return varchar2 is
+function utl_escape_md_tab_text (p_text in varchar2) return varchar2 is
 begin
   return replace(replace(replace(replace(p_text,
     c_crlf,   ' '),
@@ -2543,7 +2694,7 @@ end utl_escape_md_tab_text;
 
 --------------------------------------------------------------------------------
 
-function utl_get_error return varchar2 is
+function utl_last_error return varchar2 is
   v_return t_vc32k;
 begin
   if utl_call_stack.error_depth > 0 and utl_call_stack.backtrace_depth > 0 then
@@ -2561,12 +2712,12 @@ begin
   end if;
 
   return v_return;
-end utl_get_error;
+end utl_last_error;
 
 --------------------------------------------------------------------------------
 
 function utl_logging_is_enabled (
-  p_level integer )
+  p_level in integer )
 return boolean is
 begin
   if g_conf_check_sysdate < sysdate then
@@ -2577,14 +2728,14 @@ begin
     or
     sqlcode != 0
     or
-    g_conf_units_level(p_level) is not null and instr(g_conf_units_level(p_level), ','||get_calling_unit||',') > 0;
+    g_conf_units_level(p_level) is not null and instr(g_conf_units_level(p_level), ','||calling_unit||',') > 0;
 end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
 
 function utl_normalize_label (p_label varchar2) return varchar2 is
 begin
-  return coalesce(substrb(p_label, 1, 128), c_default_label);
+  return coalesce(substr(p_label, 1, 128), c_default_label);
 end utl_normalize_label;
 
 --------------------------------------------------------------------------------
@@ -2611,7 +2762,7 @@ end utl_read_global_conf;
 
 
 function utl_read_client_prefs (
-  p_client_identifier varchar2 )
+  p_client_identifier in varchar2 )
 return console_client_prefs%rowtype result_cache is
   v_row console_client_prefs%rowtype;
 begin
@@ -2628,8 +2779,8 @@ end utl_read_client_prefs;
 --------------------------------------------------------------------------------
 
 function utl_replace_linebreaks (
-  p_text varchar2,
-  p_replace_with varchar2 default ' ')
+  p_text         in varchar2             ,
+  p_replace_with in varchar2 default ' ' )
 return varchar2 is
 begin
   return replace(replace(replace(p_text,
@@ -2652,9 +2803,9 @@ end utl_ctx_check_availability;
 --------------------------------------------------------------------------------
 
 procedure utl_ctx_set (
-p_attribute         varchar2 ,
-p_value             varchar2 ,
-p_client_identifier varchar2 )
+p_attribute         in varchar2 ,
+p_value             in varchar2 ,
+p_client_identifier in varchar2 )
 is
 begin
   sys.dbms_session.set_context(
@@ -2679,7 +2830,7 @@ end utl_ctx_clear_all;
 --------------------------------------------------------------------------------
 
 procedure utl_ctx_clear (
-  p_client_identifier varchar2 )
+  p_client_identifier in varchar2 )
 is
 begin
   if g_conf_context_is_available then
@@ -2783,18 +2934,18 @@ end utl_set_client_identifier;
 --------------------------------------------------------------------------------
 
 function utl_create_log_entry (
-  p_level           integer                ,
-  p_message         clob     default null  ,
-  p_permanent       boolean  default false ,
-  p_call_stack      boolean  default false ,
-  p_apex_env        boolean  default false ,
-  p_cgi_env         boolean  default false ,
-  p_console_env     boolean  default false ,
-  p_user_env        boolean  default false ,
-  p_user_agent      varchar2 default null  ,
-  p_user_scope      varchar2 default null  ,
-  p_user_error_code integer  default null  ,
-  p_user_call_stack varchar2 default null  )
+  p_level           in integer                ,
+  p_message         in clob     default null  ,
+  p_permanent       in boolean  default false ,
+  p_call_stack      in boolean  default false ,
+  p_apex_env        in boolean  default false ,
+  p_cgi_env         in boolean  default false ,
+  p_console_env     in boolean  default false ,
+  p_user_env        in boolean  default false ,
+  p_user_agent      in varchar2 default null  ,
+  p_user_scope      in varchar2 default null  ,
+  p_user_error_code in integer  default null  ,
+  p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
 is
   pragma autonomous_transaction;
@@ -2804,7 +2955,7 @@ begin
   v_row.scope :=
     case
       when p_user_scope is not null then substrb(p_user_scope, 1, 256)
-      else substrb(get_scope, 1, 256)
+      else substrb(scope, 1, 256)
     end;
 
   -- This is the very first (possible) assignment to the row.message variable,
@@ -2816,13 +2967,23 @@ begin
       else null
     end;
 
+  -- Add params, if any
+  if g_params.count > 0 then
+    clob_append(v_row.message, v_cache, '## Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
+    for i in 1 .. g_params.count loop
+      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).key, g_params(i).value, 2000));
+    end loop;
+    clob_append(v_row.message, v_cache, c_lf);
+    g_params.delete;
+
+  end if;
+
   v_row.error_code :=
     case
       when p_user_error_code is not null then p_user_error_code
       when sqlcode != 0 then sqlcode
       else null
     end;
-
 
   if p_user_call_stack is not null then
     v_row.call_stack := substrb(p_user_call_stack, 1, 4000);
@@ -2832,7 +2993,7 @@ begin
     if sqlcode != 0 and g_saved_stack.count > 0 then
       error_save_stack;
     end if;
-    v_row.call_stack := substrb(get_call_stack, 1, 4000);
+    v_row.call_stack := substrb(call_stack, 1, 4000);
     if p_level = 1 then
       --We finally logged the saved stack, so we need to reset it.
       g_saved_stack.delete;
@@ -2841,26 +3002,26 @@ begin
   end if;
 
   if p_apex_env or g_conf_apex_env then
-    clob_append(v_row.message, v_cache, get_apex_env);
+    clob_append(v_row.message, v_cache, apex_env);
   end if;
 
   if p_cgi_env or g_conf_cgi_env then
-    clob_append(v_row.message, v_cache, get_cgi_env);
+    clob_append(v_row.message, v_cache, cgi_env);
   end if;
 
   if p_console_env or g_conf_console_env then
-    clob_append(v_row.message, v_cache, get_console_env);
+    clob_append(v_row.message, v_cache, console_env);
   end if;
 
   if p_user_env or g_conf_user_env then
-    clob_append(v_row.message, v_cache, get_user_env);
+    clob_append(v_row.message, v_cache, user_env);
   end if;
 
   clob_flush_cache(v_row.message, v_cache);
 
-  v_row.log_systime       := systimestamp;
+  v_row.log_time          := localtimestamp;
   v_row.level_id          := p_level;
-  v_row.level_name        := get_level_name(p_level);
+  v_row.level_name        := level_name(p_level);
   v_row.permanent         := to_yn(p_permanent);
   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
   v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
@@ -2890,6 +3051,7 @@ end utl_create_log_entry;
 
 --package inizialization
 begin
+  g_log_cache := new t_logs_tab();
   utl_set_client_identifier;
   utl_ctx_check_availability;
   utl_load_session_configuration;

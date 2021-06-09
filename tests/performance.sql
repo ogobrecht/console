@@ -27,19 +27,19 @@ begin
   for i in 1 .. v_iterator loop
     null;
   end loop;
-  v_rt_null := console.get_runtime_seconds(v_start);
+  v_rt_null := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     logger.log('test');
   end loop;
-  v_rt_logger := console.get_runtime_seconds(v_start);
+  v_rt_logger := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     console.log('test');
   end loop;
-  v_rt_console := console.get_runtime_seconds(v_start);
+  v_rt_console := console.runtime_seconds(v_start);
   --
   console.print( '- empty loop     : ' || trim(to_char(v_rt_null,    '0.000000')) || ' seconds (it does not really matter)' );
   console.print( '- logger.log     : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
@@ -60,13 +60,13 @@ begin
   for i in 1 .. v_iterator loop
     console.log('test');
   end loop;
-  v_rt_log := console.get_runtime_seconds(v_start);
+  v_rt_log := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     console.count('test');
   end loop;
-  v_rt_count := console.get_runtime_seconds(v_start);
+  v_rt_count := console.runtime_seconds(v_start);
   console.print( '- count result   : ' || (to_char(console.count_end('test'))));
   console.print( '- console.log    : ' || trim(to_char(v_rt_log,   '0.000000')) || ' seconds' );
   console.print( '- console.count  : ' || trim(to_char(v_rt_count, '0.000000')) || ' seconds' );
@@ -87,13 +87,13 @@ begin
   for i in 1 .. v_iterator loop
     console.log('test');
   end loop;
-  v_rt_log := console.get_runtime_seconds(v_start);
+  v_rt_log := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     console.time('test');
   end loop;
-  v_rt_time := console.get_runtime_seconds(v_start);
+  v_rt_time := console.runtime_seconds(v_start);
   console.print( '- console.log    : ' || trim(to_char(v_rt_log,  '0.000000')) || ' seconds' );
   console.print( '- console.time   : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
   console.print( '- factor         : ' || trim(to_char(v_rt_log/v_rt_time, '90.0')));
@@ -123,16 +123,16 @@ begin
   -- test logger
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    logger.log('test ' || to_char(i));
+    logger.log('test ' || to_char(i), p_extra => 'Test performance with clob column used');
   end loop;
-  v_rt_logger := console.get_runtime_seconds(v_start);
+  v_rt_logger := console.runtime_seconds(v_start);
   -- test console
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     console.log('test ' || to_char(i));
   end loop;
   console.flush_cache;
-  v_rt_console := console.get_runtime_seconds(v_start);
+  v_rt_console := console.runtime_seconds(v_start);
   -- print results
   console.print( '- logger.log     : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
   console.print( '- console.log    : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
@@ -157,13 +157,13 @@ begin
   for i in 1 .. v_iterator loop
     v_test := logger.sprintf('Lorem ipsum %s1. Must be %s2, %s3, %s4 or test', 1, 2, 3, 4, 5, 6, 7, 8, 9);
   end loop;
-  v_rt_logger := console.get_runtime_seconds(v_start);
+  v_rt_logger := console.runtime_seconds(v_start);
   -- test console
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     v_test := console.format('Lorem ipsum %0. Must be %1, %2, %3 or test', 0, 1, 2, 3, 4, 5, 6, 7, 8, 9);
   end loop;
-  v_rt_console := console.get_runtime_seconds(v_start);
+  v_rt_console := console.runtime_seconds(v_start);
   -- print results
   console.print( '- logger.sprintf : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
   console.print( '- console.format : ' || trim(to_char(v_rt_console, '0.000000')) || ' seconds' );
@@ -172,7 +172,7 @@ end;
 /
 
 prompt
-prompt 1.000 GET_SCOPE CALLS (how many time you loose by fetching the scope from the call stack)
+prompt 1.000 SCOPE CALLS (how many time you loose by fetching the scope from the call stack)
 declare
   v_iterator pls_integer := 1000;
   v_start    timestamp;
@@ -181,16 +181,16 @@ declare
 begin
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    v_scope := console.get_scope;
+    v_scope := console.scope;
   end loop;
-  v_rt := console.get_runtime_seconds(v_start);
+  v_rt := console.runtime_seconds(v_start);
   --
-  console.print( '- get_scope      : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
+  console.print( '- scope          : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
 end;
 /
 
 prompt
-prompt 1.000 GET_CALLING_UNIT CALLS (how many time you loose by fetching the calling unit from the call stack)
+prompt 1.000 CALLING_UNIT CALLS (how many time you loose by fetching the calling unit from the call stack)
 declare
   v_iterator pls_integer := 1000;
   v_start    timestamp;
@@ -199,11 +199,11 @@ declare
 begin
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    v_scope := console.get_calling_unit;
+    v_scope := console.calling_unit;
   end loop;
-  v_rt := console.get_runtime_seconds(v_start);
+  v_rt := console.runtime_seconds(v_start);
   --
-  console.print( '- get_cal*g_unit : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
+  console.print( '- calling_unit   : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
 end;
 /
 
@@ -221,7 +221,7 @@ begin
   for i in 1 .. v_iterator loop
     console.utl_load_session_configuration;
   end loop;
-  v_rt := console.get_runtime_seconds(v_start);
+  v_rt := console.runtime_seconds(v_start);
   console.print( '- runtime all    : ' || trim(to_char(v_rt,      '0.000000000')) || ' seconds' );
   console.print( '- per call       : ' || trim(to_char(v_rt/1000, '0.000000000')) || ' seconds' );
 end;
@@ -241,13 +241,13 @@ begin
   for i in 1 .. v_iterator loop
     if systimestamp <= v_end_time then null; end if;
   end loop;
-  v_rt_time := console.get_runtime_seconds(v_start);
+  v_rt_time := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     if sysdate <= v_end_date then null; end if;
   end loop;
-  v_rt_date := console.get_runtime_seconds(v_start);
+  v_rt_date := console.runtime_seconds(v_start);
   --
   console.print( '- timestamp      : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
   console.print( '- date           : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
@@ -269,13 +269,13 @@ begin
   for i in 1 .. v_iterator loop
     if sysdate <= v_end_date then null; end if;
   end loop;
-  v_rt_date := console.get_runtime_seconds(v_start);
+  v_rt_date := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     if dbms_utility.get_time <= v_end_time then null; end if;
   end loop;
-  v_rt_time := console.get_runtime_seconds(v_start);
+  v_rt_time := console.runtime_seconds(v_start);
   --
   console.print( '- date           : ' || trim(to_char(v_rt_date, '0.000000')) || ' seconds' );
   console.print( '- get_time       : ' || trim(to_char(v_rt_time, '0.000000')) || ' seconds' );
@@ -297,13 +297,13 @@ begin
   for i in 1 .. v_iterator loop
     if v_boolean then null; end if;
   end loop;
-  v_rt_bool := console.get_runtime_seconds(v_start);
+  v_rt_bool := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     if v_integer = 1 then null; end if;
   end loop;
-  v_rt_int := console.get_runtime_seconds(v_start);
+  v_rt_int := console.runtime_seconds(v_start);
   --
   console.print( '- boolean        : ' || trim(to_char(v_rt_bool, '0.000000')) || ' seconds' );
   console.print( '- integer        : ' || trim(to_char(v_rt_int, '0.000000')) || ' seconds' );
@@ -348,19 +348,19 @@ begin
   for i in 1 .. v_iterator loop
     v_temp := util_runtime_regex(v_start);
   end loop;
-  v_rt_regex := console.get_runtime_seconds(v_start);
+  v_rt_regex := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     v_temp := util_runtime_extract(v_start);
   end loop;
-  v_rt_extract := console.get_runtime_seconds(v_start);
+  v_rt_extract := console.runtime_seconds(v_start);
   --
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
     v_temp := util_runtime_substr(v_start);
   end loop;
-  v_rt_substr := console.get_runtime_seconds(v_start);
+  v_rt_substr := console.runtime_seconds(v_start);
   --
   console.print( '- regex          : ' || trim(to_char(v_rt_regex,   '0.000000')) || ' seconds' );
   console.print( '- exract         : ' || trim(to_char(v_rt_extract, '0.000000')) || ' seconds' );

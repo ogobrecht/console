@@ -12,7 +12,7 @@ prompt ORACLE INSTRUMENTATION CONSOLE: DROP DATABASE OBJECTS
 declare
   v_count        pls_integer;
   v_object_count pls_integer := 0;
-  v_ddl          varchar2 (100 char);
+  v_ddl          varchar2 (100);
 begin
 
   --cleanup job

@@ -15,9 +15,9 @@ begin
       declare
         v_row console_logs%rowtype;
       begin
-        v_row.log_systime := systimestamp;
+        v_row.log_time    := localtimestamp;
         v_row.level_id    := 3;
-        v_row.level_name  := console.get_level_name(3);
+        v_row.level_name  := console.level_name(3);
         v_row.permanent   := 'Y';
         v_row.scope       := 'Library Installation';
         v_row.message     := '{o,o} CONSOLE v#CONSOLE_VERSION# installed';

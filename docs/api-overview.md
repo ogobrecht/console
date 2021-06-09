@@ -65,6 +65,7 @@ The main instrumentation methods:
 - [console.table#](package-console.md#procedure-table) (level info)
 - [console.assert](package-console.md#procedure-assert)
 - [console.format](package-console.md#function-format)
+- [console.add_param](package-console.md#procedure-add_param)
 
 Additional instrumentation methods:
 
@@ -133,17 +134,18 @@ helpful for you:
 - [console.to_md_tab_header](package-console.md#function-to_md_tab_header) &
   [to_md_tab_data](package-console.md#function-to_md_tab_data)
 - [console.to_unibar](package-console.md#function-to_unibar)
-- [console.get_runtime](package-console.md#function-get_runtime) &
-  [get_runtime_seconds](package-console.md#function-get_runtime_seconds) &
-  [get_runtime_milliseconds](package-console.md#function-get_runtime_milliseconds)
-- [console.get_level_name](package-console.md#function-get_level_name)
-- [console.get_scope](package-console.md#function-get_scope) &
-  [get_calling_unit](package-console.md#function-get_calling_unit) &
-  [get_call_stack](package-console.md#function-get_call_stack)
-- [console.get_apex_env](package-console.md#function-get_apex_env) &
-  [get_cgi_env](package-console.md#function-get_cgi_env) &
-  [get_console_env](package-console.md#function-get_console_env) &
-  [get_user_env](package-console.md#function-get_user_env)
+- [console.runtime](package-console.md#function-runtime) &
+  [runtime_seconds](package-console.md#function-runtime_seconds) &
+  [runtime_milliseconds](package-console.md#function-runtime_milliseconds)
+- [console.level_name](package-console.md#function-level_name)
+- [console.scope](package-console.md#function-scope) &
+  [calling_unit](package-console.md#function-calling_unit) &
+  [call_stack](package-console.md#function-call_stack)
+- [console.apex_env](package-console.md#function-apex_env) &
+  [cgi_env](package-console.md#function-cgi_env) &
+  [console_env](package-console.md#function-console_env) &
+  [user_env](package-console.md#function-user_env)
 - [console.clob_append](package-console.md#procedure-clob_append) &
   [clob_flush_cache](package-console.md#procedure-clob_flush_cache)
-- [console.print](package-console.md#procedure-print)
+- [console.print](package-console.md#procedure-print) &
+  [printf](package-console.md#procedure-printf)
