@@ -1027,8 +1027,11 @@ procedure add_param ( p_name in varchar2, p_value in date                       
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in interval year to month         );
+procedure add_param ( p_name in varchar2, p_value in interval day to second         );
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
 procedure add_param ( p_name in varchar2, p_value in clob                           );
+procedure add_param ( p_name in varchar2, p_value in xmltype                        );
 ```
 
 EXAMPLE
@@ -1036,26 +1039,34 @@ EXAMPLE
 ```sql
 --create demo procedure
 create or replace procedure demo_proc (
-  p1  varchar2,
-  p2  number,
-  p3  date,
-  p4  timestamp,
-  p5  timestamp with time zone,
-  p6  timestamp with local time zone,
-  p7  boolean
-) is
+  p_01  varchar2                       ,
+  p_02  number                         ,
+  p_03  date                           ,
+  p_04  timestamp                      ,
+  p_05  timestamp with time zone       ,
+  p_06  timestamp with local time zone ,
+  p_07  interval year to month         ,
+  p_08  interval day to second         ,
+  p_09  boolean                        ,
+  p_10 clob                           ,
+  p_11 xmltype                        )
+is
 begin
-  raise_application_error(-20999, 'Test error.');
+  raise_application_error(-20999, 'Test Error.');
 exception
   when others then
-    console.add_param('p1', p1);
-    console.add_param('p2', p2);
-    console.add_param('p3', p3);
-    console.add_param('p4', p4);
-    console.add_param('p5', p5);
-    console.add_param('p6', p6);
-    console.add_param('p7', p7);
-    console.error;
+    console.add_param('p_01', p_01);
+    console.add_param('p_02', p_02);
+    console.add_param('p_03', p_03);
+    console.add_param('p_04', p_04);
+    console.add_param('p_05', p_05);
+    console.add_param('p_06', p_06);
+    console.add_param('p_07', p_07);
+    console.add_param('p_08', p_08);
+    console.add_param('p_09', p_09);
+    console.add_param('p_10', p_10);
+    console.add_param('p_11', p_11);
+    console.error('Ooops, something went wrong');
     raise;
 end demo_proc;
 {{/}}
@@ -1063,27 +1074,33 @@ end demo_proc;
 --run demo procedure
 begin
   demo_proc (
-    p1 => 'test'         ,
-    p2 => 1.23           ,
-    p3 => sysdate        ,
-    p4 => systimestamp   ,
-    p5 => systimestamp   ,
-    p6 => localtimestamp ,
-    p7 => true           );
+    p_01 => 'test vc2'                             ,
+    p_02 => 1.23                                   ,
+    p_03 => sysdate                                ,
+    p_04 => systimestamp                           ,
+    p_05 => systimestamp                           ,
+    p_06 => localtimestamp                         ,
+    p_07 => interval '4-2' year to month           ,
+    p_08 => interval '7 6:12:42.123' day to second ,
+    p_09 => true                                   ,
+    p_10 => to_clob('test clob')                   ,
+    p_11 => xmltype('<test_xml/>')                 );
 end;
 {{/}}
 ```
 
 **/
 
-
 procedure add_param ( p_name in varchar2, p_value in number                         );
 procedure add_param ( p_name in varchar2, p_value in date                           );
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in interval year to month         );
+procedure add_param ( p_name in varchar2, p_value in interval day to second         );
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
 procedure add_param ( p_name in varchar2, p_value in clob                           );
+procedure add_param ( p_name in varchar2, p_value in xmltype                        );
 
 --------------------------------------------------------------------------------
 
@@ -2241,33 +2258,34 @@ create or replace package body console is
 insufficient_privileges exception;
 pragma exception_init (insufficient_privileges, -1031);
 
-c_crlf                 constant varchar2 ( 2 byte) := chr(13) || chr(10);
-c_cr                   constant varchar2 ( 1 byte) := chr(13);
-c_lf                   constant varchar2 ( 1 byte) := chr(10);
-c_lflf                 constant varchar2 ( 2 byte) := chr(10) || chr(10);
-c_ampersand            constant varchar2 ( 1 byte) := chr(38);
-c_html_ampersand       constant varchar2 ( 5 byte) := chr(38) || 'amp;';
-c_html_less_then       constant varchar2 ( 4 byte) := chr(38) || 'lt;';
-c_html_greater_then    constant varchar2 ( 4 byte) := chr(38) || 'gt;';
-c_timestamp_format     constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
-c_default_label        constant varchar2 ( 7 byte) := 'Default';
-c_conf_id              constant varchar2 (11 byte) := 'GLOBAL_CONF';
-c_client_id_prefix     constant varchar2 ( 6 byte) := '{o,o} ';
-c_console_owner        constant varchar2 (30 byte) := user;
-c_console_pkg_name_dot constant varchar2 ( 8 byte) := 'CONSOLE.';
-c_console_job_name     constant varchar2 (15 byte) := 'CONSOLE_CLEANUP';
-c_ctx_namespace        constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
-c_ctx_test_attribute   constant varchar2 ( 4 byte) := 'TEST';
-c_ctx_date_format      constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
-c_ctx_exit_sysdate     constant varchar2 (12 byte) := 'EXIT_SYSDATE';
-c_ctx_level            constant varchar2 ( 5 byte) := 'LEVEL';
-c_ctx_cache_size       constant varchar2 (10 byte) := 'CACHE_SIZE';
-c_ctx_check_interval   constant varchar2 (14 byte) := 'CHECK_INTERVAL';
-c_ctx_call_stack       constant varchar2 (10 byte) := 'CALL_STACK';
-c_ctx_user_env         constant varchar2 ( 8 byte) := 'USER_ENV';
-c_ctx_apex_env         constant varchar2 ( 8 byte) := 'APEX_ENV';
-c_ctx_cgi_env          constant varchar2 ( 7 byte) := 'CGI_ENV';
-c_ctx_console_env      constant varchar2 (11 byte) := 'CONSOLE_ENV';
+c_crlf                   constant varchar2 ( 2 byte) := chr(13) || chr(10);
+c_cr                     constant varchar2 ( 1 byte) := chr(13);
+c_lf                     constant varchar2 ( 1 byte) := chr(10);
+c_lflf                   constant varchar2 ( 2 byte) := chr(10) || chr(10);
+c_ampersand              constant varchar2 ( 1 byte) := chr(38);
+c_html_ampersand         constant varchar2 ( 5 byte) := chr(38) || 'amp;';
+c_html_less_then         constant varchar2 ( 4 byte) := chr(38) || 'lt;';
+c_html_greater_then      constant varchar2 ( 4 byte) := chr(38) || 'gt;';
+c_timestamp_format       constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
+c_default_label          constant varchar2 ( 7 byte) := 'Default';
+c_conf_id                constant varchar2 (11 byte) := 'GLOBAL_CONF';
+c_client_id_prefix       constant varchar2 ( 6 byte) := '{o,o} ';
+c_console_owner          constant varchar2 (30 byte) := user;
+c_console_pkg_name_dot   constant varchar2 ( 8 byte) := 'CONSOLE.';
+c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_CLEANUP';
+c_ctx_namespace          constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
+c_ctx_test_attribute     constant varchar2 ( 4 byte) := 'TEST';
+c_ctx_date_format        constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
+c_ctx_exit_sysdate       constant varchar2 (12 byte) := 'EXIT_SYSDATE';
+c_ctx_level              constant varchar2 ( 5 byte) := 'LEVEL';
+c_ctx_cache_size         constant varchar2 (10 byte) := 'CACHE_SIZE';
+c_ctx_check_interval     constant varchar2 (14 byte) := 'CHECK_INTERVAL';
+c_ctx_call_stack         constant varchar2 (10 byte) := 'CALL_STACK';
+c_ctx_user_env           constant varchar2 ( 8 byte) := 'USER_ENV';
+c_ctx_apex_env           constant varchar2 ( 8 byte) := 'APEX_ENV';
+c_ctx_cgi_env            constant varchar2 ( 7 byte) := 'CGI_ENV';
+c_ctx_console_env        constant varchar2 (11 byte) := 'CONSOLE_ENV';
+c_param_value_max_length constant pls_integer        :=  2000;
 
 -- numeric type identfiers
 c_number                 constant pls_integer :=   2; -- float
@@ -3045,7 +3063,7 @@ is
   v_param t_key_value_row;
 begin
   v_param.key   := substr(p_name, 1, 128);
-  v_param.value := substr(p_value, 1, 4000);
+  v_param.value := substr(p_value, 1, c_param_value_max_length);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -3117,6 +3135,32 @@ end add_param;
 --------------------------------------------------------------------------------
 
 procedure add_param (
+  p_name  in varchar2               ,
+  p_value in interval year to month )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := substr(to_char(p_value), 1, c_param_value_max_length);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2               ,
+  p_value in interval day to second )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := substr(to_char(p_value), 1, c_param_value_max_length);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
   p_name  in varchar2 ,
   p_value in boolean  )
 is
@@ -3136,7 +3180,20 @@ is
   v_param t_key_value_row;
 begin
   v_param.key   := substr(p_name, 1, 128);
-  v_param.value := substr(p_value, 1, 4000);
+  v_param.value := substr(p_value, 1, c_param_value_max_length);
+  g_params(g_params.count + 1) := v_param;
+end add_param;
+
+--------------------------------------------------------------------------------
+
+procedure add_param (
+  p_name  in varchar2 ,
+  p_value in xmltype  )
+is
+  v_param t_key_value_row;
+begin
+  v_param.key   := substr(p_name, 1, 128);
+  v_param.value := case when p_value is not null then substr(p_value.getclobval(), 1, c_param_value_max_length) else null end;
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -5205,7 +5262,7 @@ begin
   if g_params.count > 0 then
     clob_append(v_row.message, v_cache, '## Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
     for i in 1 .. g_params.count loop
-      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).key, g_params(i).value, 2000));
+      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).key, g_params(i).value, c_param_value_max_length));
     end loop;
     clob_append(v_row.message, v_cache, c_lf);
     g_params.delete;

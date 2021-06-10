@@ -949,8 +949,11 @@ procedure add_param ( p_name in varchar2, p_value in date                       
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in interval year to month         );
+procedure add_param ( p_name in varchar2, p_value in interval day to second         );
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
 procedure add_param ( p_name in varchar2, p_value in clob                           );
+procedure add_param ( p_name in varchar2, p_value in xmltype                        );
 ```
 
 EXAMPLE
@@ -958,26 +961,34 @@ EXAMPLE
 ```sql
 --create demo procedure
 create or replace procedure demo_proc (
-  p1  varchar2,
-  p2  number,
-  p3  date,
-  p4  timestamp,
-  p5  timestamp with time zone,
-  p6  timestamp with local time zone,
-  p7  boolean
-) is
+  p_01  varchar2                       ,
+  p_02  number                         ,
+  p_03  date                           ,
+  p_04  timestamp                      ,
+  p_05  timestamp with time zone       ,
+  p_06  timestamp with local time zone ,
+  p_07  interval year to month         ,
+  p_08  interval day to second         ,
+  p_09  boolean                        ,
+  p_10 clob                           ,
+  p_11 xmltype                        )
+is
 begin
-  raise_application_error(-20999, 'Test error.');
+  raise_application_error(-20999, 'Test Error.');
 exception
   when others then
-    console.add_param('p1', p1);
-    console.add_param('p2', p2);
-    console.add_param('p3', p3);
-    console.add_param('p4', p4);
-    console.add_param('p5', p5);
-    console.add_param('p6', p6);
-    console.add_param('p7', p7);
-    console.error;
+    console.add_param('p_01', p_01);
+    console.add_param('p_02', p_02);
+    console.add_param('p_03', p_03);
+    console.add_param('p_04', p_04);
+    console.add_param('p_05', p_05);
+    console.add_param('p_06', p_06);
+    console.add_param('p_07', p_07);
+    console.add_param('p_08', p_08);
+    console.add_param('p_09', p_09);
+    console.add_param('p_10', p_10);
+    console.add_param('p_11', p_11);
+    console.error('Ooops, something went wrong');
     raise;
 end demo_proc;
 /
@@ -985,13 +996,17 @@ end demo_proc;
 --run demo procedure
 begin
   demo_proc (
-    p1 => 'test'         ,
-    p2 => 1.23           ,
-    p3 => sysdate        ,
-    p4 => systimestamp   ,
-    p5 => systimestamp   ,
-    p6 => localtimestamp ,
-    p7 => true           );
+    p_01 => 'test vc2'                             ,
+    p_02 => 1.23                                   ,
+    p_03 => sysdate                                ,
+    p_04 => systimestamp                           ,
+    p_05 => systimestamp                           ,
+    p_06 => localtimestamp                         ,
+    p_07 => interval '4-2' year to month           ,
+    p_08 => interval '7 6:12:42.123' day to second ,
+    p_09 => true                                   ,
+    p_10 => to_clob('test clob')                   ,
+    p_11 => xmltype('<test_xml/>')                 );
 end;
 /
 ```
