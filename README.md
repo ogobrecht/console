@@ -14,7 +14,7 @@ a new version. An existing context does not need to be dropped.**
 ## Easy to Install
 
 - Works with or without a context.
-- Has a single installation script (can be installed on apex.oracle.com via "SQL
+- Has a single installation script (can be installed in APEX via "SQL
   Workshop > SQL Scripts").
 - If you cannot wait to test it out: Open SQLcl, connect to your desired install
     schema and call

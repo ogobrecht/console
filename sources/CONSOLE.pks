@@ -217,19 +217,19 @@ TEST ERROR_SAVE_STACK
 
 Call Stack
 ------------------------------------------------------------------------------------------------------------------------
-{{#}}# Saved Error Stack
+{{#}}### Saved Error Stack
 
 - PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
 - PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
 - PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
 - PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
-{{#}}# Call Stack
+{{#}}### Call Stack
 
 - PLAYGROUND.SOME_API.DO_STUFF, line 38
 - __anonymous_block, line 2
 
-{{#}}# Error Stack
+{{#}}### Error Stack
 
 - ORA-01403 no data found
 - ORA-06512 at "PLAYGROUND.SOME_API", line 31
@@ -241,7 +241,7 @@ Call Stack
 - ORA-06512 at "PLAYGROUND.SOME_API", line 19
 - ORA-06512 at "PLAYGROUND.SOME_API", line 27
 
-{{#}}# Error Backtrace
+{{#}}### Error Backtrace
 
 - PLAYGROUND.SOME_API, line 31
 - PLAYGROUND.SOME_API, line 23
@@ -803,8 +803,8 @@ create or replace procedure demo_proc (
   p_07  interval year to month         ,
   p_08  interval day to second         ,
   p_09  boolean                        ,
-  p_10 clob                           ,
-  p_11 xmltype                        )
+  p_10 clob                            ,
+  p_11 xmltype                         )
 is
 begin
   raise_application_error(-20999, 'Test Error.');

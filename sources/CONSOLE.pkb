@@ -1107,16 +1107,17 @@ begin
 
       -- Log error and return log ID as reference.
       v_log_id := error (
-        p_message         => log_message('Unexpected internal application error.' || ascii_art('md')) ,
+        p_message         => log_message('Unexpected internal application error.') ,
         p_call_stack      => false                                                                            ,
         p_apex_env        => true                                                                             ,
         p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id     ,
         p_user_error_code => p_error.ora_sqlcode                                                              ,
-        p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                        );
+        p_user_call_stack => '#### Error Backtrace' || c_lflf || p_error.error_backtrace                        );
 
       -- Change the message to the generic error message which doesn't expose
       -- any sensitive information.
-      v_result.message := ascii_art('html') ||
+      v_result.message :=
+        case when v_result.display_location = apex_error.c_on_error_page then ascii_art('html') end ||
         'An unexpected internal application error has occurred. ' ||
         'Please get in contact with your Oracle APEX support team and provide ' ||
         '"App ID ' || to_char(v_app_id) || ', Log ID ' || to_char(v_log_id) ||
@@ -1168,13 +1169,13 @@ begin
         -- Log a permanent error, so developers get information that they need
         -- to change the text message.
         error (
-          p_message         => log_message (v_result.message)                                           ,
+          p_message         => log_message (v_result.message)                                               ,
           p_permanent       => true                                                                         ,
           p_call_stack      => false                                                                        ,
           p_apex_env        => true                                                                         ,
           p_user_scope      => 'APEX BACKEND ERROR HANDLER: App ' || v_app_id || ', page ' || v_app_page_id ,
           p_user_error_code => p_error.ora_sqlcode                                                          ,
-          p_user_call_stack => '## Error Backtrace' || c_lflf || p_error.error_backtrace                    );
+          p_user_call_stack => '#### Error Backtrace' || c_lflf || p_error.error_backtrace                    );
 
       end if;
 
@@ -2141,7 +2142,7 @@ is
 begin
 
   if g_saved_stack.count > 0 then
-    v_return := v_return || '## Saved Error Stack' || c_lflf;
+    v_return := v_return || '#### Saved Error Stack' || c_lflf;
     for i in 1 .. g_saved_stack.count
     loop
       v_return := v_return || '- ' || g_saved_stack (i) || c_lf;
@@ -2150,7 +2151,7 @@ begin
   end if;
 
   if utl_call_stack.dynamic_depth > 0 then
-    v_return := v_return || '## Call Stack' || c_lflf;
+    v_return := v_return || '#### Call Stack' || c_lflf;
     --ignore 1, is always this function (call_stack) itself
     for i in 2 .. utl_call_stack.dynamic_depth
     loop
@@ -2167,7 +2168,7 @@ begin
   end if;
 
   if utl_call_stack.error_depth > 0 then
-    v_return := v_return || '## Error Stack' || c_lflf;
+    v_return := v_return || '#### Error Stack' || c_lflf;
     for i in 1 .. utl_call_stack.error_depth
     loop
       v_return := v_return
@@ -2179,7 +2180,7 @@ begin
   end if;
 
   if utl_call_stack.backtrace_depth > 0 then
-    v_return := v_return || '## Error Backtrace' || c_lflf;
+    v_return := v_return || '#### Error Backtrace' || c_lflf;
     for i in 1 .. utl_call_stack.backtrace_depth
     loop
       v_return := v_return
@@ -2217,10 +2218,10 @@ begin
   v_app_page_id :=           v(                 'APP_PAGE_ID' );
   v_app_session := sys_context( 'APEX$SESSION', 'APP_SESSION' );
 
-  clob_append(v_clob, v_cache, '## APEX Environment' || c_lflf);
+  clob_append(v_clob, v_cache, '#### APEX Environment' || c_lflf);
 
   clob_append(v_clob, v_cache,
-    '### Application Items' ||
+    '##### Application Items' ||
     case when v_app_id is not null then ' - APP_ID ' || v_app_id end ||
     c_lflf || to_md_tab_header('Item Name'));
   for i in (
@@ -2235,7 +2236,7 @@ begin
 
   --Only page items from current page when level < debug, otherwise all page items.
   clob_append(v_clob, v_cache,
-    '### Page Items' ||
+    '##### Page Items' ||
     case when g_conf_level < c_level_debug and v_app_page_id is not null then ' - APP_PAGE_ID ' || v_app_page_id end ||
     c_lflf || to_md_tab_header('Item Name'));
   for i in (
@@ -2264,7 +2265,7 @@ function cgi_env return varchar2
 is
   v_return t_vc32k;
 begin
-  v_return := '## CGI Environment' || c_lflf || to_md_tab_header;
+  v_return := '#### CGI Environment' || c_lflf || to_md_tab_header;
   for i in 1 .. nvl(owa.num_cgi_vars, 0) loop
     v_return := v_return ||
       to_md_tab_data(
@@ -2292,7 +2293,7 @@ is
   end append_row;
   --
 begin
-  v_return := '## Console Environment' || c_lflf || to_md_tab_header;
+  v_return := '#### Console Environment' || c_lflf || to_md_tab_header;
   append_row('c_version',                       to_char( c_version                                     ) );
   append_row('g_conf_context_is_available',       to_yn( g_conf_context_is_available                   ) );
   append_row('c_ctx_namespace',                          c_ctx_namespace                                 );
@@ -2322,7 +2323,7 @@ begin
   v_return := v_return || c_lf;
 
   if g_timers.count > 0 then
-    v_return := v_return || '### Running Timers' || c_lflf || to_md_tab_header('Label', 'Start Time (localtimestamp)');
+    v_return := v_return || '##### Running Timers' || c_lflf || to_md_tab_header('Label', 'Start Time (localtimestamp)');
     v_index := g_timers.first;
     loop
       exit when v_index is null;
@@ -2333,7 +2334,7 @@ begin
   end if;
 
   if g_counters.count > 0 then
-    v_return := v_return || '### Running Counters' || c_lflf || to_md_tab_header('Label', 'Current Count');
+    v_return := v_return || '##### Running Counters' || c_lflf || to_md_tab_header('Label', 'Current Count');
     v_index := g_counters.first;
     loop
       exit when v_index is null;
@@ -2370,7 +2371,7 @@ is
   end append_row;
   --
 begin
-  v_return := '## User Environment' || c_lflf || to_md_tab_header;
+  v_return := '#### User Environment' || c_lflf || to_md_tab_header;
   --
   append_row('ACTION');
   append_row('AUDITED_CURSORID');
@@ -3009,7 +3010,7 @@ begin
 
   -- Add params, if any
   if g_params.count > 0 then
-    clob_append(v_row.message, v_cache, '## Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
+    clob_append(v_row.message, v_cache, '#### Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
     for i in 1 .. g_params.count loop
       clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).key, g_params(i).value, c_param_value_max_length));
     end loop;
