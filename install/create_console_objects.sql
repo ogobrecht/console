@@ -3313,10 +3313,10 @@ is
     v_fences t_vc32 := '    ```';
   begin
     return
-      c_lf ||
-      v_fences || c_lf ||
-      to_md_code_block(p_text) || c_lf ||
-      v_fences;
+      case when p_text is null
+        then null
+        else c_lf || v_fences || c_lf || to_md_code_block(p_text) || c_lf || v_fences
+      end;
   end to_md_li_pre;
   --
   function log_message (
@@ -4354,7 +4354,7 @@ begin
         v_return := v_return
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
           || v_subprogram
-          || case when  utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end;
+          || case when utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end;
       end if;
       exit when v_return is not null;
     end loop;
@@ -4414,7 +4414,7 @@ begin
           || '- '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
           || v_subprogram
-          || case when  utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end
+          || case when utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end
           || c_lf;
       end if;
     end loop;
