@@ -132,7 +132,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta7'                            ;
+c_version constant varchar2 ( 20 byte ) := '1.0-beta8'                            ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1885,7 +1885,11 @@ return varchar2;
 Returns a text bar consisting of unicode block characters.
 
 You can build simple text based bar charts with it. Not all fonts implement
-clean block characters, so the result depends a little bit on the font.
+clean block characters, so the result depends a little bit on the font. The
+unicode block characters can have eight different widths from 1/8 up to 8/8 -
+together with the default width of a bar char of 25 characters you can show bar
+charts with a precision of 0.5 percent - that is not bad for a text based bar
+chart...
 
 EXAMPLE
 
