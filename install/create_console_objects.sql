@@ -4353,7 +4353,8 @@ begin
       if instr ( upper(v_subprogram), 'CONSOLE.' ) = 0 then
         v_return := v_return
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || v_subprogram || ', line ' || utl_call_stack.unit_line(i);
+          || v_subprogram
+          || case when  utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end;
       end if;
       exit when v_return is not null;
     end loop;
@@ -4412,7 +4413,9 @@ begin
         v_return := v_return
           || '- '
           || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || v_subprogram || ', line ' || utl_call_stack.unit_line(i) || c_lf;
+          || v_subprogram
+          || case when  utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end
+          || c_lf;
       end if;
     end loop;
     v_return := v_return || c_lf;
