@@ -12,6 +12,17 @@
 
 # Changelog
 
+## v1.0-beta8 (2021-08-15)
+
+- More overloads to procedure `add_param`
+- Improved docs
+- ASCII art only on error page
+- Aligned header levels in generated Markdown
+- Change sequence cache for table `console_logs` from default 20 to 1000
+- Fix: Only owner of package `console` is allowed to purge entries and change global config
+- Fix: Call stack - include line info only if not null
+- Fix: Function `to_md_code_block` - wrap input in fences only if not null
+
 ## v1.0-beta7 (2021-06-09)
 
 - New overloaded procedure `add_param` to collect parameters before the call to
