@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta7'                            ;
+c_version constant varchar2 ( 20 byte ) := '1.0-beta8'                            ;
 c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -217,19 +217,19 @@ TEST ERROR_SAVE_STACK
 
 Call Stack
 ------------------------------------------------------------------------------------------------------------------------
-{{#}}# Saved Error Stack
+{{#}}### Saved Error Stack
 
 - PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2.SUB3, line 14 (line 11, ORA-20777 Assertion failed: Demo)
 - PLAYGROUND.SOME_API.DO_STUFF.SUB1.SUB2, line 22 (line 19)
 - PLAYGROUND.SOME_API.DO_STUFF.SUB1, line 30 (line 27)
 - PLAYGROUND.SOME_API.DO_STUFF, line 38 (line 35, ORA-01403 no data found)
 
-{{#}}# Call Stack
+{{#}}### Call Stack
 
 - PLAYGROUND.SOME_API.DO_STUFF, line 38
 - __anonymous_block, line 2
 
-{{#}}# Error Stack
+{{#}}### Error Stack
 
 - ORA-01403 no data found
 - ORA-06512 at "PLAYGROUND.SOME_API", line 31
@@ -241,7 +241,7 @@ Call Stack
 - ORA-06512 at "PLAYGROUND.SOME_API", line 19
 - ORA-06512 at "PLAYGROUND.SOME_API", line 27
 
-{{#}}# Error Backtrace
+{{#}}### Error Backtrace
 
 - PLAYGROUND.SOME_API, line 31
 - PLAYGROUND.SOME_API, line 23
@@ -782,8 +782,11 @@ procedure add_param ( p_name in varchar2, p_value in date                       
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in interval year to month         );
+procedure add_param ( p_name in varchar2, p_value in interval day to second         );
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
 procedure add_param ( p_name in varchar2, p_value in clob                           );
+procedure add_param ( p_name in varchar2, p_value in xmltype                        );
 ```
 
 EXAMPLE
@@ -791,26 +794,34 @@ EXAMPLE
 ```sql
 --create demo procedure
 create or replace procedure demo_proc (
-  p1  varchar2,
-  p2  number,
-  p3  date,
-  p4  timestamp,
-  p5  timestamp with time zone,
-  p6  timestamp with local time zone,
-  p7  boolean
-) is
+  p_01  varchar2                       ,
+  p_02  number                         ,
+  p_03  date                           ,
+  p_04  timestamp                      ,
+  p_05  timestamp with time zone       ,
+  p_06  timestamp with local time zone ,
+  p_07  interval year to month         ,
+  p_08  interval day to second         ,
+  p_09  boolean                        ,
+  p_10 clob                            ,
+  p_11 xmltype                         )
+is
 begin
-  raise_application_error(-20999, 'Test error.');
+  raise_application_error(-20999, 'Test Error.');
 exception
   when others then
-    console.add_param('p1', p1);
-    console.add_param('p2', p2);
-    console.add_param('p3', p3);
-    console.add_param('p4', p4);
-    console.add_param('p5', p5);
-    console.add_param('p6', p6);
-    console.add_param('p7', p7);
-    console.error;
+    console.add_param('p_01', p_01);
+    console.add_param('p_02', p_02);
+    console.add_param('p_03', p_03);
+    console.add_param('p_04', p_04);
+    console.add_param('p_05', p_05);
+    console.add_param('p_06', p_06);
+    console.add_param('p_07', p_07);
+    console.add_param('p_08', p_08);
+    console.add_param('p_09', p_09);
+    console.add_param('p_10', p_10);
+    console.add_param('p_11', p_11);
+    console.error('Ooops, something went wrong');
     raise;
 end demo_proc;
 {{/}}
@@ -818,27 +829,33 @@ end demo_proc;
 --run demo procedure
 begin
   demo_proc (
-    p1 => 'test'         ,
-    p2 => 1.23           ,
-    p3 => sysdate        ,
-    p4 => systimestamp   ,
-    p5 => systimestamp   ,
-    p6 => localtimestamp ,
-    p7 => true           );
+    p_01 => 'test vc2'                             ,
+    p_02 => 1.23                                   ,
+    p_03 => sysdate                                ,
+    p_04 => systimestamp                           ,
+    p_05 => systimestamp                           ,
+    p_06 => localtimestamp                         ,
+    p_07 => interval '4-2' year to month           ,
+    p_08 => interval '7 6:12:42.123' day to second ,
+    p_09 => true                                   ,
+    p_10 => to_clob('test clob')                   ,
+    p_11 => xmltype('<test_xml/>')                 );
 end;
 {{/}}
 ```
 
 **/
 
-
 procedure add_param ( p_name in varchar2, p_value in number                         );
 procedure add_param ( p_name in varchar2, p_value in date                           );
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+procedure add_param ( p_name in varchar2, p_value in interval year to month         );
+procedure add_param ( p_name in varchar2, p_value in interval day to second         );
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
 procedure add_param ( p_name in varchar2, p_value in clob                           );
+procedure add_param ( p_name in varchar2, p_value in xmltype                        );
 
 --------------------------------------------------------------------------------
 
@@ -1525,7 +1542,11 @@ function to_unibar (
 Returns a text bar consisting of unicode block characters.
 
 You can build simple text based bar charts with it. Not all fonts implement
-clean block characters, so the result depends a little bit on the font.
+clean block characters, so the result depends a little bit on the font. The
+unicode block characters can have eight different widths from 1/8 up to 8/8 -
+together with the default width of a bar char of 25 characters you can show bar
+charts with a precision of 0.5 percent - that is not bad for a text based bar
+chart...
 
 EXAMPLE
 
