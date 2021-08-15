@@ -2270,7 +2270,7 @@ c_timestamp_format       constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.f
 c_default_label          constant varchar2 ( 7 byte) := 'Default';
 c_conf_id                constant varchar2 (11 byte) := 'GLOBAL_CONF';
 c_client_id_prefix       constant varchar2 ( 6 byte) := '{o,o} ';
-c_console_owner          constant varchar2 (30 byte) := user;
+c_console_owner          constant varchar2 (30 byte) := $$plsql_unit_owner;
 c_console_pkg_name_dot   constant varchar2 ( 8 byte) := 'CONSOLE.';
 c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_CLEANUP';
 c_ctx_namespace          constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
@@ -3626,7 +3626,7 @@ begin
     'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
   assert (
     c_console_owner = sys_context('USERENV','SESSION_USER'),
-    'Setting of the global console configuration is only allowed for the owner of the console package.');
+    'Only the owner of the package console is allowed to change the global configuration.');
   assert (
     p_check_interval between 10 and 60,
     'Check interval needs to be between 10 and 60 (seconds). ' ||
@@ -4845,7 +4845,7 @@ begin
     'Minimum level must be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
   assert (
     c_console_owner = sys_context('USERENV','SESSION_USER'),
-    'Deleting log entries is only allowed for the owner of the console package.');
+    'Only the owner of the package console is allowed to purge log entries.');
   delete from console_logs
     where level_id >= p_min_level
       and permanent = 'N'
