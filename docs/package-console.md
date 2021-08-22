@@ -364,17 +364,18 @@ SIGNATURE
 
 ```sql
 procedure error (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default true  ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  );
+  p_message         in clob     default null  , -- The log message itself
+  p_permanent       in boolean  default false , -- Should the log entry be permanent (not deleted by purge methods)
+  p_call_stack      in boolean  default true  , -- Include call stack
+  p_apex_env        in boolean  default false , -- Include APEX environment
+  p_cgi_env         in boolean  default false , -- Include CGI environment
+  p_console_env     in boolean  default false , -- Include Console environment
+  p_user_env        in boolean  default false , -- Include user environment
+  p_user_agent      in varchar2 default null  , -- User agent of browser or other client technology
+  p_user_scope      in varchar2 default null  , -- Override PL/SQL scope
+  p_user_error_code in integer  default null  , -- Override PL/SQL error code
+  p_user_call_stack in varchar2 default null    -- Override PL/SQL error stack
+);
 ```
 
 
@@ -498,7 +499,7 @@ Log a message with the level 3 (info).
 SIGNATURE
 
 ```sql
-procedure log(
+procedure log (
   p_message         in clob     default null  ,
   p_permanent       in boolean  default false ,
   p_call_stack      in boolean  default false ,
@@ -520,7 +521,7 @@ Log a message with the level 3 (info). Returns the log ID.
 SIGNATURE
 
 ```sql
-function log(
+function log (
   p_message         in clob     default null  ,
   p_permanent       in boolean  default false ,
   p_call_stack      in boolean  default false ,
@@ -961,17 +962,17 @@ EXAMPLE
 ```sql
 --create demo procedure
 create or replace procedure demo_proc (
-  p_01  varchar2                       ,
-  p_02  number                         ,
-  p_03  date                           ,
-  p_04  timestamp                      ,
-  p_05  timestamp with time zone       ,
-  p_06  timestamp with local time zone ,
-  p_07  interval year to month         ,
-  p_08  interval day to second         ,
-  p_09  boolean                        ,
-  p_10 clob                            ,
-  p_11 xmltype                         )
+  p_01 varchar2                       ,
+  p_02 number                         ,
+  p_03 date                           ,
+  p_04 timestamp                      ,
+  p_05 timestamp with time zone       ,
+  p_06 timestamp with local time zone ,
+  p_07 interval year to month         ,
+  p_08 interval day to second         ,
+  p_09 boolean                        ,
+  p_10 clob                           ,
+  p_11 xmltype                        )
 is
 begin
   raise_application_error(-20999, 'Test Error.');

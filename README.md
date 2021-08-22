@@ -14,8 +14,8 @@ a new version. An existing context does not need to be dropped.**
 ## Easy to Install
 
 - Works with or without a context.
-- Has a single installation script (can be installed in APEX via "SQL
-  Workshop > SQL Scripts").
+- Has a single installation script (can be installed in APEX via "SQL Workshop >
+  SQL Scripts").
 - If you cannot wait to test it out: Open SQLcl, connect to your desired install
     schema and call
     `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`.
@@ -44,14 +44,13 @@ a new version. An existing context does not need to be dropped.**
 
 ## Nice Features
 
-- Can help you to avoid log spoiling by only logging errors in your outermost
-  package methods without loosing context details with the help of
+- Can help you to avoid cluttered error logs by only logging errors in your
+  outermost package methods without loosing context details with the help of
   [console.error_save_stack](docs/package-console.md#procedure-error_save_stack)
   in the nested methods. This might be the most powerful feature for some
   people...
-- No need to provide manually a scope for your log entries - console
-  does this automatically for you. If needed, you can overwrite the default
-  scope.
+- No need to provide manually a scope for your log entries - console does this
+  automatically for you. If needed, you can overwrite the default scope.
 - Has an optional [APEX error handling
   function](docs/package-console.md#function-apex_error_handling) to log also
   internal errors of the APEX engine.
