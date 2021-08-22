@@ -513,7 +513,7 @@ procedure error (
   p_user_agent      in varchar2 default null  , -- User agent of browser or other client technology
   p_user_scope      in varchar2 default null  , -- Override PL/SQL scope
   p_user_error_code in integer  default null  , -- Override PL/SQL error code
-  p_user_call_stack in varchar2 default null    -- Override PL/SQL error stack
+  p_user_call_stack in varchar2 default null    -- Override PL/SQL call stack
 );
 /**
 
