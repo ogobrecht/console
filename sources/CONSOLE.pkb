@@ -2933,11 +2933,11 @@ procedure utl_load_session_configuration is
   procedure load_global_conf is
   begin
     v_global_conf := utl_read_global_conf;
-    g_conf_units_level(2)   :=                    v_global_conf.units_level_warning      ;
-    g_conf_units_level(3)   :=                    v_global_conf.units_level_info         ;
-    g_conf_units_level(4)   :=                    v_global_conf.units_level_debug        ;
-    g_conf_units_level(5)   :=                    v_global_conf.units_level_trace        ;
-    g_conf_enable_ascii_art := to_bool ( coalesce(v_global_conf.enable_ascii_art, 'Y') ) ;
+    g_conf_units_level(2)   :=           v_global_conf.units_level_warning  ;
+    g_conf_units_level(3)   :=           v_global_conf.units_level_info     ;
+    g_conf_units_level(4)   :=           v_global_conf.units_level_debug    ;
+    g_conf_units_level(5)   :=           v_global_conf.units_level_trace    ;
+    g_conf_enable_ascii_art := to_bool ( v_global_conf.enable_ascii_art    );
   end load_global_conf;
   --
   procedure set_default_config is
@@ -2945,9 +2945,9 @@ procedure utl_load_session_configuration is
     --We have no real conf until now, so we fake 24 hours.
     --Conf will be re-evaluated at least every 10 seconds.
     g_conf_exit_sysdate   := sysdate + 1;
-    g_conf_level          := coalesce(v_global_conf.level_id, 1);
+    g_conf_level          := v_global_conf.level_id;
     g_conf_cache_size     := 0;
-    g_conf_check_interval := coalesce(v_global_conf.check_interval, 10);
+    g_conf_check_interval := v_global_conf.check_interval;
     g_conf_call_stack     := false;
     g_conf_user_env       := false;
     g_conf_apex_env       := false;
