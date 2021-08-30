@@ -270,7 +270,8 @@ JavaScript console:
 - [console.time_log](package-console.md#procedure-time_log) &
   [console.time_end](package-console.md#procedure-time_end) (level info)
 - [console.table#](package-console.md#procedure-table) (level info)
-- [console.assert](package-console.md#procedure-assert)
+- [console.assert](package-console.md#procedure-assert) &
+  [console.assertf](package-console.md#procedure-assertf)
 - [console.format](package-console.md#function-format)
 
 Also see additional methods in the [API overview](api-overview.md)

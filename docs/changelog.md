@@ -12,6 +12,11 @@
 
 # Changelog
 
+## v1.0 (2021-08-30)
+
+- New helper method `console.assertf` which supports formatted messages as a short form of `console.assert([boolean expression], console.format(...))`
+- Fix: console.conf_xxx not working without existing global conf entry
+
 ## v1.0-beta8 (2021-08-15)
 
 - More overloads to procedure `add_param`

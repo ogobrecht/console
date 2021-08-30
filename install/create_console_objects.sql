@@ -993,7 +993,51 @@ declare
 begin
   console.assert(
     x < y,
-    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+    'x should be less then y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+  );
+exception
+  when others then
+    console.error;
+    raise;
+end;
+{{/}}
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure assertf (
+  p_expression in boolean               ,
+  p_message    in varchar2              ,
+  p0           in varchar2 default null ,
+  p1           in varchar2 default null ,
+  p2           in varchar2 default null ,
+  p3           in varchar2 default null ,
+  p4           in varchar2 default null ,
+  p5           in varchar2 default null ,
+  p6           in varchar2 default null ,
+  p7           in varchar2 default null ,
+  p8           in varchar2 default null ,
+  p9           in varchar2 default null
+);
+/**
+
+If the given expression evaluates to false, an error is raised with the given
+formatted message.
+
+EXAMPLE
+
+```sql
+declare
+  x number := 5;
+  y number := 3;
+begin
+  console.assertf(
+    x < y,
+    'x should be less then y (x=%s, y=%s)',
+    to_char(x),
+    to_char(y)
   );
 exception
   when others then
@@ -3022,6 +3066,42 @@ begin
     raise_application_error(-20777, 'Assertion failed: ' || p_message, true);
   end if;
 end assert;
+
+--------------------------------------------------------------------------------
+
+procedure assertf (
+  p_expression in boolean               ,
+  p_message    in varchar2              ,
+  p0           in varchar2 default null ,
+  p1           in varchar2 default null ,
+  p2           in varchar2 default null ,
+  p3           in varchar2 default null ,
+  p4           in varchar2 default null ,
+  p5           in varchar2 default null ,
+  p6           in varchar2 default null ,
+  p7           in varchar2 default null ,
+  p8           in varchar2 default null ,
+  p9           in varchar2 default null )
+is
+begin
+  if not p_expression then
+    raise_application_error(
+      -20777,
+      format(
+        'Assertion failed: ' || p_message ,
+        p0 => p0                          ,
+        p1 => p1                          ,
+        p2 => p2                          ,
+        p3 => p3                          ,
+        p4 => p4                          ,
+        p5 => p5                          ,
+        p6 => p6                          ,
+        p7 => p7                          ,
+        p8 => p8                          ,
+        p9 => p9                          ),
+      true);
+  end if;
+end assertf;
 
 --------------------------------------------------------------------------------
 
@@ -5057,6 +5137,12 @@ begin
   return v_row;
 exception
   when no_data_found then
+    -- set defaults
+    v_row.conf_id          := c_conf_id;
+    v_row.level_id         := c_level_error;
+    v_row.level_name       := level_name(c_level_error);
+    v_row.check_interval   := 10;
+    v_row.enable_ascii_art := 'Y';
     return v_row;
 end utl_read_global_conf;
 

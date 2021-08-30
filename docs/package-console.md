@@ -45,6 +45,7 @@ Oracle Instrumentation Console
 - [Function time_end](#function-time_end)
 - [Procedure table#](#procedure-table)
 - [Procedure assert](#procedure-assert)
+- [Procedure assertf](#procedure-assertf)
 - [Procedure add_param](#procedure-add_param)
 - [Function format](#function-format)
 - [Procedure action](#procedure-action)
@@ -910,7 +911,7 @@ declare
 begin
   console.assert(
     x < y,
-    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+    'x should be less then y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
   );
 exception
   when others then
@@ -926,6 +927,52 @@ SIGNATURE
 procedure assert (
   p_expression in boolean,
   p_message    in varchar2
+);
+```
+
+
+## Procedure assertf
+
+If the given expression evaluates to false, an error is raised with the given
+formatted message.
+
+EXAMPLE
+
+```sql
+declare
+  x number := 5;
+  y number := 3;
+begin
+  console.assertf(
+    x < y,
+    'x should be less then y (x=%s, y=%s)',
+    to_char(x),
+    to_char(y)
+  );
+exception
+  when others then
+    console.error;
+    raise;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure assertf (
+  p_expression in boolean               ,
+  p_message    in varchar2              ,
+  p0           in varchar2 default null ,
+  p1           in varchar2 default null ,
+  p2           in varchar2 default null ,
+  p3           in varchar2 default null ,
+  p4           in varchar2 default null ,
+  p5           in varchar2 default null ,
+  p6           in varchar2 default null ,
+  p7           in varchar2 default null ,
+  p8           in varchar2 default null ,
+  p9           in varchar2 default null
 );
 ```
 
