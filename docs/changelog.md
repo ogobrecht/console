@@ -12,10 +12,12 @@
 
 # Changelog
 
-## v1.0 (2021-08-30)
+## v1.0-beta9 (2021-09-xx)
 
 - New helper method `console.assertf` which supports formatted messages as a short form of `console.assert([boolean expression], console.format(...))`
-- Fix: console.conf_xxx not working without existing global conf entry
+- Remove context - we work now with a single record conf table with result cache enabled to simplify the configuration
+  - Rename again the conf table from CONSOLE_GLOBAL_CONF to CONSOLE_CONF
+- rename `flush_cache` to `flush_log_cache` for clarity
 
 ## v1.0-beta8 (2021-08-15)
 

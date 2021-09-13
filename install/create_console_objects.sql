@@ -15,7 +15,8 @@ prompt - Project page https://github.com/ogobrecht/console
 prompt - Set compiler flags
 declare
   v_apex_installed varchar2(5) := 'FALSE'; -- Do not change (is set dynamically).
-  v_utils_public   varchar2(5) := 'FALSE'; -- Make utilities public available (for testing or other usages).
+  v_utils_public   varchar2(5) := 'TRUE'; -- Make utilities public available (for testing or other usages).
+  v_count pls_integer;
 begin
 
   --Basic settings
@@ -23,13 +24,8 @@ begin
   execute immediate 'alter session set plscope_settings = ''identifiers:all''';
   execute immediate 'alter session set plsql_optimize_level = 3';
 
-  for i in (select 1
-              from all_objects
-             where object_type = 'SYNONYM'
-               and object_name = 'APEX_EXPORT')
-  loop
-    v_apex_installed := 'TRUE';
-  end loop;
+  select count(*) into v_count from all_objects where object_type = 'SYNONYM' and object_name = 'APEX_EXPORT';
+  v_apex_installed := case when v_count = 0 then 'FALSE' else 'TRUE' end;
 
   execute immediate 'alter session set plsql_ccflags = '''
     || 'APEX_INSTALLED:' || v_apex_installed || ','
@@ -41,50 +37,44 @@ end;
 declare
   v_count pls_integer;
 begin
-  select count(*) into v_count from user_tables where table_name = 'CONSOLE_GLOBAL_CONF';
+  select count(*) into v_count from user_tables where table_name = 'CONSOLE_CONF';
   if v_count = 0 then
-    dbms_output.put_line('- Table CONSOLE_GLOBAL_CONF not found, run creation command');
+    dbms_output.put_line('- Table CONSOLE_CONF not found, run creation command');
     execute immediate q'{
-      create table console_global_conf (
-        conf_id              varchar2 (  16 byte)  not null  ,
-        conf_by              varchar2 (  64 byte)            ,
-        conf_sysdate         date                  not null  ,
-        level_id             number   (   1,0)     not null  ,
-        level_name           varchar2 (  10 byte)  not null  ,
-        check_interval       number   (   2,0)     not null  ,
-        units_level_warning  varchar2 (4000 byte)            ,
-        units_level_info     varchar2 (4000 byte)            ,
-        units_level_debug    varchar2 (4000 byte)            ,
-        units_level_trace    varchar2 (4000 byte)            ,
-        enable_ascii_art     varchar2 (   1 byte)  not null  ,
+      create table console_conf (
+        conf_id           varchar2 (   4 byte)  not null  ,
+        conf_by           varchar2 (  64 byte)            ,
+        conf_sysdate      date                  not null  ,
+        level_id          number   (   1,0)     not null  ,
+        level_name        varchar2 (  10 byte)  not null  ,
+        check_interval    number   (   2,0)     not null  ,
+        client_prefs      varchar2 (4000 byte)            ,
+        enable_ascii_art  varchar2 (   1 byte)  not null  ,
         --
-        constraint  console_global_conf_pk   primary key ( conf_id )                                                                          ,
-        constraint  console_global_conf_ck1  check ( conf_id = 'GLOBAL_CONF' )                                                                ,
-        constraint  console_global_conf_ck2  check ( level_id in (1, 2, 3, 4, 5) )                                                            ,
-        constraint  console_global_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
-        constraint  console_global_conf_ck4  check ( check_interval between 10 and 60 )                                                       ,
-        constraint  console_global_conf_ck5  check ( enable_ascii_art in ('Y','N') )
+        constraint  console_conf_pk   primary key ( conf_id )                                                                          ,
+        constraint  console_conf_ck1  check ( conf_id = 'CONF' )                                                                       ,
+        constraint  console_conf_ck2  check ( level_id in (1, 2, 3, 4, 5) )                                                            ,
+        constraint  console_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
+        constraint  console_conf_ck4  check ( check_interval between 10 and 60 )                                                       ,
+        constraint  console_conf_ck5  check ( enable_ascii_art in ('Y','N') )
       )
     }';
   else
-    dbms_output.put_line('- Table CONSOLE_GLOBAL_CONF found, no action required');
+    dbms_output.put_line('- Table CONSOLE_CONF found, no action required');
   end if;
 
 end;
 /
 
-comment on table  console_global_conf                     is 'Holds the global console configuration in a single record.';
-comment on column console_global_conf.conf_id             is 'The primary key - is secured by a check constraint which allows only one record in the table.';
-comment on column console_global_conf.conf_by             is 'The user who configured the console the last time.';
-comment on column console_global_conf.conf_sysdate        is 'The date when the console was configured the last time.';
-comment on column console_global_conf.level_id            is 'The defined global log level ID.';
-comment on column console_global_conf.level_name          is 'The defined log level name.';
-comment on column console_global_conf.check_interval      is 'The number of seconds a session looks for a changed configuration.';
-comment on column console_global_conf.units_level_warning is 'A comma separated list of units configured for level warning.';
-comment on column console_global_conf.units_level_info    is 'A comma separated list of units configured for level info.';
-comment on column console_global_conf.units_level_debug   is 'A comma separated list of units configured for level debug.';
-comment on column console_global_conf.units_level_trace   is 'A comma separated list of units configured for level trace.';
-comment on column console_global_conf.enable_ascii_art    is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
+comment on table  console_conf                  is 'Holds the console configuration in a single record.';
+comment on column console_conf.conf_id          is 'The primary key - is secured by a check constraint which allows only one record in the table.';
+comment on column console_conf.conf_by          is 'The user who configured the console the last time.';
+comment on column console_conf.conf_sysdate     is 'The date when the console was configured the last time.';
+comment on column console_conf.level_id         is 'The defined log level ID.';
+comment on column console_conf.level_name       is 'The defined log level name.';
+comment on column console_conf.check_interval   is 'The number of seconds a session looks for a changed configuration.';
+comment on column console_conf.client_prefs     is 'Client preferences in CSV format. We save it in this way to have always only one row of configuration data powered by the result cache.';
+comment on column console_conf.enable_ascii_art is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
 
 
 
@@ -182,80 +172,23 @@ comment on column console_logs.os_user_agent     is 'Operating system user agent
 
 
 
-declare
-  v_count pls_integer;
-begin
-  select count(*) into v_count from user_tables where table_name = 'CONSOLE_CLIENT_PREFS';
-  if v_count = 0 then
-    dbms_output.put_line('- Table CONSOLE_CLIENT_PREFS not found, run creation command');
-    execute immediate q'{
-      create table console_client_prefs (
-        client_identifier varchar2 (64 byte)  not null  ,
-        init_by           varchar2 (64 byte)            ,
-        init_sysdate      date                not null  ,
-        exit_sysdate      date                not null  ,
-        level_id          number   ( 1,0)     not null  ,
-        level_name        varchar2 (10 byte)  not null  ,
-        cache_size        number   ( 4,0)     not null  ,
-        check_interval    number   ( 2,0)     not null  ,
-        call_stack        varchar2 ( 1 byte)  not null  ,
-        user_env          varchar2 ( 1 byte)  not null  ,
-        apex_env          varchar2 ( 1 byte)  not null  ,
-        cgi_env           varchar2 ( 1 byte)  not null  ,
-        console_env       varchar2 ( 1 byte)  not null  ,
-        --
-        constraint  console_client_prefs_pk   primary key ( client_identifier          )  ,
-        constraint  console_client_prefs_ck1  check       ( call_stack  in ('Y','N')   )  ,
-        constraint  console_client_prefs_ck2  check       ( user_env    in ('Y','N')   )  ,
-        constraint  console_client_prefs_ck3  check       ( apex_env    in ('Y','N')   )  ,
-        constraint  console_client_prefs_ck4  check       ( cgi_env     in ('Y','N')   )  ,
-        constraint  console_client_prefs_ck5  check       ( console_env in ('Y','N')   )  ,
-        --
-        constraint  console_client_prefs_ck6  check       ( level_id   in (1, 2, 3, 4, 5)                                                          )  ,
-        constraint  console_client_prefs_ck7  check       ( level_name =  decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
-        --
-        constraint  console_client_prefs_ck8  check       ( check_interval between 1 and 60 )
-      ) organization index
-    }';
-  else
-    dbms_output.put_line('- Table CONSOLE_CLIENT_PREFS found, no action required');
-  end if;
-
-end;
-/
-
-comment on table  console_client_prefs                   is 'Holds the sessions that are initialized for debugging. Used to manage the global context.';
-comment on column console_client_prefs.init_by           is 'The user who initiated the logging.';
-comment on column console_client_prefs.init_sysdate      is 'The logging start date for the nominated client identifier.';
-comment on column console_client_prefs.exit_sysdate      is 'The planned logging end date for the nominated client identifier.';
-comment on column console_client_prefs.client_identifier is 'The client identifier provided by the application or console itself (this is the primary key).';
-comment on column console_client_prefs.level_id          is 'The defined log level ID. Any session not listed here has the configured global log level defined in CONSOLE_GLOBAL_CONF.';
-comment on column console_client_prefs.level_name        is 'The defined log level name.';
-comment on column console_client_prefs.check_interval    is 'The number of seconds a session looks for a changed configuration. Defaults to 10.';
-comment on column console_client_prefs.cache_size        is 'The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX.';
-comment on column console_client_prefs.call_stack        is 'Should the call_stack be included.';
-comment on column console_client_prefs.user_env          is 'Should the user environment be included.';
-comment on column console_client_prefs.apex_env          is 'Should the APEX environment be included.';
-comment on column console_client_prefs.cgi_env           is 'Should the CGI environment be included.';
-comment on column console_client_prefs.console_env       is 'Should the console environment be included.';
-
-
-
-
 prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta8'                            ;
-c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
-c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
+c_version constant varchar2 ( 10 byte ) := '1.0-beta9'                            ;
+c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
+c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error   constant pls_integer := 1 ;
-c_level_warning constant pls_integer := 2 ;
-c_level_info    constant pls_integer := 3 ;
-c_level_debug   constant pls_integer := 4 ;
-c_level_trace   constant pls_integer := 5 ;
+c_level_error      constant pls_integer :=    1 ;
+c_level_warning    constant pls_integer :=    2 ;
+c_level_info       constant pls_integer :=    3 ;
+c_level_debug      constant pls_integer :=    4 ;
+c_level_trace      constant pls_integer :=    5 ;
+c_check_interval   constant pls_integer :=   10 ;
+c_enable_ascii_art constant boolean     := true ;
+
 
 /**
 
@@ -276,23 +209,37 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-subtype t_vc1   is varchar2 (    1 char);
-subtype t_vc32  is varchar2 (   32 char);
-subtype t_vc64  is varchar2 (   64 char);
-subtype t_vc128 is varchar2 (  128 char);
-subtype t_vc256 is varchar2 (  256 char);
-subtype t_vc1k  is varchar2 ( 1024 char);
-subtype t_vc4k  is varchar2 ( 4096 char);
-subtype t_vc32k is varchar2 (32767 char);
+subtype t_vc1   is varchar2 (    1 byte);
+subtype t_vc32  is varchar2 (   32 byte);
+subtype t_vc64  is varchar2 (   64 byte);
+subtype t_vc128 is varchar2 (  128 byte);
+subtype t_vc256 is varchar2 (  256 byte);
+subtype t_vc1k  is varchar2 ( 1024 byte);
+subtype t_vc4k  is varchar2 ( 4096 byte);
+subtype t_vc32k is varchar2 (32767 byte);
 
-type t_key_value_row is record(
+type t_client_prefs_row is record(
+  client_identifier varchar2(64 byte) ,
+  level_id          integer           ,
+  level_name        varchar2(10 byte) ,
+  cache_size        integer           ,
+  call_stack        varchar2( 1 byte) ,
+  user_env          varchar2( 1 byte) ,
+  apex_env          varchar2( 1 byte) ,
+  cgi_env           varchar2( 1 byte) ,
+  console_env       varchar2( 1 byte) ,
+  check_interval    integer           ,
+  exit_sysdate      date              );
+type t_key_value_row    is record(
   key    t_vc128 ,
   value  t_vc4k  );
-type t_key_value_tab   is table of t_key_value_row;
-type t_key_value_tab_i is table of t_key_value_row index by pls_integer;
-type t_logs_tab        is table of console_logs%rowtype;
-type t_vc2_tab         is table of t_vc32k;
-type t_vc2_tab_i       is table of t_vc32k index by pls_integer;
+type t_client_prefs_tab is table of t_client_prefs_row;
+type t_key_value_tab    is table of t_key_value_row;
+type t_key_value_tab_i  is table of t_key_value_row index by pls_integer;
+type t_logs_tab         is table of console_logs%rowtype;
+type t_vc2_tab          is table of t_vc32k;
+type t_vc2_tab_i        is table of t_vc32k index by pls_integer;
+
 
 
 --------------------------------------------------------------------------------
@@ -1306,13 +1253,9 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               in integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval      in integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning in varchar2 default null          , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null          , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null          , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    in boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_level            in integer default null , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval   in integer default null , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_enable_ascii_art in boolean default null   -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 /**
 
@@ -1336,111 +1279,6 @@ begin
   );
 end;
 {{/}}
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_level (
-  p_level in integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-);
-/**
-
-Set the global level.
-
-A shortcut for the procedure `console.conf` to only set the level without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to level warning
-exec console.conf_level(2);
-
---same with using a constant
-exec console.conf_level(console.c_level_warning);
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_check_interval (
-  p_check_interval in integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-);
-/**
-
-Set the global check interval.
-
-A shortcut for the procedure `console.conf` to only set the check interval
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to a check interval of 30 seconds
-exec console.conf_check_interval(30);
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_units (
-  p_units_level_warning in varchar2 default null , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null   -- Same as p_units_level_warning for level trace.
-);
-/**
-
-Set the global levels for code units under special observation.
-
-A shortcut for the procedure `console.conf` to only set unit levels without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---special observation of two new packages
-exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_ascii_art (
-  p_enable_ascii_art in boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
-);
-/**
-
-Set the global ascii art status.
-
-A shortcut for the procedure `console.conf` to only set the ascii art status
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---enable the usage of ascii art
-exec console.conf_ascii_art(true);
-
---disable the usage of ascii art
-exec console.conf_ascii_art(false);
 ```
 
 **/
@@ -1539,58 +1377,6 @@ DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
 MANAGING CLIENT PREFERENCES.
 
 **/
-
-procedure exit_stale;
-/**
-
-Exit/unset the preferences for all sessions in the table console_client_prefs
-which have a exit date in the past for at least one hour.
-
-This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
-runs per default at 1 o'clock after midnight.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING CLIENT PREFERENCES.
-
-**/
-
---------------------------------------------------------------------------------
-
-function context_is_available return boolean;
-/**
-
-Checks the availability of the global context. Returns true, if available and
-false if not.
-
-```sql
-begin
-  if not console.context_is_available then
-    dbms_output.put_line('I need to speak with my DBA :-(');
-  end if;
-end;
-{{/}}
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-function context_is_available_yn return varchar2;
-/**
-
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-```sql
-select case when console.context_is_available_yn = 'N'
-         then 'I need to speak with my DBA :-('
-         else 'We have a global context :-)'
-       end as "Test context availability"
-  from dual;
-```
-
-**/
-
 
 --------------------------------------------------------------------------------
 
@@ -2005,18 +1791,6 @@ log entry.
 
 --------------------------------------------------------------------------------
 
-function calling_unit return varchar2;
-/**
-
-Get the calling unit (OWNER.UNIT) from the call stack.
-
-Is used internally by console to check if unit is configured for current log
-level.
-
-**/
-
---------------------------------------------------------------------------------
-
 function call_stack return varchar2;
 /**
 
@@ -2166,7 +1940,7 @@ select * from console.view_cache();
 
 --------------------------------------------------------------------------------
 
-procedure flush_cache;
+procedure flush_log_cache;
 /**
 
 Flushes the log cache and writes down the entries to the log table.
@@ -2175,7 +1949,7 @@ Flushes the log cache and writes down the entries to the log table.
 
 --------------------------------------------------------------------------------
 
-procedure clear ( p_client_identifier in varchar2 default my_client_identifier );
+procedure clear;
 /**
 
 Clears the cached log entries (if any).
@@ -2200,6 +1974,19 @@ EXAMPLE
 
 ```sql
 select * from console.view_status();
+```
+
+**/
+
+function view_client_prefs return t_client_prefs_tab pipelined;
+/**
+
+View client preferences.
+
+EXAMPLE
+
+```sql
+select * from console.view_client_prefs();
 ```
 
 **/
@@ -2267,16 +2054,16 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_last_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
-function utl_read_global_conf return console_global_conf%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-procedure utl_ctx_check_availability;
-procedure utl_ctx_clear (p_client_identifier varchar2);
-procedure utl_ctx_clear_all;
-procedure utl_ctx_set (p_attribute varchar2, p_value varchar2, p_client_identifier varchar2);
+function utl_read_conf return console_conf%rowtype result_cache;
+procedure utl_write_conf (p_conf console_conf%rowtype);
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
---
+function utl_extract_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
+function utl_append_client_prefs (p_all_prefs_csv varchar2, p_prefs t_client_prefs_row) return varchar2;
+function utl_remove_stale_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
+function utl_csv_to_client_prefs (p_csv varchar2) return t_client_prefs_row;
+function utl_client_prefs_to_csv (p_client_prefs t_client_prefs_row) return varchar2;
 function utl_create_log_entry (
   p_level           in integer                ,
   p_message         in clob     default null  ,
@@ -2304,9 +2091,6 @@ create or replace package body console is
 -- PRIVATE CONSTANTS, TYPES, GLOBALS
 --------------------------------------------------------------------------------
 
-insufficient_privileges exception;
-pragma exception_init (insufficient_privileges, -1031);
-
 c_crlf                   constant varchar2 ( 2 byte) := chr(13) || chr(10);
 c_cr                     constant varchar2 ( 1 byte) := chr(13);
 c_lf                     constant varchar2 ( 1 byte) := chr(10);
@@ -2315,25 +2099,14 @@ c_ampersand              constant varchar2 ( 1 byte) := chr(38);
 c_html_ampersand         constant varchar2 ( 5 byte) := chr(38) || 'amp;';
 c_html_less_then         constant varchar2 ( 4 byte) := chr(38) || 'lt;';
 c_html_greater_then      constant varchar2 ( 4 byte) := chr(38) || 'gt;';
+c_date_format            constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
 c_timestamp_format       constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
 c_default_label          constant varchar2 ( 7 byte) := 'Default';
-c_conf_id                constant varchar2 (11 byte) := 'GLOBAL_CONF';
+c_conf_id                constant varchar2 ( 4 byte) := 'CONF';
 c_client_id_prefix       constant varchar2 ( 6 byte) := '{o,o} ';
 c_console_owner          constant varchar2 (30 byte) := $$plsql_unit_owner;
 c_console_pkg_name_dot   constant varchar2 ( 8 byte) := 'CONSOLE.';
 c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_CLEANUP';
-c_ctx_namespace          constant varchar2 (30 byte) := substr('CONSOLE_' || user, 1, 30);
-c_ctx_test_attribute     constant varchar2 ( 4 byte) := 'TEST';
-c_ctx_date_format        constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
-c_ctx_exit_sysdate       constant varchar2 (12 byte) := 'EXIT_SYSDATE';
-c_ctx_level              constant varchar2 ( 5 byte) := 'LEVEL';
-c_ctx_cache_size         constant varchar2 (10 byte) := 'CACHE_SIZE';
-c_ctx_check_interval     constant varchar2 (14 byte) := 'CHECK_INTERVAL';
-c_ctx_call_stack         constant varchar2 (10 byte) := 'CALL_STACK';
-c_ctx_user_env           constant varchar2 ( 8 byte) := 'USER_ENV';
-c_ctx_apex_env           constant varchar2 ( 8 byte) := 'APEX_ENV';
-c_ctx_cgi_env            constant varchar2 ( 7 byte) := 'CGI_ENV';
-c_ctx_console_env        constant varchar2 (11 byte) := 'CONSOLE_ENV';
 c_param_value_max_length constant pls_integer        :=  2000;
 
 -- numeric type identfiers
@@ -2368,7 +2141,6 @@ c_ref_cursor             constant pls_integer := 102; -- same identfiers for str
 type t_timers_tab      is table of timestamp   index by t_vc128;
 type t_counters_tab    is table of pls_integer index by t_vc128;
 type t_saved_stack_tab is table of t_vc1k      index by binary_integer;
-type t_unit_list_tab   is table of t_vc4k      index by binary_integer;
 
 g_params         t_key_value_tab_i;
 g_timers         t_timers_tab;
@@ -2379,7 +2151,6 @@ g_prev_error_msg t_vc1k;
 
 g_conf_check_sysdate        date;
 g_conf_exit_sysdate         date;
-g_conf_context_is_available boolean;
 g_conf_client_identifier    t_vc64;
 g_conf_level                pls_integer;
 g_conf_cache_size           integer;
@@ -2390,7 +2161,6 @@ g_conf_apex_env             boolean;
 g_conf_cgi_env              boolean;
 g_conf_console_env          boolean;
 g_conf_enable_ascii_art     boolean;
-g_conf_units_level          t_unit_list_tab;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -2402,16 +2172,16 @@ function utl_escape_md_tab_text (p_text varchar2) return varchar2;
 function utl_last_error return varchar2;
 function utl_logging_is_enabled (p_level integer) return boolean;
 function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
-function utl_read_global_conf return console_global_conf%rowtype result_cache;
 function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-procedure utl_ctx_check_availability;
-procedure utl_ctx_clear (p_client_identifier varchar2);
-procedure utl_ctx_clear_all;
-procedure utl_ctx_set (p_attribute varchar2, p_value varchar2, p_client_identifier varchar2);
+function utl_read_conf return console_conf%rowtype result_cache;
+procedure utl_write_conf (p_conf console_conf%rowtype);
 procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
---
+function utl_extract_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
+function utl_append_client_prefs (p_all_prefs_csv varchar2, p_prefs t_client_prefs_row) return varchar2;
+function utl_remove_stale_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
+function utl_csv_to_client_prefs (p_csv varchar2) return t_client_prefs_row;
+function utl_client_prefs_to_csv (p_client_prefs t_client_prefs_row) return varchar2;
 function utl_create_log_entry (
   p_level           in integer                ,
   p_message         in clob     default null  ,
@@ -3644,190 +3414,33 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               in integer  default c_level_error ,
-  p_check_interval      in integer  default 10            ,
-  p_units_level_warning in varchar2 default null          ,
-  p_units_level_info    in varchar2 default null          ,
-  p_units_level_debug   in varchar2 default null          ,
-  p_units_level_trace   in varchar2 default null          ,
-  p_enable_ascii_art    in boolean  default true          )
+  p_level            in integer default null ,
+  p_check_interval   in integer default null ,
+  p_enable_ascii_art in boolean default null )
 is
-  pragma autonomous_transaction;
-  v_old_conf      console_global_conf%rowtype;
-  v_conf          console_global_conf%rowtype;
-  type            unit_tab is table of t_vc1 index by t_vc1k;
-  v_units_level_2 unit_tab;
-  v_units_level_3 unit_tab;
-  v_units_level_4 unit_tab;
-  v_units_level_5 unit_tab;
-  --
-  procedure distribute_units_to_levels (
-    p_units in varchar2    ,
-    p_level in pls_integer )
-  is
-    v_units t_vc2_tab_i;
-  begin
-    if p_units is not null then
-      v_units := split(p_units);
-      for i in 1 .. v_units.count loop
-        if trim(v_units(i)) is not null then
-          if p_level >= 2 then v_units_level_2( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
-          if p_level >= 3 then v_units_level_3( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
-          if p_level >= 4 then v_units_level_4( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
-          if p_level >= 5 then v_units_level_5( trim( v_units(i) ) ) := null; end if; -- the value doesn't matter here
-        end if;
-      end loop;
-    end if;
-  end distribute_units_to_levels;
-  --
-  function join_units (
-    p_level in pls_integer )
-  return varchar2 is
-    v_units  unit_tab;
-    v_return t_vc32k;
-    v_index  t_vc1k;
-  begin
-    v_units :=
-      case p_level
-        when 2 then v_units_level_2
-        when 3 then v_units_level_3
-        when 4 then v_units_level_4
-        when 5 then v_units_level_5
-      end;
-    if v_units.count > 0 then
-      v_index := v_units.first;
-      while v_index is not null loop
-        v_return := v_return || v_index || ','; -- we join here our index (the unique unit names)
-        v_index := v_units.next(v_index);
-      end loop;
-      v_return := ',' || v_return;
-    end if;
-    return v_return;
-  end join_units;
-  --
+  v_conf console_conf%rowtype;
 begin
+  assert (
+    c_console_owner = sys_context('USERENV','SESSION_USER'),
+    'Only the owner of the package console is allowed to change the global configuration.');
+  v_conf := utl_read_conf;
+  v_conf.conf_id          := c_conf_id;
+  v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
+  v_conf.conf_sysdate     := sysdate;
+  v_conf.level_id         := coalesce(p_level, v_conf.level_id);
+  v_conf.level_name       := level_name(p_level);
+  v_conf.check_interval   := coalesce(p_check_interval, v_conf.check_interval);
+  v_conf.enable_ascii_art := to_yn(coalesce(p_enable_ascii_art, to_bool(v_conf.enable_ascii_art)));
   assert (
     p_level in (1, 2, 3, 4, 5),
     'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
   assert (
-    c_console_owner = sys_context('USERENV','SESSION_USER'),
-    'Only the owner of the package console is allowed to change the global configuration.');
-  assert (
     p_check_interval between 10 and 60,
     'Check interval needs to be between 10 and 60 (seconds). ' ||
     'Values between 1 and 10 seconds can only be set per session with the procedure init.');
-  v_conf.conf_id          := c_conf_id;
-  v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
-  v_conf.conf_sysdate     := sysdate;
-  v_conf.level_id         := p_level;
-  v_conf.level_name       := level_name(p_level);
-  v_conf.check_interval   := p_check_interval;
-  v_conf.enable_ascii_art := to_yn(p_enable_ascii_art);
-  --
-  distribute_units_to_levels (p_units_level_warning, 2);
-  distribute_units_to_levels (p_units_level_info   , 3);
-  distribute_units_to_levels (p_units_level_debug  , 4);
-  distribute_units_to_levels (p_units_level_trace  , 5);
-  --
-  v_conf.units_level_warning := join_units(2);
-  v_conf.units_level_info    := join_units(3);
-  v_conf.units_level_debug   := join_units(4);
-  v_conf.units_level_trace   := join_units(5);
-  --
-  v_old_conf := utl_read_global_conf;
-  --
-  update console_global_conf set row = v_conf where conf_id = c_conf_id;
-  if sql%rowcount = 0 then
-    insert into console_global_conf values v_conf;
-  end if;
-  commit;
-  --
-  if nvl(v_old_conf.level_id, 1) != v_conf.level_id then
-    utl_ctx_clear_all;
-  end if;
+  utl_write_conf(v_conf);
   utl_load_session_configuration;
 end conf;
-
---------------------------------------------------------------------------------
-
-procedure conf_level (
-  p_level in integer default c_level_error )
-is
-  v_conf console_global_conf%rowtype;
-begin
-  v_conf := utl_read_global_conf;
-  if p_level != v_conf.level_id then
-    conf (
-      p_level               => p_level                          ,
-      p_check_interval      => v_conf.check_interval            ,
-      p_units_level_warning => v_conf.units_level_warning       ,
-      p_units_level_info    => v_conf.units_level_info          ,
-      p_units_level_debug   => v_conf.units_level_debug         ,
-      p_units_level_trace   => v_conf.units_level_trace         ,
-      p_enable_ascii_art    => to_bool(v_conf.enable_ascii_art) );
-  end if;
-end conf_level;
-
---------------------------------------------------------------------------------
-
-procedure conf_check_interval (
-  p_check_interval in integer default 10 )
-is
-  v_conf console_global_conf%rowtype;
-begin
-  v_conf := utl_read_global_conf;
-  if p_check_interval != v_conf.check_interval then
-    conf (
-      p_level               => v_conf.level_id                  ,
-      p_check_interval      => p_check_interval                 ,
-      p_units_level_warning => v_conf.units_level_warning       ,
-      p_units_level_info    => v_conf.units_level_info          ,
-      p_units_level_debug   => v_conf.units_level_debug         ,
-      p_units_level_trace   => v_conf.units_level_trace         ,
-      p_enable_ascii_art    => to_bool(v_conf.enable_ascii_art) );
-  end if;
-end conf_check_interval;
-
---------------------------------------------------------------------------------
-
-procedure conf_units (
-  p_units_level_warning in varchar2 default null ,
-  p_units_level_info    in varchar2 default null ,
-  p_units_level_debug   in varchar2 default null ,
-  p_units_level_trace   in varchar2 default null )
-is
-  v_conf console_global_conf%rowtype;
-begin
-  v_conf := utl_read_global_conf;
-  conf (
-    p_level               => v_conf.level_id                  ,
-    p_check_interval      => v_conf.check_interval            ,
-    p_units_level_warning => p_units_level_warning            ,
-    p_units_level_info    => p_units_level_info               ,
-    p_units_level_debug   => p_units_level_debug              ,
-    p_units_level_trace   => p_units_level_trace              ,
-    p_enable_ascii_art    => to_bool(v_conf.enable_ascii_art) );
-end conf_units;
-
---------------------------------------------------------------------------------
-
-procedure conf_ascii_art (
-  p_enable_ascii_art in boolean default true )
-is
-  v_conf console_global_conf%rowtype;
-begin
-  v_conf := utl_read_global_conf;
-  if p_enable_ascii_art != to_bool(v_conf.enable_ascii_art) then
-    conf (
-      p_level               => v_conf.level_id                  ,
-      p_check_interval      => v_conf.check_interval            ,
-      p_units_level_warning => v_conf.units_level_warning       ,
-      p_units_level_info    => v_conf.units_level_info          ,
-      p_units_level_debug   => v_conf.units_level_debug         ,
-      p_units_level_trace   => v_conf.units_level_trace         ,
-      p_enable_ascii_art    => p_enable_ascii_art               );
-  end if;
-end conf_ascii_art;
 
 --------------------------------------------------------------------------------
 
@@ -3843,9 +3456,8 @@ procedure init (
   p_cgi_env           in boolean  default false        ,
   p_console_env       in boolean  default false        )
 is
-  pragma autonomous_transaction;
-  v_row console_client_prefs%rowtype;
-  --
+  v_prefs t_client_prefs_row;
+  v_conf  console_conf%rowtype;
 begin
   assert (
     p_level in (1, 2, 3, 4, 5),
@@ -3861,40 +3473,20 @@ begin
   assert ( p_cgi_env           is not null        , 'CGI env needs to be true or false (not null).'            );
   assert ( p_console_env       is not null        , 'Console env needs to be true or false (not null).'        );
   --
-  v_row.init_by           := substrb(coalesce(
-                                sys_context('USERENV', 'OS_USER'),
-                                sys_context('USERENV', 'SESSION_USER') ), 1, 64 );
-  v_row.init_sysdate      := sysdate;
-  v_row.exit_sysdate      := sysdate + 1/24/60 * p_duration;
-  v_row.client_identifier := substrb ( p_client_identifier, 1, 64 );
-  v_row.level_id          := p_level;
-  v_row.level_name        := level_name(p_level);
-  v_row.cache_size        := p_cache_size;
-  v_row.check_interval    := p_check_interval;
-  v_row.call_stack        := to_yn ( p_call_stack  );
-  v_row.user_env          := to_yn ( p_user_env    );
-  v_row.apex_env          := to_yn ( p_apex_env    );
-  v_row.cgi_env           := to_yn ( p_cgi_env     );
-  v_row.console_env       := to_yn ( p_console_env );
-  --
-  update console_client_prefs set row = v_row where client_identifier = v_row.client_identifier;
-  if sql%rowcount = 0 then
-    insert into console_client_prefs values v_row;
-  end if;
-  commit;
-  --
-  if g_conf_context_is_available then
-    utl_ctx_set ( c_ctx_level          , to_char ( v_row.level_id                        ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_exit_sysdate   , to_char ( v_row.exit_sysdate, c_ctx_date_format ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_cache_size     , to_char ( v_row.cache_size                      ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_check_interval , to_char ( v_row.check_interval                  ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_call_stack     , to_char ( v_row.call_stack                      ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_user_env       , to_char ( v_row.user_env                        ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_apex_env       , to_char ( v_row.apex_env                        ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_cgi_env        , to_char ( v_row.cgi_env                         ) , p_client_identifier );
-    utl_ctx_set ( c_ctx_console_env    , to_char ( v_row.console_env                     ) , p_client_identifier );
-  end if;
-
+  v_prefs.client_identifier := p_client_identifier;
+  v_prefs.level_id          := p_level;
+  v_prefs.cache_size        := p_cache_size;
+  v_prefs.call_stack        := to_yn(p_call_stack);
+  v_prefs.user_env          := to_yn(p_user_env);
+  v_prefs.apex_env          := to_yn(p_apex_env);
+  v_prefs.cgi_env           := to_yn(p_cgi_env);
+  v_prefs.console_env       := to_yn(p_console_env);
+  v_prefs.check_interval    := p_check_interval;
+  v_prefs.exit_sysdate      := sysdate + 1/24/60 * p_duration;
+  --fixme: save client prefs and set defaults, if conf not existing
+  v_conf := utl_read_conf;
+  v_conf.client_prefs := utl_append_client_prefs(v_conf.client_prefs, v_prefs);
+  utl_write_conf(v_conf);
   -- If we want to monitor our own session, wee need to load the configuration
   -- data from the context or table into the cache (package variables).
   -- Otherwise we need to wait until the cache duration is over (which defaults
@@ -3938,19 +3530,23 @@ procedure exit_ (
   p_client_identifier in varchar2 )
 is
   pragma autonomous_transaction;
+  v_conf console_conf%rowtype;
 begin
   assert(p_client_identifier is not null, 'Client identifier must not be null.');
-  delete from console_client_prefs where client_identifier = p_client_identifier;
-  commit;
-  utl_ctx_clear( p_client_identifier );
-  -- If we monitor our own session, wee need to load the configuration
+  v_conf := utl_read_conf;
+  --fixme: remove client prefs;
+  update console_conf set row = v_conf where conf_id = c_conf_id;
+  if sql%rowcount = 0 then
+    insert into console_conf values v_conf;
+  end if;
+  commit;  -- If we monitor our own session, wee need to load the configuration
   -- data from the context or table into the cache (package variables).
   -- Otherwise we need to wait until the cache duration is over (which defaults
   -- to 10 seconds) and the package reloads the configuration from the context
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     utl_load_session_configuration;
-    flush_cache;
+    flush_log_cache;
   end if;
 end exit_;
 
@@ -3962,33 +3558,6 @@ is
 begin
   exit_(p_client_identifier);
 end exit;
-
---------------------------------------------------------------------------------
-
-procedure exit_stale is
-begin
-  for i in (
-    select client_identifier
-      from console_client_prefs
-     where exit_sysdate < sysdate - 1/24 )
-  loop
-    exit_(i.client_identifier);
-  end loop;
-end exit_stale;
-
---------------------------------------------------------------------------------
-
-function context_is_available return boolean is
-begin
-  return g_conf_context_is_available;
-end context_is_available;
-
---------------------------------------------------------------------------------
-
-function context_is_available_yn return varchar2 is
-begin
-  return to_yn(g_conf_context_is_available);
-end context_is_available_yn;
 
 --------------------------------------------------------------------------------
 
@@ -4449,29 +4018,6 @@ end scope;
 
 --------------------------------------------------------------------------------
 
-function calling_unit return varchar2 is
-  v_return     t_vc32k;
-  v_subprogram t_vc32k;
-begin
-  if utl_call_stack.dynamic_depth > 0 then
-    --ignore 1, is always this function (scope) itself
-    for i in 2 .. utl_call_stack.dynamic_depth
-    loop
-      v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
-      --exclude console package
-      if instr ( upper(v_subprogram), 'CONSOLE.' ) = 0 then
-        v_return := v_return
-          || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
-          || substr(v_subprogram, 1, instr(v_subprogram,'.') - 1 );
-      end if;
-      exit when v_return is not null;
-    end loop;
-  end if;
-  return v_return;
-end calling_unit;
-
---------------------------------------------------------------------------------
-
 function call_stack return varchar2
 is
   v_return     t_vc32k;
@@ -4633,31 +4179,25 @@ is
   --
 begin
   v_return := '#### Console Environment' || c_lflf || to_md_tab_header;
-  append_row('c_version',                       to_char( c_version                                     ) );
-  append_row('g_conf_context_is_available',       to_yn( g_conf_context_is_available                   ) );
-  append_row('c_ctx_namespace',                          c_ctx_namespace                                 );
-  append_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format ) );
-  append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format ) );
-  append_row('g_conf_client_identifier',                 g_conf_client_identifier                        );
-  append_row('g_conf_level',                    to_char( g_conf_level                                  ) );
-  append_row('level_name(g_conf_level)',             level_name(g_conf_level)                    );
-  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                             ) );
-  append_row('g_conf_check_interval',           to_char( g_conf_check_interval                         ) );
-  append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                             ) );
-  append_row('g_conf_user_env',                   to_yn( g_conf_user_env                               ) );
-  append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                               ) );
-  append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                ) );
-  append_row('g_conf_console_env',                to_yn( g_conf_console_env                            ) );
-  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                       ) );
-  append_row('g_conf_units_level(2)',                    g_conf_units_level(2)                           );
-  append_row('g_conf_units_level(3)',                    g_conf_units_level(3)                           );
-  append_row('g_conf_units_level(4)',                    g_conf_units_level(4)                           );
-  append_row('g_conf_units_level(5)',                    g_conf_units_level(5)                           );
-  append_row('g_counters.count',                to_char( g_counters.count                              ) );
-  append_row('g_timers.count',                  to_char( g_timers.count                                ) );
-  append_row('g_log_cache.count',               to_char( g_log_cache.count                             ) );
-  append_row('g_saved_stack.count',             to_char( g_saved_stack.count                           ) );
-  append_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                              ) );
+  append_row('c_version',                       to_char( c_version                                  ) );
+  append_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,        c_date_format ) );
+  append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,         c_date_format ) );
+  append_row('g_conf_client_identifier',                 g_conf_client_identifier                     );
+  append_row('g_conf_level',                    to_char( g_conf_level                               ) );
+  append_row('level_name(g_conf_level)',             level_name(g_conf_level)                 );
+  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                          ) );
+  append_row('g_conf_check_interval',           to_char( g_conf_check_interval                      ) );
+  append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                          ) );
+  append_row('g_conf_user_env',                   to_yn( g_conf_user_env                            ) );
+  append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                            ) );
+  append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                             ) );
+  append_row('g_conf_console_env',                to_yn( g_conf_console_env                         ) );
+  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                    ) );
+  append_row('g_counters.count',                to_char( g_counters.count                           ) );
+  append_row('g_timers.count',                  to_char( g_timers.count                             ) );
+  append_row('g_log_cache.count',               to_char( g_log_cache.count                          ) );
+  append_row('g_saved_stack.count',             to_char( g_saved_stack.count                        ) );
+  append_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                           ) );
 
   v_return := v_return || c_lf;
 
@@ -4862,7 +4402,7 @@ end view_cache;
 
 --------------------------------------------------------------------------------
 
-procedure flush_cache is
+procedure flush_log_cache is
   pragma autonomous_transaction;
 begin
   if g_log_cache.count > 0 then
@@ -4871,12 +4411,11 @@ begin
     commit;
     g_log_cache.delete;
   end if;
-end flush_cache;
+end flush_log_cache;
 
 --------------------------------------------------------------------------------
 
-procedure clear (
-  p_client_identifier in varchar2 default my_client_identifier )
+procedure clear
 is
 begin
   g_log_cache.delete;
@@ -4890,32 +4429,45 @@ begin
   if g_conf_check_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
-  pipe row(new t_key_value_row('c_version',                       to_char( c_version                                      )) );
-  pipe row(new t_key_value_row('g_conf_context_is_available',       to_yn( g_conf_context_is_available                    )) );
-  pipe row(new t_key_value_row('c_ctx_namespace',                          c_ctx_namespace                                 ) );
-  pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,       c_ctx_date_format  )) );
-  pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,        c_ctx_date_format  )) );
-  pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                        ) );
-  pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                                   )) );
-  pipe row(new t_key_value_row('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                   )) );
-  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                              )) );
-  pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                          )) );
-  pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                              )) );
-  pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                                )) );
-  pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                                )) );
-  pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                                 )) );
-  pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                             )) );
-  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                        )) );
-  pipe row(new t_key_value_row('g_conf_units_level(2)',                    g_conf_units_level(2)                           ) );
-  pipe row(new t_key_value_row('g_conf_units_level(3)',                    g_conf_units_level(3)                           ) );
-  pipe row(new t_key_value_row('g_conf_units_level(4)',                    g_conf_units_level(4)                           ) );
-  pipe row(new t_key_value_row('g_conf_units_level(5)',                    g_conf_units_level(5)                           ) );
-  pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                               )) );
-  pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                                 )) );
-  pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                              )) );
-  pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                            )) );
-  pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                               )) );
+  pipe row(new t_key_value_row('c_version',                       to_char( c_version                                   )) );
+  pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,        c_date_format  )) );
+  pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,         c_date_format  )) );
+  pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                     ) );
+  pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                                )) );
+  pipe row(new t_key_value_row('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                )) );
+  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                           )) );
+  pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                       )) );
+  pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                           )) );
+  pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                             )) );
+  pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                             )) );
+  pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                              )) );
+  pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                          )) );
+  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                     )) );
+  pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                            )) );
+  pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                              )) );
+  pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                           )) );
+  pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                         )) );
+  pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                            )) );
 end view_status;
+
+--------------------------------------------------------------------------------
+
+function view_client_prefs
+return t_client_prefs_tab pipelined is
+  v_conf console_conf%rowtype;
+  v_row  t_client_prefs_row;
+  v_pos  pls_integer := 1;
+  v_len  pls_integer;
+  v_lf   pls_integer;
+begin
+  v_conf := utl_read_conf;
+  v_len := length(v_conf.client_prefs);
+  while v_pos < v_len loop
+    v_lf := instr(v_conf.client_prefs, c_lf, v_pos);
+    pipe row(utl_csv_to_client_prefs(substr(v_conf.client_prefs, v_pos, v_lf - v_pos)));
+    v_pos := v_lf + 1;
+  end loop;
+end;
 
 --------------------------------------------------------------------------------
 
@@ -5103,12 +4655,7 @@ begin
   if g_conf_check_sysdate < sysdate then
     utl_load_session_configuration;
   end if;
-  return
-    g_conf_level >= p_level
-    or
-    sqlcode != 0
-    or
-    g_conf_units_level(p_level) is not null and instr(g_conf_units_level(p_level), ','||calling_unit||',') > 0;
+  return g_conf_level >= p_level or sqlcode != 0;
 end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
@@ -5126,41 +4673,41 @@ select id, name, cache_id, type, status, invalidations, scan_count
  where name like '%CONSOLE%'
    and status != 'Invalid';
 */
-function utl_read_global_conf
-return console_global_conf%rowtype result_cache is
-  v_row console_global_conf%rowtype;
+function utl_read_conf
+return console_conf%rowtype result_cache is
+  v_row console_conf%rowtype;
 begin
   select *
     into v_row
-    from console_global_conf
+    from console_conf
    where conf_id = c_conf_id;
   return v_row;
 exception
   when no_data_found then
     -- set defaults
     v_row.conf_id          := c_conf_id;
+    v_row.conf_by          := 'autodefault';
+    v_row.conf_sysdate     := sysdate;
     v_row.level_id         := c_level_error;
     v_row.level_name       := level_name(c_level_error);
-    v_row.check_interval   := 10;
-    v_row.enable_ascii_art := 'Y';
+    v_row.check_interval   := c_check_interval;
+    v_row.enable_ascii_art := to_yn(c_enable_ascii_art);
     return v_row;
-end utl_read_global_conf;
+end utl_read_conf;
 
+--------------------------------------------------------------------------------
 
-function utl_read_client_prefs (
-  p_client_identifier in varchar2 )
-return console_client_prefs%rowtype result_cache is
-  v_row console_client_prefs%rowtype;
+procedure utl_write_conf (
+  p_conf console_conf%rowtype )
+is
+  pragma autonomous_transaction;
 begin
-  select *
-    into v_row
-    from console_client_prefs
-   where client_identifier = p_client_identifier;
-  return v_row;
-exception
-  when no_data_found then
-    return v_row;
-end utl_read_client_prefs;
+  update console_conf set row = p_conf where conf_id = p_conf.conf_id;
+  if sql%rowcount = 0 then
+    insert into console_conf values p_conf;
+  end if;
+  commit;
+end utl_write_conf;
 
 --------------------------------------------------------------------------------
 
@@ -5177,77 +4724,76 @@ end utl_replace_linebreaks;
 
 --------------------------------------------------------------------------------
 
-procedure utl_ctx_check_availability is
+function utl_extract_client_prefs (
+  p_all_prefs_csv     varchar2 ,
+  p_client_identifier varchar2 )
+return varchar2 is
 begin
-  sys.dbms_session.set_context(c_ctx_namespace, c_ctx_test_attribute, 'test');
-  g_conf_context_is_available := true;
-exception
-  when insufficient_privileges then
-    g_conf_context_is_available := false;
-end utl_ctx_check_availability;
+  return regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
+end utl_extract_client_prefs;
 
 --------------------------------------------------------------------------------
 
-procedure utl_ctx_set (
-p_attribute         in varchar2 ,
-p_value             in varchar2 ,
-p_client_identifier in varchar2 )
-is
+function utl_append_client_prefs (
+  p_all_prefs_csv varchar2           ,
+  p_prefs         t_client_prefs_row )
+return varchar2 is
+  v_return t_vc32k := p_all_prefs_csv;
 begin
-  sys.dbms_session.set_context(
-    namespace => c_ctx_namespace     ,
-    attribute => p_attribute         ,
-    value     => p_value             ,
-    client_id => p_client_identifier );
-exception
-  when insufficient_privileges then
-    error ( 'Context not available, package var g_conf_context_is_available tells us it is ?!?' );
-end utl_ctx_set;
+  return v_return;
+end utl_append_client_prefs;
 
 --------------------------------------------------------------------------------
 
-procedure utl_ctx_clear_all is
+function utl_remove_stale_client_prefs (
+  p_all_prefs_csv     varchar2 ,
+  p_client_identifier varchar2 )
+return varchar2 is
+  v_return t_vc32k := p_all_prefs_csv;
 begin
-  if g_conf_context_is_available then
-    sys.dbms_session.clear_all_context(c_ctx_namespace);
-  end if;
-end utl_ctx_clear_all;
+  return v_return;
+end utl_remove_stale_client_prefs;
 
 --------------------------------------------------------------------------------
 
-procedure utl_ctx_clear (
-  p_client_identifier in varchar2 )
-is
+function utl_csv_to_client_prefs (
+  p_csv varchar2)
+return t_client_prefs_row is
+  v_return t_client_prefs_row;
 begin
-  if g_conf_context_is_available then
-    sys.dbms_session.clear_context(c_ctx_namespace, p_client_identifier);
-  end if;
-end utl_ctx_clear;
+  return v_return;
+end utl_csv_to_client_prefs;
+
+--------------------------------------------------------------------------------
+
+function utl_client_prefs_to_csv (
+  p_client_prefs t_client_prefs_row )
+return varchar2 is
+  v_return t_vc32k;
+begin
+  return v_return;
+end utl_client_prefs_to_csv;
 
 --------------------------------------------------------------------------------
 
 procedure utl_load_session_configuration is
-  v_session_conf console_client_prefs%rowtype;
-  v_global_conf  console_global_conf%rowtype;
+  v_client_prefs t_client_prefs_row;
+  v_conf  console_conf%rowtype;
   --
-  procedure load_global_conf is
+  procedure load_conf is
   begin
-    v_global_conf := utl_read_global_conf;
-    g_conf_units_level(2)   :=           v_global_conf.units_level_warning  ;
-    g_conf_units_level(3)   :=           v_global_conf.units_level_info     ;
-    g_conf_units_level(4)   :=           v_global_conf.units_level_debug    ;
-    g_conf_units_level(5)   :=           v_global_conf.units_level_trace    ;
-    g_conf_enable_ascii_art := to_bool ( v_global_conf.enable_ascii_art    );
-  end load_global_conf;
+    v_conf := utl_read_conf;
+    g_conf_enable_ascii_art := to_bool ( v_conf.enable_ascii_art    );
+  end load_conf;
   --
   procedure set_default_config is
   begin
     --We have no real conf until now, so we fake 24 hours.
     --Conf will be re-evaluated at least every 10 seconds.
     g_conf_exit_sysdate   := sysdate + 1;
-    g_conf_level          := v_global_conf.level_id;
+    g_conf_level          := v_conf.level_id;
     g_conf_cache_size     := 0;
-    g_conf_check_interval := v_global_conf.check_interval;
+    g_conf_check_interval := v_conf.check_interval;
     g_conf_call_stack     := false;
     g_conf_user_env       := false;
     g_conf_apex_env       := false;
@@ -5255,51 +4801,27 @@ procedure utl_load_session_configuration is
     g_conf_console_env    := false;
   end set_default_config;
   --
-  procedure load_config_from_context is
-  begin
-    g_conf_level          := to_number ( sys_context ( c_ctx_namespace, c_ctx_level          ) );
-    g_conf_cache_size     := to_number ( sys_context ( c_ctx_namespace, c_ctx_cache_size     ) );
-    g_conf_check_interval := to_number ( sys_context ( c_ctx_namespace, c_ctx_check_interval ) );
-    g_conf_call_stack     := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_call_stack     ) );
-    g_conf_user_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_user_env       ) );
-    g_conf_apex_env       := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_apex_env       ) );
-    g_conf_cgi_env        := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_cgi_env        ) );
-    g_conf_console_env    := to_bool   ( sys_context ( c_ctx_namespace, c_ctx_console_env    ) );
-  end load_config_from_context;
-  --
   procedure load_config_from_table_row is
   begin
-    g_conf_level          :=           v_session_conf.level_id        ;
-    g_conf_cache_size     :=           v_session_conf.cache_size      ;
-    g_conf_check_interval :=           v_session_conf.check_interval  ;
-    g_conf_call_stack     := to_bool ( v_session_conf.call_stack     );
-    g_conf_user_env       := to_bool ( v_session_conf.user_env       );
-    g_conf_apex_env       := to_bool ( v_session_conf.apex_env       );
-    g_conf_cgi_env        := to_bool ( v_session_conf.cgi_env        );
-    g_conf_console_env    := to_bool ( v_session_conf.console_env    );
+    g_conf_level          :=           v_client_prefs.level_id        ;
+    g_conf_cache_size     :=           v_client_prefs.cache_size      ;
+    g_conf_check_interval :=           v_client_prefs.check_interval  ;
+    g_conf_call_stack     := to_bool ( v_client_prefs.call_stack     );
+    g_conf_user_env       := to_bool ( v_client_prefs.user_env       );
+    g_conf_apex_env       := to_bool ( v_client_prefs.apex_env       );
+    g_conf_cgi_env        := to_bool ( v_client_prefs.cgi_env        );
+    g_conf_console_env    := to_bool ( v_client_prefs.console_env    );
   end load_config_from_table_row;
   --
 begin
-  load_global_conf;
+  load_conf;
   --
-  if g_conf_context_is_available then
-    g_conf_exit_sysdate := to_date(sys_context(c_ctx_namespace, c_ctx_exit_sysdate), c_ctx_date_format);
-    if g_conf_exit_sysdate is null then
-      set_default_config;
-    elsif g_conf_exit_sysdate < sysdate then
-      utl_ctx_clear(g_conf_client_identifier);
-      set_default_config;
-    else
-      load_config_from_context;
-    end if;
+  --fixmev_client_prefs := utl_read_client_prefs(g_conf_client_identifier);
+  g_conf_exit_sysdate := v_client_prefs.exit_sysdate;
+  if g_conf_exit_sysdate is null or g_conf_exit_sysdate < sysdate then
+    set_default_config;
   else
-    v_session_conf := utl_read_client_prefs(g_conf_client_identifier);
-    g_conf_exit_sysdate := v_session_conf.exit_sysdate;
-    if g_conf_exit_sysdate is null or g_conf_exit_sysdate < sysdate then
-      set_default_config;
-    else
-      load_config_from_table_row;
-    end if;
+    load_config_from_table_row;
   end if;
   --
   g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
@@ -5424,7 +4946,7 @@ begin
     g_log_cache(g_log_cache.count) := v_row;
   else
     if g_conf_cache_size > 0 then
-      flush_cache;
+      flush_log_cache;
     end if;
     insert into console_logs values v_row returning log_id into v_row.log_id;
     commit;
@@ -5439,7 +4961,6 @@ end utl_create_log_entry;
 begin
   g_log_cache := new t_logs_tab();
   utl_set_client_identifier;
-  utl_ctx_check_availability;
   utl_load_session_configuration;
 end console;
 /
@@ -5465,10 +4986,9 @@ end;
 /
 
 
--- check for errors in package console and for existing context
+-- check for errors in package console
 declare
   v_count                   pls_integer;
-  v_context_is_available_yn varchar2(1 byte);
 begin
   select count(*)
     into v_count
@@ -5476,17 +4996,6 @@ begin
    where name = 'CONSOLE';
   if v_count > 0 then
     dbms_output.put_line('- Package CONSOLE has errors :-(');
-  else
-    execute immediate 'select console.context_is_available_yn from dual' into v_context_is_available_yn;
-    if v_context_is_available_yn = 'Y' then
-      dbms_output.put_line('- Context available :-)');
-    else
-      dbms_output.put_line('- CONTEXT NOT AVAILABLE :-(');
-      dbms_output.put_line('-  | No worries - you can still start with the instrumentation of your code.');
-      dbms_output.put_line('-  | Until you have a context, console uses a table as the config storage for the sessions.');
-      dbms_output.put_line('-  | When you (or your DBA) have the context created then simply reconnect and check the availability:');
-      dbms_output.put_line('-  | select console.context_is_available_yn from dual;');
-    end if;
   end if;
 end;
 /

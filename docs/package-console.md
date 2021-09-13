@@ -67,16 +67,9 @@ Oracle Instrumentation Console
 - [Function apex_plugin_render](#function-apex_plugin_render)
 - [Function apex_plugin_ajax](#function-apex_plugin_ajax)
 - [Procedure conf](#procedure-conf)
-- [Procedure conf_level](#procedure-conf_level)
-- [Procedure conf_check_interval](#procedure-conf_check_interval)
-- [Procedure conf_units](#procedure-conf_units)
-- [Procedure conf_ascii_art](#procedure-conf_ascii_art)
 - [Procedure init](#procedure-init)
 - [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
-- [Procedure exit_stale](#procedure-exit_stale)
-- [Function context_is_available](#function-context_is_available)
-- [Function context_is_available_yn](#function-context_is_available_yn)
 - [Function version](#function-version)
 - [Function split_to_table](#function-split_to_table)
 - [Function split](#function-split)
@@ -96,7 +89,6 @@ Oracle Instrumentation Console
 - [Function runtime_milliseconds](#function-runtime_milliseconds)
 - [Function level_name](#function-level_name)
 - [Function scope](#function-scope)
-- [Function calling_unit](#function-calling_unit)
 - [Function call_stack](#function-call_stack)
 - [Function apex_env](#function-apex_env)
 - [Function cgi_env](#function-cgi_env)
@@ -106,9 +98,10 @@ Oracle Instrumentation Console
 - [Procedure clob_append](#procedure-clob_append-1)
 - [Procedure clob_flush_cache](#procedure-clob_flush_cache)
 - [Function view_cache](#function-view_cache)
-- [Procedure flush_cache](#procedure-flush_cache)
+- [Procedure flush_log_cache](#procedure-flush_log_cache)
 - [Procedure clear](#procedure-clear)
 - [Function view_status](#function-view_status)
+- [Function view_client_prefs](#function-view_client_prefs)
 - [Procedure purge](#procedure-purge)
 - [Procedure purge_all](#procedure-purge_all)
 - [Procedure cleanup_job_create](#procedure-cleanup_job_create)
@@ -133,16 +126,18 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta8'                            ;
-c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
-c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
+c_version constant varchar2 ( 10 byte ) := '1.0-beta9'                            ;
+c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
+c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error   constant pls_integer := 1 ;
-c_level_warning constant pls_integer := 2 ;
-c_level_info    constant pls_integer := 3 ;
-c_level_debug   constant pls_integer := 4 ;
-c_level_trace   constant pls_integer := 5 ;
+c_level_error      constant pls_integer :=    1 ;
+c_level_warning    constant pls_integer :=    2 ;
+c_level_info       constant pls_integer :=    3 ;
+c_level_debug      constant pls_integer :=    4 ;
+c_level_trace      constant pls_integer :=    5 ;
+c_check_interval   constant pls_integer :=   10 ;
+c_enable_ascii_art constant boolean     := true ;
 ```
 
 
@@ -1385,126 +1380,9 @@ SIGNATURE
 
 ```sql
 procedure conf (
-  p_level               in integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval      in integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning in varchar2 default null          , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null          , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null          , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    in boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
-);
-```
-
-
-## Procedure conf_level
-
-Set the global level.
-
-A shortcut for the procedure `console.conf` to only set the level without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to level warning
-exec console.conf_level(2);
-
---same with using a constant
-exec console.conf_level(console.c_level_warning);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_level (
-  p_level in integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-);
-```
-
-
-## Procedure conf_check_interval
-
-Set the global check interval.
-
-A shortcut for the procedure `console.conf` to only set the check interval
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to a check interval of 30 seconds
-exec console.conf_check_interval(30);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_check_interval (
-  p_check_interval in integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-);
-```
-
-
-## Procedure conf_units
-
-Set the global levels for code units under special observation.
-
-A shortcut for the procedure `console.conf` to only set unit levels without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---special observation of two new packages
-exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
-```
-
-SIGNATURE
-
-```sql
-procedure conf_units (
-  p_units_level_warning in varchar2 default null , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null   -- Same as p_units_level_warning for level trace.
-);
-```
-
-
-## Procedure conf_ascii_art
-
-Set the global ascii art status.
-
-A shortcut for the procedure `console.conf` to only set the ascii art status
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---enable the usage of ascii art
-exec console.conf_ascii_art(true);
-
---disable the usage of ascii art
-exec console.conf_ascii_art(false);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_ascii_art (
-  p_enable_ascii_art in boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_level            in integer default null , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval   in integer default null , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_enable_ascii_art in boolean default null   -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 ```
 
@@ -1613,65 +1491,6 @@ SIGNATURE
 procedure exit (
   p_client_identifier in varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
 );
-```
-
-
-## Procedure exit_stale
-
-Exit/unset the preferences for all sessions in the table console_client_prefs
-which have a exit date in the past for at least one hour.
-
-This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
-runs per default at 1 o'clock after midnight.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING CLIENT PREFERENCES.
-
-SIGNATURE
-
-```sql
-procedure exit_stale;
-```
-
-
-## Function context_is_available
-
-Checks the availability of the global context. Returns true, if available and
-false if not.
-
-```sql
-begin
-  if not console.context_is_available then
-    dbms_output.put_line('I need to speak with my DBA :-(');
-  end if;
-end;
-/
-```
-
-SIGNATURE
-
-```sql
-function context_is_available return boolean;
-```
-
-
-## Function context_is_available_yn
-
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-```sql
-select case when console.context_is_available_yn = 'N'
-         then 'I need to speak with my DBA :-('
-         else 'We have a global context :-)'
-       end as "Test context availability"
-  from dual;
-```
-
-SIGNATURE
-
-```sql
-function context_is_available_yn return varchar2;
 ```
 
 
@@ -2128,20 +1947,6 @@ function scope return varchar2;
 ```
 
 
-## Function calling_unit
-
-Get the calling unit (OWNER.UNIT) from the call stack.
-
-Is used internally by console to check if unit is configured for current log
-level.
-
-SIGNATURE
-
-```sql
-function calling_unit return varchar2;
-```
-
-
 ## Function call_stack
 
 Get the current call stack (and error stack/backtrace, if available).
@@ -2314,14 +2119,14 @@ function view_cache return t_logs_tab pipelined;
 ```
 
 
-## Procedure flush_cache
+## Procedure flush_log_cache
 
 Flushes the log cache and writes down the entries to the log table.
 
 SIGNATURE
 
 ```sql
-procedure flush_cache;
+procedure flush_log_cache;
 ```
 
 
@@ -2338,7 +2143,7 @@ avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 SIGNATURE
 
 ```sql
-procedure clear ( p_client_identifier in varchar2 default my_client_identifier );
+procedure clear;
 ```
 
 
@@ -2357,6 +2162,23 @@ SIGNATURE
 
 ```sql
 function view_status return t_key_value_tab pipelined;
+```
+
+
+## Function view_client_prefs
+
+View client preferences.
+
+EXAMPLE
+
+```sql
+select * from console.view_client_prefs();
+```
+
+SIGNATURE
+
+```sql
+function view_client_prefs return t_client_prefs_tab pipelined;
 ```
 
 

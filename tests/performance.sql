@@ -131,7 +131,7 @@ begin
   for i in 1 .. v_iterator loop
     console.log('test ' || to_char(i));
   end loop;
-  console.flush_cache;
+  console.flush_log_cache;
   v_rt_console := console.runtime_seconds(v_start);
   -- print results
   console.print( '- logger.log     : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );
@@ -188,25 +188,6 @@ begin
   console.print( '- scope          : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
 end;
 /
-
-prompt
-prompt 1.000 CALLING_UNIT CALLS (how many time you loose by fetching the calling unit from the call stack)
-declare
-  v_iterator pls_integer := 1000;
-  v_start    timestamp;
-  v_scope    varchar2(1000);
-  v_rt       number;
-begin
-  v_start := localtimestamp;
-  for i in 1 .. v_iterator loop
-    v_scope := console.calling_unit;
-  end loop;
-  v_rt := console.runtime_seconds(v_start);
-  --
-  console.print( '- calling_unit   : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
-end;
-/
-
 
 /*
 prompt

@@ -312,7 +312,7 @@ by calling [console.exit](package-console.md#procedure-exit). If you provide no
 client identifier, then CONSOLE tries to exit your own session.
 
 If you don't do it by yourself the daily cleanup job from CONSOLE will exit
-stale sessions from the table `CONSOLE_CLIENT_PREFS`.
+stale sessions.
 
 ## Configure Default Log Level (set global configuration)
 
@@ -320,14 +320,7 @@ Some people use the levels `error`, `warning` and `info` in production for the
 operations team and levels `debug` and `trace` for debugging purposes. To
 support such use cases you can configure the default log level (and other
 options) of CONSOLE for all sessions from `error` to `warning` or `info` by
-using the [console.conf](package-console.md#procedure-conf) procedure. Also see
-the specific procedures, which are able to set one aspect without implicit
-setting other things to the default.
-
-- [console.conf_level](package-console.md#procedure-conf_level)
-- [console.conf_check_interval](package-console.md#procedure-conf_check_interval)
-- [console.conf_units](package-console.md#procedure-conf_units)
-- [console.conf_ascii_art](package-console.md#procedure-conf_ascii_art)
+using the [console.conf](package-console.md#procedure-conf) procedure.
 
 EXAMPLE
 

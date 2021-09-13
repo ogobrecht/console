@@ -43,7 +43,7 @@ begin
       from user_objects
       where object_name = 'CONSOLE'
         and object_type = 'PACKAGE'
-        or object_name in ('CONSOLE_LOGS', 'CONSOLE_GLOBAL_CONF', 'CONSOLE_CLIENT_PREFS')
+        or object_name in ('CONSOLE_LOGS', 'CONSOLE_CONF')
         and object_type = 'TABLE')
   loop
     v_ddl := 'grant ' ||
