@@ -191,7 +191,7 @@ end;
 
 /*
 prompt
-prompt 1.000 utl_load_session_configuration CALLS
+prompt 1.000 utl_set_session_conf CALLS
 declare
   v_iterator   pls_integer := 1000;
   v_start      timestamp;
@@ -200,7 +200,7 @@ declare
 begin
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    console.utl_load_session_configuration;
+    console.utl_set_session_conf;
   end loop;
   v_rt := console.runtime_seconds(v_start);
   console.print( '- runtime all    : ' || trim(to_char(v_rt,      '0.000000000')) || ' seconds' );

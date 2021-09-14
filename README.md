@@ -71,4 +71,4 @@ a new version. An existing context does not need to be dropped.**
 
 ## Dependencies
 
-Oracle DB >= 12.1
+Oracle DB >= 12.2

@@ -3,7 +3,7 @@
 prompt - Set compiler flags
 declare
   v_apex_installed varchar2(5) := 'FALSE'; -- Do not change (is set dynamically).
-  v_utils_public   varchar2(5) := 'TRUE'; -- Make utilities public available (for testing or other usages).
+  v_utils_public   varchar2(5) := 'FALSE'; -- Make utilities public available (for testing or other usages).
   v_count pls_integer;
 begin
 

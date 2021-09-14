@@ -15,7 +15,7 @@ prompt - Project page https://github.com/ogobrecht/console
 prompt - Set compiler flags
 declare
   v_apex_installed varchar2(5) := 'FALSE'; -- Do not change (is set dynamically).
-  v_utils_public   varchar2(5) := 'TRUE'; -- Make utilities public available (for testing or other usages).
+  v_utils_public   varchar2(5) := 'FALSE'; -- Make utilities public available (for testing or other usages).
   v_count pls_integer;
 begin
 
@@ -233,12 +233,13 @@ type t_client_prefs_row is record(
 type t_key_value_row    is record(
   key    t_vc128 ,
   value  t_vc4k  );
-type t_client_prefs_tab is table of t_client_prefs_row;
-type t_key_value_tab    is table of t_key_value_row;
-type t_key_value_tab_i  is table of t_key_value_row index by pls_integer;
-type t_logs_tab         is table of console_logs%rowtype;
-type t_vc2_tab          is table of t_vc32k;
-type t_vc2_tab_i        is table of t_vc32k index by pls_integer;
+type t_client_prefs_tab   is table of t_client_prefs_row;
+type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
+type t_key_value_tab      is table of t_key_value_row;
+type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
+type t_logs_tab           is table of console_logs%rowtype;
+type t_vc2_tab            is table of t_vc32k;
+type t_vc2_tab_i          is table of t_vc32k index by pls_integer;
 
 
 
@@ -1474,6 +1475,30 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 
 **/
 
+function to_yn (
+  p_test integer ,
+  p_bit  integer )
+return varchar2;
+/**
+
+Tests an integer value with bitand.
+
+Returns `Y` when `bitand(p_test, p_bit) = p_bit`. In all other cases (also on
+null) `N` is returned.
+
+```sql
+select
+  console.to_yn(26, 16) as test_bit_pos_5,
+  console.to_yn(26,  8) as test_bit_pos_4,
+  console.to_yn(26,  4) as test_bit_pos_3,
+  console.to_yn(26,  2) as test_bit_pos_2,
+  console.to_yn(26,  1) as test_bit_pos_1,
+  console.to_yn(26,  3) as always_no, -- 3 makes no sense as it represents no bit position value
+from dual;
+```
+
+**/
+
 --------------------------------------------------------------------------------
 
 function to_string ( p_bool in boolean ) return varchar2;
@@ -2050,20 +2075,80 @@ procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
 
 $if $$utils_public $then
 
-function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_last_error return varchar2;
-function utl_logging_is_enabled (p_level integer) return boolean;
-function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-function utl_read_conf return console_conf%rowtype result_cache;
-procedure utl_write_conf (p_conf console_conf%rowtype);
-procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
-function utl_extract_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
-function utl_append_client_prefs (p_all_prefs_csv varchar2, p_prefs t_client_prefs_row) return varchar2;
-function utl_remove_stale_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
-function utl_csv_to_client_prefs (p_csv varchar2) return t_client_prefs_row;
-function utl_client_prefs_to_csv (p_client_prefs t_client_prefs_row) return varchar2;
+
+procedure utl_set_session_conf;
+
+procedure utl_set_conf (
+  p_conf console_conf%rowtype );
+
+procedure utl_set_client_prefs (
+  p_prefs varchar2 );
+
+function utl_get_conf return console_conf%rowtype result_cache;
+
+function utl_get_client_prefs (
+  p_all_prefs_csv varchar2     ,
+  p_client_identifier varchar2 )
+return t_client_prefs_row;
+
+function utl_get_client_prefs_tab return t_client_prefs_tab_i;
+
+function utl_escape_md_tab_text (
+  p_text varchar2 )
+return varchar2;
+
+function utl_last_error return varchar2;
+
+function utl_logging_is_enabled (
+  p_level integer )
+return boolean;
+
+function utl_normalize_label (
+  p_label varchar2 )
+return varchar2;
+
+function utl_replace_linebreaks (
+  p_text varchar2                     ,
+  p_replace_with varchar2 default ' ' )
+return varchar2;
+
+function utl_get_clean_client_prefs_csv (
+  p_client_identifier_to_remove in varchar2           default null ,
+  p_client_prefs_to_append      in t_client_prefs_row default null )
+return varchar2;
+
+function utl_client_prefs_to_csv (
+  p_client_prefs t_client_prefs_row )
+return varchar2;
+
+function utl_csv_to_client_prefs (
+  p_csv varchar2 ) return t_client_prefs_row;
+
+function utl_csv_get_client_identifier (
+  p_csv varchar2 )
+return varchar2;
+
+function utl_csv_get_exit_sysdate (
+  p_csv varchar2 )
+return date;
+
+function utl_csv_get_check_interval (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_level (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_cache_size (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_boolean_options (
+  p_csv varchar2 )
+return integer;
+
 function utl_create_log_entry (
   p_level           in integer                ,
   p_message         in clob     default null  ,
@@ -2099,6 +2184,7 @@ c_ampersand              constant varchar2 ( 1 byte) := chr(38);
 c_html_ampersand         constant varchar2 ( 5 byte) := chr(38) || 'amp;';
 c_html_less_then         constant varchar2 ( 4 byte) := chr(38) || 'lt;';
 c_html_greater_then      constant varchar2 ( 4 byte) := chr(38) || 'gt;';
+c_date_format_short      constant varchar2 (16 byte) := 'yyyymmddhh24miss';
 c_date_format            constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
 c_timestamp_format       constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
 c_default_label          constant varchar2 ( 7 byte) := 'Default';
@@ -2108,6 +2194,13 @@ c_console_owner          constant varchar2 (30 byte) := $$plsql_unit_owner;
 c_console_pkg_name_dot   constant varchar2 ( 8 byte) := 'CONSOLE.';
 c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_CLEANUP';
 c_param_value_max_length constant pls_integer        :=  2000;
+
+-- constants for bitand operations
+c_call_stack             constant pls_integer := 16;
+c_user_env               constant pls_integer :=  8;
+c_apex_env               constant pls_integer :=  4;
+c_cgi_env                constant pls_integer :=  2;
+c_console_env            constant pls_integer :=  1;
 
 -- numeric type identfiers
 c_number                 constant pls_integer :=   2; -- float
@@ -2149,18 +2242,18 @@ g_log_cache      t_logs_tab;
 g_saved_stack    t_saved_stack_tab;
 g_prev_error_msg t_vc1k;
 
-g_conf_check_sysdate        date;
-g_conf_exit_sysdate         date;
-g_conf_client_identifier    t_vc64;
-g_conf_level                pls_integer;
-g_conf_cache_size           integer;
-g_conf_check_interval       integer;
-g_conf_call_stack           boolean;
-g_conf_user_env             boolean;
-g_conf_apex_env             boolean;
-g_conf_cgi_env              boolean;
-g_conf_console_env          boolean;
-g_conf_enable_ascii_art     boolean;
+g_conf_client_identifier t_vc64;
+g_conf_exit_sysdate      date;
+g_conf_check_interval    integer;
+g_conf_check_sysdate     date;
+g_conf_level             pls_integer;
+g_conf_cache_size        integer;
+g_conf_call_stack        boolean;
+g_conf_user_env          boolean;
+g_conf_apex_env          boolean;
+g_conf_cgi_env           boolean;
+g_conf_console_env       boolean;
+g_conf_enable_ascii_art  boolean;
 
 -------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (forward declarations)
@@ -2168,20 +2261,80 @@ g_conf_enable_ascii_art     boolean;
 
 $if not $$utils_public $then
 
-function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_last_error return varchar2;
-function utl_logging_is_enabled (p_level integer) return boolean;
-function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-function utl_read_conf return console_conf%rowtype result_cache;
-procedure utl_write_conf (p_conf console_conf%rowtype);
-procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
-function utl_extract_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
-function utl_append_client_prefs (p_all_prefs_csv varchar2, p_prefs t_client_prefs_row) return varchar2;
-function utl_remove_stale_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
-function utl_csv_to_client_prefs (p_csv varchar2) return t_client_prefs_row;
-function utl_client_prefs_to_csv (p_client_prefs t_client_prefs_row) return varchar2;
+
+procedure utl_set_session_conf;
+
+procedure utl_set_conf (
+  p_conf console_conf%rowtype );
+
+procedure utl_set_client_prefs (
+  p_prefs varchar2 );
+
+function utl_get_conf return console_conf%rowtype result_cache;
+
+function utl_get_client_prefs (
+  p_all_prefs_csv varchar2     ,
+  p_client_identifier varchar2 )
+return t_client_prefs_row;
+
+function utl_get_client_prefs_tab return t_client_prefs_tab_i;
+
+function utl_escape_md_tab_text (
+  p_text varchar2 )
+return varchar2;
+
+function utl_last_error return varchar2;
+
+function utl_logging_is_enabled (
+  p_level integer )
+return boolean;
+
+function utl_normalize_label (
+  p_label varchar2 )
+return varchar2;
+
+function utl_replace_linebreaks (
+  p_text varchar2                     ,
+  p_replace_with varchar2 default ' ' )
+return varchar2;
+
+function utl_get_clean_client_prefs_csv (
+  p_client_identifier_to_remove in varchar2           default null ,
+  p_client_prefs_to_append      in t_client_prefs_row default null )
+return varchar2;
+
+function utl_client_prefs_to_csv (
+  p_client_prefs t_client_prefs_row )
+return varchar2;
+
+function utl_csv_to_client_prefs (
+  p_csv varchar2 ) return t_client_prefs_row;
+
+function utl_csv_get_client_identifier (
+  p_csv varchar2 )
+return varchar2;
+
+function utl_csv_get_exit_sysdate (
+  p_csv varchar2 )
+return date;
+
+function utl_csv_get_check_interval (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_level (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_cache_size (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_boolean_options (
+  p_csv varchar2 )
+return integer;
+
 function utl_create_log_entry (
   p_level           in integer                ,
   p_message         in clob     default null  ,
@@ -3423,12 +3576,11 @@ begin
   assert (
     c_console_owner = sys_context('USERENV','SESSION_USER'),
     'Only the owner of the package console is allowed to change the global configuration.');
-  v_conf := utl_read_conf;
-  v_conf.conf_id          := c_conf_id;
+  v_conf := utl_get_conf; -- this will handle the defaults if we don't have configured console yet.
   v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
   v_conf.conf_sysdate     := sysdate;
   v_conf.level_id         := coalesce(p_level, v_conf.level_id);
-  v_conf.level_name       := level_name(p_level);
+  v_conf.level_name       := level_name(v_conf.level_id);
   v_conf.check_interval   := coalesce(p_check_interval, v_conf.check_interval);
   v_conf.enable_ascii_art := to_yn(coalesce(p_enable_ascii_art, to_bool(v_conf.enable_ascii_art)));
   assert (
@@ -3438,8 +3590,8 @@ begin
     p_check_interval between 10 and 60,
     'Check interval needs to be between 10 and 60 (seconds). ' ||
     'Values between 1 and 10 seconds can only be set per session with the procedure init.');
-  utl_write_conf(v_conf);
-  utl_load_session_configuration;
+  utl_set_conf(v_conf);
+  utl_set_session_conf;
 end conf;
 
 --------------------------------------------------------------------------------
@@ -3475,6 +3627,7 @@ begin
   --
   v_prefs.client_identifier := p_client_identifier;
   v_prefs.level_id          := p_level;
+  v_prefs.level_name        := level_name(p_level);
   v_prefs.cache_size        := p_cache_size;
   v_prefs.call_stack        := to_yn(p_call_stack);
   v_prefs.user_env          := to_yn(p_user_env);
@@ -3483,17 +3636,19 @@ begin
   v_prefs.console_env       := to_yn(p_console_env);
   v_prefs.check_interval    := p_check_interval;
   v_prefs.exit_sysdate      := sysdate + 1/24/60 * p_duration;
-  --fixme: save client prefs and set defaults, if conf not existing
-  v_conf := utl_read_conf;
-  v_conf.client_prefs := utl_append_client_prefs(v_conf.client_prefs, v_prefs);
-  utl_write_conf(v_conf);
+  utl_set_client_prefs(
+    utl_get_clean_client_prefs_csv(
+      p_client_identifier_to_remove => v_prefs.client_identifier,
+      p_client_prefs_to_append      => v_prefs
+    )
+  );
   -- If we want to monitor our own session, wee need to load the configuration
   -- data from the context or table into the cache (package variables).
   -- Otherwise we need to wait until the cache duration is over (which defaults
   -- to 10 seconds) and the package reloads the configuration from the context
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
-    utl_load_session_configuration;
+    utl_set_session_conf;
   end if;
 end init;
 
@@ -3529,23 +3684,21 @@ end init;
 procedure exit_ (
   p_client_identifier in varchar2 )
 is
-  pragma autonomous_transaction;
   v_conf console_conf%rowtype;
 begin
   assert(p_client_identifier is not null, 'Client identifier must not be null.');
-  v_conf := utl_read_conf;
-  --fixme: remove client prefs;
-  update console_conf set row = v_conf where conf_id = c_conf_id;
-  if sql%rowcount = 0 then
-    insert into console_conf values v_conf;
-  end if;
-  commit;  -- If we monitor our own session, wee need to load the configuration
+  utl_set_client_prefs(
+    utl_get_clean_client_prefs_csv(
+      p_client_identifier_to_remove => p_client_identifier
+    )
+  );
+  -- If we monitor our own session, wee need to load the configuration
   -- data from the context or table into the cache (package variables).
   -- Otherwise we need to wait until the cache duration is over (which defaults
   -- to 10 seconds) and the package reloads the configuration from the context
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
-    utl_load_session_configuration;
+    utl_set_session_conf;
     flush_log_cache;
   end if;
 end exit_;
@@ -3637,6 +3790,17 @@ function to_yn (
 return varchar2 is
 begin
   return case when p_bool then 'Y' else 'N' end;
+end to_yn;
+
+function to_yn (
+  p_test integer ,
+  p_bit  integer )
+return varchar2 is
+begin
+  return case when bitand(p_test, p_bit) = p_bit
+            then 'Y'
+            else 'N'
+         end;
 end to_yn;
 
 --------------------------------------------------------------------------------
@@ -4427,7 +4591,7 @@ function view_status return t_key_value_tab pipelined is
   v_row t_key_value_row;
 begin
   if g_conf_check_sysdate < sysdate then
-    utl_load_session_configuration;
+    utl_set_session_conf;
   end if;
   pipe row(new t_key_value_row('c_version',                       to_char( c_version                                   )) );
   pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,        c_date_format  )) );
@@ -4454,20 +4618,13 @@ end view_status;
 
 function view_client_prefs
 return t_client_prefs_tab pipelined is
-  v_conf console_conf%rowtype;
-  v_row  t_client_prefs_row;
-  v_pos  pls_integer := 1;
-  v_len  pls_integer;
-  v_lf   pls_integer;
+  v_list  t_client_prefs_tab_i;
 begin
-  v_conf := utl_read_conf;
-  v_len := length(v_conf.client_prefs);
-  while v_pos < v_len loop
-    v_lf := instr(v_conf.client_prefs, c_lf, v_pos);
-    pipe row(utl_csv_to_client_prefs(substr(v_conf.client_prefs, v_pos, v_lf - v_pos)));
-    v_pos := v_lf + 1;
+  v_list := utl_get_client_prefs_tab;
+  for i in 1 .. v_list.count loop
+    pipe row(v_list(i));
   end loop;
-end;
+end view_client_prefs;
 
 --------------------------------------------------------------------------------
 
@@ -4653,7 +4810,7 @@ function utl_logging_is_enabled (
 return boolean is
 begin
   if g_conf_check_sysdate < sysdate then
-    utl_load_session_configuration;
+    utl_set_session_conf;
   end if;
   return g_conf_level >= p_level or sqlcode != 0;
 end utl_logging_is_enabled;
@@ -4673,7 +4830,7 @@ select id, name, cache_id, type, status, invalidations, scan_count
  where name like '%CONSOLE%'
    and status != 'Invalid';
 */
-function utl_read_conf
+function utl_get_conf
 return console_conf%rowtype result_cache is
   v_row console_conf%rowtype;
 begin
@@ -4693,21 +4850,51 @@ exception
     v_row.check_interval   := c_check_interval;
     v_row.enable_ascii_art := to_yn(c_enable_ascii_art);
     return v_row;
-end utl_read_conf;
+end utl_get_conf;
 
 --------------------------------------------------------------------------------
 
-procedure utl_write_conf (
+procedure utl_set_conf (
   p_conf console_conf%rowtype )
 is
   pragma autonomous_transaction;
 begin
-  update console_conf set row = p_conf where conf_id = p_conf.conf_id;
+  update console_conf set
+    conf_by          = p_conf.conf_by         ,
+    conf_sysdate     = p_conf.conf_sysdate    ,
+    level_id         = p_conf.level_id        ,
+    level_name       = p_conf.level_name      ,
+    check_interval   = p_conf.check_interval  ,
+    enable_ascii_art = p_conf.enable_ascii_art
+  where
+    conf_id = c_conf_id;
   if sql%rowcount = 0 then
     insert into console_conf values p_conf;
   end if;
   commit;
-end utl_write_conf;
+end utl_set_conf;
+
+--------------------------------------------------------------------------------
+
+procedure utl_set_client_prefs (
+  p_prefs varchar2 )
+is
+  pragma  autonomous_transaction;
+  --
+  procedure update_client_prefs is
+  begin
+    update console_conf set client_prefs = p_prefs where conf_id = c_conf_id;
+  end;
+  --
+begin
+  assert(lengthb(p_prefs) <= 4000, 'Sorry, we cannot save your client preferencs - seems you have too many session in debug mode.');
+  update_client_prefs;
+  if sql%rowcount = 0 then
+    conf;
+    update_client_prefs;
+  end if;
+  commit;
+end utl_set_client_prefs;
 
 --------------------------------------------------------------------------------
 
@@ -4724,24 +4911,98 @@ end utl_replace_linebreaks;
 
 --------------------------------------------------------------------------------
 
-function utl_extract_client_prefs (
+function utl_get_client_prefs (
   p_all_prefs_csv     varchar2 ,
   p_client_identifier varchar2 )
-return varchar2 is
+return t_client_prefs_row is
+  v_csv             t_vc32k;
+  v_prefs           t_client_prefs_row;
+  v_boolean_options pls_integer;
 begin
-  return regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
-end utl_extract_client_prefs;
+  --fixme: replace regex with substr?
+  v_csv := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
+  if v_csv is not null then
+    v_prefs.exit_sysdate := utl_csv_get_exit_sysdate(v_csv);
+    -- For performance reasons we will proceed the other columns only, if needed.
+    -- This function is called every time a session is initializing the package console.
+    if v_prefs.exit_sysdate >= sysdate then
+      v_boolean_options         := utl_csv_get_boolean_options   ( v_csv );
+      v_prefs.client_identifier := utl_csv_get_client_identifier ( v_csv );
+      v_prefs.level_id          := utl_csv_get_level             ( v_csv );
+      v_prefs.cache_size        := utl_csv_get_cache_size        ( v_csv );
+      v_prefs.check_interval    := utl_csv_get_check_interval    ( v_csv );
+      v_prefs.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
+      v_prefs.user_env          := to_yn ( v_boolean_options, c_user_env    );
+      v_prefs.apex_env          := to_yn ( v_boolean_options, c_apex_env    );
+      v_prefs.cgi_env           := to_yn ( v_boolean_options, c_cgi_env     );
+      v_prefs.console_env       := to_yn ( v_boolean_options, c_console_env );
+      v_prefs.level_name        := level_name ( v_prefs.level_id );
+    end if;
+  end if;
+  return v_prefs;
+end utl_get_client_prefs;
 
 --------------------------------------------------------------------------------
 
-function utl_append_client_prefs (
-  p_all_prefs_csv varchar2           ,
-  p_prefs         t_client_prefs_row )
-return varchar2 is
-  v_return t_vc32k := p_all_prefs_csv;
+function utl_get_client_prefs_tab return t_client_prefs_tab_i is
+  v_tab   t_client_prefs_tab_i;
+  v_conf  console_conf%rowtype;
+  v_prefs t_vc32k;
+  v_pos   pls_integer := 1;
+  v_len   pls_integer;
+  v_lf    pls_integer;
 begin
-  return v_return;
-end utl_append_client_prefs;
+  v_conf := utl_get_conf;
+  v_prefs := replace(replace(replace(replace(v_conf.client_prefs,
+    c_crlf, c_lf),
+    c_cr  , c_lf),
+    c_lflf, c_lf),
+    c_lflf, c_lf);
+  v_len := length(v_prefs);
+  loop
+    v_lf := instr(v_prefs, c_lf, v_pos);
+    exit when v_lf = 0;
+    if v_lf > v_pos then
+      v_tab(v_tab.count + 1) := utl_csv_to_client_prefs(substr(v_prefs, v_pos, v_lf - v_pos));
+    end if;
+    v_pos := v_lf + 1;
+  end loop;
+  return v_tab;
+end utl_get_client_prefs_tab;
+
+--------------------------------------------------------------------------------
+
+function utl_get_clean_client_prefs_csv (
+  p_client_identifier_to_remove in varchar2           default null ,
+  p_client_prefs_to_append      in t_client_prefs_row default null )
+return varchar2 is
+  v_prefs t_vc32k;
+  v_tab   t_client_prefs_tab_i;
+begin
+  v_tab := utl_get_client_prefs_tab;
+  for i in 1 .. v_tab.count loop
+    --filter out invalid client pefs
+    if  v_tab(i).client_identifier is not null
+    and v_tab(i).level_id is not null
+    and v_tab(i).cache_size is not null
+    and v_tab(i).call_stack is not null
+    and v_tab(i).user_env is not null
+    and v_tab(i).cgi_env is not null
+    and v_tab(i).user_env is not null
+    and v_tab(i).console_env is not null
+    and v_tab(i).check_interval is not null
+    and v_tab(i).exit_sysdate is not null
+    and v_tab(i).exit_sysdate      >= sysdate
+    and v_tab(i).client_identifier != nvl(p_client_identifier_to_remove, 'NULL_VALUE_DETECTED')
+    then
+      v_prefs := v_prefs || utl_client_prefs_to_csv(v_tab(i));
+    end if;
+  end loop;
+  if p_client_prefs_to_append.client_identifier is not null then
+    v_prefs := v_prefs || utl_client_prefs_to_csv(p_client_prefs_to_append);
+  end if;
+  return v_prefs;
+end utl_get_clean_client_prefs_csv;
 
 --------------------------------------------------------------------------------
 
@@ -4756,11 +5017,141 @@ end utl_remove_stale_client_prefs;
 
 --------------------------------------------------------------------------------
 
+function utl_csv_get_client_identifier (
+  p_csv varchar2 )
+return varchar2 is
+  v_stop   pls_integer;
+begin
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  v_stop := instr(p_csv, ',', -1, 5) - 1;
+  return substrb(substr(p_csv, 1, v_stop), 1, 64);
+end;
+
+--------------------------------------------------------------------------------
+
+function utl_csv_get_exit_sysdate (
+  p_csv varchar2 )
+return date is
+  v_return date;
+begin
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  v_return := nvl(to_date(
+    substr(
+      p_csv,
+      instr(p_csv, ',', -1, 1) + 1 -- first comma from the end + 1
+    ) default null on conversion error,
+    c_date_format_short
+  ), sysdate - 1);
+  return v_return;
+end utl_csv_get_exit_sysdate;
+
+--------------------------------------------------------------------------------
+
+function utl_csv_get_check_interval (
+  p_csv varchar2 )
+return integer is
+  v_return pls_integer;
+  v_start  pls_integer;
+  v_stop   pls_integer;
+begin
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  v_start := instr(p_csv, ',', -1, 2) + 1;
+  v_stop  := instr(p_csv, ',', -1, 1);
+  v_return := to_number(
+    substr(
+      p_csv,
+      v_start,
+      v_stop - v_start
+    ) default 10 on conversion error
+  );
+  return case when v_return not between 10 and 60 then 10 else v_return end;
+end utl_csv_get_check_interval;
+
+--------------------------------------------------------------------------------
+
+function utl_csv_get_boolean_options (
+  p_csv varchar2 )
+return integer is
+  v_start pls_integer;
+  v_stop  pls_integer;
+begin
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  v_start := instr(p_csv, ',', -1, 3) + 1;
+  v_stop  := instr(p_csv, ',', -1, 2);
+  return to_number (
+    substr(
+      p_csv,
+      v_start,
+      v_stop - v_start
+    ) default 0 on conversion error
+  );
+end utl_csv_get_boolean_options;
+
+--------------------------------------------------------------------------------
+
+function utl_csv_get_cache_size (
+  p_csv varchar2 )
+return integer is
+  v_return pls_integer;
+  v_start  pls_integer;
+  v_stop   pls_integer;
+begin
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  v_start := instr(p_csv, ',', -1, 4) + 1;
+  v_stop  := instr(p_csv, ',', -1, 3);
+  v_return := to_number(
+    substr(
+      p_csv,
+      v_start,
+      v_stop - v_start
+    ) default 0 on conversion error
+  );
+  return case when v_return not between 0 and 1000 then 0 else v_return end;
+end utl_csv_get_cache_size;
+
+--------------------------------------------------------------------------------
+
+function utl_csv_get_level (
+  p_csv varchar2 )
+return integer is
+  v_return pls_integer;
+  v_start  pls_integer;
+  v_stop   pls_integer;
+begin
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  v_start := instr(p_csv, ',', -1, 5) + 1;
+  v_stop  := instr(p_csv, ',', -1, 4);
+  v_return := to_number(
+    substr(
+      p_csv,
+      v_start,
+      v_stop - v_start
+    ) default 1 on conversion error
+  );
+  return case when v_return not between 1 and 5 then 1 else v_return end;
+end utl_csv_get_level;
+
+--------------------------------------------------------------------------------
+
 function utl_csv_to_client_prefs (
   p_csv varchar2)
 return t_client_prefs_row is
-  v_return t_client_prefs_row;
+  v_return          t_client_prefs_row;
+  v_boolean_options pls_integer;
 begin
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  v_boolean_options          := utl_csv_get_boolean_options   ( p_csv );
+  v_return.exit_sysdate      := utl_csv_get_exit_sysdate      ( p_csv );
+  v_return.client_identifier := utl_csv_get_client_identifier ( p_csv );
+  v_return.level_id          := utl_csv_get_level             ( p_csv );
+  v_return.cache_size        := utl_csv_get_cache_size        ( p_csv );
+  v_return.check_interval    := utl_csv_get_check_interval    ( p_csv );
+  v_return.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
+  v_return.user_env          := to_yn ( v_boolean_options, c_user_env    );
+  v_return.apex_env          := to_yn ( v_boolean_options, c_apex_env    );
+  v_return.cgi_env           := to_yn ( v_boolean_options, c_cgi_env     );
+  v_return.console_env       := to_yn ( v_boolean_options, c_console_env );
+  v_return.level_name        := level_name ( v_return.level_id );
   return v_return;
 end utl_csv_to_client_prefs;
 
@@ -4771,62 +5162,20 @@ function utl_client_prefs_to_csv (
 return varchar2 is
   v_return t_vc32k;
 begin
-  return v_return;
+  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  return
+    p_client_prefs.client_identifier                                             || ',' ||
+    to_char(p_client_prefs.level_id)                                             || ',' ||
+    to_char(p_client_prefs.cache_size)                                           || ',' ||
+    to_char(
+      case when p_client_prefs.call_stack  = 'Y' then c_call_stack  else 0 end +
+      case when p_client_prefs.user_env    = 'Y' then c_user_env    else 0 end +
+      case when p_client_prefs.apex_env    = 'Y' then c_apex_env    else 0 end +
+      case when p_client_prefs.cgi_env     = 'Y' then c_cgi_env     else 0 end +
+      case when p_client_prefs.console_env = 'Y' then c_console_env else 0 end ) || ',' ||
+    to_char(p_client_prefs.check_interval)                                       || ',' ||
+    to_char(p_client_prefs.exit_sysdate, c_date_format_short)                    || c_lf;
 end utl_client_prefs_to_csv;
-
---------------------------------------------------------------------------------
-
-procedure utl_load_session_configuration is
-  v_client_prefs t_client_prefs_row;
-  v_conf  console_conf%rowtype;
-  --
-  procedure load_conf is
-  begin
-    v_conf := utl_read_conf;
-    g_conf_enable_ascii_art := to_bool ( v_conf.enable_ascii_art    );
-  end load_conf;
-  --
-  procedure set_default_config is
-  begin
-    --We have no real conf until now, so we fake 24 hours.
-    --Conf will be re-evaluated at least every 10 seconds.
-    g_conf_exit_sysdate   := sysdate + 1;
-    g_conf_level          := v_conf.level_id;
-    g_conf_cache_size     := 0;
-    g_conf_check_interval := v_conf.check_interval;
-    g_conf_call_stack     := false;
-    g_conf_user_env       := false;
-    g_conf_apex_env       := false;
-    g_conf_cgi_env        := false;
-    g_conf_console_env    := false;
-  end set_default_config;
-  --
-  procedure load_config_from_table_row is
-  begin
-    g_conf_level          :=           v_client_prefs.level_id        ;
-    g_conf_cache_size     :=           v_client_prefs.cache_size      ;
-    g_conf_check_interval :=           v_client_prefs.check_interval  ;
-    g_conf_call_stack     := to_bool ( v_client_prefs.call_stack     );
-    g_conf_user_env       := to_bool ( v_client_prefs.user_env       );
-    g_conf_apex_env       := to_bool ( v_client_prefs.apex_env       );
-    g_conf_cgi_env        := to_bool ( v_client_prefs.cgi_env        );
-    g_conf_console_env    := to_bool ( v_client_prefs.console_env    );
-  end load_config_from_table_row;
-  --
-begin
-  load_conf;
-  --
-  --fixmev_client_prefs := utl_read_client_prefs(g_conf_client_identifier);
-  g_conf_exit_sysdate := v_client_prefs.exit_sysdate;
-  if g_conf_exit_sysdate is null or g_conf_exit_sysdate < sysdate then
-    set_default_config;
-  else
-    load_config_from_table_row;
-  end if;
-  --
-  g_conf_check_sysdate := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
-
-end utl_load_session_configuration;
 
 --------------------------------------------------------------------------------
 
@@ -4838,6 +5187,34 @@ begin
     dbms_session.set_identifier(g_conf_client_identifier);
   end if;
 end utl_set_client_identifier;
+
+--------------------------------------------------------------------------------
+
+procedure utl_set_session_conf is
+  v_conf  console_conf%rowtype;
+  v_prefs t_client_prefs_row;
+begin
+  v_conf  := utl_get_conf;
+  v_prefs := utl_get_client_prefs(v_conf.client_prefs, g_conf_client_identifier);
+
+  --If we have no real exit sysdate, we set it to 24 hours.
+  --Session conf will be re-evaluated at least every 10 seconds.
+  g_conf_exit_sysdate     := coalesce ( v_prefs.exit_sysdate         , sysdate + 1           );
+  g_conf_check_interval   := coalesce ( v_prefs.check_interval       , v_conf.check_interval );
+  g_conf_level            := coalesce ( v_prefs.level_id             , v_conf.level_id       );
+  g_conf_cache_size       := coalesce ( v_prefs.cache_size           , 0                     );
+  --
+  g_conf_call_stack       := coalesce ( to_bool(v_prefs.call_stack)  , false                 );
+  g_conf_user_env         := coalesce ( to_bool(v_prefs.user_env)    , false                 );
+  g_conf_apex_env         := coalesce ( to_bool(v_prefs.apex_env)    , false                 );
+  g_conf_cgi_env          := coalesce ( to_bool(v_prefs.cgi_env)     , false                 );
+  g_conf_console_env      := coalesce ( to_bool(v_prefs.console_env) , false                 );
+  --
+  g_conf_enable_ascii_art := to_bool(v_conf.enable_ascii_art);
+  --
+  g_conf_check_sysdate    := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
+
+end utl_set_session_conf;
 
 --------------------------------------------------------------------------------
 
@@ -4961,7 +5338,7 @@ end utl_create_log_entry;
 begin
   g_log_cache := new t_logs_tab();
   utl_set_client_identifier;
-  utl_load_session_configuration;
+  utl_set_session_conf;
 end console;
 /
 

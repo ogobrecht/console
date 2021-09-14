@@ -75,6 +75,7 @@ Oracle Instrumentation Console
 - [Function split](#function-split)
 - [Function join](#function-join)
 - [Function to_yn](#function-to_yn)
+- [Function to_yn](#function-to_yn-1)
 - [Function to_string](#function-to_string)
 - [Function to_bool](#function-to_bool)
 - [Function to_html_table](#function-to_html_table)
@@ -1597,6 +1598,34 @@ SIGNATURE
 
 ```sql
 function to_yn ( p_bool in boolean ) return varchar2;
+```
+
+
+## Function to_yn
+
+Tests an integer value with bitand.
+
+Returns `Y` when `bitand(p_test, p_bit) = p_bit`. In all other cases (also on
+null) `N` is returned.
+
+```sql
+select
+  console.to_yn(26, 16) as test_bit_pos_5,
+  console.to_yn(26,  8) as test_bit_pos_4,
+  console.to_yn(26,  4) as test_bit_pos_3,
+  console.to_yn(26,  2) as test_bit_pos_2,
+  console.to_yn(26,  1) as test_bit_pos_1,
+  console.to_yn(26,  3) as always_no, -- 3 makes no sense as it represents no bit position value
+from dual;
+```
+
+SIGNATURE
+
+```sql
+function to_yn (
+  p_test integer ,
+  p_bit  integer )
+return varchar2;
 ```
 
 

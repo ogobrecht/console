@@ -58,12 +58,13 @@ type t_client_prefs_row is record(
 type t_key_value_row    is record(
   key    t_vc128 ,
   value  t_vc4k  );
-type t_client_prefs_tab is table of t_client_prefs_row;
-type t_key_value_tab    is table of t_key_value_row;
-type t_key_value_tab_i  is table of t_key_value_row index by pls_integer;
-type t_logs_tab         is table of console_logs%rowtype;
-type t_vc2_tab          is table of t_vc32k;
-type t_vc2_tab_i        is table of t_vc32k index by pls_integer;
+type t_client_prefs_tab   is table of t_client_prefs_row;
+type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
+type t_key_value_tab      is table of t_key_value_row;
+type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
+type t_logs_tab           is table of console_logs%rowtype;
+type t_vc2_tab            is table of t_vc32k;
+type t_vc2_tab_i          is table of t_vc32k index by pls_integer;
 
 
 
@@ -1299,6 +1300,30 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 
 **/
 
+function to_yn (
+  p_test integer ,
+  p_bit  integer )
+return varchar2;
+/**
+
+Tests an integer value with bitand.
+
+Returns `Y` when `bitand(p_test, p_bit) = p_bit`. In all other cases (also on
+null) `N` is returned.
+
+```sql
+select
+  console.to_yn(26, 16) as test_bit_pos_5,
+  console.to_yn(26,  8) as test_bit_pos_4,
+  console.to_yn(26,  4) as test_bit_pos_3,
+  console.to_yn(26,  2) as test_bit_pos_2,
+  console.to_yn(26,  1) as test_bit_pos_1,
+  console.to_yn(26,  3) as always_no, -- 3 makes no sense as it represents no bit position value
+from dual;
+```
+
+**/
+
 --------------------------------------------------------------------------------
 
 function to_string ( p_bool in boolean ) return varchar2;
@@ -1875,20 +1900,80 @@ procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
 
 $if $$utils_public $then
 
-function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_last_error return varchar2;
-function utl_logging_is_enabled (p_level integer) return boolean;
-function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-function utl_read_conf return console_conf%rowtype result_cache;
-procedure utl_write_conf (p_conf console_conf%rowtype);
-procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
-function utl_extract_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
-function utl_append_client_prefs (p_all_prefs_csv varchar2, p_prefs t_client_prefs_row) return varchar2;
-function utl_remove_stale_client_prefs (p_all_prefs_csv varchar2, p_client_identifier varchar2) return varchar2;
-function utl_csv_to_client_prefs (p_csv varchar2) return t_client_prefs_row;
-function utl_client_prefs_to_csv (p_client_prefs t_client_prefs_row) return varchar2;
+
+procedure utl_set_session_conf;
+
+procedure utl_set_conf (
+  p_conf console_conf%rowtype );
+
+procedure utl_set_client_prefs (
+  p_prefs varchar2 );
+
+function utl_get_conf return console_conf%rowtype result_cache;
+
+function utl_get_client_prefs (
+  p_all_prefs_csv varchar2     ,
+  p_client_identifier varchar2 )
+return t_client_prefs_row;
+
+function utl_get_client_prefs_tab return t_client_prefs_tab_i;
+
+function utl_escape_md_tab_text (
+  p_text varchar2 )
+return varchar2;
+
+function utl_last_error return varchar2;
+
+function utl_logging_is_enabled (
+  p_level integer )
+return boolean;
+
+function utl_normalize_label (
+  p_label varchar2 )
+return varchar2;
+
+function utl_replace_linebreaks (
+  p_text varchar2                     ,
+  p_replace_with varchar2 default ' ' )
+return varchar2;
+
+function utl_get_clean_client_prefs_csv (
+  p_client_identifier_to_remove in varchar2           default null ,
+  p_client_prefs_to_append      in t_client_prefs_row default null )
+return varchar2;
+
+function utl_client_prefs_to_csv (
+  p_client_prefs t_client_prefs_row )
+return varchar2;
+
+function utl_csv_to_client_prefs (
+  p_csv varchar2 ) return t_client_prefs_row;
+
+function utl_csv_get_client_identifier (
+  p_csv varchar2 )
+return varchar2;
+
+function utl_csv_get_exit_sysdate (
+  p_csv varchar2 )
+return date;
+
+function utl_csv_get_check_interval (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_level (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_cache_size (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_boolean_options (
+  p_csv varchar2 )
+return integer;
+
 function utl_create_log_entry (
   p_level           in integer                ,
   p_message         in clob     default null  ,
