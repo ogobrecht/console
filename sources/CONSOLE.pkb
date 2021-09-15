@@ -2422,11 +2422,13 @@ begin
     utl_set_session_conf;
   end if;
   pipe row(new t_key_value_row('c_version',                       to_char( c_version                                   )) );
+  pipe row(new t_key_value_row('local date',                      to_char( localtimestamp,              c_date_format  )) );
+  pipe row(new t_key_value_row('current sysdate',                 to_char( sysdate,                     c_date_format  )) );
   pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,        c_date_format  )) );
   pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,         c_date_format  )) );
   pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                     ) );
   pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                                )) );
-  pipe row(new t_key_value_row('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                )) );
+  pipe row(new t_key_value_row('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                        )) );
   pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                           )) );
   pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                       )) );
   pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                           )) );
@@ -2652,6 +2654,19 @@ end utl_normalize_label;
 
 --------------------------------------------------------------------------------
 
+function utl_replace_linebreaks (
+  p_text         in varchar2             ,
+  p_replace_with in varchar2 default ' ' )
+return varchar2 is
+begin
+  return replace(replace(replace(p_text,
+    c_crlf, p_replace_with),
+    c_lf,   p_replace_with),
+    c_cr,   p_replace_with);
+end utl_replace_linebreaks;
+
+--------------------------------------------------------------------------------
+
 /* HOW TO CHECK THE RESULT CACHE
 select id, name, cache_id, type, status, invalidations, scan_count
   from v$result_cache_objects
@@ -2683,16 +2698,16 @@ end utl_get_conf;
 --------------------------------------------------------------------------------
 
 procedure utl_set_conf (
-  p_conf console_conf%rowtype )
+  p_conf  console_conf%rowtype )
 is
   pragma autonomous_transaction;
 begin
   update console_conf set
-    conf_by          = p_conf.conf_by         ,
-    conf_sysdate     = p_conf.conf_sysdate    ,
-    level_id         = p_conf.level_id        ,
-    level_name       = p_conf.level_name      ,
-    check_interval   = p_conf.check_interval  ,
+    conf_by          = p_conf.conf_by          ,
+    conf_sysdate     = p_conf.conf_sysdate     ,
+    level_id         = p_conf.level_id         ,
+    level_name       = p_conf.level_name       ,
+    check_interval   = p_conf.check_interval   ,
     enable_ascii_art = p_conf.enable_ascii_art
   where
     conf_id = c_conf_id;
@@ -2707,35 +2722,20 @@ end utl_set_conf;
 procedure utl_set_client_prefs (
   p_prefs varchar2 )
 is
-  pragma  autonomous_transaction;
-  --
+  pragma autonomous_transaction;
   procedure update_client_prefs is
   begin
     update console_conf set client_prefs = p_prefs where conf_id = c_conf_id;
   end;
-  --
 begin
   assert(lengthb(p_prefs) <= 4000, 'Sorry, we cannot save your client preferencs - seems you have too many session in debug mode.');
   update_client_prefs;
   if sql%rowcount = 0 then
-    conf;
+    utl_set_conf(utl_get_conf); -- utl_get_conf handles not existing conf with default values
     update_client_prefs;
   end if;
   commit;
 end utl_set_client_prefs;
-
---------------------------------------------------------------------------------
-
-function utl_replace_linebreaks (
-  p_text         in varchar2             ,
-  p_replace_with in varchar2 default ' ' )
-return varchar2 is
-begin
-  return replace(replace(replace(p_text,
-    c_crlf, p_replace_with),
-    c_lf,   p_replace_with),
-    c_cr,   p_replace_with);
-end utl_replace_linebreaks;
 
 --------------------------------------------------------------------------------
 
@@ -2748,23 +2748,25 @@ return t_client_prefs_row is
   v_boolean_options pls_integer;
 begin
   --fixme: replace regex with substr?
-  v_csv := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
-  if v_csv is not null then
-    v_prefs.exit_sysdate := utl_csv_get_exit_sysdate(v_csv);
-    -- For performance reasons we will proceed the other columns only, if needed.
-    -- This function is called every time a session is initializing the package console.
-    if v_prefs.exit_sysdate >= sysdate then
-      v_boolean_options         := utl_csv_get_boolean_options   ( v_csv );
-      v_prefs.client_identifier := utl_csv_get_client_identifier ( v_csv );
-      v_prefs.level_id          := utl_csv_get_level             ( v_csv );
-      v_prefs.cache_size        := utl_csv_get_cache_size        ( v_csv );
-      v_prefs.check_interval    := utl_csv_get_check_interval    ( v_csv );
-      v_prefs.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
-      v_prefs.user_env          := to_yn ( v_boolean_options, c_user_env    );
-      v_prefs.apex_env          := to_yn ( v_boolean_options, c_apex_env    );
-      v_prefs.cgi_env           := to_yn ( v_boolean_options, c_cgi_env     );
-      v_prefs.console_env       := to_yn ( v_boolean_options, c_console_env );
-      v_prefs.level_name        := level_name ( v_prefs.level_id );
+  if p_all_prefs_csv is not null then
+    v_csv := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
+    if v_csv is not null then
+      v_prefs.exit_sysdate := utl_csv_get_exit_sysdate(v_csv);
+      -- For performance reasons we will proceed the other columns only, if needed.
+      -- This function is called every time a session is initializing the package console.
+      if v_prefs.exit_sysdate >= sysdate then
+        --v_prefs.client_identifier := utl_csv_get_client_identifier ( v_csv );
+        v_boolean_options         := utl_csv_get_boolean_options   ( v_csv );
+        v_prefs.level_id          := utl_csv_get_level             ( v_csv );
+        v_prefs.cache_size        := utl_csv_get_cache_size        ( v_csv );
+        v_prefs.check_interval    := utl_csv_get_check_interval    ( v_csv );
+        v_prefs.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
+        v_prefs.user_env          := to_yn ( v_boolean_options, c_user_env    );
+        v_prefs.apex_env          := to_yn ( v_boolean_options, c_apex_env    );
+        v_prefs.cgi_env           := to_yn ( v_boolean_options, c_cgi_env     );
+        v_prefs.console_env       := to_yn ( v_boolean_options, c_console_env );
+        v_prefs.level_name        := level_name ( v_prefs.level_id );
+      end if;
     end if;
   end if;
   return v_prefs;
@@ -2788,7 +2790,7 @@ begin
     c_lflf, c_lf);
   v_len := length(v_prefs);
   loop
-    v_lf := instr(v_prefs, c_lf, v_pos);
+    v_lf := nvl(instr(v_prefs, c_lf, v_pos), 0);
     exit when v_lf = 0;
     if v_lf > v_pos then
       v_tab(v_tab.count + 1) := utl_csv_to_client_prefs(substr(v_prefs, v_pos, v_lf - v_pos));
