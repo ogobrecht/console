@@ -20,7 +20,7 @@ c_conf_id                constant varchar2 ( 4 byte) := 'CONF';
 c_client_id_prefix       constant varchar2 ( 6 byte) := '{o,o} ';
 c_console_owner          constant varchar2 (30 byte) := $$plsql_unit_owner;
 c_console_pkg_name_dot   constant varchar2 ( 8 byte) := 'CONSOLE.';
-c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_CLEANUP';
+c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_PURGE';
 c_param_value_max_length constant pls_integer        :=  2000;
 
 -- constants for bitand operations
@@ -1542,6 +1542,15 @@ end exit;
 
 --------------------------------------------------------------------------------
 
+procedure exit_all is
+begin
+  utl_set_client_prefs(null);
+  utl_set_session_conf;
+  flush_log_cache;
+end exit_all;
+
+--------------------------------------------------------------------------------
+
 function version return varchar2 is
 begin
   return c_version;
@@ -2489,7 +2498,7 @@ end purge_all;
 
 --------------------------------------------------------------------------------
 
-procedure cleanup_job_create (
+procedure purge_job_create (
   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,
   p_min_level       in integer  default c_level_info           ,
   p_min_days        in number   default 30                     )
@@ -2503,15 +2512,14 @@ begin
         select job_name from user_scheduler_jobs )
       loop
         sys.dbms_scheduler.create_job(
-          job_name        => i.job_name                                                              ,
-          job_type        => 'PLSQL_BLOCK'                                                           ,
-          job_action      => 'begin console.purge(p_min_level=>#MIN_LEVEL#,p_min_days=>#MIN_DAYS#);' ||
-                             ' console.exit_stale; end;'                                             ,
-          start_date      => sysdate                                                                 ,
-          repeat_interval => '#REPEAT_INTERVAL#'                                                     ,
-          enabled         => true                                                                    ,
-          auto_drop       => false                                                                   ,
-          comments        => 'Cleanup CONSOLE log entries and stale debug sessions.'                 );
+          job_name        => i.job_name                                                                   ,
+          job_type        => 'PLSQL_BLOCK'                                                                ,
+          job_action      => 'begin console.purge(p_min_level=>#MIN_LEVEL#,p_min_days=>#MIN_DAYS#); end;' ,
+          start_date      => sysdate                                                                      ,
+          repeat_interval => '#REPEAT_INTERVAL#'                                                          ,
+          enabled         => true                                                                         ,
+          auto_drop       => false                                                                        ,
+          comments        => 'Purge CONSOLE log entries.'                                                 );
       end loop;
     end;
   ]',
@@ -2519,11 +2527,11 @@ begin
   '#REPEAT_INTERVAL#' , p_repeat_interval  ),
   '#MIN_LEVEL#'       , p_min_level        ),
   '#MIN_DAYS#'        , p_min_days         );
-end cleanup_job_create;
+end purge_job_create;
 
 --------------------------------------------------------------------------------
 
-procedure cleanup_job_drop is
+procedure purge_job_drop is
 begin
   execute immediate replace(q'[
     begin
@@ -2539,11 +2547,11 @@ begin
     end;
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
-end cleanup_job_drop;
+end purge_job_drop;
 
 --------------------------------------------------------------------------------
 
-procedure cleanup_job_enable is
+procedure purge_job_enable is
 begin
   execute immediate replace(q'[
     begin
@@ -2557,11 +2565,11 @@ begin
     end;
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
-end cleanup_job_enable;
+end purge_job_enable;
 
 --------------------------------------------------------------------------------
 
-procedure cleanup_job_disable is
+procedure purge_job_disable is
 begin
   execute immediate replace(q'[
     begin
@@ -2577,11 +2585,11 @@ begin
     end;
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
-end cleanup_job_disable;
+end purge_job_disable;
 
 --------------------------------------------------------------------------------
 
-procedure cleanup_job_run is
+procedure purge_job_run is
 begin
   execute immediate replace(q'[
     begin
@@ -2595,7 +2603,7 @@ begin
     end;
   ]',
   '#CONSOLE_JOB_NAME#', c_console_job_name );
-end cleanup_job_run;
+end purge_job_run;
 
 
 --------------------------------------------------------------------------------

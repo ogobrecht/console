@@ -70,6 +70,7 @@ Oracle Instrumentation Console
 - [Procedure init](#procedure-init)
 - [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
+- [Procedure exit_all](#procedure-exit_all)
 - [Function version](#function-version)
 - [Function split_to_table](#function-split_to_table)
 - [Function split](#function-split)
@@ -105,11 +106,11 @@ Oracle Instrumentation Console
 - [Function view_client_prefs](#function-view_client_prefs)
 - [Procedure purge](#procedure-purge)
 - [Procedure purge_all](#procedure-purge_all)
-- [Procedure cleanup_job_create](#procedure-cleanup_job_create)
-- [Procedure cleanup_job_drop](#procedure-cleanup_job_drop)
-- [Procedure cleanup_job_enable](#procedure-cleanup_job_enable)
-- [Procedure cleanup_job_disable](#procedure-cleanup_job_disable)
-- [Procedure cleanup_job_run](#procedure-cleanup_job_run)
+- [Procedure purge_job_create](#procedure-purge_job_create)
+- [Procedure purge_job_drop](#procedure-purge_job_drop)
+- [Procedure purge_job_enable](#procedure-purge_job_enable)
+- [Procedure purge_job_disable](#procedure-purge_job_disable)
+- [Procedure purge_job_run](#procedure-purge_job_run)
 
 
 ## Package console
@@ -1495,6 +1496,23 @@ procedure exit (
 ```
 
 
+## Procedure exit_all
+
+Exit/unset all client preferences in one go.
+
+EXAMPLE
+
+```sql
+exec console.exit_all;
+```
+
+SIGNATURE
+
+```sql
+procedure exit_all;
+```
+
+
 ## Function version
 
 Returns the version information from the console package.
@@ -2257,7 +2275,7 @@ procedure purge_all;
 ```
 
 
-## Procedure cleanup_job_create
+## Procedure purge_job_create
 
 Creates a cleanup job which deletes old log entries from console_logs and stale
 debug sessions from console_client_prefs.
@@ -2265,7 +2283,7 @@ debug sessions from console_client_prefs.
 SIGNATURE
 
 ```sql
-procedure cleanup_job_create (
+procedure purge_job_create (
   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
   p_min_level       in integer  default c_level_info           , -- Delete log entries greater or equal the given level.
   p_min_days        in number   default 30                       -- Delete log entries older than the given minimum days.
@@ -2273,47 +2291,47 @@ procedure cleanup_job_create (
 ```
 
 
-## Procedure cleanup_job_drop
+## Procedure purge_job_drop
 
 Drops the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_drop;
+procedure purge_job_drop;
 ```
 
 
-## Procedure cleanup_job_enable
+## Procedure purge_job_enable
 
 Enables the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_enable;
+procedure purge_job_enable;
 ```
 
 
-## Procedure cleanup_job_disable
+## Procedure purge_job_disable
 
 Disables the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_disable;
+procedure purge_job_disable;
 ```
 
 
-## Procedure cleanup_job_run
+## Procedure purge_job_run
 
 Runs the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_run;
+procedure purge_job_run;
 ```
 
 

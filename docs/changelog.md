@@ -14,9 +14,11 @@
 
 ## v1.0-beta9 (2021-09-xx)
 
-- New helper method `console.assertf` which supports formatted messages as a short form of `console.assert([boolean expression], console.format(...))`
-- Remove context - we work now with a single record conf table with result cache enabled to simplify the configuration
+- Remove context - we work now with a single record conf table with result cache enabled to simplify the configuration and minify the overhead introduced by console
   - Rename again the conf table from CONSOLE_GLOBAL_CONF to CONSOLE_CONF
+  - Rename purge job from CONSOLE_CLEANUP to CONSOLE_PURGE
+- New helper method `console.assertf` which supports formatted messages as a short form of `console.assert([boolean expression], console.format(...))`
+- New helper method `exit_all` to exit/unset all client preferences in one go
 - rename `flush_cache` to `flush_log_cache` for clarity
 
 ## v1.0-beta8 (2021-08-15)

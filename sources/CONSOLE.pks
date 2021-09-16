@@ -1177,8 +1177,10 @@ procedure init (
   p_console_env    in boolean default false          -- Should the console environment be included.
 );
 /**
+
 An overloaded procedure for easier initialization of the own
 session/client_identifier in an development IDE.
+
 **/
 
 procedure exit (
@@ -1203,6 +1205,20 @@ DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
 MANAGING CLIENT PREFERENCES.
 
 **/
+
+procedure exit_all;
+/**
+
+Exit/unset all client preferences in one go.
+
+EXAMPLE
+
+```sql
+exec console.exit_all;
+```
+
+**/
+
 
 --------------------------------------------------------------------------------
 
@@ -1880,7 +1896,7 @@ exec console.purge_all;
 
 **/
 
-procedure cleanup_job_create (
+procedure purge_job_create (
   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
   p_min_level       in integer  default c_level_info           , -- Delete log entries greater or equal the given level.
   p_min_days        in number   default 30                       -- Delete log entries older than the given minimum days.
@@ -1889,10 +1905,10 @@ procedure cleanup_job_create (
 Creates a cleanup job which deletes old log entries from console_logs and stale
 debug sessions from console_client_prefs.
 **/
-procedure cleanup_job_drop;    /** Drops the cleanup job (if it exists).    **/
-procedure cleanup_job_enable;  /** Enables the cleanup job (if it exists).  **/
-procedure cleanup_job_disable; /** Disables the cleanup job (if it exists). **/
-procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
+procedure purge_job_drop;    /** Drops the cleanup job (if it exists).    **/
+procedure purge_job_enable;  /** Enables the cleanup job (if it exists).  **/
+procedure purge_job_disable; /** Disables the cleanup job (if it exists). **/
+procedure purge_job_run;     /** Runs the cleanup job (if it exists).     **/
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)

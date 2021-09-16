@@ -19,8 +19,11 @@ begin
   for i in (
     select 'begin sys.dbms_scheduler.drop_job(job_name => ''' || job_name || ''', force => true); end;' as ddl
       from user_scheduler_jobs
-     where job_name = 'CONSOLE_CLEANUP' )
-  loop
+     where job_name in (
+       'CONSOLE_PURGE',
+       'CONSOLE_CLEANUP' --old name
+       )
+  ) loop
     dbms_output.put_line('- ' || i.ddl);
     execute immediate i.ddl;
     v_object_count := v_object_count + 1;
@@ -31,9 +34,9 @@ begin
     select 'drop ' || lower(object_type) || ' ' || object_name as ddl
       from user_objects
      where object_type = 'PACKAGE BODY'
-       and object_name = 'CONSOLE')
-  loop
-    dbms_output.put_line('- ' || i.ddl);
+       and object_name = 'CONSOLE'
+  ) loop
+    dbms_output.put_line('- ' || i.ddl || ';');
     execute immediate i.ddl;
     v_object_count := v_object_count + 1;
   end loop;
@@ -43,9 +46,9 @@ begin
     select 'drop ' || lower(object_type) || ' ' || object_name as ddl
       from user_objects
      where object_type = 'PACKAGE'
-       and object_name = 'CONSOLE')
-  loop
-    dbms_output.put_line('- ' || i.ddl);
+       and object_name = 'CONSOLE'
+  ) loop
+    dbms_output.put_line('- ' || i.ddl || ';');
     execute immediate i.ddl;
     v_object_count := v_object_count + 1;
   end loop;
@@ -56,13 +59,13 @@ begin
            table_name
       from user_tables
      where table_name in (
-       'CONSOLE_CLIENT_PREFS',
-       'CONSOLE_CONF',         -- replaced by console_global_conf
-       'CONSOLE_GLOBAL_CONF',
-       'CONSOLE_LOGS',
-       'CONSOLE_SESSIONS'      -- replaced by console_client_prefs
-       ) )
-  loop
+       'CONSOLE_CLIENT_PREFS' , -- obsolete
+       'CONSOLE_CONF'         ,
+       'CONSOLE_GLOBAL_CONF'  , -- old name
+       'CONSOLE_LOGS'         ,
+       'CONSOLE_SESSIONS'       -- obsolete
+       )
+  ) loop
     --FIXME: Should we really check for permanent entries?
     --execute immediate 'select count(*) from ' || i.table_name ||
     --  case when i.table_name = 'CONSOLE_LOGS' then q'{ where permanent = 'Y' }' else null end
@@ -73,7 +76,7 @@ begin
     --    ' contains important user data - please review and drop it by youself (' ||
     --    i.ddl || ')');
     --else
-      dbms_output.put_line('- ' || i.ddl);
+      dbms_output.put_line('- ' || i.ddl || ';');
       execute immediate i.ddl;
       v_object_count := v_object_count + 1;
     --end if;
