@@ -19,7 +19,8 @@
   - Rename purge job from CONSOLE_CLEANUP to CONSOLE_PURGE
 - New helper method `console.assertf` which supports formatted messages as a short form of `console.assert([boolean expression], console.format(...))`
 - New helper method `exit_all` to exit/unset all client preferences in one go
-- rename `flush_cache` to `flush_log_cache` for clarity
+- Rename `flush_cache` to `flush_log_cache` for clarity
+- Minimum Database Version is now 12.2
 
 ## v1.0-beta8 (2021-08-15)
 
