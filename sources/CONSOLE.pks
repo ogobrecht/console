@@ -45,6 +45,8 @@ subtype t_vc32k is varchar2 (32767 byte);
 
 type t_client_prefs_row is record(
   client_identifier varchar2(64 byte) ,
+  check_interval    integer           ,
+  exit_sysdate      date              ,
   level_id          integer           ,
   level_name        varchar2(10 byte) ,
   cache_size        integer           ,
@@ -52,9 +54,7 @@ type t_client_prefs_row is record(
   user_env          varchar2( 1 byte) ,
   apex_env          varchar2( 1 byte) ,
   cgi_env           varchar2( 1 byte) ,
-  console_env       varchar2( 1 byte) ,
-  check_interval    integer           ,
-  exit_sysdate      date              );
+  console_env       varchar2( 1 byte) );
 type t_key_value_row    is record(
   key    t_vc128 ,
   value  t_vc4k  );
@@ -100,7 +100,7 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
+function logs (p_log_rows in integer default 50) return t_logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -127,7 +127,7 @@ end;
 {{/}}
 
 --view last cache and log entries
-select * from console.view_last(50);
+select * from console.logs(50);
 ```
 
 **/
@@ -1775,7 +1775,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_cache return t_logs_tab pipelined;
+function cache return t_logs_tab pipelined;
 /**
 
 View the content of the log cache.
@@ -1799,14 +1799,14 @@ end;
 {{/}}
 
 --check current cache entries
-select * from console.view_cache();
+select * from console.cache();
 ```
 
 **/
 
 --------------------------------------------------------------------------------
 
-procedure flush_log_cache;
+procedure flush_cache;
 /**
 
 Flushes the log cache and writes down the entries to the log table.
@@ -1822,15 +1822,15 @@ Clears the cached log entries (if any).
 
 This procedure is useful when you have initialized your own session with a cache
 size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_cache` or
-`console.view_last([numRows])` during development. By clearing the cache you can
+with the pipelined function `console.cache` or
+`console.logs([numRows])` during development. By clearing the cache you can
 avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 **/
 
 --------------------------------------------------------------------------------
 
-function view_status return t_key_value_tab pipelined;
+function status return t_key_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
@@ -1839,20 +1839,37 @@ version etc.).
 EXAMPLE
 
 ```sql
-select * from console.view_status();
+select * from console.status();
 ```
 
 **/
 
-function view_client_prefs return t_client_prefs_tab pipelined;
+--------------------------------------------------------------------------------
+
+function conf return t_key_value_tab pipelined;
 /**
 
-View client preferences.
+View the global console configuration.
 
 EXAMPLE
 
 ```sql
-select * from console.view_client_prefs();
+select * from console.conf();
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function client_prefs return t_client_prefs_tab pipelined;
+/**
+
+View the client preferences.
+
+EXAMPLE
+
+```sql
+select * from console.client_prefs();
 ```
 
 **/

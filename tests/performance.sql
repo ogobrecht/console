@@ -131,7 +131,7 @@ begin
   for i in 1 .. v_iterator loop
     console.log('test ' || to_char(i));
   end loop;
-  console.flush_log_cache;
+  console.flush_cache;
   v_rt_console := console.runtime_seconds(v_start);
   -- print results
   console.print( '- logger.log     : ' || trim(to_char(v_rt_logger,  '0.000000')) || ' seconds' );

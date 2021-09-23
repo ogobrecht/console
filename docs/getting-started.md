@@ -243,8 +243,8 @@ identifier, if the session has none.
 The only thing you need to do is to figure out which client identifier the user
 has. If you have no access to adminstrative views like v$session, then you need
 to get the client identifier from the user environment and write it somewhere in
-the user interface - in APEX for example this would be very easy. You could for
-example write this in the footer of every page by calling
+the user interface - in APEX for example this would be very easy. You could
+write this in the footer of every page by calling
 `sys_context('USERENV', 'CLIENT_IDENTIFIER')` or
 [console.my_client_identifier](package-console.md#function-my_client_identifier).
 If you use the APEX plug-in to log frontend errors then you could do this in
@@ -279,7 +279,7 @@ Also see additional methods in the [API overview](api-overview.md)
 ### Viewing Log Entries
 
 CONSOLE brings a [pipelined function to view the last
-entries](package-console.md#function-view_last). This function is especially
+entries](package-console.md#function-logs). This function is especially
 useful, if you use the possibility to cache log entries in the packages state
 (works only for your own development session) as this function views the entries
 from the cache and the log table `CONSOLE_LOGS` in descending order:
@@ -301,7 +301,7 @@ end;
 /
 
 --view last cache and log entries
-select * from console.view_last(50);
+select * from console.logs(50);
 ```
 
 ### Exit Log Level (unset client preferences)
@@ -359,7 +359,7 @@ frontend (like an APEX report) to see its status in an user session.
 An example:
 
 ```sql
-select * from table(console.view_status);
+select * from table(console.status);
 ```
 
 | KEY                          | VALUE               |

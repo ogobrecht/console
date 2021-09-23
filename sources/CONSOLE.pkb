@@ -12,7 +12,7 @@ c_ampersand              constant varchar2 ( 1 byte) := chr(38);
 c_html_ampersand         constant varchar2 ( 5 byte) := chr(38) || 'amp;';
 c_html_less_then         constant varchar2 ( 4 byte) := chr(38) || 'lt;';
 c_html_greater_then      constant varchar2 ( 4 byte) := chr(38) || 'gt;';
-c_date_format_short      constant varchar2 (16 byte) := 'yyyymmddhh24miss';
+c_date_format_short      constant varchar2 (16 byte) := 'yymmddhh24miss';
 c_date_format            constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
 c_timestamp_format       constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
 c_default_label          constant varchar2 ( 7 byte) := 'Default';
@@ -198,8 +198,8 @@ end my_log_level;
 
 --------------------------------------------------------------------------------
 
-function view_last (
-  p_log_rows in integer default 100 )
+function logs (
+  p_log_rows in integer default 50 )
 return t_logs_tab pipelined is
   v_count pls_integer := 0;
   v_left  pls_integer;
@@ -218,7 +218,7 @@ begin
           pipe row(i);
     end loop;
   end if;
-end view_last;
+end logs;
 
 --------------------------------------------------------------------------------
 
@@ -1405,8 +1405,8 @@ begin
     c_console_owner = sys_context('USERENV','SESSION_USER'),
     'Only the owner of the package console is allowed to change the global configuration.');
   v_conf := utl_get_conf; -- this will handle the defaults if we don't have configured console yet.
-  v_conf.conf_by          := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
   v_conf.conf_sysdate     := sysdate;
+  v_conf.conf_user        := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
   v_conf.level_id         := coalesce(p_level, v_conf.level_id);
   v_conf.level_name       := level_name(v_conf.level_id);
   v_conf.check_interval   := coalesce(p_check_interval, v_conf.check_interval);
@@ -1527,7 +1527,7 @@ begin
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     utl_set_session_conf;
-    flush_log_cache;
+    flush_cache;
   end if;
 end exit_;
 
@@ -1546,7 +1546,7 @@ procedure exit_all is
 begin
   utl_set_client_prefs(null);
   utl_set_session_conf;
-  flush_log_cache;
+  flush_cache;
 end exit_all;
 
 --------------------------------------------------------------------------------
@@ -2186,14 +2186,14 @@ begin
   append_row('g_conf_client_identifier',                 g_conf_client_identifier                     );
   append_row('g_conf_level',                    to_char( g_conf_level                               ) );
   append_row('level_name(g_conf_level)',             level_name(g_conf_level)                 );
-  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                          ) );
   append_row('g_conf_check_interval',           to_char( g_conf_check_interval                      ) );
+  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                    ) );
+  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                          ) );
   append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                          ) );
   append_row('g_conf_user_env',                   to_yn( g_conf_user_env                            ) );
   append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                            ) );
   append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                             ) );
   append_row('g_conf_console_env',                to_yn( g_conf_console_env                         ) );
-  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                    ) );
   append_row('g_counters.count',                to_char( g_counters.count                           ) );
   append_row('g_timers.count',                  to_char( g_timers.count                             ) );
   append_row('g_log_cache.count',               to_char( g_log_cache.count                          ) );
@@ -2394,16 +2394,16 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
-function view_cache return t_logs_tab pipelined is
+function cache return t_logs_tab pipelined is
 begin
   for i in reverse 1 .. g_log_cache.count loop
     pipe row(g_log_cache(i));
   end loop;
-end view_cache;
+end cache;
 
 --------------------------------------------------------------------------------
 
-procedure flush_log_cache is
+procedure flush_cache is
   pragma autonomous_transaction;
 begin
   if g_log_cache.count > 0 then
@@ -2412,7 +2412,7 @@ begin
     commit;
     g_log_cache.delete;
   end if;
-end flush_log_cache;
+end flush_cache;
 
 --------------------------------------------------------------------------------
 
@@ -2424,38 +2424,54 @@ end clear;
 
 --------------------------------------------------------------------------------
 
-function view_status return t_key_value_tab pipelined is
+function status return t_key_value_tab pipelined is
   v_row t_key_value_row;
 begin
   if g_conf_check_sysdate < sysdate then
     utl_set_session_conf;
   end if;
   pipe row(new t_key_value_row('c_version',                       to_char( c_version                                   )) );
-  pipe row(new t_key_value_row('local date',                      to_char( localtimestamp,              c_date_format  )) );
-  pipe row(new t_key_value_row('current sysdate',                 to_char( sysdate,                     c_date_format  )) );
+  pipe row(new t_key_value_row('localtimestamp',                  to_char( localtimestamp,              c_date_format  )) );
+  pipe row(new t_key_value_row('sysdate',                         to_char( sysdate,                     c_date_format  )) );
   pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,        c_date_format  )) );
   pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,         c_date_format  )) );
   pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                     ) );
   pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                                )) );
-  pipe row(new t_key_value_row('level_name(g_conf_level)',    to_char( level_name(g_conf_level)                        )) );
-  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                           )) );
+  pipe row(new t_key_value_row('level_name(g_conf_level)',        to_char( level_name(g_conf_level)                    )) );
   pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                       )) );
+  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                     )) );
+  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                           )) );
   pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                           )) );
   pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                             )) );
   pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                             )) );
   pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                              )) );
   pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                          )) );
-  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                     )) );
   pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                            )) );
   pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                              )) );
   pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                           )) );
   pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                         )) );
   pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                            )) );
-end view_status;
+end status;
 
 --------------------------------------------------------------------------------
 
-function view_client_prefs
+function conf
+return t_key_value_tab pipelined is
+  v_conf console_conf%rowtype;
+begin
+  v_conf := utl_get_conf;
+  pipe row(new t_key_value_row('conf_sysdate',     to_char(v_conf.conf_sysdate, c_date_format )) );
+  pipe row(new t_key_value_row('conf_user',        v_conf.conf_user                            ) );
+  pipe row(new t_key_value_row('level_id',         to_char(v_conf.level_id                    )) );
+  pipe row(new t_key_value_row('level_name',       v_conf.level_name                           ) );
+  pipe row(new t_key_value_row('check_interval',   to_char(v_conf.check_interval              )) );
+  pipe row(new t_key_value_row('enable_ascii_art', v_conf.enable_ascii_art                     ) );
+  pipe row(new t_key_value_row('client_prefs',     v_conf.client_prefs                         ) );
+end conf;
+
+--------------------------------------------------------------------------------
+
+function client_prefs
 return t_client_prefs_tab pipelined is
   v_list  t_client_prefs_tab_i;
 begin
@@ -2463,7 +2479,7 @@ begin
   for i in 1 .. v_list.count loop
     pipe row(v_list(i));
   end loop;
-end view_client_prefs;
+end client_prefs;
 
 --------------------------------------------------------------------------------
 
@@ -2694,8 +2710,8 @@ exception
   when no_data_found then
     -- set defaults
     v_row.conf_id          := c_conf_id;
-    v_row.conf_by          := 'autodefault';
     v_row.conf_sysdate     := sysdate;
+    v_row.conf_user        := 'autodefault';
     v_row.level_id         := c_level_error;
     v_row.level_name       := level_name(c_level_error);
     v_row.check_interval   := c_check_interval;
@@ -2711,8 +2727,8 @@ is
   pragma autonomous_transaction;
 begin
   update console_conf set
-    conf_by          = p_conf.conf_by          ,
     conf_sysdate     = p_conf.conf_sysdate     ,
+    conf_user        = p_conf.conf_user        ,
     level_id         = p_conf.level_id         ,
     level_name       = p_conf.level_name       ,
     check_interval   = p_conf.check_interval   ,
@@ -3161,7 +3177,7 @@ begin
     g_log_cache(g_log_cache.count) := v_row;
   else
     if g_conf_cache_size > 0 then
-      flush_log_cache;
+      flush_cache;
     end if;
     insert into console_logs values v_row returning log_id into v_row.log_id;
     commit;

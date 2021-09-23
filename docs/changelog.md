@@ -15,18 +15,23 @@
 ## v1.0-beta9 (2021-09-xx)
 
 - Remove context - we work now with a single record conf table with result cache enabled to simplify the configuration and minify the overhead introduced by console
-  - Rename again the conf table from CONSOLE_GLOBAL_CONF to CONSOLE_CONF
-  - Rename purge job from CONSOLE_CLEANUP to CONSOLE_PURGE
-- New helper method `console.assertf` which supports formatted messages as a short form of `console.assert([boolean expression], console.format(...))`
+  - Rename conf table from `CONSOLE_GLOBAL_CONF` to `CONSOLE_CONF`
+  - Rename purge job from `CONSOLE_CLEANUP` to `CONSOLE_PURGE`
+- Streamline API method names:
+  - Rename `view_client_prefs` to `client_prefs`
+  - Rename `view_last` to `logs`
+  - Rename `view_cache` to `cache`
+  - Rename `view_status` to `status`
+- New helper method `assertf` which supports formatted messages (a short form of `console.assert([boolean expression], console.format(...))`)
 - New helper method `exit_all` to exit/unset all client preferences in one go
-- Rename `flush_cache` to `flush_log_cache` for clarity
-- Minimum Database Version is now 12.2
+- New pipelined function `conf` to show the global configuration as a key / value list
+- Minimum database version is now 12.2
 
 ## v1.0-beta8 (2021-08-15)
 
 - More overloads to procedure `add_param`
 - Improved docs
-- ASCII art only on error page
+- ASCII art only on APEX error page
 - Aligned header levels in generated Markdown
 - Change sequence cache for table `console_logs` from default 20 to 1000
 - Fix: Only owner of package `console` is allowed to purge entries and change global config

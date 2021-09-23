@@ -7,13 +7,13 @@ begin
     execute immediate q'{
       create table console_conf (
         conf_id           varchar2 (   4 byte)  not null  ,
-        conf_by           varchar2 (  64 byte)            ,
         conf_sysdate      date                  not null  ,
+        conf_user         varchar2 (  64 byte)            ,
         level_id          number   (   1,0)     not null  ,
         level_name        varchar2 (  10 byte)  not null  ,
         check_interval    number   (   2,0)     not null  ,
-        client_prefs      varchar2 (4000 byte)            ,
         enable_ascii_art  varchar2 (   1 byte)  not null  ,
+        client_prefs      varchar2 (4000 byte)            ,
         --
         constraint  console_conf_pk   primary key ( conf_id )                                                                          ,
         constraint  console_conf_ck1  check ( conf_id = 'CONF' )                                                                       ,
@@ -32,7 +32,7 @@ end;
 
 comment on table  console_conf                  is 'Holds the console configuration in a single record.';
 comment on column console_conf.conf_id          is 'The primary key - is secured by a check constraint which allows only one record in the table.';
-comment on column console_conf.conf_by          is 'The user who configured the console the last time.';
+comment on column console_conf.conf_user        is 'The user who configured the console the last time.';
 comment on column console_conf.conf_sysdate     is 'The date when the console was configured the last time.';
 comment on column console_conf.level_id         is 'The defined log level ID.';
 comment on column console_conf.level_name       is 'The defined log level name.';

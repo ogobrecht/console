@@ -35,12 +35,14 @@ We have five log levels:
 - Level 4: Debug (instead of verbose in JS console)
 - Level 5: Trace (not existing in JS console)
 
-One pipelined function for viewing the log entries:
+A pipelined function for viewing the log entries:
 
-- [console.view_last](package-console.md#function-view_last) - for me this is
-  the standard way: `select * from console.view_last(20)` is showing the last 20
-  entries in descending order from the cache AND the log table (if not enough in
-  the cache or cache is disabled)
+- [console.logs](package-console.md#function-logs) - for me this is the standard
+  way: `select * from console.logs()` is showing the last 50 entries in
+  descending order from the cache AND the log table (if not enough in the cache
+  or cache is disabled). You can adjust the number of entries shown:
+  `select * from console.logs(100)`. Of course, you can select direct from the
+  log table and do your own filtering and ordering: `select * from console_logs`
 
 The main instrumentation methods:
 
@@ -106,8 +108,8 @@ status of the package console:
   &
   [level_is_trace_yn](package-console.md#function-level_is_trace_yn)
 - [console.version](package-console.md#function-version)
-- [console.view_status](package-console.md#function-view_status)
-- [console.view_cache](package-console.md#function-view_cache) &
+- [console.status](package-console.md#function-status)
+- [console.cache](package-console.md#function-cache) &
   [flush_cache](package-console.md#procedure-flush_cache)
 - [console.clear](package-console.md#procedure-clear)
 

@@ -21,7 +21,7 @@ Oracle Instrumentation Console
 - [Package console](#package-console)
 - [Function my_client_identifier](#function-my_client_identifier)
 - [Function my_log_level](#function-my_log_level)
-- [Function view_last](#function-view_last)
+- [Function logs](#function-logs)
 - [Procedure error_save_stack](#procedure-error_save_stack)
 - [Procedure error](#procedure-error)
 - [Function error](#function-error)
@@ -99,11 +99,12 @@ Oracle Instrumentation Console
 - [Procedure clob_append](#procedure-clob_append)
 - [Procedure clob_append](#procedure-clob_append-1)
 - [Procedure clob_flush_cache](#procedure-clob_flush_cache)
-- [Function view_cache](#function-view_cache)
-- [Procedure flush_log_cache](#procedure-flush_log_cache)
+- [Function cache](#function-cache)
+- [Procedure flush_cache](#procedure-flush_cache)
 - [Procedure clear](#procedure-clear)
-- [Function view_status](#function-view_status)
-- [Function view_client_prefs](#function-view_client_prefs)
+- [Function status](#function-status)
+- [Function conf](#function-conf)
+- [Function client_prefs](#function-client_prefs)
 - [Procedure purge](#procedure-purge)
 - [Procedure purge_all](#procedure-purge_all)
 - [Procedure purge_job_create](#procedure-purge_job_create)
@@ -175,7 +176,7 @@ function my_log_level return integer;
 ```
 
 
-## Function view_last
+## Function logs
 
 View the last log entries from the log cache and the log table (if not enough in
 the cache) in descending order.
@@ -201,13 +202,13 @@ end;
 /
 
 --view last cache and log entries
-select * from console.view_last(50);
+select * from console.logs(50);
 ```
 
 SIGNATURE
 
 ```sql
-function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
+function logs (p_log_rows in integer default 50) return t_logs_tab pipelined;
 ```
 
 
@@ -2133,7 +2134,7 @@ procedure clob_flush_cache (
 ```
 
 
-## Function view_cache
+## Function cache
 
 View the content of the log cache.
 
@@ -2156,24 +2157,24 @@ end;
 /
 
 --check current cache entries
-select * from console.view_cache();
+select * from console.cache();
 ```
 
 SIGNATURE
 
 ```sql
-function view_cache return t_logs_tab pipelined;
+function cache return t_logs_tab pipelined;
 ```
 
 
-## Procedure flush_log_cache
+## Procedure flush_cache
 
 Flushes the log cache and writes down the entries to the log table.
 
 SIGNATURE
 
 ```sql
-procedure flush_log_cache;
+procedure flush_cache;
 ```
 
 
@@ -2183,8 +2184,8 @@ Clears the cached log entries (if any).
 
 This procedure is useful when you have initialized your own session with a cache
 size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_cache` or
-`console.view_last([numRows])` during development. By clearing the cache you can
+with the pipelined function `console.cache` or
+`console.logs([numRows])` during development. By clearing the cache you can
 avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 SIGNATURE
@@ -2194,7 +2195,7 @@ procedure clear;
 ```
 
 
-## Function view_status
+## Function status
 
 View the current package status (config, number entries cache/timer/counter,
 version etc.).
@@ -2202,30 +2203,47 @@ version etc.).
 EXAMPLE
 
 ```sql
-select * from console.view_status();
+select * from console.status();
 ```
 
 SIGNATURE
 
 ```sql
-function view_status return t_key_value_tab pipelined;
+function status return t_key_value_tab pipelined;
 ```
 
 
-## Function view_client_prefs
+## Function conf
 
-View client preferences.
+View the global console configuration.
 
 EXAMPLE
 
 ```sql
-select * from console.view_client_prefs();
+select * from console.conf();
 ```
 
 SIGNATURE
 
 ```sql
-function view_client_prefs return t_client_prefs_tab pipelined;
+function conf return t_key_value_tab pipelined;
+```
+
+
+## Function client_prefs
+
+View the client preferences.
+
+EXAMPLE
+
+```sql
+select * from console.client_prefs();
+```
+
+SIGNATURE
+
+```sql
+function client_prefs return t_client_prefs_tab pipelined;
 ```
 
 
