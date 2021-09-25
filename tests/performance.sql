@@ -189,28 +189,9 @@ begin
 end;
 /
 
-prompt
-prompt 1.000 CALLING_UNIT CALLS (how many time you loose by fetching the calling unit from the call stack)
-declare
-  v_iterator pls_integer := 1000;
-  v_start    timestamp;
-  v_scope    varchar2(1000);
-  v_rt       number;
-begin
-  v_start := localtimestamp;
-  for i in 1 .. v_iterator loop
-    v_scope := console.calling_unit;
-  end loop;
-  v_rt := console.runtime_seconds(v_start);
-  --
-  console.print( '- calling_unit   : ' || trim(to_char(v_rt, '0.000000')) || ' seconds' );
-end;
-/
-
-
 /*
 prompt
-prompt 1.000 utl_load_session_configuration CALLS
+prompt 1.000 utl_set_session_conf CALLS
 declare
   v_iterator   pls_integer := 1000;
   v_start      timestamp;
@@ -219,7 +200,7 @@ declare
 begin
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
-    console.utl_load_session_configuration;
+    console.utl_set_session_conf;
   end loop;
   v_rt := console.runtime_seconds(v_start);
   console.print( '- runtime all    : ' || trim(to_char(v_rt,      '0.000000000')) || ' seconds' );

@@ -243,8 +243,8 @@ identifier, if the session has none.
 The only thing you need to do is to figure out which client identifier the user
 has. If you have no access to adminstrative views like v$session, then you need
 to get the client identifier from the user environment and write it somewhere in
-the user interface - in APEX for example this would be very easy. You could for
-example write this in the footer of every page by calling
+the user interface - in APEX for example this would be very easy. You could
+write this in the footer of every page by calling
 `sys_context('USERENV', 'CLIENT_IDENTIFIER')` or
 [console.my_client_identifier](package-console.md#function-my_client_identifier).
 If you use the APEX plug-in to log frontend errors then you could do this in
@@ -279,7 +279,7 @@ Also see additional methods in the [API overview](api-overview.md)
 ### Viewing Log Entries
 
 CONSOLE brings a [pipelined function to view the last
-entries](package-console.md#function-view_last). This function is especially
+entries](package-console.md#function-logs). This function is especially
 useful, if you use the possibility to cache log entries in the packages state
 (works only for your own development session) as this function views the entries
 from the cache and the log table `CONSOLE_LOGS` in descending order:
@@ -301,7 +301,7 @@ end;
 /
 
 --view last cache and log entries
-select * from console.view_last(50);
+select * from console.logs(50);
 ```
 
 ### Exit Log Level (unset client preferences)
@@ -312,7 +312,7 @@ by calling [console.exit](package-console.md#procedure-exit). If you provide no
 client identifier, then CONSOLE tries to exit your own session.
 
 If you don't do it by yourself the daily cleanup job from CONSOLE will exit
-stale sessions from the table `CONSOLE_CLIENT_PREFS`.
+stale sessions.
 
 ## Configure Default Log Level (set global configuration)
 
@@ -320,14 +320,7 @@ Some people use the levels `error`, `warning` and `info` in production for the
 operations team and levels `debug` and `trace` for debugging purposes. To
 support such use cases you can configure the default log level (and other
 options) of CONSOLE for all sessions from `error` to `warning` or `info` by
-using the [console.conf](package-console.md#procedure-conf) procedure. Also see
-the specific procedures, which are able to set one aspect without implicit
-setting other things to the default.
-
-- [console.conf_level](package-console.md#procedure-conf_level)
-- [console.conf_check_interval](package-console.md#procedure-conf_check_interval)
-- [console.conf_units](package-console.md#procedure-conf_units)
-- [console.conf_ascii_art](package-console.md#procedure-conf_ascii_art)
+using the [console.conf](package-console.md#procedure-conf) procedure.
 
 EXAMPLE
 
@@ -366,7 +359,7 @@ frontend (like an APEX report) to see its status in an user session.
 An example:
 
 ```sql
-select * from table(console.view_status);
+select * from table(console.status);
 ```
 
 | KEY                          | VALUE               |

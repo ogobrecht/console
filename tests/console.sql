@@ -39,6 +39,7 @@ begin
   console.time_end;
   console.log       (console.time_end('Test time'));
   console.exit;
+  console.purge_job_run;
   raise_application_error(-20000, 'Test exception');
 exception
   when others then

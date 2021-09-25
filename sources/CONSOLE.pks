@@ -1,16 +1,19 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta8'                            ;
-c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
-c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
+c_version constant varchar2 ( 10 byte ) := '1.0-beta9'                            ;
+c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
+c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error   constant pls_integer := 1 ;
-c_level_warning constant pls_integer := 2 ;
-c_level_info    constant pls_integer := 3 ;
-c_level_debug   constant pls_integer := 4 ;
-c_level_trace   constant pls_integer := 5 ;
+c_level_error      constant pls_integer :=    1 ;
+c_level_warning    constant pls_integer :=    2 ;
+c_level_info       constant pls_integer :=    3 ;
+c_level_debug      constant pls_integer :=    4 ;
+c_level_trace      constant pls_integer :=    5 ;
+c_check_interval   constant pls_integer :=   10 ;
+c_enable_ascii_art constant boolean     := true ;
+
 
 /**
 
@@ -31,23 +34,38 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC TYPES
 --------------------------------------------------------------------------------
 
-subtype t_vc1   is varchar2 (    1 char);
-subtype t_vc32  is varchar2 (   32 char);
-subtype t_vc64  is varchar2 (   64 char);
-subtype t_vc128 is varchar2 (  128 char);
-subtype t_vc256 is varchar2 (  256 char);
-subtype t_vc1k  is varchar2 ( 1024 char);
-subtype t_vc4k  is varchar2 ( 4096 char);
-subtype t_vc32k is varchar2 (32767 char);
+subtype t_vc1   is varchar2 (    1 byte);
+subtype t_vc32  is varchar2 (   32 byte);
+subtype t_vc64  is varchar2 (   64 byte);
+subtype t_vc128 is varchar2 (  128 byte);
+subtype t_vc256 is varchar2 (  256 byte);
+subtype t_vc1k  is varchar2 ( 1024 byte);
+subtype t_vc4k  is varchar2 ( 4096 byte);
+subtype t_vc32k is varchar2 (32767 byte);
 
-type t_key_value_row is record(
+type t_client_prefs_row is record(
+  client_identifier varchar2(64 byte) ,
+  check_interval    integer           ,
+  exit_sysdate      date              ,
+  level_id          integer           ,
+  level_name        varchar2(10 byte) ,
+  cache_size        integer           ,
+  call_stack        varchar2( 1 byte) ,
+  user_env          varchar2( 1 byte) ,
+  apex_env          varchar2( 1 byte) ,
+  cgi_env           varchar2( 1 byte) ,
+  console_env       varchar2( 1 byte) );
+type t_key_value_row    is record(
   key    t_vc128 ,
   value  t_vc4k  );
-type t_key_value_tab   is table of t_key_value_row;
-type t_key_value_tab_i is table of t_key_value_row index by pls_integer;
-type t_logs_tab        is table of console_logs%rowtype;
-type t_vc2_tab         is table of t_vc32k;
-type t_vc2_tab_i       is table of t_vc32k index by pls_integer;
+type t_client_prefs_tab   is table of t_client_prefs_row;
+type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
+type t_key_value_tab      is table of t_key_value_row;
+type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
+type t_logs_tab           is table of console_logs%rowtype;
+type t_vc2_tab            is table of t_vc32k;
+type t_vc2_tab_i          is table of t_vc32k index by pls_integer;
+
 
 
 --------------------------------------------------------------------------------
@@ -82,7 +100,7 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
+function logs (p_log_rows in integer default 50) return t_logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -109,7 +127,7 @@ end;
 {{/}}
 
 --view last cache and log entries
-select * from console.view_last(50);
+select * from console.logs(50);
 ```
 
 **/
@@ -1061,13 +1079,9 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level               in integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval      in integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning in varchar2 default null          , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null          , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null          , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    in boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_level            in integer default null , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval   in integer default null , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_enable_ascii_art in boolean default null   -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 /**
 
@@ -1091,111 +1105,6 @@ begin
   );
 end;
 {{/}}
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_level (
-  p_level in integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-);
-/**
-
-Set the global level.
-
-A shortcut for the procedure `console.conf` to only set the level without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to level warning
-exec console.conf_level(2);
-
---same with using a constant
-exec console.conf_level(console.c_level_warning);
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_check_interval (
-  p_check_interval in integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-);
-/**
-
-Set the global check interval.
-
-A shortcut for the procedure `console.conf` to only set the check interval
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to a check interval of 30 seconds
-exec console.conf_check_interval(30);
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_units (
-  p_units_level_warning in varchar2 default null , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null   -- Same as p_units_level_warning for level trace.
-);
-/**
-
-Set the global levels for code units under special observation.
-
-A shortcut for the procedure `console.conf` to only set unit levels without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---special observation of two new packages
-exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure conf_ascii_art (
-  p_enable_ascii_art in boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
-);
-/**
-
-Set the global ascii art status.
-
-A shortcut for the procedure `console.conf` to only set the ascii art status
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---enable the usage of ascii art
-exec console.conf_ascii_art(true);
-
---disable the usage of ascii art
-exec console.conf_ascii_art(false);
 ```
 
 **/
@@ -1268,8 +1177,10 @@ procedure init (
   p_console_env    in boolean default false          -- Should the console environment be included.
 );
 /**
+
 An overloaded procedure for easier initialization of the own
 session/client_identifier in an development IDE.
+
 **/
 
 procedure exit (
@@ -1295,53 +1206,15 @@ MANAGING CLIENT PREFERENCES.
 
 **/
 
-procedure exit_stale;
+procedure exit_all;
 /**
 
-Exit/unset the preferences for all sessions in the table console_client_prefs
-which have a exit date in the past for at least one hour.
+Exit/unset all client preferences in one go.
 
-This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
-runs per default at 1 o'clock after midnight.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING CLIENT PREFERENCES.
-
-**/
-
---------------------------------------------------------------------------------
-
-function context_is_available return boolean;
-/**
-
-Checks the availability of the global context. Returns true, if available and
-false if not.
+EXAMPLE
 
 ```sql
-begin
-  if not console.context_is_available then
-    dbms_output.put_line('I need to speak with my DBA :-(');
-  end if;
-end;
-{{/}}
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-function context_is_available_yn return varchar2;
-/**
-
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-```sql
-select case when console.context_is_available_yn = 'N'
-         then 'I need to speak with my DBA :-('
-         else 'We have a global context :-)'
-       end as "Test context availability"
-  from dual;
+exec console.exit_all;
 ```
 
 **/
@@ -1440,6 +1313,30 @@ function to_yn ( p_bool in boolean ) return varchar2;
 Converts a boolean value to a string.
 
 Returns `Y` when the input is true and `N` if the input is false or null.
+
+**/
+
+function to_yn (
+  p_test in integer ,
+  p_bit  in integer )
+return varchar2;
+/**
+
+Tests an integer value with bitand.
+
+Returns `Y` when `bitand(p_test, p_bit) = p_bit`. In all other cases (also on
+null) `N` is returned.
+
+```sql
+select
+  console.to_yn(26, 16) as test_bit_pos_5,
+  console.to_yn(26,  8) as test_bit_pos_4,
+  console.to_yn(26,  4) as test_bit_pos_3,
+  console.to_yn(26,  2) as test_bit_pos_2,
+  console.to_yn(26,  1) as test_bit_pos_1,
+  console.to_yn(26,  3) as always_no, -- 3 makes no sense as it represents no bit position value
+from dual;
+```
 
 **/
 
@@ -1760,18 +1657,6 @@ log entry.
 
 --------------------------------------------------------------------------------
 
-function calling_unit return varchar2;
-/**
-
-Get the calling unit (OWNER.UNIT) from the call stack.
-
-Is used internally by console to check if unit is configured for current log
-level.
-
-**/
-
---------------------------------------------------------------------------------
-
 function call_stack return varchar2;
 /**
 
@@ -1890,7 +1775,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function view_cache return t_logs_tab pipelined;
+function cache return t_logs_tab pipelined;
 /**
 
 View the content of the log cache.
@@ -1914,7 +1799,7 @@ end;
 {{/}}
 
 --check current cache entries
-select * from console.view_cache();
+select * from console.cache();
 ```
 
 **/
@@ -1930,22 +1815,22 @@ Flushes the log cache and writes down the entries to the log table.
 
 --------------------------------------------------------------------------------
 
-procedure clear ( p_client_identifier in varchar2 default my_client_identifier );
+procedure clear;
 /**
 
 Clears the cached log entries (if any).
 
 This procedure is useful when you have initialized your own session with a cache
 size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_cache` or
-`console.view_last([numRows])` during development. By clearing the cache you can
+with the pipelined function `console.cache` or
+`console.logs([numRows])` during development. By clearing the cache you can
 avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 **/
 
 --------------------------------------------------------------------------------
 
-function view_status return t_key_value_tab pipelined;
+function status return t_key_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
@@ -1954,7 +1839,37 @@ version etc.).
 EXAMPLE
 
 ```sql
-select * from console.view_status();
+select * from console.status();
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function conf return t_key_value_tab pipelined;
+/**
+
+View the global console configuration.
+
+EXAMPLE
+
+```sql
+select * from console.conf();
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function client_prefs return t_client_prefs_tab pipelined;
+/**
+
+View the client preferences.
+
+EXAMPLE
+
+```sql
+select * from console.client_prefs();
 ```
 
 **/
@@ -1998,7 +1913,7 @@ exec console.purge_all;
 
 **/
 
-procedure cleanup_job_create (
+procedure purge_job_create (
   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
   p_min_level       in integer  default c_level_info           , -- Delete log entries greater or equal the given level.
   p_min_days        in number   default 30                       -- Delete log entries older than the given minimum days.
@@ -2007,10 +1922,10 @@ procedure cleanup_job_create (
 Creates a cleanup job which deletes old log entries from console_logs and stale
 debug sessions from console_client_prefs.
 **/
-procedure cleanup_job_drop;    /** Drops the cleanup job (if it exists).    **/
-procedure cleanup_job_enable;  /** Enables the cleanup job (if it exists).  **/
-procedure cleanup_job_disable; /** Disables the cleanup job (if it exists). **/
-procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
+procedure purge_job_drop;    /** Drops the cleanup job (if it exists).    **/
+procedure purge_job_enable;  /** Enables the cleanup job (if it exists).  **/
+procedure purge_job_disable; /** Disables the cleanup job (if it exists). **/
+procedure purge_job_run;     /** Runs the cleanup job (if it exists).     **/
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)
@@ -2018,20 +1933,80 @@ procedure cleanup_job_run;     /** Runs the cleanup job (if it exists).     **/
 
 $if $$utils_public $then
 
-function utl_escape_md_tab_text (p_text varchar2) return varchar2;
-function utl_last_error return varchar2;
-function utl_logging_is_enabled (p_level integer) return boolean;
-function utl_normalize_label (p_label varchar2) return varchar2;
-function utl_read_client_prefs (p_client_identifier varchar2) return console_client_prefs%rowtype result_cache;
-function utl_read_global_conf return console_global_conf%rowtype result_cache;
-function utl_replace_linebreaks (p_text varchar2, p_replace_with varchar2 default ' ') return varchar2;
-procedure utl_ctx_check_availability;
-procedure utl_ctx_clear (p_client_identifier varchar2);
-procedure utl_ctx_clear_all;
-procedure utl_ctx_set (p_attribute varchar2, p_value varchar2, p_client_identifier varchar2);
-procedure utl_load_session_configuration;
 procedure utl_set_client_identifier;
---
+
+procedure utl_set_session_conf;
+
+procedure utl_set_conf (
+  p_conf console_conf%rowtype );
+
+procedure utl_set_client_prefs (
+  p_prefs varchar2 );
+
+function utl_get_conf return console_conf%rowtype result_cache;
+
+function utl_get_client_prefs (
+  p_all_prefs_csv varchar2     ,
+  p_client_identifier varchar2 )
+return t_client_prefs_row;
+
+function utl_get_client_prefs_tab return t_client_prefs_tab_i;
+
+function utl_escape_md_tab_text (
+  p_text varchar2 )
+return varchar2;
+
+function utl_last_error return varchar2;
+
+function utl_logging_is_enabled (
+  p_level integer )
+return boolean;
+
+function utl_normalize_label (
+  p_label varchar2 )
+return varchar2;
+
+function utl_replace_linebreaks (
+  p_text varchar2                     ,
+  p_replace_with varchar2 default ' ' )
+return varchar2;
+
+function utl_get_clean_client_prefs_csv (
+  p_client_identifier_to_remove in varchar2           default null ,
+  p_client_prefs_to_append      in t_client_prefs_row default null )
+return varchar2;
+
+function utl_client_prefs_to_csv (
+  p_client_prefs t_client_prefs_row )
+return varchar2;
+
+function utl_csv_to_client_prefs (
+  p_csv varchar2 ) return t_client_prefs_row;
+
+function utl_csv_get_client_identifier (
+  p_csv varchar2 )
+return varchar2;
+
+function utl_csv_get_exit_sysdate (
+  p_csv varchar2 )
+return date;
+
+function utl_csv_get_check_interval (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_level (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_cache_size (
+  p_csv varchar2 )
+return integer;
+
+function utl_csv_get_boolean_options (
+  p_csv varchar2 )
+return integer;
+
 function utl_create_log_entry (
   p_level           in integer                ,
   p_message         in clob     default null  ,

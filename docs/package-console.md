@@ -21,7 +21,7 @@ Oracle Instrumentation Console
 - [Package console](#package-console)
 - [Function my_client_identifier](#function-my_client_identifier)
 - [Function my_log_level](#function-my_log_level)
-- [Function view_last](#function-view_last)
+- [Function logs](#function-logs)
 - [Procedure error_save_stack](#procedure-error_save_stack)
 - [Procedure error](#procedure-error)
 - [Function error](#function-error)
@@ -67,21 +67,16 @@ Oracle Instrumentation Console
 - [Function apex_plugin_render](#function-apex_plugin_render)
 - [Function apex_plugin_ajax](#function-apex_plugin_ajax)
 - [Procedure conf](#procedure-conf)
-- [Procedure conf_level](#procedure-conf_level)
-- [Procedure conf_check_interval](#procedure-conf_check_interval)
-- [Procedure conf_units](#procedure-conf_units)
-- [Procedure conf_ascii_art](#procedure-conf_ascii_art)
 - [Procedure init](#procedure-init)
 - [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
-- [Procedure exit_stale](#procedure-exit_stale)
-- [Function context_is_available](#function-context_is_available)
-- [Function context_is_available_yn](#function-context_is_available_yn)
+- [Procedure exit_all](#procedure-exit_all)
 - [Function version](#function-version)
 - [Function split_to_table](#function-split_to_table)
 - [Function split](#function-split)
 - [Function join](#function-join)
 - [Function to_yn](#function-to_yn)
+- [Function to_yn](#function-to_yn-1)
 - [Function to_string](#function-to_string)
 - [Function to_bool](#function-to_bool)
 - [Function to_html_table](#function-to_html_table)
@@ -96,7 +91,6 @@ Oracle Instrumentation Console
 - [Function runtime_milliseconds](#function-runtime_milliseconds)
 - [Function level_name](#function-level_name)
 - [Function scope](#function-scope)
-- [Function calling_unit](#function-calling_unit)
 - [Function call_stack](#function-call_stack)
 - [Function apex_env](#function-apex_env)
 - [Function cgi_env](#function-cgi_env)
@@ -105,17 +99,19 @@ Oracle Instrumentation Console
 - [Procedure clob_append](#procedure-clob_append)
 - [Procedure clob_append](#procedure-clob_append-1)
 - [Procedure clob_flush_cache](#procedure-clob_flush_cache)
-- [Function view_cache](#function-view_cache)
+- [Function cache](#function-cache)
 - [Procedure flush_cache](#procedure-flush_cache)
 - [Procedure clear](#procedure-clear)
-- [Function view_status](#function-view_status)
+- [Function status](#function-status)
+- [Function conf](#function-conf)
+- [Function client_prefs](#function-client_prefs)
 - [Procedure purge](#procedure-purge)
 - [Procedure purge_all](#procedure-purge_all)
-- [Procedure cleanup_job_create](#procedure-cleanup_job_create)
-- [Procedure cleanup_job_drop](#procedure-cleanup_job_drop)
-- [Procedure cleanup_job_enable](#procedure-cleanup_job_enable)
-- [Procedure cleanup_job_disable](#procedure-cleanup_job_disable)
-- [Procedure cleanup_job_run](#procedure-cleanup_job_run)
+- [Procedure purge_job_create](#procedure-purge_job_create)
+- [Procedure purge_job_drop](#procedure-purge_job_drop)
+- [Procedure purge_job_enable](#procedure-purge_job_enable)
+- [Procedure purge_job_disable](#procedure-purge_job_disable)
+- [Procedure purge_job_run](#procedure-purge_job_run)
 
 
 ## Package console
@@ -133,16 +129,18 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta8'                            ;
-c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
-c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
+c_version constant varchar2 ( 10 byte ) := '1.0-beta9'                            ;
+c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
+c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error   constant pls_integer := 1 ;
-c_level_warning constant pls_integer := 2 ;
-c_level_info    constant pls_integer := 3 ;
-c_level_debug   constant pls_integer := 4 ;
-c_level_trace   constant pls_integer := 5 ;
+c_level_error      constant pls_integer :=    1 ;
+c_level_warning    constant pls_integer :=    2 ;
+c_level_info       constant pls_integer :=    3 ;
+c_level_debug      constant pls_integer :=    4 ;
+c_level_trace      constant pls_integer :=    5 ;
+c_check_interval   constant pls_integer :=   10 ;
+c_enable_ascii_art constant boolean     := true ;
 ```
 
 
@@ -178,7 +176,7 @@ function my_log_level return integer;
 ```
 
 
-## Function view_last
+## Function logs
 
 View the last log entries from the log cache and the log table (if not enough in
 the cache) in descending order.
@@ -204,13 +202,13 @@ end;
 /
 
 --view last cache and log entries
-select * from console.view_last(50);
+select * from console.logs(50);
 ```
 
 SIGNATURE
 
 ```sql
-function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
+function logs (p_log_rows in integer default 50) return t_logs_tab pipelined;
 ```
 
 
@@ -1385,126 +1383,9 @@ SIGNATURE
 
 ```sql
 procedure conf (
-  p_level               in integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval      in integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning in varchar2 default null          , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null          , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null          , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    in boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
-);
-```
-
-
-## Procedure conf_level
-
-Set the global level.
-
-A shortcut for the procedure `console.conf` to only set the level without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to level warning
-exec console.conf_level(2);
-
---same with using a constant
-exec console.conf_level(console.c_level_warning);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_level (
-  p_level in integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-);
-```
-
-
-## Procedure conf_check_interval
-
-Set the global check interval.
-
-A shortcut for the procedure `console.conf` to only set the check interval
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to a check interval of 30 seconds
-exec console.conf_check_interval(30);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_check_interval (
-  p_check_interval in integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-);
-```
-
-
-## Procedure conf_units
-
-Set the global levels for code units under special observation.
-
-A shortcut for the procedure `console.conf` to only set unit levels without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---special observation of two new packages
-exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
-```
-
-SIGNATURE
-
-```sql
-procedure conf_units (
-  p_units_level_warning in varchar2 default null , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null   -- Same as p_units_level_warning for level trace.
-);
-```
-
-
-## Procedure conf_ascii_art
-
-Set the global ascii art status.
-
-A shortcut for the procedure `console.conf` to only set the ascii art status
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---enable the usage of ascii art
-exec console.conf_ascii_art(true);
-
---disable the usage of ascii art
-exec console.conf_ascii_art(false);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_ascii_art (
-  p_enable_ascii_art in boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_level            in integer default null , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval   in integer default null , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_enable_ascii_art in boolean default null   -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 ```
 
@@ -1616,62 +1497,20 @@ procedure exit (
 ```
 
 
-## Procedure exit_stale
+## Procedure exit_all
 
-Exit/unset the preferences for all sessions in the table console_client_prefs
-which have a exit date in the past for at least one hour.
+Exit/unset all client preferences in one go.
 
-This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
-runs per default at 1 o'clock after midnight.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING CLIENT PREFERENCES.
-
-SIGNATURE
+EXAMPLE
 
 ```sql
-procedure exit_stale;
-```
-
-
-## Function context_is_available
-
-Checks the availability of the global context. Returns true, if available and
-false if not.
-
-```sql
-begin
-  if not console.context_is_available then
-    dbms_output.put_line('I need to speak with my DBA :-(');
-  end if;
-end;
-/
+exec console.exit_all;
 ```
 
 SIGNATURE
 
 ```sql
-function context_is_available return boolean;
-```
-
-
-## Function context_is_available_yn
-
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-```sql
-select case when console.context_is_available_yn = 'N'
-         then 'I need to speak with my DBA :-('
-         else 'We have a global context :-)'
-       end as "Test context availability"
-  from dual;
-```
-
-SIGNATURE
-
-```sql
-function context_is_available_yn return varchar2;
+procedure exit_all;
 ```
 
 
@@ -1778,6 +1617,34 @@ SIGNATURE
 
 ```sql
 function to_yn ( p_bool in boolean ) return varchar2;
+```
+
+
+## Function to_yn
+
+Tests an integer value with bitand.
+
+Returns `Y` when `bitand(p_test, p_bit) = p_bit`. In all other cases (also on
+null) `N` is returned.
+
+```sql
+select
+  console.to_yn(26, 16) as test_bit_pos_5,
+  console.to_yn(26,  8) as test_bit_pos_4,
+  console.to_yn(26,  4) as test_bit_pos_3,
+  console.to_yn(26,  2) as test_bit_pos_2,
+  console.to_yn(26,  1) as test_bit_pos_1,
+  console.to_yn(26,  3) as always_no, -- 3 makes no sense as it represents no bit position value
+from dual;
+```
+
+SIGNATURE
+
+```sql
+function to_yn (
+  p_test in integer ,
+  p_bit  in integer )
+return varchar2;
 ```
 
 
@@ -2128,20 +1995,6 @@ function scope return varchar2;
 ```
 
 
-## Function calling_unit
-
-Get the calling unit (OWNER.UNIT) from the call stack.
-
-Is used internally by console to check if unit is configured for current log
-level.
-
-SIGNATURE
-
-```sql
-function calling_unit return varchar2;
-```
-
-
 ## Function call_stack
 
 Get the current call stack (and error stack/backtrace, if available).
@@ -2281,7 +2134,7 @@ procedure clob_flush_cache (
 ```
 
 
-## Function view_cache
+## Function cache
 
 View the content of the log cache.
 
@@ -2304,13 +2157,13 @@ end;
 /
 
 --check current cache entries
-select * from console.view_cache();
+select * from console.cache();
 ```
 
 SIGNATURE
 
 ```sql
-function view_cache return t_logs_tab pipelined;
+function cache return t_logs_tab pipelined;
 ```
 
 
@@ -2331,18 +2184,18 @@ Clears the cached log entries (if any).
 
 This procedure is useful when you have initialized your own session with a cache
 size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_cache` or
-`console.view_last([numRows])` during development. By clearing the cache you can
+with the pipelined function `console.cache` or
+`console.logs([numRows])` during development. By clearing the cache you can
 avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
 
 SIGNATURE
 
 ```sql
-procedure clear ( p_client_identifier in varchar2 default my_client_identifier );
+procedure clear;
 ```
 
 
-## Function view_status
+## Function status
 
 View the current package status (config, number entries cache/timer/counter,
 version etc.).
@@ -2350,13 +2203,47 @@ version etc.).
 EXAMPLE
 
 ```sql
-select * from console.view_status();
+select * from console.status();
 ```
 
 SIGNATURE
 
 ```sql
-function view_status return t_key_value_tab pipelined;
+function status return t_key_value_tab pipelined;
+```
+
+
+## Function conf
+
+View the global console configuration.
+
+EXAMPLE
+
+```sql
+select * from console.conf();
+```
+
+SIGNATURE
+
+```sql
+function conf return t_key_value_tab pipelined;
+```
+
+
+## Function client_prefs
+
+View the client preferences.
+
+EXAMPLE
+
+```sql
+select * from console.client_prefs();
+```
+
+SIGNATURE
+
+```sql
+function client_prefs return t_client_prefs_tab pipelined;
 ```
 
 
@@ -2406,7 +2293,7 @@ procedure purge_all;
 ```
 
 
-## Procedure cleanup_job_create
+## Procedure purge_job_create
 
 Creates a cleanup job which deletes old log entries from console_logs and stale
 debug sessions from console_client_prefs.
@@ -2414,7 +2301,7 @@ debug sessions from console_client_prefs.
 SIGNATURE
 
 ```sql
-procedure cleanup_job_create (
+procedure purge_job_create (
   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
   p_min_level       in integer  default c_level_info           , -- Delete log entries greater or equal the given level.
   p_min_days        in number   default 30                       -- Delete log entries older than the given minimum days.
@@ -2422,47 +2309,47 @@ procedure cleanup_job_create (
 ```
 
 
-## Procedure cleanup_job_drop
+## Procedure purge_job_drop
 
 Drops the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_drop;
+procedure purge_job_drop;
 ```
 
 
-## Procedure cleanup_job_enable
+## Procedure purge_job_enable
 
 Enables the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_enable;
+procedure purge_job_enable;
 ```
 
 
-## Procedure cleanup_job_disable
+## Procedure purge_job_disable
 
 Disables the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_disable;
+procedure purge_job_disable;
 ```
 
 
-## Procedure cleanup_job_run
+## Procedure purge_job_run
 
 Runs the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_run;
+procedure purge_job_run;
 ```
 
 
