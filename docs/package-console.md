@@ -1642,8 +1642,8 @@ SIGNATURE
 
 ```sql
 function to_yn (
-  p_test integer ,
-  p_bit  integer )
+  p_test in integer ,
+  p_bit  in integer )
 return varchar2;
 ```
 

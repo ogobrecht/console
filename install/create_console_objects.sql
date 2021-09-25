@@ -1492,8 +1492,8 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 **/
 
 function to_yn (
-  p_test integer ,
-  p_bit  integer )
+  p_test in integer ,
+  p_bit  in integer )
 return varchar2;
 /**
 
@@ -2224,7 +2224,6 @@ c_default_label          constant varchar2 ( 7 byte) := 'Default';
 c_conf_id                constant varchar2 ( 4 byte) := 'CONF';
 c_client_id_prefix       constant varchar2 ( 6 byte) := '{o,o} ';
 c_console_owner          constant varchar2 (30 byte) := $$plsql_unit_owner;
-c_console_pkg_name_dot   constant varchar2 ( 8 byte) := 'CONSOLE.';
 c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_PURGE';
 c_param_value_max_length constant pls_integer        :=  2000;
 
@@ -2235,34 +2234,34 @@ c_apex_env               constant pls_integer :=  4;
 c_cgi_env                constant pls_integer :=  2;
 c_console_env            constant pls_integer :=  1;
 
--- numeric type identfiers
-c_number                 constant pls_integer :=   2; -- float
-c_binary_float           constant pls_integer := 100;
-c_binary_double          constant pls_integer := 101;
--- string type identfiers
-c_char                   constant pls_integer :=  96; -- nchar
-c_varchar2               constant pls_integer :=   1; -- nvarchar2
-c_long                   constant pls_integer :=   8;
-c_clob                   constant pls_integer := 112; -- nclob
-c_xmltype                constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
-c_rowid                  constant pls_integer :=  69;
-c_urowid                 constant pls_integer := 208;
--- binary type identfiers
-c_raw                    constant pls_integer :=  23;
-c_long_raw               constant pls_integer :=  24;
-c_blob                   constant pls_integer := 113;
-c_bfile                  constant pls_integer := 114;
--- date type identfiers
-c_date                   constant pls_integer :=  12;
-c_timestamp              constant pls_integer := 180;
-c_timestamp_tz           constant pls_integer := 181;
-c_timestamp_ltz          constant pls_integer := 231;
--- interval type identfiers
-c_interval_year_to_month constant pls_integer := 182;
-c_interval_day_to_second constant pls_integer := 183;
--- cursor type identfiers
-c_ref                    constant pls_integer := 111;
-c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
+-- NUMERIC TYPE IDENTFIERS
+-- c_number                 constant pls_integer :=   2; -- float
+-- c_binary_float           constant pls_integer := 100;
+-- c_binary_double          constant pls_integer := 101;
+-- STRING TYPE IDENTFIERS
+-- c_char                   constant pls_integer :=  96; -- nchar
+-- c_varchar2               constant pls_integer :=   1; -- nvarchar2
+   c_long                   constant pls_integer :=   8;
+   c_clob                   constant pls_integer := 112; -- nclob
+   c_xmltype                constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
+-- c_rowid                  constant pls_integer :=  69;
+-- c_urowid                 constant pls_integer := 208;
+-- BINARY TYPE IDENTFIERS
+   c_raw                    constant pls_integer :=  23;
+   c_long_raw               constant pls_integer :=  24;
+   c_blob                   constant pls_integer := 113;
+   c_bfile                  constant pls_integer := 114;
+-- DATE TYPE IDENTFIERS
+-- c_date                   constant pls_integer :=  12;
+-- c_timestamp              constant pls_integer := 180;
+-- c_timestamp_tz           constant pls_integer := 181;
+-- c_timestamp_ltz          constant pls_integer := 231;
+-- INTERVAL TYPE IDENTFIERS
+-- c_interval_year_to_month constant pls_integer := 182;
+-- c_interval_day_to_second constant pls_integer := 183;
+-- CURSOR TYPE IDENTFIERS
+-- c_ref                    constant pls_integer := 111;
+-- c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
 
 type t_timers_tab      is table of timestamp   index by t_vc128;
 type t_counters_tab    is table of pls_integer index by t_vc128;
@@ -3244,7 +3243,7 @@ procedure action (
   p_action in varchar2 )
 is
 begin
-  dbms_application_info.set_action (
+  sys.dbms_application_info.set_action (
     p_action );
 end action;
 
@@ -3256,7 +3255,7 @@ procedure module (
 )
 is
 begin
-  dbms_application_info.set_module(
+  sys.dbms_application_info.set_module(
     p_module ,
     p_action );
 end module;
@@ -3835,8 +3834,8 @@ begin
 end to_yn;
 
 function to_yn (
-  p_test integer ,
-  p_bit  integer )
+  p_test in integer ,
+  p_bit  in integer )
 return varchar2 is
 begin
   return case when bitand(p_test, p_bit) = p_bit
@@ -3882,17 +3881,17 @@ return clob is
   v_cache              t_vc32k;
   v_data_count         pls_integer := 0;
   v_col_count          pls_integer;
-  v_desc_tab           dbms_sql.desc_tab3;
+  v_desc_tab           sys.dbms_sql.desc_tab3;
   v_buffer_varchar2    t_vc32k;
   v_buffer_clob        clob;
   v_buffer_xmltype     xmltype;
-  v_buffer_long        long;
+  --v_buffer_long        long;
   v_buffer_long_length pls_integer;
   --
   procedure close_cursor ( p_cursor_id in out integer ) is
   begin
-    if dbms_sql.is_open(p_cursor_id) then
-      dbms_sql.close_cursor(p_cursor_id);
+    if sys.dbms_sql.is_open(p_cursor_id) then
+      sys.dbms_sql.close_cursor(p_cursor_id);
     end if;
   exception
     when invalid_cursor then null;
@@ -3908,18 +3907,18 @@ return clob is
   --
   procedure describe_columns is
   begin
-    dbms_sql.describe_columns3(v_cursor_id, v_col_count, v_desc_tab);
+    sys.dbms_sql.describe_columns3(v_cursor_id, v_col_count, v_desc_tab);
     for i in 1..v_col_count loop
       if v_desc_tab(i).col_type = c_clob then
-        dbms_sql.define_column(v_cursor_id, i, v_buffer_clob);
+        sys.dbms_sql.define_column(v_cursor_id, i, v_buffer_clob);
       elsif v_desc_tab(i).col_type = c_xmltype then
-        dbms_sql.define_column(v_cursor_id, i, v_buffer_xmltype);
+        sys.dbms_sql.define_column(v_cursor_id, i, v_buffer_xmltype);
       elsif v_desc_tab(i).col_type = c_long then
-        dbms_sql.define_column_long(v_cursor_id, i);
+        sys.dbms_sql.define_column_long(v_cursor_id, i);
       elsif v_desc_tab(i).col_type in (c_raw, c_long_raw, c_blob, c_bfile) then
         null; --> we ignore binary data types
       else
-        dbms_sql.define_column(v_cursor_id, i, v_buffer_varchar2, p_max_column_length);
+        sys.dbms_sql.define_column(v_cursor_id, i, v_buffer_varchar2, p_max_column_length);
       end if;
     end loop;
   end describe_columns;
@@ -3940,7 +3939,7 @@ return clob is
   procedure create_data is
   begin
     loop
-      exit when dbms_sql.fetch_rows(v_cursor_id) = 0 or v_data_count = p_max_rows;
+      exit when sys.dbms_sql.fetch_rows(v_cursor_id) = 0 or v_data_count = p_max_rows;
       v_data_count := v_data_count + 1;
       clob_append(v_clob, v_cache, c_lf || '<tr><!--- row ' || to_char(v_data_count) || ' -->' || c_lf);
       if p_include_row_num then
@@ -3950,7 +3949,7 @@ return clob is
         clob_append(v_clob, v_cache, '<td headers="' || lower(v_desc_tab(i).col_name) || '">');
         --
         if v_desc_tab(i).col_type = c_clob then
-          dbms_sql.column_value(v_cursor_id, i, v_buffer_clob);
+          sys.dbms_sql.column_value(v_cursor_id, i, v_buffer_clob);
           clob_append(
             v_clob,
             v_cache,
@@ -3959,7 +3958,7 @@ return clob is
           );
         --
         elsif v_desc_tab(i).col_type = c_xmltype then
-          dbms_sql.column_value(v_cursor_id, i, v_buffer_xmltype);
+          sys.dbms_sql.column_value(v_cursor_id, i, v_buffer_xmltype);
           if v_buffer_xmltype is not null then
             v_buffer_clob := v_buffer_xmltype.getclobval();
             clob_append(
@@ -3971,7 +3970,7 @@ return clob is
           end if;
         --
         elsif v_desc_tab(i).col_type = c_long then
-          dbms_sql.column_value_long(v_cursor_id, i, p_max_column_length, 0, v_buffer_varchar2, v_buffer_long_length);
+          sys.dbms_sql.column_value_long(v_cursor_id, i, p_max_column_length, 0, v_buffer_varchar2, v_buffer_long_length);
             clob_append(
               v_clob,
               v_cache,
@@ -3983,7 +3982,7 @@ return clob is
           clob_append(v_clob, v_cache, 'Binary data type skipped - not supported for HTML');
         --
         else
-          dbms_sql.column_value(v_cursor_id, i, v_buffer_varchar2);
+          sys.dbms_sql.column_value(v_cursor_id, i, v_buffer_varchar2);
           clob_append(v_clob, v_cache, escape(v_buffer_varchar2));
         end if;
         --
@@ -3994,7 +3993,7 @@ return clob is
   end create_data;
   --
 begin
-  v_cursor_id := dbms_sql.to_cursor_number(v_data_cursor);
+  v_cursor_id := sys.dbms_sql.to_cursor_number(v_data_cursor);
   describe_columns;
   if p_comment is not null then
     clob_append(v_clob, v_cache, escape(p_comment) || c_lflf);
@@ -4077,52 +4076,52 @@ begin
     v_value_one_character := p_scale / p_width_block_characters;
 
   -- create textbar: full block characters
-    for i in 1..FLOOR(p_value / v_value_one_character) loop
-      v_return := v_return || UNISTR('\2588');
+    for i in 1..floor(p_value / v_value_one_character) loop
+      v_return := v_return || unistr('\2588');
     end loop;
 
   -- create textbar: last character - can be between 0 and 8(rounded), because there
   -- are block character available in unicode for 1/8, 1/4, 3/8, 1/2, 5/8, 3/4, 7/8 and 1;
-    case ROUND((p_value / v_value_one_character - FLOOR(p_value / v_value_one_character)) / 0.125)
+    case round((p_value / v_value_one_character - floor(p_value / v_value_one_character)) / 0.125)
       when 1 then -- 1/8 = char U+258F
-        v_return := v_return || UNISTR('\258F');
+        v_return := v_return || unistr('\258F');
       when 2 then -- 2/8 = char U+258E
-        v_return := v_return || UNISTR('\258E');
+        v_return := v_return || unistr('\258E');
       when 3 then -- 3/8 = char U+258D
-        v_return := v_return || UNISTR('\258D');
+        v_return := v_return || unistr('\258D');
       when 4 then -- 4/8 = char U+258C
-        v_return := v_return || UNISTR('\258C');
+        v_return := v_return || unistr('\258C');
       when 5 then -- 5/8 = char U+258B
-        v_return := v_return || UNISTR('\258B');
+        v_return := v_return || unistr('\258B');
       when 6 then -- 6/8 = char U+258A
-        v_return := v_return || UNISTR('\258A');
+        v_return := v_return || unistr('\258A');
       when 7 then -- 7/8 = char U+2589
-        v_return := v_return || UNISTR('\2589');
+        v_return := v_return || unistr('\2589');
       when 8 then -- 8/8 = char U+2588
-        v_return := v_return || UNISTR('\2588');
+        v_return := v_return || unistr('\2588');
       else
         null;
     end case;
 
   -- fill up scale with shade
     if p_fill_scale = 1 then
-      for i in 1..( p_width_block_characters - NVL(LENGTH(v_return), 0) ) loop
-        v_return := v_return || UNISTR('\2591');
+      for i in 1..( p_width_block_characters - nvl(length(v_return), 0) ) loop
+        v_return := v_return || unistr('\2591');
       end loop;
     end if;
   end if;
 
   return v_return;
 exception
-  when VALUE_ERROR then
-    return UNISTR('\221E');
+  when value_error then
+    return unistr('\221E');
 end to_unibar;
 
 --------------------------------------------------------------------------------
 
 procedure print ( p_message in varchar2 ) is
 begin
-  dbms_output.put_line(p_message);
+  sys.dbms_output.put_line(p_message);
 end print;
 
 --------------------------------------------------------------------------------
@@ -4141,7 +4140,7 @@ procedure printf (
   p9        in varchar2 default null )
 is
 begin
-  dbms_output.put_line(
+  sys.dbms_output.put_line(
     console.format(
       p_message => p_message ,
       p0        => p0        ,
@@ -4204,17 +4203,17 @@ function scope return varchar2 is
   v_return     t_vc32k;
   v_subprogram t_vc32k;
 begin
-  if utl_call_stack.dynamic_depth > 0 then
+  if sys.utl_call_stack.dynamic_depth > 0 then
     --ignore 1, is always this function (scope) itself
-    for i in 2 .. utl_call_stack.dynamic_depth
+    for i in 2 .. sys.utl_call_stack.dynamic_depth
     loop
-      v_subprogram := utl_call_stack.concatenate_subprogram( utl_call_stack.subprogram(i) );
+      v_subprogram := sys.utl_call_stack.concatenate_subprogram( sys.utl_call_stack.subprogram(i) );
       --exclude console package from the scope
       if instr ( upper(v_subprogram), 'CONSOLE.' ) = 0 then
         v_return := v_return
-          || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
+          || case when sys.utl_call_stack.owner(i) is not null then sys.utl_call_stack.owner(i) || '.' end
           || v_subprogram
-          || case when utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end;
+          || case when sys.utl_call_stack.unit_line(i) is not null then ', line ' || sys.utl_call_stack.unit_line(i) end;
       end if;
       exit when v_return is not null;
     end loop;
@@ -4239,45 +4238,45 @@ begin
     v_return := v_return || c_lf;
   end if;
 
-  if utl_call_stack.dynamic_depth > 0 then
+  if sys.utl_call_stack.dynamic_depth > 0 then
     v_return := v_return || '#### Call Stack' || c_lflf;
     --ignore 1, is always this function (call_stack) itself
-    for i in 2 .. utl_call_stack.dynamic_depth
+    for i in 2 .. sys.utl_call_stack.dynamic_depth
     loop
-      v_subprogram := utl_call_stack.concatenate_subprogram ( utl_call_stack.subprogram(i) );
+      v_subprogram := sys.utl_call_stack.concatenate_subprogram ( sys.utl_call_stack.subprogram(i) );
       --exclude console package from the call stack
       if instr( upper(v_subprogram), 'CONSOLE.' ) = 0 then
         v_return := v_return
           || '- '
-          || case when utl_call_stack.owner(i) is not null then utl_call_stack.owner(i) || '.' end
+          || case when sys.utl_call_stack.owner(i) is not null then sys.utl_call_stack.owner(i) || '.' end
           || v_subprogram
-          || case when utl_call_stack.unit_line(i) is not null then ', line ' || utl_call_stack.unit_line(i) end
+          || case when sys.utl_call_stack.unit_line(i) is not null then ', line ' || sys.utl_call_stack.unit_line(i) end
           || c_lf;
       end if;
     end loop;
     v_return := v_return || c_lf;
   end if;
 
-  if utl_call_stack.error_depth > 0 then
+  if sys.utl_call_stack.error_depth > 0 then
     v_return := v_return || '#### Error Stack' || c_lflf;
-    for i in 1 .. utl_call_stack.error_depth
+    for i in 1 .. sys.utl_call_stack.error_depth
     loop
       v_return := v_return
         || '- ORA-'
-        || trim(to_char(utl_call_stack.error_number(i), '00009')) || ' '
-        || utl_replace_linebreaks(utl_call_stack.error_msg(i)) || c_lf;
+        || trim(to_char(sys.utl_call_stack.error_number(i), '00009')) || ' '
+        || utl_replace_linebreaks(sys.utl_call_stack.error_msg(i)) || c_lf;
     end loop;
     v_return := v_return || c_lf;
   end if;
 
-  if utl_call_stack.backtrace_depth > 0 then
+  if sys.utl_call_stack.backtrace_depth > 0 then
     v_return := v_return || '#### Error Backtrace' || c_lflf;
-    for i in 1 .. utl_call_stack.backtrace_depth
+    for i in 1 .. sys.utl_call_stack.backtrace_depth
     loop
       v_return := v_return
         || '- '
-        || coalesce( utl_call_stack.backtrace_unit(i), '__anonymous_block' )
-        || ', line ' || utl_call_stack.backtrace_line(i) || c_lf;
+        || coalesce( sys.utl_call_stack.backtrace_unit(i), '__anonymous_block' )
+        || ', line ' || sys.utl_call_stack.backtrace_line(i) || c_lf;
     end loop;
     v_return := v_return || c_lf;
   end if;
@@ -4357,11 +4356,11 @@ is
   v_return t_vc32k;
 begin
   v_return := '#### CGI Environment' || c_lflf || to_md_tab_header;
-  for i in 1 .. nvl(owa.num_cgi_vars, 0) loop
+  for i in 1 .. nvl(sys.owa.num_cgi_vars, 0) loop
     v_return := v_return ||
       to_md_tab_data(
-        p_key   => owa.cgi_var_name(i) ,
-        p_value => owa.cgi_var_val (i) );
+        p_key   => sys.owa.cgi_var_name(i) ,
+        p_value => sys.owa.cgi_var_val (i) );
   end loop;
   v_return := v_return || c_lf;
   return v_return;
@@ -4378,32 +4377,34 @@ is
   v_return t_vc32k;
   v_index t_vc128;
   --
-  procedure append_row (p_key varchar2, p_value varchar2) is
+  procedure append_row (p_key in varchar2, p_value in varchar2) is
   begin
     v_return := v_return || to_md_tab_data(p_key, p_value, p_show_null_values => true);
   end append_row;
   --
 begin
   v_return := '#### Console Environment' || c_lflf || to_md_tab_header;
-  append_row('c_version',                       to_char( c_version                                  ) );
-  append_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,        c_date_format ) );
-  append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,         c_date_format ) );
-  append_row('g_conf_client_identifier',                 g_conf_client_identifier                     );
-  append_row('g_conf_level',                    to_char( g_conf_level                               ) );
-  append_row('level_name(g_conf_level)',             level_name(g_conf_level)                 );
-  append_row('g_conf_check_interval',           to_char( g_conf_check_interval                      ) );
-  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                    ) );
-  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                          ) );
-  append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                          ) );
-  append_row('g_conf_user_env',                   to_yn( g_conf_user_env                            ) );
-  append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                            ) );
-  append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                             ) );
-  append_row('g_conf_console_env',                to_yn( g_conf_console_env                         ) );
-  append_row('g_counters.count',                to_char( g_counters.count                           ) );
-  append_row('g_timers.count',                  to_char( g_timers.count                             ) );
-  append_row('g_log_cache.count',               to_char( g_log_cache.count                          ) );
-  append_row('g_saved_stack.count',             to_char( g_saved_stack.count                        ) );
-  append_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                           ) );
+  append_row('c_version',                       to_char( c_version                              ));
+  append_row('localtimestamp',                  to_char( localtimestamp,          c_date_format ));
+  append_row('sysdate',                         to_char( sysdate,                 c_date_format ));
+  append_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,    c_date_format ));
+  append_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,     c_date_format ));
+  append_row('g_conf_client_identifier',                 g_conf_client_identifier                );
+  append_row('g_conf_level',                    to_char( g_conf_level                           ));
+  append_row('level_name(g_conf_level)',     level_name( g_conf_level                           ));
+  append_row('g_conf_check_interval',           to_char( g_conf_check_interval                  ));
+  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                ));
+  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                      ));
+  append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                      ));
+  append_row('g_conf_user_env',                   to_yn( g_conf_user_env                        ));
+  append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                        ));
+  append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                         ));
+  append_row('g_conf_console_env',                to_yn( g_conf_console_env                     ));
+  append_row('g_counters.count',                to_char( g_counters.count                       ));
+  append_row('g_timers.count',                  to_char( g_timers.count                         ));
+  append_row('g_log_cache.count',               to_char( g_log_cache.count                      ));
+  append_row('g_saved_stack.count',             to_char( g_saved_stack.count                    ));
+  append_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       ));
 
   v_return := v_return || c_lf;
 
@@ -4444,7 +4445,7 @@ is
   invalid_user_env_key exception;
   pragma exception_init(invalid_user_env_key, -2003);
   --
-  procedure append_row (p_key varchar2) is
+  procedure append_row (p_key in varchar2) is
   begin
     v_return := v_return || to_md_tab_data(
       p_key              => p_key                         ,
@@ -4557,7 +4558,7 @@ exception
     if p_clob is null then
       p_clob := p_cache;
     else
-      dbms_lob.writeappend(p_clob, length(p_cache), p_cache);
+      sys.dbms_lob.writeappend(p_clob, length(p_cache), p_cache);
     end if;
     p_cache := p_text;
 end clob_append;
@@ -4575,7 +4576,7 @@ begin
     if p_clob is null then
       p_clob := p_text;
     else
-      dbms_lob.writeappend(p_clob, length(p_text), p_text);
+      sys.dbms_lob.writeappend(p_clob, length(p_text), p_text);
     end if;
   end if;
 end clob_append;
@@ -4591,7 +4592,7 @@ begin
     if p_clob is null then
       p_clob := p_cache;
     else
-      dbms_lob.writeappend(p_clob, length(p_cache), p_cache);
+      sys.dbms_lob.writeappend(p_clob, length(p_cache), p_cache);
     end if;
     p_cache := null;
   end if;
@@ -4635,27 +4636,27 @@ begin
   if g_conf_check_sysdate < sysdate then
     utl_set_session_conf;
   end if;
-  pipe row(new t_key_value_row('c_version',                       to_char( c_version                                   )) );
-  pipe row(new t_key_value_row('localtimestamp',                  to_char( localtimestamp,              c_date_format  )) );
-  pipe row(new t_key_value_row('sysdate',                         to_char( sysdate,                     c_date_format  )) );
-  pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,        c_date_format  )) );
-  pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,         c_date_format  )) );
-  pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                     ) );
-  pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                                )) );
-  pipe row(new t_key_value_row('level_name(g_conf_level)',        to_char( level_name(g_conf_level)                    )) );
-  pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                       )) );
-  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                     )) );
-  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                           )) );
-  pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                           )) );
-  pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                             )) );
-  pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                             )) );
-  pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                              )) );
-  pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                          )) );
-  pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                            )) );
-  pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                              )) );
-  pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                           )) );
-  pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                         )) );
-  pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                            )) );
+  pipe row(new t_key_value_row('c_version',                       to_char( c_version                              )));
+  pipe row(new t_key_value_row('localtimestamp',                  to_char( localtimestamp,          c_date_format )));
+  pipe row(new t_key_value_row('sysdate',                         to_char( sysdate,                 c_date_format )));
+  pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,    c_date_format )));
+  pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,     c_date_format )));
+  pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                ));
+  pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                           )));
+  pipe row(new t_key_value_row('level_name(g_conf_level)',     level_name( g_conf_level                           )));
+  pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                  )));
+  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                )));
+  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                      )));
+  pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                      )));
+  pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                        )));
+  pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                        )));
+  pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                         )));
+  pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                     )));
+  pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                       )));
+  pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                         )));
+  pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                      )));
+  pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                    )));
+  pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       )));
 end status;
 
 --------------------------------------------------------------------------------
@@ -4845,17 +4846,17 @@ end utl_escape_md_tab_text;
 function utl_last_error return varchar2 is
   v_return t_vc32k;
 begin
-  if utl_call_stack.error_depth > 0 and utl_call_stack.backtrace_depth > 0 then
-    if utl_call_stack.error_number(1) != 6512 and utl_call_stack.error_msg(1) != coalesce(g_prev_error_msg, 'null') then
+  if sys.utl_call_stack.error_depth > 0 and sys.utl_call_stack.backtrace_depth > 0 then
+    if sys.utl_call_stack.error_number(1) != 6512 and sys.utl_call_stack.error_msg(1) != coalesce(g_prev_error_msg, 'null') then
       --Get the last backtrace line number and also the error message
-      v_return := ' (line ' || to_char(utl_call_stack.backtrace_line(utl_call_stack.backtrace_depth)) ||
-        ', ORA-' || trim(to_char(utl_call_stack.error_number(1), '00009')) || ' ' ||
-        utl_replace_linebreaks(utl_call_stack.error_msg(1)) || ')';
+      v_return := ' (line ' || to_char(sys.utl_call_stack.backtrace_line(sys.utl_call_stack.backtrace_depth)) ||
+        ', ORA-' || trim(to_char(sys.utl_call_stack.error_number(1), '00009')) || ' ' ||
+        utl_replace_linebreaks(sys.utl_call_stack.error_msg(1)) || ')';
       --Set the new error message as the last error message.
-      g_prev_error_msg := utl_call_stack.error_msg(1);
+      g_prev_error_msg := sys.utl_call_stack.error_msg(1);
     else
       --Get only the last backtrace line number
-      v_return := ' (line ' || to_char(utl_call_stack.backtrace_line(utl_call_stack.backtrace_depth)) || ')';
+      v_return := ' (line ' || to_char(sys.utl_call_stack.backtrace_line(sys.utl_call_stack.backtrace_depth)) || ')';
     end if;
   end if;
 
@@ -4876,7 +4877,7 @@ end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
 
-function utl_normalize_label (p_label varchar2) return varchar2 is
+function utl_normalize_label (p_label in varchar2) return varchar2 is
 begin
   return coalesce(substr(p_label, 1, 128), c_default_label);
 end utl_normalize_label;
@@ -4927,7 +4928,7 @@ end utl_get_conf;
 --------------------------------------------------------------------------------
 
 procedure utl_set_conf (
-  p_conf  console_conf%rowtype )
+  p_conf in console_conf%rowtype )
 is
   pragma autonomous_transaction;
 begin
@@ -4949,7 +4950,7 @@ end utl_set_conf;
 --------------------------------------------------------------------------------
 
 procedure utl_set_client_prefs (
-  p_prefs varchar2 )
+  p_prefs in varchar2 )
 is
   pragma autonomous_transaction;
   procedure update_client_prefs is
@@ -4969,8 +4970,8 @@ end utl_set_client_prefs;
 --------------------------------------------------------------------------------
 
 function utl_get_client_prefs (
-  p_all_prefs_csv     varchar2 ,
-  p_client_identifier varchar2 )
+  p_all_prefs_csv     in varchar2 ,
+  p_client_identifier in varchar2 )
 return t_client_prefs_row is
   v_csv             t_vc32k;
   v_prefs           t_client_prefs_row;
@@ -5066,8 +5067,8 @@ end utl_get_clean_client_prefs_csv;
 --------------------------------------------------------------------------------
 
 function utl_remove_stale_client_prefs (
-  p_all_prefs_csv     varchar2 ,
-  p_client_identifier varchar2 )
+  p_all_prefs_csv     in varchar2 ,
+  p_client_identifier in varchar2 )
 return varchar2 is
   v_return t_vc32k := p_all_prefs_csv;
 begin
@@ -5077,7 +5078,7 @@ end utl_remove_stale_client_prefs;
 --------------------------------------------------------------------------------
 
 function utl_csv_get_client_identifier (
-  p_csv varchar2 )
+  p_csv in varchar2 )
 return varchar2 is
   v_stop   pls_integer;
 begin
@@ -5089,7 +5090,7 @@ end;
 --------------------------------------------------------------------------------
 
 function utl_csv_get_exit_sysdate (
-  p_csv varchar2 )
+  p_csv in varchar2 )
 return date is
   v_return date;
 begin
@@ -5107,7 +5108,7 @@ end utl_csv_get_exit_sysdate;
 --------------------------------------------------------------------------------
 
 function utl_csv_get_check_interval (
-  p_csv varchar2 )
+  p_csv in varchar2 )
 return integer is
   v_return pls_integer;
   v_start  pls_integer;
@@ -5129,7 +5130,7 @@ end utl_csv_get_check_interval;
 --------------------------------------------------------------------------------
 
 function utl_csv_get_boolean_options (
-  p_csv varchar2 )
+  p_csv in varchar2 )
 return integer is
   v_start pls_integer;
   v_stop  pls_integer;
@@ -5149,7 +5150,7 @@ end utl_csv_get_boolean_options;
 --------------------------------------------------------------------------------
 
 function utl_csv_get_cache_size (
-  p_csv varchar2 )
+  p_csv in varchar2 )
 return integer is
   v_return pls_integer;
   v_start  pls_integer;
@@ -5171,7 +5172,7 @@ end utl_csv_get_cache_size;
 --------------------------------------------------------------------------------
 
 function utl_csv_get_level (
-  p_csv varchar2 )
+  p_csv in varchar2 )
 return integer is
   v_return pls_integer;
   v_start  pls_integer;
@@ -5185,15 +5186,15 @@ begin
       p_csv,
       v_start,
       v_stop - v_start
-    ) default 1 on conversion error
+    ) default c_level_error on conversion error
   );
-  return case when v_return not between 1 and 5 then 1 else v_return end;
+  return case when v_return not between c_level_error and c_level_trace then c_level_error else v_return end;
 end utl_csv_get_level;
 
 --------------------------------------------------------------------------------
 
 function utl_csv_to_client_prefs (
-  p_csv varchar2)
+  p_csv in varchar2)
 return t_client_prefs_row is
   v_return          t_client_prefs_row;
   v_boolean_options pls_integer;
@@ -5217,7 +5218,7 @@ end utl_csv_to_client_prefs;
 --------------------------------------------------------------------------------
 
 function utl_client_prefs_to_csv (
-  p_client_prefs t_client_prefs_row )
+  p_client_prefs in t_client_prefs_row )
 return varchar2 is
   v_return t_vc32k;
 begin
@@ -5242,8 +5243,8 @@ procedure utl_set_client_identifier is
 begin
   g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
   if g_conf_client_identifier is null or g_conf_client_identifier = ':' then
-    g_conf_client_identifier := c_client_id_prefix || dbms_session.unique_session_id;
-    dbms_session.set_identifier(g_conf_client_identifier);
+    g_conf_client_identifier := c_client_id_prefix || sys.dbms_session.unique_session_id;
+    sys.dbms_session.set_identifier(g_conf_client_identifier);
   end if;
 end utl_set_client_identifier;
 
