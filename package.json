@@ -11,7 +11,6 @@
     "build": "npx eslint sources/*.js && npm run docs  && node sources/build.js && npm run install_create_console_objects && npm run install_apex_plugin",
     "docs": "npx ploc --in sources/CONSOLE.pks --out docs/package-console.md && node docs/build.js",
     "install_all": "npm-run-all -s install_create_console_objects install_grant_rights install_apex_plugin",
-    "install_create_context": "echo exit | sqlplus -S /@playground_admin @install/create_context.sql \"PLAYGROUND_DATA\"",
     "install_create_console_objects": "echo exit | sqlplus -S /@playground @install/create_console_objects.sql",
     "install_grant_rights": "echo exit | sqlplus -S /@playground @install/grant_rights.sql \"PUBLIC\"",
     "install_apex_plugin": "echo exit | sqlplus -S /@playground @install/apex_plugin.sql",

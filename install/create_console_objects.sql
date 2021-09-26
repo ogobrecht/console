@@ -176,18 +176,25 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.0-beta9'                            ;
+c_version constant varchar2 ( 10 byte ) := '1.0-rc1'                              ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error      constant pls_integer :=    1 ;
-c_level_warning    constant pls_integer :=    2 ;
-c_level_info       constant pls_integer :=    3 ;
-c_level_debug      constant pls_integer :=    4 ;
-c_level_trace      constant pls_integer :=    5 ;
-c_check_interval   constant pls_integer :=   10 ;
-c_enable_ascii_art constant boolean     := true ;
+c_level_error            constant pls_integer :=      1 ;
+c_level_warning          constant pls_integer :=      2 ;
+c_level_info             constant pls_integer :=      3 ;
+c_level_debug            constant pls_integer :=      4 ;
+c_level_trace            constant pls_integer :=      5 ;
+c_check_interval_min     constant pls_integer :=      3 ; --seconds
+c_check_interval_default constant pls_integer :=     10 ; --seconds
+c_check_interval_max     constant pls_integer :=     60 ; --seconds
+c_duration_min           constant pls_integer :=      1 ; --minutes
+c_duration_default       constant pls_integer :=     60 ; --minutes
+c_duration_max           constant pls_integer :=   1440 ; --minutes (1 day)
+c_cache_size_min         constant pls_integer :=      0 ; --log entries
+c_cache_size_max         constant pls_integer :=   1000 ; --log entries
+c_enable_ascii_art       constant boolean     :=   true ;
 
 
 /**
@@ -210,6 +217,10 @@ GitHub](https://github.com/ogobrecht/console).
 --------------------------------------------------------------------------------
 
 subtype t_vc1   is varchar2 (    1 byte);
+subtype t_vc2   is varchar2 (    2 byte);
+subtype t_vc4   is varchar2 (    4 byte);
+subtype t_vc8   is varchar2 (    8 byte);
+subtype t_vc16  is varchar2 (   16 byte);
 subtype t_vc32  is varchar2 (   32 byte);
 subtype t_vc64  is varchar2 (   64 byte);
 subtype t_vc128 is varchar2 (  128 byte);
@@ -240,7 +251,6 @@ type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
 type t_logs_tab           is table of console_logs%rowtype;
 type t_vc2_tab            is table of t_vc32k;
 type t_vc2_tab_i          is table of t_vc32k index by pls_integer;
-
 
 
 --------------------------------------------------------------------------------
@@ -275,7 +285,9 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function logs (p_log_rows in integer default 50) return t_logs_tab pipelined;
+function logs (
+  p_log_rows in integer default 50 )
+return t_logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -1287,16 +1299,16 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier in varchar2                      , -- The client identifier provided by the application or console itself.
-  p_level             in integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration          in integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        in integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    in integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack        in boolean  default false        , -- Should the call stack be included.
-  p_user_env          in boolean  default false        , -- Should the user environment be included.
-  p_apex_env          in boolean  default false        , -- Should the APEX environment be included.
-  p_cgi_env           in boolean  default false        , -- Should the CGI environment be included.
-  p_console_env       in boolean  default false          -- Should the console environment be included.
+  p_client_identifier in varchar2                                  , -- The client identifier provided by the application or console itself.
+  p_level             in integer  default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        in integer  default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval    in integer  default c_check_interval_default , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack        in boolean  default false                    , -- Should the call stack be included.
+  p_user_env          in boolean  default false                    , -- Should the user environment be included.
+  p_apex_env          in boolean  default false                    , -- Should the APEX environment be included.
+  p_cgi_env           in boolean  default false                    , -- Should the CGI environment be included.
+  p_console_env       in boolean  default false                      -- Should the console environment be included.
 );
 /**
 
@@ -1341,15 +1353,15 @@ end;
 **/
 
 procedure init (
-  p_level          in integer default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration       in integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size     in integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval in integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack     in boolean default false        , -- Should the call stack be included.
-  p_user_env       in boolean default false        , -- Should the user environment be included.
-  p_apex_env       in boolean default false        , -- Should the APEX environment be included.
-  p_cgi_env        in boolean default false        , -- Should the CGI environment be included.
-  p_console_env    in boolean default false          -- Should the console environment be included.
+  p_level          in integer default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size     in integer default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval in integer default c_check_interval_default , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack     in boolean default false                    , -- Should the call stack be included.
+  p_user_env       in boolean default false                    , -- Should the user environment be included.
+  p_apex_env       in boolean default false                    , -- Should the APEX environment be included.
+  p_cgi_env        in boolean default false                    , -- Should the CGI environment be included.
+  p_console_env    in boolean default false                      -- Should the console environment be included.
 );
 /**
 
@@ -2209,25 +2221,27 @@ create or replace package body console is
 -- PRIVATE CONSTANTS, TYPES, GLOBALS
 --------------------------------------------------------------------------------
 
-c_crlf                   constant varchar2 ( 2 byte) := chr(13) || chr(10);
-c_cr                     constant varchar2 ( 1 byte) := chr(13);
-c_lf                     constant varchar2 ( 1 byte) := chr(10);
-c_lflf                   constant varchar2 ( 2 byte) := chr(10) || chr(10);
-c_ampersand              constant varchar2 ( 1 byte) := chr(38);
-c_html_ampersand         constant varchar2 ( 5 byte) := chr(38) || 'amp;';
-c_html_less_then         constant varchar2 ( 4 byte) := chr(38) || 'lt;';
-c_html_greater_then      constant varchar2 ( 4 byte) := chr(38) || 'gt;';
-c_date_format_short      constant varchar2 (16 byte) := 'yymmddhh24miss';
-c_date_format            constant varchar2 (21 byte) := 'yyyy-mm-dd hh24:mi:ss';
-c_timestamp_format       constant varchar2 (25 byte) := 'yyyy-mm-dd hh24:mi:ss.ff6';
-c_default_label          constant varchar2 ( 7 byte) := 'Default';
-c_conf_id                constant varchar2 ( 4 byte) := 'CONF';
-c_client_id_prefix       constant varchar2 ( 6 byte) := '{o,o} ';
-c_console_owner          constant varchar2 (30 byte) := $$plsql_unit_owner;
-c_console_job_name       constant varchar2 (15 byte) := 'CONSOLE_PURGE';
-c_param_value_max_length constant pls_integer        :=  2000;
+c_crlf                   constant t_vc2       := chr(13) || chr(10);
+c_cr                     constant t_vc1       := chr(13);
+c_lf                     constant t_vc1       := chr(10);
+c_lflf                   constant t_vc2       := chr(10) || chr(10);
+c_ampersand              constant t_vc1       := chr(38);
+c_html_ampersand         constant t_vc8       := chr(38) || 'amp;';
+c_html_less_then         constant t_vc4       := chr(38) || 'lt;';
+c_html_greater_then      constant t_vc4       := chr(38) || 'gt;';
+c_timestamp_format       constant t_vc32      := 'yyyy-mm-dd hh24:mi:ss.ff6';
+c_date_format            constant t_vc32      := 'yyyy-mm-dd hh24:mi:ss';
+c_date_format_short      constant t_vc16      := 'yymmddhh24miss';
+c_default_label          constant t_vc8       := 'Default';
+c_conf_id                constant t_vc4       := 'CONF';
+c_client_id_prefix       constant t_vc8       := '{o,o} ';
+c_console_owner          constant t_vc32      := $$plsql_unit_owner;
+c_console_job_name       constant t_vc16      := 'CONSOLE_PURGE';
+c_param_value_max_length constant pls_integer :=  2000;
+c_assert_error_code      constant pls_integer := -20777 ;
+c_assert_error_message   constant t_vc32      := 'Assertion failed: ';
 
--- constants for bitand operations
+-- CONSTANTS FOR BITAND OPERATIONS
 c_call_stack             constant pls_integer := 16;
 c_user_env               constant pls_integer :=  8;
 c_apex_env               constant pls_integer :=  4;
@@ -3018,7 +3032,10 @@ procedure assert (
 is
 begin
   if not p_expression then
-    raise_application_error(-20777, 'Assertion failed: ' || p_message, true);
+    raise_application_error(
+      c_assert_error_code,
+      c_assert_error_message || p_message,
+      true);
   end if;
 end assert;
 
@@ -3041,19 +3058,19 @@ is
 begin
   if not p_expression then
     raise_application_error(
-      -20777,
+      c_assert_error_code,
       format(
-        'Assertion failed: ' || p_message ,
-        p0 => p0                          ,
-        p1 => p1                          ,
-        p2 => p2                          ,
-        p3 => p3                          ,
-        p4 => p4                          ,
-        p5 => p5                          ,
-        p6 => p6                          ,
-        p7 => p7                          ,
-        p8 => p8                          ,
-        p9 => p9                          ),
+        c_assert_error_message || p_message,
+        p0 => p0,
+        p1 => p1,
+        p2 => p2,
+        p3 => p3,
+        p4 => p4,
+        p5 => p5,
+        p6 => p6,
+        p7 => p7,
+        p8 => p8,
+        p9 => p9),
       true);
   end if;
 end assertf;
@@ -3607,7 +3624,7 @@ is
 begin
   assert (
     c_console_owner = sys_context('USERENV','SESSION_USER'),
-    'Only the owner of the package console is allowed to change the global configuration.');
+    'Only the owner of the package console is allowed to change the configuration.');
   v_conf := utl_get_conf; -- this will handle the defaults if we don't have configured console yet.
   v_conf.conf_sysdate     := sysdate;
   v_conf.conf_user        := substrb(coalesce(sys_context('USERENV','OS_USER'), sys_context('USERENV','SESSION_USER')), 1, 64);
@@ -3616,12 +3633,16 @@ begin
   v_conf.check_interval   := coalesce(p_check_interval, v_conf.check_interval);
   v_conf.enable_ascii_art := to_yn(coalesce(p_enable_ascii_art, to_bool(v_conf.enable_ascii_art)));
   assert (
-    p_level in (1, 2, 3, 4, 5),
+    p_level between c_level_error and c_level_trace,
     'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
-  assert (
-    p_check_interval between 10 and 60,
-    'Check interval needs to be between 10 and 60 (seconds). ' ||
-    'Values between 1 and 10 seconds can only be set per session with the procedure init.');
+  assertf (
+    p_check_interval between c_check_interval_default and c_check_interval_max,
+    'Check interval needs to be between %s and %s (seconds). ' ||
+    'Values between %s and %s seconds can only be set per session with the procedure init.',
+    c_check_interval_default,
+    c_check_interval_max,
+    c_check_interval_min,
+    c_check_interval_default);
   utl_set_conf(v_conf);
   utl_set_session_conf;
 end conf;
@@ -3629,33 +3650,46 @@ end conf;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier in varchar2                      ,
-  p_level             in integer  default c_level_info ,
-  p_duration          in integer  default 60           ,
-  p_cache_size        in integer  default 0            ,
-  p_check_interval    in integer  default 10           ,
-  p_call_stack        in boolean  default false        ,
-  p_user_env          in boolean  default false        ,
-  p_apex_env          in boolean  default false        ,
-  p_cgi_env           in boolean  default false        ,
-  p_console_env       in boolean  default false        )
+  p_client_identifier in varchar2                                  ,
+  p_level             in integer  default c_level_info             ,
+  p_duration          in integer  default c_duration_default       ,
+  p_cache_size        in integer  default c_cache_size_min         ,
+  p_check_interval    in integer  default c_check_interval_default ,
+  p_call_stack        in boolean  default false                    ,
+  p_user_env          in boolean  default false                    ,
+  p_apex_env          in boolean  default false                    ,
+  p_cgi_env           in boolean  default false                    ,
+  p_console_env       in boolean  default false                    )
 is
   v_prefs t_client_prefs_row;
   v_conf  console_conf%rowtype;
 begin
   assert (
-    p_level in (1, 2, 3, 4, 5),
+    p_level between c_level_error and c_level_trace,
     'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace). ' ||
     'NOTE: Level 1 (error) will be always logged and needs no explicit call to the init method.' );
-  assert ( p_client_identifier is not null        , 'Client identifier must not be null.'                      );
-  assert ( p_duration          between 1 and 1440 , 'Duration needs to be between 1 and 1440 (minutes).'       );
-  assert ( p_cache_size        between 0 and 1000 , 'Cache size needs to be between 1 and 1000 (log entries).' );
-  assert ( p_check_interval    between 1 and   60 , 'Check interval needs to be between 1 and 60 (seconds).'   );
-  assert ( p_call_stack        is not null        , 'Call stack needs to be true or false (not null).'         );
-  assert ( p_user_env          is not null        , 'User env needs to be true or false (not null).'           );
-  assert ( p_apex_env          is not null        , 'APEX env needs to be true or false (not null).'           );
-  assert ( p_cgi_env           is not null        , 'CGI env needs to be true or false (not null).'            );
-  assert ( p_console_env       is not null        , 'Console env needs to be true or false (not null).'        );
+  assert (
+    p_client_identifier is not null,
+    'Client identifier must not be null.');
+  assertf (
+    p_duration between c_duration_min and c_duration_max,
+    'Duration needs to be between %s and %s (minutes).',
+    c_duration_min,
+    c_duration_max);
+  assertf (
+    p_cache_size between c_cache_size_min and c_cache_size_max,
+    'Cache size needs to be between %s and %s (log entries).',
+    c_cache_size_min,
+    c_cache_size_max);
+  assertf ( p_check_interval between c_check_interval_min and c_check_interval_max,
+    'Check interval needs to be between %s and %s (seconds).',
+    c_check_interval_min,
+    c_check_interval_max);
+  assert ( p_call_stack  is not null, 'Call stack needs to be true or false (not null).'  );
+  assert ( p_user_env    is not null, 'User env needs to be true or false (not null).'    );
+  assert ( p_apex_env    is not null, 'APEX env needs to be true or false (not null).'    );
+  assert ( p_cgi_env     is not null, 'CGI env needs to be true or false (not null).'     );
+  assert ( p_console_env is not null, 'Console env needs to be true or false (not null).' );
   --
   v_prefs.client_identifier := p_client_identifier;
   v_prefs.level_id          := p_level;
@@ -3685,15 +3719,15 @@ begin
 end init;
 
 procedure init (
-  p_level          in integer default c_level_info ,
-  p_duration       in integer default 60           ,
-  p_cache_size     in integer default 0            ,
-  p_check_interval in integer default 10           ,
-  p_call_stack     in boolean default false        ,
-  p_user_env       in boolean default false        ,
-  p_apex_env       in boolean default false        ,
-  p_cgi_env        in boolean default false        ,
-  p_console_env    in boolean default false        )
+  p_level          in integer default c_level_info             ,
+  p_duration       in integer default c_duration_default       ,
+  p_cache_size     in integer default c_cache_size_min         ,
+  p_check_interval in integer default c_check_interval_default ,
+  p_call_stack     in boolean default false                    ,
+  p_user_env       in boolean default false                    ,
+  p_apex_env       in boolean default false                    ,
+  p_cgi_env        in boolean default false                    ,
+  p_console_env    in boolean default false                    )
 is
 begin
   init (
@@ -4920,7 +4954,7 @@ exception
     v_row.conf_user        := 'autodefault';
     v_row.level_id         := c_level_error;
     v_row.level_name       := level_name(c_level_error);
-    v_row.check_interval   := c_check_interval;
+    v_row.check_interval   := c_check_interval_default;
     v_row.enable_ascii_art := to_yn(c_enable_ascii_art);
     return v_row;
 end utl_get_conf;
@@ -5122,9 +5156,9 @@ begin
       p_csv,
       v_start,
       v_stop - v_start
-    ) default 10 on conversion error
+    ) default c_check_interval_default on conversion error
   );
-  return case when v_return not between 10 and 60 then 10 else v_return end;
+  return case when v_return not between c_check_interval_min and c_check_interval_max then c_check_interval_default else v_return end;
 end utl_csv_get_check_interval;
 
 --------------------------------------------------------------------------------

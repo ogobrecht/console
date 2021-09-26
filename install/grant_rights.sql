@@ -9,8 +9,8 @@ whenever sqlerror exit sql.sqlcode rollback
 
 prompt ORACLE INSTRUMENTATION CONSOLE: GRANT RIGHTS TO CLIENT SCHEMA
 declare
-  v_schema                varchar2( 30);
-  v_ddl                   varchar2(100);
+  v_schema varchar2( 30);
+  v_ddl    varchar2(100);
 begin
 
   --set config

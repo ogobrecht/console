@@ -1,18 +1,25 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.0-beta9'                            ;
+c_version constant varchar2 ( 10 byte ) := '1.0-rc1'                              ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error      constant pls_integer :=    1 ;
-c_level_warning    constant pls_integer :=    2 ;
-c_level_info       constant pls_integer :=    3 ;
-c_level_debug      constant pls_integer :=    4 ;
-c_level_trace      constant pls_integer :=    5 ;
-c_check_interval   constant pls_integer :=   10 ;
-c_enable_ascii_art constant boolean     := true ;
+c_level_error            constant pls_integer :=      1 ;
+c_level_warning          constant pls_integer :=      2 ;
+c_level_info             constant pls_integer :=      3 ;
+c_level_debug            constant pls_integer :=      4 ;
+c_level_trace            constant pls_integer :=      5 ;
+c_check_interval_min     constant pls_integer :=      3 ; --seconds
+c_check_interval_default constant pls_integer :=     10 ; --seconds
+c_check_interval_max     constant pls_integer :=     60 ; --seconds
+c_duration_min           constant pls_integer :=      1 ; --minutes
+c_duration_default       constant pls_integer :=     60 ; --minutes
+c_duration_max           constant pls_integer :=   1440 ; --minutes (1 day)
+c_cache_size_min         constant pls_integer :=      0 ; --log entries
+c_cache_size_max         constant pls_integer :=   1000 ; --log entries
+c_enable_ascii_art       constant boolean     :=   true ;
 
 
 /**
@@ -35,6 +42,10 @@ GitHub](https://github.com/ogobrecht/console).
 --------------------------------------------------------------------------------
 
 subtype t_vc1   is varchar2 (    1 byte);
+subtype t_vc2   is varchar2 (    2 byte);
+subtype t_vc4   is varchar2 (    4 byte);
+subtype t_vc8   is varchar2 (    8 byte);
+subtype t_vc16  is varchar2 (   16 byte);
 subtype t_vc32  is varchar2 (   32 byte);
 subtype t_vc64  is varchar2 (   64 byte);
 subtype t_vc128 is varchar2 (  128 byte);
@@ -65,7 +76,6 @@ type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
 type t_logs_tab           is table of console_logs%rowtype;
 type t_vc2_tab            is table of t_vc32k;
 type t_vc2_tab_i          is table of t_vc32k index by pls_integer;
-
 
 
 --------------------------------------------------------------------------------
@@ -100,7 +110,9 @@ select console.my_log_level from dual;
 
 --------------------------------------------------------------------------------
 
-function logs (p_log_rows in integer default 50) return t_logs_tab pipelined;
+function logs (
+  p_log_rows in integer default 50 )
+return t_logs_tab pipelined;
 /**
 
 View the last log entries from the log cache and the log table (if not enough in
@@ -1112,16 +1124,16 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier in varchar2                      , -- The client identifier provided by the application or console itself.
-  p_level             in integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration          in integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        in integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    in integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack        in boolean  default false        , -- Should the call stack be included.
-  p_user_env          in boolean  default false        , -- Should the user environment be included.
-  p_apex_env          in boolean  default false        , -- Should the APEX environment be included.
-  p_cgi_env           in boolean  default false        , -- Should the CGI environment be included.
-  p_console_env       in boolean  default false          -- Should the console environment be included.
+  p_client_identifier in varchar2                                  , -- The client identifier provided by the application or console itself.
+  p_level             in integer  default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size        in integer  default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval    in integer  default c_check_interval_default , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack        in boolean  default false                    , -- Should the call stack be included.
+  p_user_env          in boolean  default false                    , -- Should the user environment be included.
+  p_apex_env          in boolean  default false                    , -- Should the APEX environment be included.
+  p_cgi_env           in boolean  default false                    , -- Should the CGI environment be included.
+  p_console_env       in boolean  default false                      -- Should the console environment be included.
 );
 /**
 
@@ -1166,15 +1178,15 @@ end;
 **/
 
 procedure init (
-  p_level          in integer default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration       in integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size     in integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval in integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack     in boolean default false        , -- Should the call stack be included.
-  p_user_env       in boolean default false        , -- Should the user environment be included.
-  p_apex_env       in boolean default false        , -- Should the APEX environment be included.
-  p_cgi_env        in boolean default false        , -- Should the CGI environment be included.
-  p_console_env    in boolean default false          -- Should the console environment be included.
+  p_level          in integer default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_cache_size     in integer default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_check_interval in integer default c_check_interval_default , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack     in boolean default false                    , -- Should the call stack be included.
+  p_user_env       in boolean default false                    , -- Should the user environment be included.
+  p_apex_env       in boolean default false                    , -- Should the APEX environment be included.
+  p_cgi_env        in boolean default false                    , -- Should the CGI environment be included.
+  p_console_env    in boolean default false                      -- Should the console environment be included.
 );
 /**
 
