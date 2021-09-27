@@ -61,6 +61,8 @@ The main instrumentation methods:
 - [console.count](package-console.md#procedure-count)
 - [console.count_val](package-console.md#procedure-count_val) &
   [count_end](package-console.md#procedure-count_end) (level info)
+- [console.count_val](package-console.md#function-count_val) &
+  [count_end](package-console.md#function-count_end) (function overloads, independent of log level)
 - [console.time](package-console.md#procedure-time)
 - [console.time_val](package-console.md#procedure-time_val) &
   [time_end](package-console.md#procedure-time_end) (level info)
