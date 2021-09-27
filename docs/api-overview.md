@@ -69,7 +69,8 @@ The main instrumentation methods:
 - [console.time_val](package-console.md#function-time_val) &
   [time_end](package-console.md#function-time_end) (function overloads, independent of log level)
 - [console.table#](package-console.md#procedure-table) (level info)
-- [console.assert](package-console.md#procedure-assert)
+- [console.assert](package-console.md#procedure-assert) &
+  [assertf](package-console.md#procedure-assertf)
 - [console.format](package-console.md#function-format)
 - [console.add_param](package-console.md#procedure-add_param)
 
@@ -94,7 +95,7 @@ status of the package console:
 - [console.conf](package-console.md#procedure-conf)
 - [console.init](package-console.md#procedure-init) &
   [exit](package-console.md#procedure-exit) &
-  [exit_stale](package-console.md#procedure-exit_stale)
+  [exit_all](package-console.md#procedure-exit_all)
 - [console.my_client_identifier](package-console.md#function-my_client_identifier)
   & [my_log_level](package-console.md#function-my_log_level)
 - [console.context_is_available](package-console.md#function-context_is_available)
@@ -121,11 +122,11 @@ Additional housekeeping methods:
 
 - [console.purge](package-console.md#procedure-purge) &
   [purge_all](package-console.md#procedure-purge_all)
-- [console.cleanup_job_create](package-console.md#procedure-cleanup_job_create)
-  & [cleanup_job_run](package-console.md#procedure-cleanup_job_run) &
-  [cleanup_job_disable](package-console.md#procedure-cleanup_job_disable) &
-  [cleanup_job_enable](package-console.md#procedure-cleanup_job_enable) &
-  [cleanup_job_drop](package-console.md#procedure-cleanup_job_drop)
+- [console.purge_job_create](package-console.md#procedure-purge_job_create)
+  & [purge_job_run](package-console.md#procedure-purge_job_run) &
+  [purge_job_disable](package-console.md#procedure-purge_job_disable) &
+  [purge_job_enable](package-console.md#procedure-purge_job_enable) &
+  [purge_job_drop](package-console.md#procedure-purge_job_drop)
 
 Additional helper methods (mostly used by console internally) which might also
 helpful for you:
@@ -145,7 +146,6 @@ helpful for you:
   [runtime_milliseconds](package-console.md#function-runtime_milliseconds)
 - [console.level_name](package-console.md#function-level_name)
 - [console.scope](package-console.md#function-scope) &
-  [calling_unit](package-console.md#function-calling_unit) &
   [call_stack](package-console.md#function-call_stack)
 - [console.apex_env](package-console.md#function-apex_env) &
   [cgi_env](package-console.md#function-cgi_env) &
