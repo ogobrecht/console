@@ -264,10 +264,10 @@ JavaScript console:
 - [console.debug](package-console.md#procedure-debug) (level debug)
 - [console.trace](package-console.md#procedure-trace) (level trace)
 - [console.count](package-console.md#procedure-count)
-- [console.count_log](package-console.md#procedure-count_log) &
+- [console.count_val](package-console.md#procedure-count_val) &
   [count_end](package-console.md#procedure-count_end) (level info)
 - [console.time](package-console.md#procedure-time)
-- [console.time_log](package-console.md#procedure-time_log) &
+- [console.time_val](package-console.md#procedure-time_val) &
   [console.time_end](package-console.md#procedure-time_end) (level info)
 - [console.table#](package-console.md#procedure-table) (level info)
 - [console.assert](package-console.md#procedure-assert) &
@@ -364,26 +364,22 @@ select * from table(console.status);
 
 | KEY                          | VALUE               |
 |------------------------------|---------------------|
-| c_version                    | 1.0-beta5           |
-| g_conf_context_is_available  | N                   |
-| c_ctx_namespace              | CONSOLE_PLAYGROUND  |
-| g_conf_check_sysdate         | 2021-05-02 13:06:55 |
-| g_conf_exit_sysdate          | 2021-05-03 13:06:45 |
-| g_conf_client_identifier     | {o,o} 1EA16A180002  |
-| g_conf_level                 | 1                   |
-| level_name(g_conf_level) | error               |
-| g_conf_cache_size            | 0                   |
+| c_version                    | 1.0-rc1             |
+| localtimestamp               | 2021-09-27 20:30:48 |
+| sysdate                      | 2021-09-27 18:30:48 |
+| g_conf_check_sysdate         | 2021-09-27 18:30:58 |
+| g_conf_exit_sysdate          | 2021-09-27 19:19:13 |
+| g_conf_client_identifier     | {o,o} 5BDAC2040002  |
+| g_conf_level                 | 3                   |
+| level_name(g_conf_level)     | info                |
 | g_conf_check_interval        | 10                  |
+| g_conf_enable_ascii_art      | Y                   |
+| g_conf_cache_size            | 0                   |
 | g_conf_call_stack            | N                   |
 | g_conf_user_env              | N                   |
 | g_conf_apex_env              | N                   |
 | g_conf_cgi_env               | N                   |
 | g_conf_console_env           | N                   |
-| g_conf_enable_ascii_art      | Y                   |
-| g_conf_units_level(2)        |                     |
-| g_conf_units_level(3)        |                     |
-| g_conf_units_level(4)        |                     |
-| g_conf_units_level(5)        |                     |
 | g_counters.count             | 0                   |
 | g_timers.count               | 0                   |
 | g_log_cache.count            | 0                   |

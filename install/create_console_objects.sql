@@ -181,21 +181,6 @@ c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error            constant pls_integer :=      1 ;
-c_level_warning          constant pls_integer :=      2 ;
-c_level_info             constant pls_integer :=      3 ;
-c_level_debug            constant pls_integer :=      4 ;
-c_level_trace            constant pls_integer :=      5 ;
-c_check_interval_min     constant pls_integer :=      3 ; --seconds
-c_check_interval_default constant pls_integer :=     10 ; --seconds
-c_check_interval_max     constant pls_integer :=     60 ; --seconds
-c_duration_min           constant pls_integer :=      1 ; --minutes
-c_duration_default       constant pls_integer :=     60 ; --minutes
-c_duration_max           constant pls_integer :=   1440 ; --minutes (1 day)
-c_cache_size_min         constant pls_integer :=      0 ; --log entries
-c_cache_size_max         constant pls_integer :=   1000 ; --log entries
-c_enable_ascii_art       constant boolean     :=   true ;
-
 
 /**
 
@@ -213,44 +198,74 @@ GitHub](https://github.com/ogobrecht/console).
 
 
 --------------------------------------------------------------------------------
--- PUBLIC TYPES
+-- PUBLIC SIMPLE TYPES
 --------------------------------------------------------------------------------
 
-subtype t_vc1   is varchar2 (    1 byte);
-subtype t_vc2   is varchar2 (    2 byte);
-subtype t_vc4   is varchar2 (    4 byte);
-subtype t_vc8   is varchar2 (    8 byte);
-subtype t_vc16  is varchar2 (   16 byte);
-subtype t_vc32  is varchar2 (   32 byte);
-subtype t_vc64  is varchar2 (   64 byte);
-subtype t_vc128 is varchar2 (  128 byte);
-subtype t_vc256 is varchar2 (  256 byte);
-subtype t_vc1k  is varchar2 ( 1024 byte);
-subtype t_vc4k  is varchar2 ( 4096 byte);
-subtype t_vc32k is varchar2 (32767 byte);
+subtype t_int  is pls_integer;
+subtype t_1b   is varchar2 (    1 byte);
+subtype t_2b   is varchar2 (    2 byte);
+subtype t_4b   is varchar2 (    4 byte);
+subtype t_8b   is varchar2 (    8 byte);
+subtype t_16b  is varchar2 (   16 byte);
+subtype t_32b  is varchar2 (   32 byte);
+subtype t_64b  is varchar2 (   64 byte);
+subtype t_128b is varchar2 (  128 byte);
+subtype t_256b is varchar2 (  256 byte);
+subtype t_512b is varchar2 (  512 byte);
+subtype t_1kb  is varchar2 ( 1024 byte);
+subtype t_2kb  is varchar2 ( 2048 byte);
+subtype t_4kb  is varchar2 ( 4096 byte);
+subtype t_8kb  is varchar2 ( 8192 byte);
+subtype t_16kb is varchar2 (16384 byte);
+subtype t_32kb is varchar2 (32767 byte);
+
+
+--------------------------------------------------------------------------------
+-- PUBLIC COMPLEX TYPES
+--------------------------------------------------------------------------------
 
 type t_client_prefs_row is record(
-  client_identifier varchar2(64 byte) ,
-  check_interval    integer           ,
-  exit_sysdate      date              ,
-  level_id          integer           ,
-  level_name        varchar2(10 byte) ,
-  cache_size        integer           ,
-  call_stack        varchar2( 1 byte) ,
-  user_env          varchar2( 1 byte) ,
-  apex_env          varchar2( 1 byte) ,
-  cgi_env           varchar2( 1 byte) ,
-  console_env       varchar2( 1 byte) );
-type t_key_value_row    is record(
-  key    t_vc128 ,
-  value  t_vc4k  );
+  client_identifier t_64b   ,
+  check_interval    integer ,
+  exit_sysdate      date    ,
+  level_id          integer ,
+  level_name        t_16b   ,
+  cache_size        integer ,
+  call_stack        t_1b    ,
+  user_env          t_1b    ,
+  apex_env          t_1b    ,
+  cgi_env           t_1b    ,
+  console_env       t_1b    );
+type t_key_value_row is record(
+  key   t_128b ,
+  value t_4kb  );
 type t_client_prefs_tab   is table of t_client_prefs_row;
 type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
 type t_key_value_tab      is table of t_key_value_row;
 type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
 type t_logs_tab           is table of console_logs%rowtype;
-type t_vc2_tab            is table of t_vc32k;
-type t_vc2_tab_i          is table of t_vc32k index by pls_integer;
+type t_vc2_tab            is table of t_32kb;
+type t_vc2_tab_i          is table of t_32kb index by pls_integer;
+
+
+--------------------------------------------------------------------------------
+-- PUBLIC CONSTANTS
+--------------------------------------------------------------------------------
+
+c_level_error            constant t_int   :=      1 ;
+c_level_warning          constant t_int   :=      2 ;
+c_level_info             constant t_int   :=      3 ;
+c_level_debug            constant t_int   :=      4 ;
+c_level_trace            constant t_int   :=      5 ;
+c_check_interval_min     constant t_int   :=      3 ; -- seconds
+c_check_interval_default constant t_int   :=     10 ; -- seconds
+c_check_interval_max     constant t_int   :=     60 ; -- seconds
+c_duration_min           constant t_int   :=      1 ; -- minutes
+c_duration_default       constant t_int   :=     60 ; -- minutes
+c_duration_max           constant t_int   :=   1440 ; -- minutes (1 day)
+c_cache_size_min         constant t_int   :=      0 ; -- log entries
+c_cache_size_max         constant t_int   :=   1000 ; -- log entries
+c_enable_ascii_art       constant boolean :=   true ;
 
 
 --------------------------------------------------------------------------------
@@ -700,59 +715,83 @@ Log a message with the level 5 (trace). Returns the log ID.
 procedure count ( p_label in varchar2 default null );
 /**
 
-Starts a new counter with a value of one or adds one to an existent counter.
+Creates a new counter with a value of one or adds one to an existing counter.
 
-Call `console.count_end('yourLabel')` to stop the counter and get or log the count
-value.
-
-**/
-
-procedure count_log ( p_label in varchar2 default null );
-/**
-
-Logs a counter, if current log level >= 3 (info).
-
-Can be called multiple times - use `console.count_end` to stop a counter and get or
-log the counter value.
-
-**/
-
-procedure count_end ( p_label in varchar2 default null );
-/**
-
-Stops a counter and logs the result, if current log level >= 3 (info).
+Does not depend on a log level, can be used anywhere to count things.
 
 EXAMPLE
 
 ```sql
---Set your own session in logging mode (defaults: level 3=info for the next 60 minutes).
-exec console.init;
-
+declare
+  v_counter varchar2(30) := 'Processing xyz';
 begin
-  --Do your stuff here.
-  for i in 1 .. 1000 loop
-    if mod(i, 3) = 0 then
-      console.count('myLabel');
-    end if;
+  for i in 1 .. 10 loop
+    console.count(v_counter);
   end loop;
+  console.count_val(v_counter); -- without optional message
 
-  --Log your count value.
-  console.count_end('myLabel');
+  for i in 1 .. 100 loop
+    console.count(v_counter);
+  end loop;
+  console.count_val(v_counter, 'end of step two');
+
+  for i in 1 .. 1000 loop
+    console.count(v_counter);
+  end loop;
+  console.count_end(v_counter, 'end of step three');
 end;
 {{/}}
-
---Stop logging mode of your own session.
-exec console.exit;
 ```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- Processing xyz: 10
+- Processing xyz: 110 - end of step two
+- Processing xyz: 1110 - end of step three
 
 **/
 
-function count_end ( p_label in varchar2 default null ) return varchar2;
+--------------------------------------------------------------------------------
+
+procedure count_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 /**
 
-Stops a counter and returns the result.
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info).
+
+Also see procedure `count` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure count_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
+/**
+
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info). Delete the counter.
+
+Also see procedure `count` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function count_val (
+  p_label   in varchar2 default null )
+return varchar2;
+/**
+
+Returns the current counter value.
 
 Does not depend on a log level, can be used anywhere to count things.
+
+Also see procedure `count` above.
 
 EXAMPLE
 
@@ -760,20 +799,44 @@ EXAMPLE
 set serveroutput on
 
 declare
-  v_my_label constant varchar2(20) := 'My label: ';
+  v_label constant varchar2(20) := 'Count nonsense';
 begin
-  --do your stuff here
   for i in 1 .. 1000 loop
     if mod(i, 3) = 0 then
-      console.count(v_my_label);
+      console.count(v_label);
     end if;
   end loop;
+  console.printf('Current value of nonsense: %s', console.count_val(v_label) );
 
-  --Return your count value.
-  dbms_output.put_line(v_my_label || console.count_end(v_my_label) );
+  for i in 1 .. 10 loop
+    console.count(v_label);
+  end loop;
+  console.printf('Final value of nonsense: %s', console.count_end(v_label) );
 end;
 {{/}}
 ```
+
+This will print something like the following to the server output:
+
+```
+Current value of nonsense: 333
+Final value of nonsense: 343
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function count_end (
+  p_label   in varchar2 default null )
+return varchar2;
+/**
+
+Returns the current counter value and deletes the counter.
+
+Does not depend on a log level, can be used anywhere to count things.
+
+Also see function `count_val` above.
 
 **/
 
@@ -782,89 +845,89 @@ end;
 procedure time ( p_label in varchar2 default null );
 /**
 
-Starts a new timer.
-
-Call `console.time_end('yourLabel')` to stop the timer and get or log the elapsed
-time.
-
-**/
-
-procedure time_log ( p_label in varchar2 default null );
-/**
-
-Logs the elapsed time, if current log level >= 3 (info).
-
-Can be called multiple times - use `console.time_end` to stop a timer and get or
-log the elapsed time.
-
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-  --Do other things.
-  --Your code here...
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-end;
-{{/}}
-
---Stop logging mode of your own session.
-exec console.exit;
-```
-
-**/
-
-procedure time_end ( p_label in varchar2 default null );
-/**
-
-Stops a timer and logs the result, if current log level >= 3 (info).
-
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the time.
-  console.time_end('myLabel');
-end;
-{{/}}
-
---Stop logging mode of your own session.
-exec console.exit;
-```
-
-**/
-
-function time_end ( p_label in varchar2 default null ) return varchar2;
-/**
-
-Stops a timer and returns the result.
+Create and a new timer. If the timer is already existing it will start again
+from zero.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
+
+EXAMPLE
+
+```sql
+declare
+  v_timer varchar2(30) := 'Processing xyz';
+begin
+  console.time(v_timer);
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_val(v_timer); -- without optional message
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_val(v_timer, 'end of step two');
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_end(v_timer, 'end of step three');
+end;
+{{/}}
+```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- Processing xyz: 00:00:00.000100
+- Processing xyz: 00:00:00.003884 - end of step two
+- Processing xyz: 00:00:00.004708 - end of step three
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure time_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
+/**
+
+Log the elapsed time, if the sessions log level is greater or equal 3 (info).
+
+Can be called multiple times - use `console.time_end` to log the elapsed time
+and delete the timer.
+
+Also see procedure `time` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure time_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
+/**
+
+Log the elapsed time and delete the timer, if the sessions log level is greater
+or equal 3 (info).
+
+Also see procedure `time` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function time_val ( p_label in varchar2 default null ) return varchar2;
+/**
+
+Returns the elapsed time.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Can be called multiple times - use `console.time_end` to return the elapsed time
+and delete the timer.
+
+Also see procedure `time` above.
 
 EXAMPLE
 
@@ -872,24 +935,59 @@ EXAMPLE
 set serveroutput on
 
 declare
-  v_my_label constant varchar2(20) := 'My label: ';
+  v_timer varchar2(30) := 'myTimer';
 begin
-  console.time(v_my_label);
+  console.time(v_timer);
 
-  --do your stuff here
+  console.print('Processing step one...');
   for i in 1 .. 100000 loop
     null;
   end loop;
+  console.printf('Elapsed time: %s', console.time_val(v_timer));
 
-  --Return the runtime.
-  dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
+  console.print('Processing step two...');
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.printf('Elapsed time: %s', console.time_val(v_timer));
+
+  console.print('Processing step three...');
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.printf('Elapsed time: %s', console.time_end(v_timer));
 end;
 {{/}}
+```
+
+This will result in something like the following output:
+
+```
+Processing step one...
+Elapsed time: 00:00:00.000079
+Processing step two...
+Elapsed time: 00:00:00.000145
+Processing step three...
+Elapsed time: 00:00:00.000158
 ```
 
 **/
 
 --------------------------------------------------------------------------------
+
+function time_end ( p_label in varchar2 default null ) return varchar2;
+/**
+
+Returns the elapsed time and deletes the timer.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Also see function `time_val` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure table# (
   p_data_cursor       in sys_refcursor         ,
   p_comment           in varchar2 default null ,
@@ -2221,78 +2319,78 @@ create or replace package body console is
 -- PRIVATE CONSTANTS, TYPES, GLOBALS
 --------------------------------------------------------------------------------
 
-c_crlf                   constant t_vc2       := chr(13) || chr(10);
-c_cr                     constant t_vc1       := chr(13);
-c_lf                     constant t_vc1       := chr(10);
-c_lflf                   constant t_vc2       := chr(10) || chr(10);
-c_ampersand              constant t_vc1       := chr(38);
-c_html_ampersand         constant t_vc8       := chr(38) || 'amp;';
-c_html_less_then         constant t_vc4       := chr(38) || 'lt;';
-c_html_greater_then      constant t_vc4       := chr(38) || 'gt;';
-c_timestamp_format       constant t_vc32      := 'yyyy-mm-dd hh24:mi:ss.ff6';
-c_date_format            constant t_vc32      := 'yyyy-mm-dd hh24:mi:ss';
-c_date_format_short      constant t_vc16      := 'yymmddhh24miss';
-c_default_label          constant t_vc8       := 'Default';
-c_conf_id                constant t_vc4       := 'CONF';
-c_client_id_prefix       constant t_vc8       := '{o,o} ';
-c_console_owner          constant t_vc32      := $$plsql_unit_owner;
-c_console_job_name       constant t_vc16      := 'CONSOLE_PURGE';
-c_param_value_max_length constant pls_integer :=  2000;
-c_assert_error_code      constant pls_integer := -20777 ;
-c_assert_error_message   constant t_vc32      := 'Assertion failed: ';
+c_crlf                   constant t_2b  := chr(13) || chr(10);
+c_cr                     constant t_1b  := chr(13);
+c_lf                     constant t_1b  := chr(10);
+c_lflf                   constant t_2b  := chr(10) || chr(10);
+c_ampersand              constant t_1b  := chr(38);
+c_html_ampersand         constant t_8b  := chr(38) || 'amp;';
+c_html_less_then         constant t_4b  := chr(38) || 'lt;';
+c_html_greater_then      constant t_4b  := chr(38) || 'gt;';
+c_timestamp_format       constant t_32b := 'yyyy-mm-dd hh24:mi:ss.ff6';
+c_date_format            constant t_32b := 'yyyy-mm-dd hh24:mi:ss';
+c_date_format_short      constant t_16b := 'yymmddhh24miss';
+c_default_label          constant t_8b  := 'default';
+c_conf_id                constant t_4b  := 'CONF';
+c_client_id_prefix       constant t_8b  := '{o,o} ';
+c_console_owner          constant t_32b := $$plsql_unit_owner;
+c_console_job_name       constant t_16b := 'CONSOLE_PURGE';
+c_param_value_max_length constant t_int :=  2000;
+c_assert_error_code      constant t_int := -20777 ;
+c_assert_error_message   constant t_32b := 'Assertion failed: ';
 
 -- CONSTANTS FOR BITAND OPERATIONS
-c_call_stack             constant pls_integer := 16;
-c_user_env               constant pls_integer :=  8;
-c_apex_env               constant pls_integer :=  4;
-c_cgi_env                constant pls_integer :=  2;
-c_console_env            constant pls_integer :=  1;
+c_call_stack             constant t_int := 16;
+c_user_env               constant t_int :=  8;
+c_apex_env               constant t_int :=  4;
+c_cgi_env                constant t_int :=  2;
+c_console_env            constant t_int :=  1;
 
 -- NUMERIC TYPE IDENTFIERS
--- c_number                 constant pls_integer :=   2; -- float
--- c_binary_float           constant pls_integer := 100;
--- c_binary_double          constant pls_integer := 101;
+-- c_number                 constant t_int :=   2; -- float
+-- c_binary_float           constant t_int := 100;
+-- c_binary_double          constant t_int := 101;
 -- STRING TYPE IDENTFIERS
--- c_char                   constant pls_integer :=  96; -- nchar
--- c_varchar2               constant pls_integer :=   1; -- nvarchar2
-   c_long                   constant pls_integer :=   8;
-   c_clob                   constant pls_integer := 112; -- nclob
-   c_xmltype                constant pls_integer := 109; -- anydata, anydataset, anytype, object type, varray, nested table
--- c_rowid                  constant pls_integer :=  69;
--- c_urowid                 constant pls_integer := 208;
+-- c_char                   constant t_int :=  96; -- nchar
+-- c_varchar2               constant t_int :=   1; -- nvarchar2
+   c_long                   constant t_int :=   8;
+   c_clob                   constant t_int := 112; -- nclob
+   c_xmltype                constant t_int := 109; -- anydata, anydataset, anytype, object type, varray, nested table
+-- c_rowid                  constant t_int :=  69;
+-- c_urowid                 constant t_int := 208;
 -- BINARY TYPE IDENTFIERS
-   c_raw                    constant pls_integer :=  23;
-   c_long_raw               constant pls_integer :=  24;
-   c_blob                   constant pls_integer := 113;
-   c_bfile                  constant pls_integer := 114;
+   c_raw                    constant t_int :=  23;
+   c_long_raw               constant t_int :=  24;
+   c_blob                   constant t_int := 113;
+   c_bfile                  constant t_int := 114;
 -- DATE TYPE IDENTFIERS
--- c_date                   constant pls_integer :=  12;
--- c_timestamp              constant pls_integer := 180;
--- c_timestamp_tz           constant pls_integer := 181;
--- c_timestamp_ltz          constant pls_integer := 231;
+-- c_date                   constant t_int :=  12;
+-- c_timestamp              constant t_int := 180;
+-- c_timestamp_tz           constant t_int := 181;
+-- c_timestamp_ltz          constant t_int := 231;
 -- INTERVAL TYPE IDENTFIERS
--- c_interval_year_to_month constant pls_integer := 182;
--- c_interval_day_to_second constant pls_integer := 183;
+-- c_interval_year_to_month constant t_int := 182;
+-- c_interval_day_to_second constant t_int := 183;
 -- CURSOR TYPE IDENTFIERS
--- c_ref                    constant pls_integer := 111;
--- c_ref_cursor             constant pls_integer := 102; -- same identfiers for strong and weak ref cursor
+-- c_ref                    constant t_int := 111;
+-- c_ref_cursor             constant t_int := 102; -- same identfiers for strong and weak ref cursor
 
-type t_timers_tab      is table of timestamp   index by t_vc128;
-type t_counters_tab    is table of pls_integer index by t_vc128;
-type t_saved_stack_tab is table of t_vc1k      index by binary_integer;
+type t_timers_tab      is table of timestamp index by t_128b;
+type t_counters_tab    is table of t_int     index by t_128b;
+type t_saved_stack_tab is table of t_1kb     index by binary_integer;
 
 g_params         t_key_value_tab_i;
 g_timers         t_timers_tab;
 g_counters       t_counters_tab;
 g_log_cache      t_logs_tab;
 g_saved_stack    t_saved_stack_tab;
-g_prev_error_msg t_vc1k;
+g_prev_error_msg t_1kb;
 
-g_conf_client_identifier t_vc64;
+g_conf_client_identifier t_64b;
 g_conf_exit_sysdate      date;
 g_conf_check_interval    integer;
 g_conf_check_sysdate     date;
-g_conf_level             pls_integer;
+g_conf_level             t_int;
 g_conf_cache_size        integer;
 g_conf_call_stack        boolean;
 g_conf_user_env          boolean;
@@ -2419,8 +2517,8 @@ end my_log_level;
 function logs (
   p_log_rows in integer default 50 )
 return t_logs_tab pipelined is
-  v_count pls_integer := 0;
-  v_left  pls_integer;
+  v_count t_int := 0;
+  v_left  t_int;
 begin
   for i in reverse 1 .. g_log_cache.count loop
     exit when v_count > p_log_rows;
@@ -2874,7 +2972,7 @@ end trace;
 procedure count (
   p_label in varchar2 default null )
 is
-  v_label t_vc128;
+  v_label t_128b;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
@@ -2884,10 +2982,13 @@ begin
   end if;
 end count;
 
-procedure count_log (
-  p_label in varchar2 default null )
+--------------------------------------------------------------------------------
+
+procedure count_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null )
 is
-  v_label  t_vc128;
+  v_label  t_128b;
   v_log_id console_logs.log_id%type;
 begin
   v_label := utl_normalize_label(p_label);
@@ -2895,17 +2996,22 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || to_char(g_counters(v_label)) );
+        p_message => v_label || ': ' || to_char(g_counters(v_label)) ||
+                     case when p_message is not null then ' - ' || p_message end
+      );
     end if;
   else
     warn('Counter `' || v_label || '` does not exist.');
   end if;
-end count_log;
+end count_val;
+
+--------------------------------------------------------------------------------
 
 procedure count_end (
-  p_label in varchar2 default null )
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null )
 is
-  v_label  t_vc128;
+  v_label  t_128b;
   v_log_id console_logs.log_id%type;
 begin
   v_label := utl_normalize_label(p_label);
@@ -2913,7 +3019,9 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || to_char(g_counters(v_label)) || ' - counter ended');
+        p_message => v_label || ': ' || to_char(g_counters(v_label)) ||
+                     case when p_message is not null then ' - ' || p_message end
+    );
     end if;
     g_counters.delete(v_label);
   else
@@ -2921,12 +3029,32 @@ begin
   end if;
 end count_end;
 
+--------------------------------------------------------------------------------
+
+function count_val (
+  p_label in varchar2 default null )
+return varchar2
+is
+  v_label  t_128b;
+  v_return t_64b;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    v_return := to_char(g_counters(v_label));
+  else
+    v_return := 'Counter `' || v_label || '` does not exist.';
+  end if;
+  return v_return;
+end count_val;
+
+--------------------------------------------------------------------------------
+
 function count_end (
   p_label in varchar2 default null )
 return varchar2
 is
-  v_label  t_vc128;
-  v_return t_vc64;
+  v_label  t_128b;
+  v_return t_64b;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
@@ -2947,10 +3075,13 @@ begin
   g_timers(utl_normalize_label(p_label)) := localtimestamp;
 end time;
 
-procedure time_log (
-  p_label in varchar2 default null )
+--------------------------------------------------------------------------------
+
+procedure time_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null )
 is
-  v_label  t_vc128;
+  v_label  t_128b;
   v_log_id console_logs.log_id%type;
 begin
   v_label := utl_normalize_label(p_label);
@@ -2958,17 +3089,40 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || runtime (g_timers(v_label)) );
+        p_message => v_label || ': ' || runtime (g_timers(v_label)) ||
+                     case when p_message is not null then ' - ' || p_message end
+      );
     end if;
   else
     warn('Timer `' || v_label || '` does not exist.');
   end if;
-end time_log;
+end time_val;
+
+--------------------------------------------------------------------------------
+
+function time_val (
+  p_label in varchar2 default null )
+return varchar2
+is
+  v_label  t_128b;
+  v_return t_64b;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_timers.exists(v_label) then
+    v_return :=  runtime(g_timers(v_label));
+  else
+    v_return := 'Timer `' || v_label || '` does not exist.';
+  end if;
+  return v_return;
+end time_val;
+
+--------------------------------------------------------------------------------
 
 procedure time_end (
-  p_label in varchar2 default null )
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null )
 is
-  v_label  t_vc128;
+  v_label  t_128b;
   v_log_id console_logs.log_id%type;
 begin
   v_label := utl_normalize_label(p_label);
@@ -2976,7 +3130,9 @@ begin
     if utl_logging_is_enabled (c_level_info) then
       v_log_id := utl_create_log_entry (
         p_level   => c_level_info,
-        p_message => v_label || ': ' || runtime (g_timers(v_label)) || ' - timer ended' );
+        p_message => v_label || ': ' || runtime (g_timers(v_label)) ||
+                     case when p_message is not null then ' - ' || p_message end
+      );
     end if;
     g_timers.delete(v_label);
   else
@@ -2984,12 +3140,14 @@ begin
   end if;
 end time_end;
 
+--------------------------------------------------------------------------------
+
 function time_end (
   p_label in varchar2 default null )
 return varchar2
 is
-  v_label  t_vc128;
-  v_return t_vc64;
+  v_label  t_128b;
+  v_return t_64b;
 begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
@@ -3090,7 +3248,7 @@ function format (
   p8        in varchar2 default null ,
   p9        in varchar2 default null )
 return varchar2 is
-  v_message t_vc32k := p_message;
+  v_message t_32kb := p_message;
 begin
   -- id replacements
   v_message := replace(v_message, '%0', p0);
@@ -3308,9 +3466,9 @@ return apex_error.t_error_result
 is
   v_result          apex_error.t_error_result;
   v_log_id          number;
-  v_constraint_name t_vc256;
-  v_app_id          pls_integer := v('APP_ID');
-  v_app_page_id     pls_integer := v('APP_PAGE_ID');
+  v_constraint_name t_256b;
+  v_app_id          t_int := v('APP_ID');
+  v_app_page_id     t_int := v('APP_PAGE_ID');
   --
   function extract_constraint_name(
     p_sqlerrm in varchar2)
@@ -3322,8 +3480,8 @@ is
   function ascii_art (
     p_type in varchar2 ) -- html, md
   return varchar2 is
-    v_return t_vc1k;
-    v_troll  t_vc1k := q'[
+    v_return t_1kb;
+    v_troll  t_1kb := q'[
                 \|||/
                 (o o)
     ,-------ooO--(_)------------.
@@ -3351,7 +3509,7 @@ is
   ) return varchar2
   is
     pragma autonomous_transaction;
-    v_message_text t_vc1k :=
+    v_message_text t_1kb :=
       'DEVELOPER TODO: Change the message in APEX > Application Builder > Shared Components > Text Messages for constraint ' ||
       p_constraint_name || '.';
   begin
@@ -3367,7 +3525,7 @@ is
   function to_md_li_pre (
     p_text in varchar2)
   return varchar2 is
-    v_fences t_vc32 := '    ```';
+    v_fences t_32b := '    ```';
   begin
     return
       case when p_text is null
@@ -3380,7 +3538,7 @@ is
     p_text in varchar2 )
   return clob is
     v_clob  clob;
-    v_cache t_vc32k;
+    v_cache t_32kb;
   begin
     clob_append ( v_clob, v_cache, p_text                   || c_lflf                                              );
     clob_append ( v_clob, v_cache, '## Technical Info'      || c_lflf                                              );
@@ -3554,11 +3712,11 @@ function apex_plugin_ajax (
   p_plugin          in  apex_plugin.t_plugin         )
 return apex_plugin.t_dynamic_action_ajax_result is
   v_result          apex_plugin.t_dynamic_action_ajax_result;
-  v_level           pls_integer;
-  v_message         t_vc32k;
-  v_user_scope      t_vc32k;
-  v_user_call_stack t_vc32k;
-  v_user_agent      t_vc32k;
+  v_level           t_int;
+  v_message         t_32kb;
+  v_user_scope      t_32kb;
+  v_user_call_stack t_32kb;
+  v_user_agent      t_32kb;
 begin
   -- If we do not provide a value for p_user_scope and p_user_call_stack, then
   -- our console package provides per default the values from the PL/SQL
@@ -3816,9 +3974,9 @@ function split (
   p_string in varchar2,
   p_sep    in varchar2 default ','
 ) return t_vc2_tab_i is
-  v_str        t_vc32k;
-  v_idx        pls_integer;
-  v_sep_length pls_integer;
+  v_str        t_32kb;
+  v_idx        t_int;
+  v_sep_length t_int;
   v_return     t_vc2_tab_i;
 begin
   if p_string is not null then
@@ -3850,7 +4008,7 @@ function join (
   p_table in t_vc2_tab_i,
   p_sep   in varchar2 default ','
 ) return varchar2 is
-  v_return t_vc32k;
+  v_return t_32kb;
 begin
   for i in 1 .. p_table.count loop
     v_return := v_return || p_sep || p_table(i);
@@ -3912,15 +4070,14 @@ return clob is
   v_data_cursor        sys_refcursor := p_data_cursor;
   v_cursor_id          integer;
   v_clob               clob;
-  v_cache              t_vc32k;
-  v_data_count         pls_integer := 0;
-  v_col_count          pls_integer;
+  v_cache              t_32kb;
+  v_data_count         t_int := 0;
+  v_col_count          t_int;
   v_desc_tab           sys.dbms_sql.desc_tab3;
-  v_buffer_varchar2    t_vc32k;
+  v_buffer_varchar2    t_32kb;
   v_buffer_clob        clob;
   v_buffer_xmltype     xmltype;
-  --v_buffer_long        long;
-  v_buffer_long_length pls_integer;
+  v_buffer_long_length t_int;
   --
   procedure close_cursor ( p_cursor_id in out integer ) is
   begin
@@ -4061,8 +4218,8 @@ function to_md_tab_header (
   p_key   in varchar2 default 'Attribute' ,
   p_value in varchar2 default 'Value'     )
 return varchar2 is
-  v_key   t_vc32k;
-  v_value t_vc32k;
+  v_key   t_32kb;
+  v_value t_32kb;
 begin
   v_key   := utl_escape_md_tab_text(p_key);
   v_value := utl_escape_md_tab_text(p_value);
@@ -4080,8 +4237,8 @@ function to_md_tab_data (
   p_value_max_length in integer  default 1000  ,
   p_show_null_values in boolean  default false )
 return varchar2 is
-  v_key   t_vc32k;
-  v_value t_vc32k;
+  v_key   t_32kb;
+  v_value t_32kb;
 begin
   if p_value is null and not p_show_null_values then
     return null;
@@ -4102,7 +4259,7 @@ function to_unibar (
   p_width_block_characters in number default 25 ,
   p_fill_scale             in number default 0  )
 return varchar2 deterministic is
-  v_return              t_vc1k;
+  v_return              t_1kb;
   v_value_one_character number;
 begin
   if p_value is not null then
@@ -4192,7 +4349,7 @@ end printf;
 --------------------------------------------------------------------------------
 
 function runtime ( p_start in timestamp ) return varchar2 is
-  v_runtime t_vc32;
+  v_runtime t_32b;
 begin
   v_runtime := to_char(localtimestamp - p_start);
   return substr(v_runtime, instr(v_runtime,':')-2, 15);
@@ -4234,8 +4391,8 @@ end level_name;
 --------------------------------------------------------------------------------
 
 function scope return varchar2 is
-  v_return     t_vc32k;
-  v_subprogram t_vc32k;
+  v_return     t_32kb;
+  v_subprogram t_32kb;
 begin
   if sys.utl_call_stack.dynamic_depth > 0 then
     --ignore 1, is always this function (scope) itself
@@ -4259,8 +4416,8 @@ end scope;
 
 function call_stack return varchar2
 is
-  v_return     t_vc32k;
-  v_subprogram t_vc32k;
+  v_return     t_32kb;
+  v_subprogram t_32kb;
 begin
 
   if g_saved_stack.count > 0 then
@@ -4323,11 +4480,11 @@ end call_stack;
 function apex_env return clob
 is
   v_clob        clob;
-  v_cache       t_vc32k;
-  v_value       t_vc32k;
-  v_app_id      pls_integer;
-  v_app_page_id pls_integer;
-  v_app_session pls_integer;
+  v_cache       t_32kb;
+  v_value       t_32kb;
+  v_app_id      t_int;
+  v_app_page_id t_int;
+  v_app_session t_int;
   --
 begin
   $if not $$apex_installed $then
@@ -4387,7 +4544,7 @@ end apex_env;
 
 function cgi_env return varchar2
 is
-  v_return t_vc32k;
+  v_return t_32kb;
 begin
   v_return := '#### CGI Environment' || c_lflf || to_md_tab_header;
   for i in 1 .. nvl(sys.owa.num_cgi_vars, 0) loop
@@ -4408,8 +4565,8 @@ end cgi_env;
 
 function console_env return varchar2
 is
-  v_return t_vc32k;
-  v_index t_vc128;
+  v_return t_32kb;
+  v_index  t_128b;
   --
   procedure append_row (p_key in varchar2, p_value in varchar2) is
   begin
@@ -4475,7 +4632,7 @@ end console_env;
 
 function user_env return varchar2
 is
-  v_return t_vc32k;
+  v_return t_32kb;
   invalid_user_env_key exception;
   pragma exception_init(invalid_user_env_key, -2003);
   --
@@ -4878,7 +5035,7 @@ end utl_escape_md_tab_text;
 --------------------------------------------------------------------------------
 
 function utl_last_error return varchar2 is
-  v_return t_vc32k;
+  v_return t_32kb;
 begin
   if sys.utl_call_stack.error_depth > 0 and sys.utl_call_stack.backtrace_depth > 0 then
     if sys.utl_call_stack.error_number(1) != 6512 and sys.utl_call_stack.error_msg(1) != coalesce(g_prev_error_msg, 'null') then
@@ -5007,11 +5164,10 @@ function utl_get_client_prefs (
   p_all_prefs_csv     in varchar2 ,
   p_client_identifier in varchar2 )
 return t_client_prefs_row is
-  v_csv             t_vc32k;
+  v_csv             t_32kb;
   v_prefs           t_client_prefs_row;
-  v_boolean_options pls_integer;
+  v_boolean_options t_int;
 begin
-  --fixme: replace regex with substr?
   if p_all_prefs_csv is not null then
     v_csv := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
     if v_csv is not null then
@@ -5041,10 +5197,10 @@ end utl_get_client_prefs;
 function utl_get_client_prefs_tab return t_client_prefs_tab_i is
   v_tab   t_client_prefs_tab_i;
   v_conf  console_conf%rowtype;
-  v_prefs t_vc32k;
-  v_pos   pls_integer := 1;
-  v_len   pls_integer;
-  v_lf    pls_integer;
+  v_prefs t_32kb;
+  v_pos   t_int := 1;
+  v_len   t_int;
+  v_lf    t_int;
 begin
   v_conf := utl_get_conf;
   v_prefs := replace(replace(replace(replace(v_conf.client_prefs,
@@ -5070,7 +5226,7 @@ function utl_get_clean_client_prefs_csv (
   p_client_identifier_to_remove in varchar2           default null ,
   p_client_prefs_to_append      in t_client_prefs_row default null )
 return varchar2 is
-  v_prefs t_vc32k;
+  v_prefs t_32kb;
   v_tab   t_client_prefs_tab_i;
 begin
   v_tab := utl_get_client_prefs_tab;
@@ -5104,7 +5260,7 @@ function utl_remove_stale_client_prefs (
   p_all_prefs_csv     in varchar2 ,
   p_client_identifier in varchar2 )
 return varchar2 is
-  v_return t_vc32k := p_all_prefs_csv;
+  v_return t_32kb := p_all_prefs_csv;
 begin
   return v_return;
 end utl_remove_stale_client_prefs;
@@ -5114,7 +5270,7 @@ end utl_remove_stale_client_prefs;
 function utl_csv_get_client_identifier (
   p_csv in varchar2 )
 return varchar2 is
-  v_stop   pls_integer;
+  v_stop t_int;
 begin
   --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
   v_stop := instr(p_csv, ',', -1, 5) - 1;
@@ -5144,9 +5300,9 @@ end utl_csv_get_exit_sysdate;
 function utl_csv_get_check_interval (
   p_csv in varchar2 )
 return integer is
-  v_return pls_integer;
-  v_start  pls_integer;
-  v_stop   pls_integer;
+  v_return t_int;
+  v_start  t_int;
+  v_stop   t_int;
 begin
   --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
   v_start := instr(p_csv, ',', -1, 2) + 1;
@@ -5166,8 +5322,8 @@ end utl_csv_get_check_interval;
 function utl_csv_get_boolean_options (
   p_csv in varchar2 )
 return integer is
-  v_start pls_integer;
-  v_stop  pls_integer;
+  v_start t_int;
+  v_stop  t_int;
 begin
   --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
   v_start := instr(p_csv, ',', -1, 3) + 1;
@@ -5186,9 +5342,9 @@ end utl_csv_get_boolean_options;
 function utl_csv_get_cache_size (
   p_csv in varchar2 )
 return integer is
-  v_return pls_integer;
-  v_start  pls_integer;
-  v_stop   pls_integer;
+  v_return t_int;
+  v_start  t_int;
+  v_stop   t_int;
 begin
   --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
   v_start := instr(p_csv, ',', -1, 4) + 1;
@@ -5208,9 +5364,9 @@ end utl_csv_get_cache_size;
 function utl_csv_get_level (
   p_csv in varchar2 )
 return integer is
-  v_return pls_integer;
-  v_start  pls_integer;
-  v_stop   pls_integer;
+  v_return t_int;
+  v_start  t_int;
+  v_stop   t_int;
 begin
   --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
   v_start := instr(p_csv, ',', -1, 5) + 1;
@@ -5231,7 +5387,7 @@ function utl_csv_to_client_prefs (
   p_csv in varchar2)
 return t_client_prefs_row is
   v_return          t_client_prefs_row;
-  v_boolean_options pls_integer;
+  v_boolean_options t_int;
 begin
   --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
   v_boolean_options          := utl_csv_get_boolean_options   ( p_csv );
@@ -5254,7 +5410,7 @@ end utl_csv_to_client_prefs;
 function utl_client_prefs_to_csv (
   p_client_prefs in t_client_prefs_row )
 return varchar2 is
-  v_return t_vc32k;
+  v_return t_32kb;
 begin
   --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
   return
@@ -5329,7 +5485,7 @@ return console_logs.log_id%type
 is
   pragma autonomous_transaction;
   v_row   console_logs%rowtype;
-  v_cache t_vc32k;
+  v_cache t_32kb;
 begin
   v_row.scope :=
     case

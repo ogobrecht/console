@@ -59,11 +59,13 @@ The main instrumentation methods:
 - [console.debug](package-console.md#procedure-debug) (level debug)
 - [console.trace](package-console.md#procedure-trace) (level trace)
 - [console.count](package-console.md#procedure-count)
-- [console.count_log](package-console.md#procedure-count_log) &
+- [console.count_val](package-console.md#procedure-count_val) &
   [count_end](package-console.md#procedure-count_end) (level info)
 - [console.time](package-console.md#procedure-time)
-- [console.time_log](package-console.md#procedure-time_log) &
-  [console.time_end](package-console.md#procedure-time_end) (level info)
+- [console.time_val](package-console.md#procedure-time_val) &
+  [time_end](package-console.md#procedure-time_end) (level info)
+- [console.time_val](package-console.md#function-time_val) &
+  [time_end](package-console.md#function-time_end) (function overloads, independent of log level)
 - [console.table#](package-console.md#procedure-table) (level info)
 - [console.assert](package-console.md#procedure-assert)
 - [console.format](package-console.md#function-format)

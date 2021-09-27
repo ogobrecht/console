@@ -19,7 +19,7 @@ begin
   console.count;
   console.count     ('Test count');
   console.count     ('Test count');
-  console.count_log ('Test count');
+  console.count_val ('Test count');
   console.count_end ('Test count');
   console.error     ('error');
   console.warn      ('warn');
@@ -35,7 +35,7 @@ begin
   console.log       (p_console_env => true);
   console.log       (p_apex_env => true);
   console.log       (p_apex_env => true, p_cgi_env => true, p_console_env => true, p_user_env => true);
-  console.time_log;
+  console.time_val;
   console.time_end;
   console.log       (console.time_end('Test time'));
   console.exit;

@@ -6,21 +6,6 @@ c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
 
-c_level_error            constant pls_integer :=      1 ;
-c_level_warning          constant pls_integer :=      2 ;
-c_level_info             constant pls_integer :=      3 ;
-c_level_debug            constant pls_integer :=      4 ;
-c_level_trace            constant pls_integer :=      5 ;
-c_check_interval_min     constant pls_integer :=      3 ; --seconds
-c_check_interval_default constant pls_integer :=     10 ; --seconds
-c_check_interval_max     constant pls_integer :=     60 ; --seconds
-c_duration_min           constant pls_integer :=      1 ; --minutes
-c_duration_default       constant pls_integer :=     60 ; --minutes
-c_duration_max           constant pls_integer :=   1440 ; --minutes (1 day)
-c_cache_size_min         constant pls_integer :=      0 ; --log entries
-c_cache_size_max         constant pls_integer :=   1000 ; --log entries
-c_enable_ascii_art       constant boolean     :=   true ;
-
 
 /**
 
@@ -38,44 +23,74 @@ GitHub](https://github.com/ogobrecht/console).
 
 
 --------------------------------------------------------------------------------
--- PUBLIC TYPES
+-- PUBLIC SIMPLE TYPES
 --------------------------------------------------------------------------------
 
-subtype t_vc1   is varchar2 (    1 byte);
-subtype t_vc2   is varchar2 (    2 byte);
-subtype t_vc4   is varchar2 (    4 byte);
-subtype t_vc8   is varchar2 (    8 byte);
-subtype t_vc16  is varchar2 (   16 byte);
-subtype t_vc32  is varchar2 (   32 byte);
-subtype t_vc64  is varchar2 (   64 byte);
-subtype t_vc128 is varchar2 (  128 byte);
-subtype t_vc256 is varchar2 (  256 byte);
-subtype t_vc1k  is varchar2 ( 1024 byte);
-subtype t_vc4k  is varchar2 ( 4096 byte);
-subtype t_vc32k is varchar2 (32767 byte);
+subtype t_int  is pls_integer;
+subtype t_1b   is varchar2 (    1 byte);
+subtype t_2b   is varchar2 (    2 byte);
+subtype t_4b   is varchar2 (    4 byte);
+subtype t_8b   is varchar2 (    8 byte);
+subtype t_16b  is varchar2 (   16 byte);
+subtype t_32b  is varchar2 (   32 byte);
+subtype t_64b  is varchar2 (   64 byte);
+subtype t_128b is varchar2 (  128 byte);
+subtype t_256b is varchar2 (  256 byte);
+subtype t_512b is varchar2 (  512 byte);
+subtype t_1kb  is varchar2 ( 1024 byte);
+subtype t_2kb  is varchar2 ( 2048 byte);
+subtype t_4kb  is varchar2 ( 4096 byte);
+subtype t_8kb  is varchar2 ( 8192 byte);
+subtype t_16kb is varchar2 (16384 byte);
+subtype t_32kb is varchar2 (32767 byte);
+
+
+--------------------------------------------------------------------------------
+-- PUBLIC COMPLEX TYPES
+--------------------------------------------------------------------------------
 
 type t_client_prefs_row is record(
-  client_identifier varchar2(64 byte) ,
-  check_interval    integer           ,
-  exit_sysdate      date              ,
-  level_id          integer           ,
-  level_name        varchar2(10 byte) ,
-  cache_size        integer           ,
-  call_stack        varchar2( 1 byte) ,
-  user_env          varchar2( 1 byte) ,
-  apex_env          varchar2( 1 byte) ,
-  cgi_env           varchar2( 1 byte) ,
-  console_env       varchar2( 1 byte) );
-type t_key_value_row    is record(
-  key    t_vc128 ,
-  value  t_vc4k  );
+  client_identifier t_64b   ,
+  check_interval    integer ,
+  exit_sysdate      date    ,
+  level_id          integer ,
+  level_name        t_16b   ,
+  cache_size        integer ,
+  call_stack        t_1b    ,
+  user_env          t_1b    ,
+  apex_env          t_1b    ,
+  cgi_env           t_1b    ,
+  console_env       t_1b    );
+type t_key_value_row is record(
+  key   t_128b ,
+  value t_4kb  );
 type t_client_prefs_tab   is table of t_client_prefs_row;
 type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
 type t_key_value_tab      is table of t_key_value_row;
 type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
 type t_logs_tab           is table of console_logs%rowtype;
-type t_vc2_tab            is table of t_vc32k;
-type t_vc2_tab_i          is table of t_vc32k index by pls_integer;
+type t_vc2_tab            is table of t_32kb;
+type t_vc2_tab_i          is table of t_32kb index by pls_integer;
+
+
+--------------------------------------------------------------------------------
+-- PUBLIC CONSTANTS
+--------------------------------------------------------------------------------
+
+c_level_error            constant t_int   :=      1 ;
+c_level_warning          constant t_int   :=      2 ;
+c_level_info             constant t_int   :=      3 ;
+c_level_debug            constant t_int   :=      4 ;
+c_level_trace            constant t_int   :=      5 ;
+c_check_interval_min     constant t_int   :=      3 ; -- seconds
+c_check_interval_default constant t_int   :=     10 ; -- seconds
+c_check_interval_max     constant t_int   :=     60 ; -- seconds
+c_duration_min           constant t_int   :=      1 ; -- minutes
+c_duration_default       constant t_int   :=     60 ; -- minutes
+c_duration_max           constant t_int   :=   1440 ; -- minutes (1 day)
+c_cache_size_min         constant t_int   :=      0 ; -- log entries
+c_cache_size_max         constant t_int   :=   1000 ; -- log entries
+c_enable_ascii_art       constant boolean :=   true ;
 
 
 --------------------------------------------------------------------------------
@@ -525,59 +540,83 @@ Log a message with the level 5 (trace). Returns the log ID.
 procedure count ( p_label in varchar2 default null );
 /**
 
-Starts a new counter with a value of one or adds one to an existent counter.
+Creates a new counter with a value of one or adds one to an existing counter.
 
-Call `console.count_end('yourLabel')` to stop the counter and get or log the count
-value.
-
-**/
-
-procedure count_log ( p_label in varchar2 default null );
-/**
-
-Logs a counter, if current log level >= 3 (info).
-
-Can be called multiple times - use `console.count_end` to stop a counter and get or
-log the counter value.
-
-**/
-
-procedure count_end ( p_label in varchar2 default null );
-/**
-
-Stops a counter and logs the result, if current log level >= 3 (info).
+Does not depend on a log level, can be used anywhere to count things.
 
 EXAMPLE
 
 ```sql
---Set your own session in logging mode (defaults: level 3=info for the next 60 minutes).
-exec console.init;
-
+declare
+  v_counter varchar2(30) := 'Processing xyz';
 begin
-  --Do your stuff here.
-  for i in 1 .. 1000 loop
-    if mod(i, 3) = 0 then
-      console.count('myLabel');
-    end if;
+  for i in 1 .. 10 loop
+    console.count(v_counter);
   end loop;
+  console.count_val(v_counter); -- without optional message
 
-  --Log your count value.
-  console.count_end('myLabel');
+  for i in 1 .. 100 loop
+    console.count(v_counter);
+  end loop;
+  console.count_val(v_counter, 'end of step two');
+
+  for i in 1 .. 1000 loop
+    console.count(v_counter);
+  end loop;
+  console.count_end(v_counter, 'end of step three');
 end;
 {{/}}
-
---Stop logging mode of your own session.
-exec console.exit;
 ```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- Processing xyz: 10
+- Processing xyz: 110 - end of step two
+- Processing xyz: 1110 - end of step three
 
 **/
 
-function count_end ( p_label in varchar2 default null ) return varchar2;
+--------------------------------------------------------------------------------
+
+procedure count_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 /**
 
-Stops a counter and returns the result.
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info).
+
+Also see procedure `count` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure count_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
+/**
+
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info). Delete the counter.
+
+Also see procedure `count` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function count_val (
+  p_label   in varchar2 default null )
+return varchar2;
+/**
+
+Returns the current counter value.
 
 Does not depend on a log level, can be used anywhere to count things.
+
+Also see procedure `count` above.
 
 EXAMPLE
 
@@ -585,20 +624,44 @@ EXAMPLE
 set serveroutput on
 
 declare
-  v_my_label constant varchar2(20) := 'My label: ';
+  v_label constant varchar2(20) := 'Count nonsense';
 begin
-  --do your stuff here
   for i in 1 .. 1000 loop
     if mod(i, 3) = 0 then
-      console.count(v_my_label);
+      console.count(v_label);
     end if;
   end loop;
+  console.printf('Current value of nonsense: %s', console.count_val(v_label) );
 
-  --Return your count value.
-  dbms_output.put_line(v_my_label || console.count_end(v_my_label) );
+  for i in 1 .. 10 loop
+    console.count(v_label);
+  end loop;
+  console.printf('Final value of nonsense: %s', console.count_end(v_label) );
 end;
 {{/}}
 ```
+
+This will print something like the following to the server output:
+
+```
+Current value of nonsense: 333
+Final value of nonsense: 343
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+function count_end (
+  p_label   in varchar2 default null )
+return varchar2;
+/**
+
+Returns the current counter value and deletes the counter.
+
+Does not depend on a log level, can be used anywhere to count things.
+
+Also see function `count_val` above.
 
 **/
 
@@ -607,89 +670,89 @@ end;
 procedure time ( p_label in varchar2 default null );
 /**
 
-Starts a new timer.
-
-Call `console.time_end('yourLabel')` to stop the timer and get or log the elapsed
-time.
-
-**/
-
-procedure time_log ( p_label in varchar2 default null );
-/**
-
-Logs the elapsed time, if current log level >= 3 (info).
-
-Can be called multiple times - use `console.time_end` to stop a timer and get or
-log the elapsed time.
-
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-  --Do other things.
-  --Your code here...
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-end;
-{{/}}
-
---Stop logging mode of your own session.
-exec console.exit;
-```
-
-**/
-
-procedure time_end ( p_label in varchar2 default null );
-/**
-
-Stops a timer and logs the result, if current log level >= 3 (info).
-
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the time.
-  console.time_end('myLabel');
-end;
-{{/}}
-
---Stop logging mode of your own session.
-exec console.exit;
-```
-
-**/
-
-function time_end ( p_label in varchar2 default null ) return varchar2;
-/**
-
-Stops a timer and returns the result.
+Create and a new timer. If the timer is already existing it will start again
+from zero.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
+
+EXAMPLE
+
+```sql
+declare
+  v_timer varchar2(30) := 'Processing xyz';
+begin
+  console.time(v_timer);
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_val(v_timer); -- without optional message
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_val(v_timer, 'end of step two');
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_end(v_timer, 'end of step three');
+end;
+{{/}}
+```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- Processing xyz: 00:00:00.000100
+- Processing xyz: 00:00:00.003884 - end of step two
+- Processing xyz: 00:00:00.004708 - end of step three
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure time_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
+/**
+
+Log the elapsed time, if the sessions log level is greater or equal 3 (info).
+
+Can be called multiple times - use `console.time_end` to log the elapsed time
+and delete the timer.
+
+Also see procedure `time` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure time_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
+/**
+
+Log the elapsed time and delete the timer, if the sessions log level is greater
+or equal 3 (info).
+
+Also see procedure `time` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+function time_val ( p_label in varchar2 default null ) return varchar2;
+/**
+
+Returns the elapsed time.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Can be called multiple times - use `console.time_end` to return the elapsed time
+and delete the timer.
+
+Also see procedure `time` above.
 
 EXAMPLE
 
@@ -697,24 +760,59 @@ EXAMPLE
 set serveroutput on
 
 declare
-  v_my_label constant varchar2(20) := 'My label: ';
+  v_timer varchar2(30) := 'myTimer';
 begin
-  console.time(v_my_label);
+  console.time(v_timer);
 
-  --do your stuff here
+  console.print('Processing step one...');
   for i in 1 .. 100000 loop
     null;
   end loop;
+  console.printf('Elapsed time: %s', console.time_val(v_timer));
 
-  --Return the runtime.
-  dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
+  console.print('Processing step two...');
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.printf('Elapsed time: %s', console.time_val(v_timer));
+
+  console.print('Processing step three...');
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.printf('Elapsed time: %s', console.time_end(v_timer));
 end;
 {{/}}
+```
+
+This will result in something like the following output:
+
+```
+Processing step one...
+Elapsed time: 00:00:00.000079
+Processing step two...
+Elapsed time: 00:00:00.000145
+Processing step three...
+Elapsed time: 00:00:00.000158
 ```
 
 **/
 
 --------------------------------------------------------------------------------
+
+function time_end ( p_label in varchar2 default null ) return varchar2;
+/**
+
+Returns the elapsed time and deletes the timer.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Also see function `time_val` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
 procedure table# (
   p_data_cursor       in sys_refcursor         ,
   p_comment           in varchar2 default null ,

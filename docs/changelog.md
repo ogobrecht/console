@@ -14,7 +14,9 @@
 
 ## v1.0-beta9 (2021-09-xx)
 
-- Remove context - we work now with a single record conf table with result cache enabled to simplify the configuration and minify the overhead introduced by console
+- Remove context - we work now with a single record conf table with result cache
+  enabled to simplify the configuration and minify the overhead introduced by
+  console
   - Rename conf table from `CONSOLE_GLOBAL_CONF` to `CONSOLE_CONF`
   - Rename purge job from `CONSOLE_CLEANUP` to `CONSOLE_PURGE`
 - Streamline API method names:
@@ -22,9 +24,14 @@
   - Rename `view_last` to `logs`
   - Rename `view_cache` to `cache`
   - Rename `view_status` to `status`
-- New helper method `assertf` which supports formatted messages (a short form of `console.assert([boolean expression], console.format(...))`)
+  - Rename `count_log` to `count_val`
+  - Rename `time_log` to `time_val`
+  - New function overloads for the procedures `count_val` and `time_val`
+- New helper method `assertf` which supports formatted messages (a short form of
+  `console.assert([boolean expression], console.format(...))`)
 - New helper method `exit_all` to exit/unset all client preferences in one go
-- New pipelined function `conf` to show the global configuration as a key / value list
+- New pipelined function `conf` to show the global configuration as a key /
+  value list
 - Minimum database version is now 12.2
 
 ## v1.0-beta8 (2021-08-15)
@@ -34,7 +41,8 @@
 - ASCII art only on APEX error page
 - Aligned header levels in generated Markdown
 - Change sequence cache for table `console_logs` from default 20 to 1000
-- Fix: Only owner of package `console` is allowed to purge entries and change global config
+- Fix: Only owner of package `console` is allowed to purge entries and change
+  global config
 - Fix: Call stack - include line info only if not null
 - Fix: Function `to_md_code_block` - wrap input in fences only if not null
 

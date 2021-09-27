@@ -36,12 +36,14 @@ Oracle Instrumentation Console
 - [Procedure trace](#procedure-trace)
 - [Function trace](#function-trace)
 - [Procedure count](#procedure-count)
-- [Procedure count_log](#procedure-count_log)
+- [Procedure count_val](#procedure-count_val)
 - [Procedure count_end](#procedure-count_end)
+- [Function count_val](#function-count_val)
 - [Function count_end](#function-count_end)
 - [Procedure time](#procedure-time)
-- [Procedure time_log](#procedure-time_log)
+- [Procedure time_val](#procedure-time_val)
 - [Procedure time_end](#procedure-time_end)
+- [Function time_val](#function-time_val)
 - [Function time_end](#function-time_end)
 - [Procedure table#](#procedure-table)
 - [Procedure assert](#procedure-assert)
@@ -133,21 +135,6 @@ c_version constant varchar2 ( 10 byte ) := '1.0-rc1'                            
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
-
-c_level_error            constant pls_integer :=      1 ;
-c_level_warning          constant pls_integer :=      2 ;
-c_level_info             constant pls_integer :=      3 ;
-c_level_debug            constant pls_integer :=      4 ;
-c_level_trace            constant pls_integer :=      5 ;
-c_check_interval_min     constant pls_integer :=      3 ; --seconds
-c_check_interval_default constant pls_integer :=     10 ; --seconds
-c_check_interval_max     constant pls_integer :=     60 ; --seconds
-c_duration_min           constant pls_integer :=      1 ; --minutes
-c_duration_default       constant pls_integer :=     60 ; --minutes
-c_duration_max           constant pls_integer :=   1440 ; --minutes (1 day)
-c_cache_size_min         constant pls_integer :=      0 ; --log entries
-c_cache_size_max         constant pls_integer :=   1000 ; --log entries
-c_enable_ascii_art       constant boolean     :=   true ;
 ```
 
 
@@ -637,10 +624,40 @@ return console_logs.log_id%type;
 
 ## Procedure count
 
-Starts a new counter with a value of one or adds one to an existent counter.
+Creates a new counter with a value of one or adds one to an existing counter.
 
-Call `console.count_end('yourLabel')` to stop the counter and get or log the count
-value.
+Does not depend on a log level, can be used anywhere to count things.
+
+EXAMPLE
+
+```sql
+declare
+  v_counter varchar2(30) := 'Processing xyz';
+begin
+  for i in 1 .. 10 loop
+    console.count(v_counter);
+  end loop;
+  console.count_val(v_counter); -- without optional message
+
+  for i in 1 .. 100 loop
+    console.count(v_counter);
+  end loop;
+  console.count_val(v_counter, 'end of step two');
+
+  for i in 1 .. 1000 loop
+    console.count(v_counter);
+  end loop;
+  console.count_end(v_counter, 'end of step three');
+end;
+/
+```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- Processing xyz: 10
+- Processing xyz: 110 - end of step two
+- Processing xyz: 1110 - end of step three
 
 SIGNATURE
 
@@ -649,59 +666,45 @@ procedure count ( p_label in varchar2 default null );
 ```
 
 
-## Procedure count_log
+## Procedure count_val
 
-Logs a counter, if current log level >= 3 (info).
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info).
 
-Can be called multiple times - use `console.count_end` to stop a counter and get or
-log the counter value.
+Also see procedure `count` above.
 
 SIGNATURE
 
 ```sql
-procedure count_log ( p_label in varchar2 default null );
+procedure count_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
 ## Procedure count_end
 
-Stops a counter and logs the result, if current log level >= 3 (info).
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info). Delete the counter.
 
-EXAMPLE
-
-```sql
---Set your own session in logging mode (defaults: level 3=info for the next 60 minutes).
-exec console.init;
-
-begin
-  --Do your stuff here.
-  for i in 1 .. 1000 loop
-    if mod(i, 3) = 0 then
-      console.count('myLabel');
-    end if;
-  end loop;
-
-  --Log your count value.
-  console.count_end('myLabel');
-end;
-/
-
---Stop logging mode of your own session.
-exec console.exit;
-```
+Also see procedure `count` above.
 
 SIGNATURE
 
 ```sql
-procedure count_end ( p_label in varchar2 default null );
+procedure count_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
-## Function count_end
+## Function count_val
 
-Stops a counter and returns the result.
+Returns the current counter value.
 
 Does not depend on a log level, can be used anywhere to count things.
+
+Also see procedure `count` above.
 
 EXAMPLE
 
@@ -709,34 +712,95 @@ EXAMPLE
 set serveroutput on
 
 declare
-  v_my_label constant varchar2(20) := 'My label: ';
+  v_label constant varchar2(20) := 'Count nonsense';
 begin
-  --do your stuff here
   for i in 1 .. 1000 loop
     if mod(i, 3) = 0 then
-      console.count(v_my_label);
+      console.count(v_label);
     end if;
   end loop;
+  console.printf('Current value of nonsense: %s', console.count_val(v_label) );
 
-  --Return your count value.
-  dbms_output.put_line(v_my_label || console.count_end(v_my_label) );
+  for i in 1 .. 10 loop
+    console.count(v_label);
+  end loop;
+  console.printf('Final value of nonsense: %s', console.count_end(v_label) );
 end;
 /
+```
+
+This will print something like the following to the server output:
+
+```
+Current value of nonsense: 333
+Final value of nonsense: 343
 ```
 
 SIGNATURE
 
 ```sql
-function count_end ( p_label in varchar2 default null ) return varchar2;
+function count_val (
+  p_label   in varchar2 default null )
+return varchar2;
+```
+
+
+## Function count_end
+
+Returns the current counter value and deletes the counter.
+
+Does not depend on a log level, can be used anywhere to count things.
+
+Also see function `count_val` above.
+
+SIGNATURE
+
+```sql
+function count_end (
+  p_label   in varchar2 default null )
+return varchar2;
 ```
 
 
 ## Procedure time
 
-Starts a new timer.
+Create and a new timer. If the timer is already existing it will start again
+from zero.
 
-Call `console.time_end('yourLabel')` to stop the timer and get or log the elapsed
-time.
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+EXAMPLE
+
+```sql
+declare
+  v_timer varchar2(30) := 'Processing xyz';
+begin
+  console.time(v_timer);
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_val(v_timer); -- without optional message
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_val(v_timer, 'end of step two');
+
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.time_end(v_timer, 'end of step three');
+end;
+/
+```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- Processing xyz: 00:00:00.000100
+- Processing xyz: 00:00:00.003884 - end of step two
+- Processing xyz: 00:00:00.004708 - end of step three
 
 SIGNATURE
 
@@ -745,89 +809,50 @@ procedure time ( p_label in varchar2 default null );
 ```
 
 
-## Procedure time_log
+## Procedure time_val
 
-Logs the elapsed time, if current log level >= 3 (info).
+Log the elapsed time, if the sessions log level is greater or equal 3 (info).
 
-Can be called multiple times - use `console.time_end` to stop a timer and get or
-log the elapsed time.
+Can be called multiple times - use `console.time_end` to log the elapsed time
+and delete the timer.
 
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-  --Do other things.
-  --Your code here...
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-end;
-/
-
---Stop logging mode of your own session.
-exec console.exit;
-```
+Also see procedure `time` above.
 
 SIGNATURE
 
 ```sql
-procedure time_log ( p_label in varchar2 default null );
+procedure time_val (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
 ## Procedure time_end
 
-Stops a timer and logs the result, if current log level >= 3 (info).
+Log the elapsed time and delete the timer, if the sessions log level is greater
+or equal 3 (info).
 
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the time.
-  console.time_end('myLabel');
-end;
-/
-
---Stop logging mode of your own session.
-exec console.exit;
-```
+Also see procedure `time` above.
 
 SIGNATURE
 
 ```sql
-procedure time_end ( p_label in varchar2 default null );
+procedure time_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
-## Function time_end
+## Function time_val
 
-Stops a timer and returns the result.
+Returns the elapsed time.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
+
+Can be called multiple times - use `console.time_end` to return the elapsed time
+and delete the timer.
+
+Also see procedure `time` above.
 
 EXAMPLE
 
@@ -835,20 +860,56 @@ EXAMPLE
 set serveroutput on
 
 declare
-  v_my_label constant varchar2(20) := 'My label: ';
+  v_timer varchar2(30) := 'myTimer';
 begin
-  console.time(v_my_label);
+  console.time(v_timer);
 
-  --do your stuff here
+  console.print('Processing step one...');
   for i in 1 .. 100000 loop
     null;
   end loop;
+  console.printf('Elapsed time: %s', console.time_val(v_timer));
 
-  --Return the runtime.
-  dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
+  console.print('Processing step two...');
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.printf('Elapsed time: %s', console.time_val(v_timer));
+
+  console.print('Processing step three...');
+  for i in 1 .. 100000 loop
+    null;
+  end loop;
+  console.printf('Elapsed time: %s', console.time_end(v_timer));
 end;
 /
 ```
+
+This will result in something like the following output:
+
+```
+Processing step one...
+Elapsed time: 00:00:00.000079
+Processing step two...
+Elapsed time: 00:00:00.000145
+Processing step three...
+Elapsed time: 00:00:00.000158
+```
+
+SIGNATURE
+
+```sql
+function time_val ( p_label in varchar2 default null ) return varchar2;
+```
+
+
+## Function time_end
+
+Returns the elapsed time and deletes the timer.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Also see function `time_val` above.
 
 SIGNATURE
 
