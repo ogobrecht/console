@@ -264,10 +264,10 @@ JavaScript console:
 - [console.debug](package-console.md#procedure-debug) (level debug)
 - [console.trace](package-console.md#procedure-trace) (level trace)
 - [console.count](package-console.md#procedure-count)
-- [console.count_val](package-console.md#procedure-count_val) &
+- [console.count_current](package-console.md#procedure-count_current) &
   [count_end](package-console.md#procedure-count_end) (level info)
 - [console.time](package-console.md#procedure-time)
-- [console.time_val](package-console.md#procedure-time_val) &
+- [console.time_current](package-console.md#procedure-time_current) &
   [console.time_end](package-console.md#procedure-time_end) (level info)
 - [console.table#](package-console.md#procedure-table) (level info)
 - [console.assert](package-console.md#procedure-assert) &

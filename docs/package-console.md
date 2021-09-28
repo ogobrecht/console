@@ -36,14 +36,16 @@ Oracle Instrumentation Console
 - [Procedure trace](#procedure-trace)
 - [Function trace](#function-trace)
 - [Procedure count](#procedure-count)
-- [Procedure count_val](#procedure-count_val)
+- [Procedure count_reset](#procedure-count_reset)
+- [Procedure count_current](#procedure-count_current)
 - [Procedure count_end](#procedure-count_end)
-- [Function count_val](#function-count_val)
+- [Function count_current](#function-count_current)
 - [Function count_end](#function-count_end)
 - [Procedure time](#procedure-time)
-- [Procedure time_val](#procedure-time_val)
+- [Procedure time_reset](#procedure-time_reset)
+- [Procedure time_current](#procedure-time_current)
 - [Procedure time_end](#procedure-time_end)
-- [Function time_val](#function-time_val)
+- [Function time_current](#function-time_current)
 - [Function time_end](#function-time_end)
 - [Procedure table#](#procedure-table)
 - [Procedure assert](#procedure-assert)
@@ -637,12 +639,12 @@ begin
   for i in 1 .. 10 loop
     console.count(v_counter);
   end loop;
-  console.count_val(v_counter); -- without optional message
+  console.count_current(v_counter); -- without optional message
 
   for i in 1 .. 100 loop
     console.count(v_counter);
   end loop;
-  console.count_val(v_counter, 'end of step two');
+  console.count_current(v_counter, 'end of step two');
 
   for i in 1 .. 1000 loop
     console.count(v_counter);
@@ -666,7 +668,22 @@ procedure count ( p_label in varchar2 default null );
 ```
 
 
-## Procedure count_val
+## Procedure count_reset
+
+Reset an existing counter or create a new one.
+
+Does not depend on a log level, can be used anywhere to count things.
+
+Also see procedure `count` above.
+
+SIGNATURE
+
+```sql
+procedure count_reset ( p_label in varchar2 default null );
+```
+
+
+## Procedure count_current
 
 Log the current value of a counter, if the sessions log level is greater or
 equal 3 (info).
@@ -676,7 +693,7 @@ Also see procedure `count` above.
 SIGNATURE
 
 ```sql
-procedure count_val (
+procedure count_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null );
 ```
@@ -698,74 +715,81 @@ procedure count_end (
 ```
 
 
-## Function count_val
+## Function count_current
 
-Returns the current counter value.
+Returns the current counter value or null, if the given label does not exist.
 
 Does not depend on a log level, can be used anywhere to count things.
 
-Also see procedure `count` above.
+Also see procedure `count` above. The following example does not use the
+optional label, therefore the implicit label used in the background will be
+`default`. As we get only the value back from the funtion and we need only one
+counter at the same time this is ok for us here and it keeps the code simple.
+
 
 EXAMPLE
 
 ```sql
 set serveroutput on
 
-declare
-  v_label constant varchar2(20) := 'Count nonsense';
 begin
+  console.print('Counting nonsense...');
   for i in 1 .. 1000 loop
     if mod(i, 3) = 0 then
-      console.count(v_label);
+      console.count;
     end if;
   end loop;
-  console.printf('Current value of nonsense: %s', console.count_val(v_label) );
+  console.printf('Current value: %s', console.count_current );
 
+  console.count_reset;
   for i in 1 .. 10 loop
-    console.count(v_label);
+    console.count;
   end loop;
-  console.printf('Final value of nonsense: %s', console.count_end(v_label) );
+  console.printf('Final value: %s', console.count_end );
 end;
+
 /
 ```
 
 This will print something like the following to the server output:
 
 ```
-Current value of nonsense: 333
-Final value of nonsense: 343
+Counting nonsense...
+Current value: 333
+Final value: 10
 ```
 
 SIGNATURE
 
 ```sql
-function count_val (
+function count_current (
   p_label   in varchar2 default null )
-return varchar2;
+return t_int;
 ```
 
 
 ## Function count_end
 
-Returns the current counter value and deletes the counter.
+Returns the current counter value or null, if the given label does not exist.
+Deletes the counter.
 
 Does not depend on a log level, can be used anywhere to count things.
 
-Also see function `count_val` above.
+Also see function `count_current` above.
 
 SIGNATURE
 
 ```sql
 function count_end (
   p_label   in varchar2 default null )
-return varchar2;
+return t_int;
 ```
 
 
 ## Procedure time
 
 Create and a new timer. If the timer is already existing it will start again
-from zero.
+with the current local timestamp.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
@@ -775,22 +799,23 @@ EXAMPLE
 declare
   v_timer varchar2(30) := 'Processing xyz';
 begin
+
+  --basic usage
+  console.time;
+  sys.dbms_session.sleep(0.1);
+  console.time_end; -- without optional label and message
+
   console.time(v_timer);
 
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.time_val(v_timer); -- without optional message
+  sys.dbms_session.sleep(0.1);
+  console.time_current(v_timer); -- without optional message
 
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.time_val(v_timer, 'end of step two');
+  sys.dbms_session.sleep(0.1);
+  console.time_current(v_timer, 'end of step two');
 
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
+  sys.dbms_session.sleep(0.1);
   console.time_end(v_timer, 'end of step three');
+
 end;
 /
 ```
@@ -798,9 +823,10 @@ end;
 This will produce the following log messages in the table CONSOLE_LOGS when your
 current log level is 3 (info) or higher:
 
-- Processing xyz: 00:00:00.000100
-- Processing xyz: 00:00:00.003884 - end of step two
-- Processing xyz: 00:00:00.004708 - end of step three
+- default: 00:00:00.102508
+- Processing xyz: 00:00:00.108048
+- Processing xyz: 00:00:00.212045 - end of step two
+- Processing xyz: 00:00:00.316084 - end of step three
 
 SIGNATURE
 
@@ -809,7 +835,22 @@ procedure time ( p_label in varchar2 default null );
 ```
 
 
-## Procedure time_val
+## Procedure time_reset
+
+Reset an existing timer or create a new one.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Also see procedure `time` above.
+
+SIGNATURE
+
+```sql
+procedure time_reset ( p_label in varchar2 default null );
+```
+
+
+## Procedure time_current
 
 Log the elapsed time, if the sessions log level is greater or equal 3 (info).
 
@@ -821,7 +862,7 @@ Also see procedure `time` above.
 SIGNATURE
 
 ```sql
-procedure time_val (
+procedure time_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null );
 ```
@@ -843,44 +884,40 @@ procedure time_end (
 ```
 
 
-## Function time_val
+## Function time_current
 
-Returns the elapsed time.
+Returns the elapsed time as varchar in the format 00:00:00.000000.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
 Can be called multiple times - use `console.time_end` to return the elapsed time
 and delete the timer.
 
-Also see procedure `time` above.
+Also see procedure `time` above. The following example does not use the optional
+label, therefore the implicit label used in the background will be `default`. As
+we get only the runtime back from the funtion in the format 00:00:00.000000 and
+we need only one timer at the same time this is ok for us here and it keeps the
+code simple.
 
 EXAMPLE
 
 ```sql
 set serveroutput on
 
-declare
-  v_timer varchar2(30) := 'myTimer';
 begin
-  console.time(v_timer);
+  console.time;
 
   console.print('Processing step one...');
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.printf('Elapsed time: %s', console.time_val(v_timer));
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_current);
 
   console.print('Processing step two...');
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.printf('Elapsed time: %s', console.time_val(v_timer));
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_current);
 
   console.print('Processing step three...');
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.printf('Elapsed time: %s', console.time_end(v_timer));
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_end);
 end;
 /
 ```
@@ -899,17 +936,18 @@ Elapsed time: 00:00:00.000158
 SIGNATURE
 
 ```sql
-function time_val ( p_label in varchar2 default null ) return varchar2;
+function time_current ( p_label in varchar2 default null ) return varchar2;
 ```
 
 
 ## Function time_end
 
-Returns the elapsed time and deletes the timer.
+Returns the elapsed time as varchar in the format 00:00:00.000000 and deletes
+the timer.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
-Also see function `time_val` above.
+Also see function `time_current` above.
 
 SIGNATURE
 

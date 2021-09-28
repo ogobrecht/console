@@ -24,9 +24,9 @@
   - Rename `view_last` to `logs`
   - Rename `view_cache` to `cache`
   - Rename `view_status` to `status`
-  - Rename `count_log` to `count_val`
-  - Rename `time_log` to `time_val`
-  - New function overloads for the procedures `count_val` and `time_val`
+  - Rename `count_log` & `time_log` to `count_current` & `time_current`
+  - New procedures `count_reset` and `time_reset`
+  - New function overloads for the procedures `count_current` and `time_current`
 - New helper method `assertf` which supports formatted messages (a short form of
   `console.assert([boolean expression], console.format(...))`)
 - New helper method `exit_all` to exit/unset all client preferences in one go

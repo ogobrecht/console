@@ -669,7 +669,22 @@ end count;
 
 --------------------------------------------------------------------------------
 
-procedure count_val (
+procedure count_reset (
+  p_label in varchar2 default null )
+is
+  v_label t_128b;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    g_counters(v_label) := 0;
+  else
+    g_counters(v_label) := 0;
+  end if;
+end count_reset;
+
+--------------------------------------------------------------------------------
+
+procedure count_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null )
 is
@@ -688,7 +703,7 @@ begin
   else
     warn('Counter `' || v_label || '` does not exist.');
   end if;
-end count_val;
+end count_current;
 
 --------------------------------------------------------------------------------
 
@@ -716,37 +731,33 @@ end count_end;
 
 --------------------------------------------------------------------------------
 
-function count_val (
+function count_current (
   p_label in varchar2 default null )
-return varchar2
+return t_int
 is
   v_label  t_128b;
-  v_return t_64b;
+  v_return t_int;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    v_return := to_char(g_counters(v_label));
-  else
-    v_return := 'Counter `' || v_label || '` does not exist.';
+    v_return := g_counters(v_label);
   end if;
   return v_return;
-end count_val;
+end count_current;
 
 --------------------------------------------------------------------------------
 
 function count_end (
   p_label in varchar2 default null )
-return varchar2
+return t_int
 is
   v_label  t_128b;
-  v_return t_64b;
+  v_return t_int;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    v_return := to_char(g_counters(v_label));
+    v_return := g_counters(v_label);
     g_counters.delete(v_label);
-  else
-    v_return := 'Counter `' || v_label || '` does not exist.';
   end if;
   return v_return;
 end count_end;
@@ -762,7 +773,16 @@ end time;
 
 --------------------------------------------------------------------------------
 
-procedure time_val (
+procedure time_reset (
+  p_label in varchar2 default null )
+is
+begin
+  time(p_label);
+end time_reset;
+
+--------------------------------------------------------------------------------
+
+procedure time_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null )
 is
@@ -781,25 +801,7 @@ begin
   else
     warn('Timer `' || v_label || '` does not exist.');
   end if;
-end time_val;
-
---------------------------------------------------------------------------------
-
-function time_val (
-  p_label in varchar2 default null )
-return varchar2
-is
-  v_label  t_128b;
-  v_return t_64b;
-begin
-  v_label := utl_normalize_label(p_label);
-  if g_timers.exists(v_label) then
-    v_return :=  runtime(g_timers(v_label));
-  else
-    v_return := 'Timer `' || v_label || '` does not exist.';
-  end if;
-  return v_return;
-end time_val;
+end time_current;
 
 --------------------------------------------------------------------------------
 
@@ -824,6 +826,24 @@ begin
     warn('Timer `' || v_label || '` does not exist.');
   end if;
 end time_end;
+
+--------------------------------------------------------------------------------
+
+function time_current (
+  p_label in varchar2 default null )
+return varchar2
+is
+  v_label  t_128b;
+  v_return t_64b;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_timers.exists(v_label) then
+    v_return :=  runtime(g_timers(v_label));
+  else
+    v_return := 'Timer `' || v_label || '` does not exist.';
+  end if;
+  return v_return;
+end time_current;
 
 --------------------------------------------------------------------------------
 

@@ -728,12 +728,12 @@ begin
   for i in 1 .. 10 loop
     console.count(v_counter);
   end loop;
-  console.count_val(v_counter); -- without optional message
+  console.count_current(v_counter); -- without optional message
 
   for i in 1 .. 100 loop
     console.count(v_counter);
   end loop;
-  console.count_val(v_counter, 'end of step two');
+  console.count_current(v_counter, 'end of step two');
 
   for i in 1 .. 1000 loop
     console.count(v_counter);
@@ -754,7 +754,20 @@ current log level is 3 (info) or higher:
 
 --------------------------------------------------------------------------------
 
-procedure count_val (
+procedure count_reset ( p_label in varchar2 default null );
+/**
+
+Reset an existing counter or create a new one.
+
+Does not depend on a log level, can be used anywhere to count things.
+
+Also see procedure `count` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure count_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null );
 /**
@@ -782,45 +795,51 @@ Also see procedure `count` above.
 
 --------------------------------------------------------------------------------
 
-function count_val (
+function count_current (
   p_label   in varchar2 default null )
-return varchar2;
+return t_int;
 /**
 
-Returns the current counter value.
+Returns the current counter value or null, if the given label does not exist.
 
 Does not depend on a log level, can be used anywhere to count things.
 
-Also see procedure `count` above.
+Also see procedure `count` above. The following example does not use the
+optional label, therefore the implicit label used in the background will be
+`default`. As we get only the value back from the funtion and we need only one
+counter at the same time this is ok for us here and it keeps the code simple.
+
 
 EXAMPLE
 
 ```sql
 set serveroutput on
 
-declare
-  v_label constant varchar2(20) := 'Count nonsense';
 begin
+  console.print('Counting nonsense...');
   for i in 1 .. 1000 loop
     if mod(i, 3) = 0 then
-      console.count(v_label);
+      console.count;
     end if;
   end loop;
-  console.printf('Current value of nonsense: %s', console.count_val(v_label) );
+  console.printf('Current value: %s', console.count_current );
 
+  console.count_reset;
   for i in 1 .. 10 loop
-    console.count(v_label);
+    console.count;
   end loop;
-  console.printf('Final value of nonsense: %s', console.count_end(v_label) );
+  console.printf('Final value: %s', console.count_end );
 end;
+
 {{/}}
 ```
 
 This will print something like the following to the server output:
 
 ```
-Current value of nonsense: 333
-Final value of nonsense: 343
+Counting nonsense...
+Current value: 333
+Final value: 10
 ```
 
 **/
@@ -829,14 +848,15 @@ Final value of nonsense: 343
 
 function count_end (
   p_label   in varchar2 default null )
-return varchar2;
+return t_int;
 /**
 
-Returns the current counter value and deletes the counter.
+Returns the current counter value or null, if the given label does not exist.
+Deletes the counter.
 
 Does not depend on a log level, can be used anywhere to count things.
 
-Also see function `count_val` above.
+Also see function `count_current` above.
 
 **/
 
@@ -846,7 +866,7 @@ procedure time ( p_label in varchar2 default null );
 /**
 
 Create and a new timer. If the timer is already existing it will start again
-from zero.
+with the current local timestamp.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
@@ -856,22 +876,23 @@ EXAMPLE
 declare
   v_timer varchar2(30) := 'Processing xyz';
 begin
+
+  --basic usage
+  console.time;
+  sys.dbms_session.sleep(0.1);
+  console.time_end; -- without optional label and message
+
   console.time(v_timer);
 
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.time_val(v_timer); -- without optional message
+  sys.dbms_session.sleep(0.1);
+  console.time_current(v_timer); -- without optional message
 
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.time_val(v_timer, 'end of step two');
+  sys.dbms_session.sleep(0.1);
+  console.time_current(v_timer, 'end of step two');
 
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
+  sys.dbms_session.sleep(0.1);
   console.time_end(v_timer, 'end of step three');
+
 end;
 {{/}}
 ```
@@ -879,15 +900,29 @@ end;
 This will produce the following log messages in the table CONSOLE_LOGS when your
 current log level is 3 (info) or higher:
 
-- Processing xyz: 00:00:00.000100
-- Processing xyz: 00:00:00.003884 - end of step two
-- Processing xyz: 00:00:00.004708 - end of step three
+- default: 00:00:00.102508
+- Processing xyz: 00:00:00.108048
+- Processing xyz: 00:00:00.212045 - end of step two
+- Processing xyz: 00:00:00.316084 - end of step three
 
 **/
 
 --------------------------------------------------------------------------------
 
-procedure time_val (
+procedure time_reset ( p_label in varchar2 default null );
+/**
+
+Reset an existing timer or create a new one.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Also see procedure `time` above.
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure time_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null );
 /**
@@ -917,45 +952,41 @@ Also see procedure `time` above.
 
 --------------------------------------------------------------------------------
 
-function time_val ( p_label in varchar2 default null ) return varchar2;
+function time_current ( p_label in varchar2 default null ) return varchar2;
 /**
 
-Returns the elapsed time.
+Returns the elapsed time as varchar in the format 00:00:00.000000.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
 Can be called multiple times - use `console.time_end` to return the elapsed time
 and delete the timer.
 
-Also see procedure `time` above.
+Also see procedure `time` above. The following example does not use the optional
+label, therefore the implicit label used in the background will be `default`. As
+we get only the runtime back from the funtion in the format 00:00:00.000000 and
+we need only one timer at the same time this is ok for us here and it keeps the
+code simple.
 
 EXAMPLE
 
 ```sql
 set serveroutput on
 
-declare
-  v_timer varchar2(30) := 'myTimer';
 begin
-  console.time(v_timer);
+  console.time;
 
   console.print('Processing step one...');
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.printf('Elapsed time: %s', console.time_val(v_timer));
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_current);
 
   console.print('Processing step two...');
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.printf('Elapsed time: %s', console.time_val(v_timer));
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_current);
 
   console.print('Processing step three...');
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-  console.printf('Elapsed time: %s', console.time_end(v_timer));
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_end);
 end;
 {{/}}
 ```
@@ -978,11 +1009,12 @@ Elapsed time: 00:00:00.000158
 function time_end ( p_label in varchar2 default null ) return varchar2;
 /**
 
-Returns the elapsed time and deletes the timer.
+Returns the elapsed time as varchar in the format 00:00:00.000000 and deletes
+the timer.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
-Also see function `time_val` above.
+Also see function `time_current` above.
 
 **/
 
@@ -2984,7 +3016,22 @@ end count;
 
 --------------------------------------------------------------------------------
 
-procedure count_val (
+procedure count_reset (
+  p_label in varchar2 default null )
+is
+  v_label t_128b;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_counters.exists(v_label) then
+    g_counters(v_label) := 0;
+  else
+    g_counters(v_label) := 0;
+  end if;
+end count_reset;
+
+--------------------------------------------------------------------------------
+
+procedure count_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null )
 is
@@ -3003,7 +3050,7 @@ begin
   else
     warn('Counter `' || v_label || '` does not exist.');
   end if;
-end count_val;
+end count_current;
 
 --------------------------------------------------------------------------------
 
@@ -3031,37 +3078,33 @@ end count_end;
 
 --------------------------------------------------------------------------------
 
-function count_val (
+function count_current (
   p_label in varchar2 default null )
-return varchar2
+return t_int
 is
   v_label  t_128b;
-  v_return t_64b;
+  v_return t_int;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    v_return := to_char(g_counters(v_label));
-  else
-    v_return := 'Counter `' || v_label || '` does not exist.';
+    v_return := g_counters(v_label);
   end if;
   return v_return;
-end count_val;
+end count_current;
 
 --------------------------------------------------------------------------------
 
 function count_end (
   p_label in varchar2 default null )
-return varchar2
+return t_int
 is
   v_label  t_128b;
-  v_return t_64b;
+  v_return t_int;
 begin
   v_label := utl_normalize_label(p_label);
   if g_counters.exists(v_label) then
-    v_return := to_char(g_counters(v_label));
+    v_return := g_counters(v_label);
     g_counters.delete(v_label);
-  else
-    v_return := 'Counter `' || v_label || '` does not exist.';
   end if;
   return v_return;
 end count_end;
@@ -3077,7 +3120,16 @@ end time;
 
 --------------------------------------------------------------------------------
 
-procedure time_val (
+procedure time_reset (
+  p_label in varchar2 default null )
+is
+begin
+  time(p_label);
+end time_reset;
+
+--------------------------------------------------------------------------------
+
+procedure time_current (
   p_label   in varchar2 default null ,
   p_message in varchar2 default null )
 is
@@ -3096,25 +3148,7 @@ begin
   else
     warn('Timer `' || v_label || '` does not exist.');
   end if;
-end time_val;
-
---------------------------------------------------------------------------------
-
-function time_val (
-  p_label in varchar2 default null )
-return varchar2
-is
-  v_label  t_128b;
-  v_return t_64b;
-begin
-  v_label := utl_normalize_label(p_label);
-  if g_timers.exists(v_label) then
-    v_return :=  runtime(g_timers(v_label));
-  else
-    v_return := 'Timer `' || v_label || '` does not exist.';
-  end if;
-  return v_return;
-end time_val;
+end time_current;
 
 --------------------------------------------------------------------------------
 
@@ -3139,6 +3173,24 @@ begin
     warn('Timer `' || v_label || '` does not exist.');
   end if;
 end time_end;
+
+--------------------------------------------------------------------------------
+
+function time_current (
+  p_label in varchar2 default null )
+return varchar2
+is
+  v_label  t_128b;
+  v_return t_64b;
+begin
+  v_label := utl_normalize_label(p_label);
+  if g_timers.exists(v_label) then
+    v_return :=  runtime(g_timers(v_label));
+  else
+    v_return := 'Timer `' || v_label || '` does not exist.';
+  end if;
+  return v_return;
+end time_current;
 
 --------------------------------------------------------------------------------
 
