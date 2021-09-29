@@ -100,8 +100,6 @@ status of the package console:
   [exit_all](package-console.md#procedure-exit_all)
 - [console.my_client_identifier](package-console.md#function-my_client_identifier) &
   [my_log_level](package-console.md#function-my_log_level)
-- [console.context_is_available](package-console.md#function-context_is_available) &
-  [context_is_available_yn](package-console.md#function-context_is_available_yn)
 - [console.level_is_warning](package-console.md#function-level_is_warning) &
   [level_is_warning_yn](package-console.md#function-level_is_warning_yn)
 - [console.level_is_info](package-console.md#function-level_is_info) &
