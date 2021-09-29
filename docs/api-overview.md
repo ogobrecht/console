@@ -127,6 +127,13 @@ Additional housekeeping methods:
 Additional helper methods (mostly used by console internally) which might also
 helpful for you:
 
+- [console.clob_append](package-console.md#procedure-clob_append) &
+  [clob_flush_cache](package-console.md#procedure-clob_flush_cache)
+- [console.runtime](package-console.md#function-runtime) &
+  [runtime_seconds](package-console.md#function-runtime_seconds) &
+  [runtime_milliseconds](package-console.md#function-runtime_milliseconds)
+- [console.print](package-console.md#procedure-print) &
+  [printf](package-console.md#procedure-printf)
 - [console.split_to_table](package-console.md#function-split_to_table) &
   [split](package-console.md#function-split) &
   [join](package-console.md#function-join)
@@ -137,9 +144,6 @@ helpful for you:
 - [console.to_md_tab_header](package-console.md#function-to_md_tab_header) &
   [to_md_tab_data](package-console.md#function-to_md_tab_data)
 - [console.to_unibar](package-console.md#function-to_unibar)
-- [console.runtime](package-console.md#function-runtime) &
-  [runtime_seconds](package-console.md#function-runtime_seconds) &
-  [runtime_milliseconds](package-console.md#function-runtime_milliseconds)
 - [console.level_name](package-console.md#function-level_name)
 - [console.scope](package-console.md#function-scope) &
   [call_stack](package-console.md#function-call_stack)
@@ -147,7 +151,3 @@ helpful for you:
   [cgi_env](package-console.md#function-cgi_env) &
   [console_env](package-console.md#function-console_env) &
   [user_env](package-console.md#function-user_env)
-- [console.clob_append](package-console.md#procedure-clob_append) &
-  [clob_flush_cache](package-console.md#procedure-clob_flush_cache)
-- [console.print](package-console.md#procedure-print) &
-  [printf](package-console.md#procedure-printf)
