@@ -955,7 +955,8 @@ Also see procedure `time` above.
 function time_current ( p_label in varchar2 default null ) return varchar2;
 /**
 
-Returns the elapsed time as varchar in the format 00:00:00.000000.
+Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
+the given label does not exist.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
@@ -1009,8 +1010,8 @@ Elapsed time: 00:00:00.000158
 function time_end ( p_label in varchar2 default null ) return varchar2;
 /**
 
-Returns the elapsed time as varchar in the format 00:00:00.000000 and deletes
-the timer.
+Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
+the given label does not exist. Deletes the timer.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
@@ -1554,8 +1555,8 @@ select console.version from dual;
 --------------------------------------------------------------------------------
 
 function split_to_table (
-  p_string in varchar2,            -- The string to split into a table.
-  p_sep    in varchar2 default ',' -- The separator.
+  p_string in varchar2             , -- The string to split into a table.
+  p_sep    in varchar2 default ','   -- The separator.
 ) return t_vc2_tab pipelined;
 /**
 
@@ -1580,8 +1581,8 @@ select * from console.split_to_table('1,2,3');
 --------------------------------------------------------------------------------
 
 function split (
-  p_string in varchar2,            -- The string to split into an array.
-  p_sep    in varchar2 default ',' -- The separator.
+  p_string in varchar2             , -- The string to split into an array.
+  p_sep    in varchar2 default ','   -- The separator.
 ) return t_vc2_tab_i;
 /**
 
@@ -1613,8 +1614,8 @@ end;
 --------------------------------------------------------------------------------
 
 function join (
-  p_table in t_vc2_tab_i,           -- The PL/SQL array to join into a string.
-  p_sep   in varchar2 default ',' -- The separator.
+  p_table in t_vc2_tab_i          , -- The PL/SQL array to join into a string.
+  p_sep   in varchar2 default ','   -- The separator.
 ) return varchar2;
 /**
 
@@ -1632,6 +1633,8 @@ Converts a boolean value to a string.
 Returns `Y` when the input is true and `N` if the input is false or null.
 
 **/
+
+--------------------------------------------------------------------------------
 
 function to_yn (
   p_test in integer ,
@@ -3186,8 +3189,6 @@ begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
     v_return :=  runtime(g_timers(v_label));
-  else
-    v_return := 'Timer `' || v_label || '` does not exist.';
   end if;
   return v_return;
 end time_current;
@@ -3205,8 +3206,6 @@ begin
   if g_timers.exists(v_label) then
     v_return :=  runtime(g_timers(v_label));
     g_timers.delete(v_label);
-  else
-    v_return := 'Timer `' || v_label || '` does not exist.';
   end if;
   return v_return;
 end time_end;
@@ -5216,12 +5215,20 @@ function utl_get_client_prefs (
   p_all_prefs_csv     in varchar2 ,
   p_client_identifier in varchar2 )
 return t_client_prefs_row is
+  v_all_prefs_csv   t_32kb := p_all_prefs_csv;
   v_csv             t_32kb;
   v_prefs           t_client_prefs_row;
   v_boolean_options t_int;
+  v_start           t_int;
+  v_stop            t_int;
 begin
-  if p_all_prefs_csv is not null then
-    v_csv := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
+  if v_all_prefs_csv is not null then
+    v_all_prefs_csv := replace(v_all_prefs_csv, c_cr, c_lf);
+    v_start := instr(v_all_prefs_csv, p_client_identifier||',');
+    v_stop  := instr(v_all_prefs_csv, c_lf, v_start);
+    v_csv   := substr(v_all_prefs_csv, v_start, v_stop - v_start);
+    --too slow: also see tests/performance.sql
+    --v_csv   := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
     if v_csv is not null then
       v_prefs.exit_sysdate := utl_csv_get_exit_sysdate(v_csv);
       -- For performance reasons we will proceed the other columns only, if needed.

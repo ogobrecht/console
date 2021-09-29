@@ -886,7 +886,8 @@ procedure time_end (
 
 ## Function time_current
 
-Returns the elapsed time as varchar in the format 00:00:00.000000.
+Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
+the given label does not exist.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
@@ -942,8 +943,8 @@ function time_current ( p_label in varchar2 default null ) return varchar2;
 
 ## Function time_end
 
-Returns the elapsed time as varchar in the format 00:00:00.000000 and deletes
-the timer.
+Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
+the given label does not exist. Deletes the timer.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
 
@@ -1660,8 +1661,8 @@ SIGNATURE
 
 ```sql
 function split_to_table (
-  p_string in varchar2,            -- The string to split into a table.
-  p_sep    in varchar2 default ',' -- The separator.
+  p_string in varchar2             , -- The string to split into a table.
+  p_sep    in varchar2 default ','   -- The separator.
 ) return t_vc2_tab pipelined;
 ```
 
@@ -1695,8 +1696,8 @@ SIGNATURE
 
 ```sql
 function split (
-  p_string in varchar2,            -- The string to split into an array.
-  p_sep    in varchar2 default ',' -- The separator.
+  p_string in varchar2             , -- The string to split into an array.
+  p_sep    in varchar2 default ','   -- The separator.
 ) return t_vc2_tab_i;
 ```
 
@@ -1709,8 +1710,8 @@ SIGNATURE
 
 ```sql
 function join (
-  p_table in t_vc2_tab_i,           -- The PL/SQL array to join into a string.
-  p_sep   in varchar2 default ',' -- The separator.
+  p_table in t_vc2_tab_i          , -- The PL/SQL array to join into a string.
+  p_sep   in varchar2 default ','   -- The separator.
 ) return varchar2;
 ```
 

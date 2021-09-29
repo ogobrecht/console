@@ -839,8 +839,6 @@ begin
   v_label := utl_normalize_label(p_label);
   if g_timers.exists(v_label) then
     v_return :=  runtime(g_timers(v_label));
-  else
-    v_return := 'Timer `' || v_label || '` does not exist.';
   end if;
   return v_return;
 end time_current;
@@ -858,8 +856,6 @@ begin
   if g_timers.exists(v_label) then
     v_return :=  runtime(g_timers(v_label));
     g_timers.delete(v_label);
-  else
-    v_return := 'Timer `' || v_label || '` does not exist.';
   end if;
   return v_return;
 end time_end;
@@ -2869,12 +2865,20 @@ function utl_get_client_prefs (
   p_all_prefs_csv     in varchar2 ,
   p_client_identifier in varchar2 )
 return t_client_prefs_row is
+  v_all_prefs_csv   t_32kb := p_all_prefs_csv;
   v_csv             t_32kb;
   v_prefs           t_client_prefs_row;
   v_boolean_options t_int;
+  v_start           t_int;
+  v_stop            t_int;
 begin
-  if p_all_prefs_csv is not null then
-    v_csv := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
+  if v_all_prefs_csv is not null then
+    v_all_prefs_csv := replace(v_all_prefs_csv, c_cr, c_lf);
+    v_start := instr(v_all_prefs_csv, p_client_identifier||',');
+    v_stop  := instr(v_all_prefs_csv, c_lf, v_start);
+    v_csv   := substr(v_all_prefs_csv, v_start, v_stop - v_start);
+    --too slow: also see tests/performance.sql
+    --v_csv   := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
     if v_csv is not null then
       v_prefs.exit_sysdate := utl_csv_get_exit_sysdate(v_csv);
       -- For performance reasons we will proceed the other columns only, if needed.

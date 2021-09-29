@@ -189,22 +189,67 @@ begin
 end;
 /
 
+prompt
+prompt RUNTIME: EXTRACT CLIENT PREFS OUT OF 4000 BYTE - REGEX > SUBSTR COMPARISON
+declare
+  v_iterator   pls_integer := 1; --try also 10, 100, 1000, 10000, 100000
+  v_start      timestamp;
+  v_temp       console.t_32kb;
+  v_rt_regex   number;
+  v_rt_substr  number;
+  v_start_pos  pls_integer;
+  v_stop_pos   pls_integer;
+  v_haystack   console.t_4kb;
+  v_needle     console.t_64b := '{o,o} 88217AE40002';
+begin
+  -- build the haystack of around 4000 byte
+  select listagg('{o,o} '||lpad(level,2,'0')||'217AE40002,3,0,0,10,210927083239', chr(10))
+    into v_haystack
+    from dual
+    connect by level <= 95; --try also smaller sizes like 5 or 10
+
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_temp := regexp_substr(v_haystack,'^'||v_needle||',.*$', 1, 1, 'im');
+  end loop;
+  v_rt_regex := console.runtime_seconds(v_start);
+  console.printf( '- regex result   : %s', v_temp );
+
+  v_start := localtimestamp;
+  for i in 1 .. v_iterator loop
+    v_haystack := replace(v_haystack, chr(13), chr(10));
+    v_start_pos := instr(v_haystack, v_needle||',');
+    v_stop_pos  := instr(v_haystack, chr(10), v_start_pos);
+    v_temp      := substr(v_haystack, v_start_pos, v_stop_pos - v_start_pos);
+  end loop;
+  v_rt_substr := console.runtime_seconds(v_start);
+  console.printf( '- substr result  : %s', v_temp );
+
+  console.printf( '- regex          : %s seconds' , trim(to_char(v_rt_regex,   '0.000000'))         );
+  console.printf( '- substr         : %s seconds' , trim(to_char(v_rt_substr,  '0.000000'))         );
+  console.printf( '- factor r/s     : %s'         , trim(to_char(v_rt_regex/v_rt_substr, '90.0'))   );
+
+end;
+/
+
 --prompt
---prompt 1.000 utl_set_session_conf CALLS
+--prompt 1.000 INIT PACKAGE CALLS
 --declare
 --  v_iterator   pls_integer := 1000;
 --  v_start      timestamp;
 --  v_rt         number;
 --  v_result     varchar2(100);
+--  v_log_cache  console.t_logs_tab;
 --begin
 --  v_start := localtimestamp;
 --  for i in 1 .. v_iterator loop
+--    v_log_cache := new console.t_logs_tab();
 --    console.utl_set_client_identifier;
 --    console.utl_set_session_conf;
 --  end loop;
 --  v_rt := console.runtime_seconds(v_start);
---  console.printf( '- runtime all    : %s seconds' , trim(to_char(v_rt,      '0.000000000')) );
---  console.printf( '- per call       : %s seconds' , trim(to_char(v_rt/1000, '0.000000000')) );
+--  console.printf( '- runtime all    : %s seconds', trim(to_char(v_rt,      '0.000000000')));
+--  console.printf( '- per call       : %s seconds', trim(to_char(v_rt/1000, '0.000000000')));
 --end;
 --/
 
@@ -350,3 +395,4 @@ end;
 --  console.printf( '- factor e/s     : %s'         , trim(to_char(v_rt_extract/v_rt_substr, '90.0')) );
 --end;
 --/
+
