@@ -104,7 +104,7 @@ Oracle Instrumentation Console
 - [Procedure clob_append](#procedure-clob_append-1)
 - [Procedure clob_flush_cache](#procedure-clob_flush_cache)
 - [Function cache](#function-cache)
-- [Procedure flush_cache](#procedure-flush_cache)
+- [Procedure flush](#procedure-flush)
 - [Procedure clear](#procedure-clear)
 - [Function status](#function-status)
 - [Function conf](#function-conf)
@@ -1911,7 +1911,7 @@ Returns a text bar consisting of unicode block characters.
 You can build simple text based bar charts with it. Not all fonts implement
 clean block characters, so the result depends a little bit on the font. The
 unicode block characters can have eight different widths from 1/8 up to 8/8 -
-together with the default width of a bar char of 25 characters you can show bar
+together with the default width of a bar chart of 25 characters you can show bar
 charts with a precision of 0.5 percent - that is not bad for a text based bar
 chart...
 
@@ -2276,14 +2276,14 @@ function cache return t_logs_tab pipelined;
 ```
 
 
-## Procedure flush_cache
+## Procedure flush
 
 Flushes the log cache and writes down the entries to the log table.
 
 SIGNATURE
 
 ```sql
-procedure flush_cache;
+procedure flush;
 ```
 
 

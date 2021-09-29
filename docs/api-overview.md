@@ -98,34 +98,30 @@ status of the package console:
 - [console.init](package-console.md#procedure-init) &
   [exit](package-console.md#procedure-exit) &
   [exit_all](package-console.md#procedure-exit_all)
-- [console.my_client_identifier](package-console.md#function-my_client_identifier)
-  & [my_log_level](package-console.md#function-my_log_level)
-- [console.context_is_available](package-console.md#function-context_is_available)
-  &
+- [console.my_client_identifier](package-console.md#function-my_client_identifier) &
+  [my_log_level](package-console.md#function-my_log_level)
+- [console.context_is_available](package-console.md#function-context_is_available) &
   [context_is_available_yn](package-console.md#function-context_is_available_yn)
-- [console.level_is_warning](package-console.md#function-level_is_warning)
-  &
+- [console.level_is_warning](package-console.md#function-level_is_warning) &
   [level_is_warning_yn](package-console.md#function-level_is_warning_yn)
 - [console.level_is_info](package-console.md#function-level_is_info) &
   [level_is_info_yn](package-console.md#function-level_is_info_yn)
-- [console.level_is_debug](package-console.md#function-level_is_debug)
-  &
+- [console.level_is_debug](package-console.md#function-level_is_debug) &
   [level_is_debug_yn](package-console.md#function-level_is_debug_yn)
-- [console.level_is_trace](package-console.md#function-level_is_trace)
-  &
+- [console.level_is_trace](package-console.md#function-level_is_trace) &
   [level_is_trace_yn](package-console.md#function-level_is_trace_yn)
 - [console.version](package-console.md#function-version)
 - [console.status](package-console.md#function-status)
 - [console.cache](package-console.md#function-cache) &
-  [flush_cache](package-console.md#procedure-flush_cache)
-- [console.clear](package-console.md#procedure-clear)
+  [flush](package-console.md#procedure-flush) &
+  [clear](package-console.md#procedure-clear)
 
 Additional housekeeping methods:
 
 - [console.purge](package-console.md#procedure-purge) &
   [purge_all](package-console.md#procedure-purge_all)
-- [console.purge_job_create](package-console.md#procedure-purge_job_create)
-  & [purge_job_run](package-console.md#procedure-purge_job_run) &
+- [console.purge_job_create](package-console.md#procedure-purge_job_create) &
+  [purge_job_run](package-console.md#procedure-purge_job_run) &
   [purge_job_disable](package-console.md#procedure-purge_job_disable) &
   [purge_job_enable](package-console.md#procedure-purge_job_enable) &
   [purge_job_drop](package-console.md#procedure-purge_job_drop)

@@ -1624,7 +1624,7 @@ begin
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     utl_set_session_conf;
-    flush_cache;
+    flush;
   end if;
 end exit_;
 
@@ -1643,7 +1643,7 @@ procedure exit_all is
 begin
   utl_set_client_prefs(null);
   utl_set_session_conf;
-  flush_cache;
+  flush;
 end exit_all;
 
 --------------------------------------------------------------------------------
@@ -2501,7 +2501,7 @@ end cache;
 
 --------------------------------------------------------------------------------
 
-procedure flush_cache is
+procedure flush is
   pragma autonomous_transaction;
 begin
   if g_log_cache.count > 0 then
@@ -2510,7 +2510,7 @@ begin
     commit;
     g_log_cache.delete;
   end if;
-end flush_cache;
+end flush;
 
 --------------------------------------------------------------------------------
 
@@ -3282,7 +3282,7 @@ begin
     g_log_cache(g_log_cache.count) := v_row;
   else
     if g_conf_cache_size > 0 then
-      flush_cache;
+      flush;
     end if;
     insert into console_logs values v_row returning log_id into v_row.log_id;
     commit;

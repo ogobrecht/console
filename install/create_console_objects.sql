@@ -1806,7 +1806,7 @@ Returns a text bar consisting of unicode block characters.
 You can build simple text based bar charts with it. Not all fonts implement
 clean block characters, so the result depends a little bit on the font. The
 unicode block characters can have eight different widths from 1/8 up to 8/8 -
-together with the default width of a bar char of 25 characters you can show bar
+together with the default width of a bar chart of 25 characters you can show bar
 charts with a precision of 0.5 percent - that is not bad for a text based bar
 chart...
 
@@ -2126,7 +2126,7 @@ select * from console.cache();
 
 --------------------------------------------------------------------------------
 
-procedure flush_cache;
+procedure flush;
 /**
 
 Flushes the log cache and writes down the entries to the log table.
@@ -3974,7 +3974,7 @@ begin
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     utl_set_session_conf;
-    flush_cache;
+    flush;
   end if;
 end exit_;
 
@@ -3993,7 +3993,7 @@ procedure exit_all is
 begin
   utl_set_client_prefs(null);
   utl_set_session_conf;
-  flush_cache;
+  flush;
 end exit_all;
 
 --------------------------------------------------------------------------------
@@ -4851,7 +4851,7 @@ end cache;
 
 --------------------------------------------------------------------------------
 
-procedure flush_cache is
+procedure flush is
   pragma autonomous_transaction;
 begin
   if g_log_cache.count > 0 then
@@ -4860,7 +4860,7 @@ begin
     commit;
     g_log_cache.delete;
   end if;
-end flush_cache;
+end flush;
 
 --------------------------------------------------------------------------------
 
@@ -5632,7 +5632,7 @@ begin
     g_log_cache(g_log_cache.count) := v_row;
   else
     if g_conf_cache_size > 0 then
-      flush_cache;
+      flush;
     end if;
     insert into console_logs values v_row returning log_id into v_row.log_id;
     commit;

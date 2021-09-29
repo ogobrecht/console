@@ -25,6 +25,7 @@
   - Rename `view_cache` to `cache`
   - Rename `view_status` to `status`
   - Rename `count_log` & `time_log` to `count_current` & `time_current`
+  - Rename `flush_cache` to `flush`
   - New procedures `count_reset` and `time_reset`
   - New function overloads for the procedures `count_current` and `time_current`
 - New helper method `assertf` which supports formatted messages (a short form of
