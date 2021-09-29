@@ -1462,14 +1462,14 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 --------------------------------------------------------------------------------
 
 function to_yn (
-  p_test in integer ,
-  p_bit  in integer )
+  p_num in integer ,
+  p_bit in integer )
 return varchar2;
 /**
 
 Tests an integer value with bitand.
 
-Returns `Y` when `bitand(p_test, p_bit) = p_bit`. In all other cases (also on
+Returns `Y` when `bitand(p_num, p_bit) = p_bit`. In all other cases (also on
 null) `N` is returned.
 
 ```sql
