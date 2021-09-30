@@ -20,12 +20,11 @@ The console API is inspired by the [JavaScript Console
 API](https://developers.google.com/web/tools/chrome-devtools/console/api). This
 means, we have mostly the same log levels and method names. The parameters
 differs a little bit to fit our needs in PL/SQL. Not all methods making sense in
-a PL/SQL instrumentation tool (we have no direct screen) and therefore these
-seven are not implemented: clear, dir, dirxml, group, groupCollapsed, groupEnd
-and countReset (instead we have count_end and we ignore the line number, where
-the count occurred). For the two \*_end methods we use snake case instead of
-camel case for readability. As table is a keyword in SQL we named our method
-table#. The log level verbose is splitted into debug and trace.
+a PL/SQL instrumentation tool (we have no direct screen) and therefore these six
+are not implemented: clear, dir, dirxml, group, groupCollapsed, groupEnd. We use
+snake case instead of camel case for readability. As table is a keyword in SQL
+we named our method table#. The log level verbose is splitted into debug and
+trace.
 
 We have five log levels:
 
