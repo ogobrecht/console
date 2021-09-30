@@ -1557,6 +1557,7 @@ begin
     p_level             => p_level                  ,
     p_duration          => p_duration               ,
     p_check_interval    => p_check_interval         ,
+    p_call_stack        => p_call_stack             ,
     p_user_env          => p_user_env               ,
     p_apex_env          => p_apex_env               ,
     p_cgi_env           => p_cgi_env                ,
@@ -1684,17 +1685,6 @@ function to_yn (
 return varchar2 is
 begin
   return case when p_bool then 'Y' else 'N' end;
-end to_yn;
-
-function to_yn (
-  p_num in integer ,
-  p_bit in integer )
-return varchar2 is
-begin
-  return case when bitand(p_num, p_bit) = p_bit
-            then 'Y'
-            else 'N'
-         end;
 end to_yn;
 
 --------------------------------------------------------------------------------
@@ -2806,11 +2796,11 @@ begin
         v_boolean_options         := utl_csv_get_boolean_options   ( v_csv );
         v_prefs.level_id          := utl_csv_get_level             ( v_csv );
         v_prefs.check_interval    := utl_csv_get_check_interval    ( v_csv );
-        v_prefs.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
-        v_prefs.user_env          := to_yn ( v_boolean_options, c_user_env    );
-        v_prefs.apex_env          := to_yn ( v_boolean_options, c_apex_env    );
-        v_prefs.cgi_env           := to_yn ( v_boolean_options, c_cgi_env     );
-        v_prefs.console_env       := to_yn ( v_boolean_options, c_console_env );
+        v_prefs.call_stack        := to_yn ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
+        v_prefs.user_env          := to_yn ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
+        v_prefs.apex_env          := to_yn ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
+        v_prefs.cgi_env           := to_yn ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
+        v_prefs.console_env       := to_yn ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
         v_prefs.level_name        := level_name ( v_prefs.level_id );
       end if;
     end if;
@@ -2998,11 +2988,11 @@ begin
   v_return.client_identifier := utl_csv_get_client_identifier ( p_csv );
   v_return.level_id          := utl_csv_get_level             ( p_csv );
   v_return.check_interval    := utl_csv_get_check_interval    ( p_csv );
-  v_return.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
-  v_return.user_env          := to_yn ( v_boolean_options, c_user_env    );
-  v_return.apex_env          := to_yn ( v_boolean_options, c_apex_env    );
-  v_return.cgi_env           := to_yn ( v_boolean_options, c_cgi_env     );
-  v_return.console_env       := to_yn ( v_boolean_options, c_console_env );
+  v_return.call_stack        := to_yn ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
+  v_return.user_env          := to_yn ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
+  v_return.apex_env          := to_yn ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
+  v_return.cgi_env           := to_yn ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
+  v_return.console_env       := to_yn ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
   v_return.level_name        := level_name ( v_return.level_id );
   return v_return;
 end utl_csv_to_client_prefs;

@@ -1420,32 +1420,6 @@ Returns `Y` when the input is true and `N` if the input is false or null.
 
 --------------------------------------------------------------------------------
 
-function to_yn (
-  p_num in integer ,
-  p_bit in integer )
-return varchar2;
-/**
-
-Tests an integer value with bitand.
-
-Returns `Y` when `bitand(p_num, p_bit) = p_bit`. In all other cases (also on
-null) `N` is returned.
-
-```sql
-select
-  console.to_yn(26, 16) as test_bit_pos_5,
-  console.to_yn(26,  8) as test_bit_pos_4,
-  console.to_yn(26,  4) as test_bit_pos_3,
-  console.to_yn(26,  2) as test_bit_pos_2,
-  console.to_yn(26,  1) as test_bit_pos_1,
-  console.to_yn(26,  3) as always_no, -- 3 makes no sense as it represents no bit position value
-from dual;
-```
-
-**/
-
---------------------------------------------------------------------------------
-
 function to_string ( p_bool in boolean ) return varchar2;
 /**
 
