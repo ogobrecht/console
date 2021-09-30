@@ -55,7 +55,6 @@ type t_client_prefs_row is record(
   exit_sysdate      date    ,
   level_id          integer ,
   level_name        t_16b   ,
-  cache_size        integer ,
   call_stack        t_1b    ,
   user_env          t_1b    ,
   apex_env          t_1b    ,
@@ -68,7 +67,6 @@ type t_client_prefs_tab   is table of t_client_prefs_row;
 type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
 type t_key_value_tab      is table of t_key_value_row;
 type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
-type t_logs_tab           is table of console_logs%rowtype;
 type t_vc2_tab            is table of t_32kb;
 type t_vc2_tab_i          is table of t_32kb index by pls_integer;
 
@@ -88,8 +86,6 @@ c_check_interval_max     constant t_int   :=     60 ; -- seconds
 c_duration_min           constant t_int   :=      1 ; -- minutes
 c_duration_default       constant t_int   :=     60 ; -- minutes
 c_duration_max           constant t_int   :=   1440 ; -- minutes (1 day)
-c_cache_size_min         constant t_int   :=      0 ; -- log entries
-c_cache_size_max         constant t_int   :=   1000 ; -- log entries
 c_enable_ascii_art       constant boolean :=   true ;
 
 
@@ -119,42 +115,6 @@ package variable for performance reasons and re-evaluated every 10 seconds.
 
 ```sql
 select console.my_log_level from dual;
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-function logs (
-  p_log_rows in integer default 50 )
-return t_logs_tab pipelined;
-/**
-
-View the last log entries from the log cache and the log table (if not enough in
-the cache) in descending order.
-
-The entries without a log_id are from the cache, the others from the log table.
-
-EXAMPLE
-
-```sql
---init logging for own session
-exec console.init(
-  p_level          => c_level_debug ,
-  p_duration       => 90            ,
-  p_cache_size     => 10            ,
-  p_check_interval => 30            );
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-{{/}}
-
---view last cache and log entries
-select * from console.logs(50);
 ```
 
 **/
@@ -1237,14 +1197,15 @@ EXAMPLE
 
 ```sql
 --set all sessions to level warning
+exec console.conf(p_level => 2);
+--or
 exec console.conf(p_level => console.c_level_warning);
 
---set all session to level info and two new packages to debug
+--set multiple options at once
 begin
   console.conf(
     p_level             => console.c_level_info,
-    p_check_interval    => 10,
-    p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API'
+    p_check_interval    => 10
   );
 end;
 {{/}}
@@ -1257,8 +1218,7 @@ end;
 procedure init (
   p_client_identifier in varchar2                                  , -- The client identifier provided by the application or console itself.
   p_level             in integer  default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        in integer  default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_check_interval    in integer  default c_check_interval_default , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack        in boolean  default false                    , -- Should the call stack be included.
   p_user_env          in boolean  default false                    , -- Should the user environment be included.
@@ -1310,8 +1270,7 @@ end;
 
 procedure init (
   p_level          in integer default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size     in integer default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_check_interval in integer default c_check_interval_default , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack     in boolean default false                    , -- Should the call stack be included.
   p_user_env       in boolean default false                    , -- Should the user environment be included.
@@ -1920,61 +1879,6 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function cache return t_logs_tab pipelined;
-/**
-
-View the content of the log cache.
-
-EXAMPLE
-
-```sql
---init logging for own session
-exec console.init(
-  p_level          => c_level_debug ,
-  p_duration       => 90            ,
-  p_cache_size     => 1000          ,
-  p_check_interval => 30            );
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-{{/}}
-
---check current cache entries
-select * from console.cache();
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure flush;
-/**
-
-Flushes the log cache and writes down the entries to the log table.
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure clear;
-/**
-
-Clears the cached log entries (if any).
-
-This procedure is useful when you have initialized your own session with a cache
-size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.cache` or
-`console.logs([numRows])` during development. By clearing the cache you can
-avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
-
-**/
-
---------------------------------------------------------------------------------
-
 function status return t_key_value_tab pipelined;
 /**
 
@@ -2141,10 +2045,6 @@ function utl_csv_get_check_interval (
 return integer;
 
 function utl_csv_get_level (
-  p_csv varchar2 )
-return integer;
-
-function utl_csv_get_cache_size (
   p_csv varchar2 )
 return integer;
 

@@ -41,3 +41,5 @@ comment on column console_conf.client_prefs     is 'Client preferences in CSV fo
 comment on column console_conf.enable_ascii_art is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
 
 
+
+

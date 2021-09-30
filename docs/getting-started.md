@@ -20,7 +20,6 @@ use it to instrument your code.
 - [Minimal - Log Only Errors](#minimal---log-only-errors)
 - [Debugging During Development or Analyzing Problems](#debugging-during-development-or-analyzing-problems)
 - [Configure Default Log Level (set global configuration)](#configure-default-log-level-set-global-configuration)
-- [Configure Different Log Levels for Specific PL/SQL Units](#configure-different-log-levels-for-specific-plsql-units)
 - [View Console Status](#view-console-status)
 - [APEX Backend - Error Handling Function](#apex-backend---error-handling-function)
 - [APEX Frontend - Track User JavaScript Errors](#apex-frontend---track-user-javascript-errors)
@@ -278,30 +277,11 @@ Also see additional methods in the [API overview](api-overview.md)
 
 ### Viewing Log Entries
 
-CONSOLE brings a [pipelined function to view the last
-entries](package-console.md#function-logs). This function is especially
-useful, if you use the possibility to cache log entries in the packages state
-(works only for your own development session) as this function views the entries
-from the cache and the log table `CONSOLE_LOGS` in descending order:
+Log entries are saved in the table: `console_logs`:
 
 ```sql
---init preferences for own session/client_identifier
-exec console.init(
-  p_level          => c_level_debug ,
-  p_duration       => 90            , -- in minutes
-  p_cache_size     => 1000          , -- number of entries to cache in the package state
-  p_check_interval => 30            );-- in seconds, how often console looks for a changed configuration
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-/
-
---view last cache and log entries
-select * from console.logs(50);
+--view the last 20 log entries
+select * from console_logs order by log_id desc fetch first 20 rows only;
 ```
 
 ### Exit Log Level (unset client preferences)
@@ -327,27 +307,6 @@ EXAMPLE
 ```sql
 --set global log level to warning
 exec console.conf(p_level => console.c_level_warning);
-```
-
-There are more parameters to the [conf
-procedure](package-console.md#procedure-conf).
-
-## Configure Different Log Levels for Specific PL/SQL Units
-
-If you have a new package and you want only set the log level for this package
-to another level then the global one, you can do this by using the
-[console.conf](package-console.md#procedure-conf) procedure.
-
-EXAMPLE
-
-```sql
---set global log level to info and for two new packages to debug
-begin
-  console.conf(
-    p_level             => console.c_level_info                       ,
-    p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API' );
-end;
-{{/}}
 ```
 
 ## View Console Status
@@ -382,7 +341,6 @@ select * from table(console.status);
 | g_conf_console_env           | N                   |
 | g_counters.count             | 0                   |
 | g_timers.count               | 0                   |
-| g_log_cache.count            | 0                   |
 | g_saved_stack.count          | 0                   |
 | g_prev_error_msg             |                     |
 

@@ -78,6 +78,8 @@ comment on column console_conf.enable_ascii_art is 'Currently used to have more 
 
 
 
+
+
 declare
   v_count pls_integer;
   --
@@ -230,7 +232,6 @@ type t_client_prefs_row is record(
   exit_sysdate      date    ,
   level_id          integer ,
   level_name        t_16b   ,
-  cache_size        integer ,
   call_stack        t_1b    ,
   user_env          t_1b    ,
   apex_env          t_1b    ,
@@ -243,7 +244,6 @@ type t_client_prefs_tab   is table of t_client_prefs_row;
 type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
 type t_key_value_tab      is table of t_key_value_row;
 type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
-type t_logs_tab           is table of console_logs%rowtype;
 type t_vc2_tab            is table of t_32kb;
 type t_vc2_tab_i          is table of t_32kb index by pls_integer;
 
@@ -263,8 +263,6 @@ c_check_interval_max     constant t_int   :=     60 ; -- seconds
 c_duration_min           constant t_int   :=      1 ; -- minutes
 c_duration_default       constant t_int   :=     60 ; -- minutes
 c_duration_max           constant t_int   :=   1440 ; -- minutes (1 day)
-c_cache_size_min         constant t_int   :=      0 ; -- log entries
-c_cache_size_max         constant t_int   :=   1000 ; -- log entries
 c_enable_ascii_art       constant boolean :=   true ;
 
 
@@ -294,42 +292,6 @@ package variable for performance reasons and re-evaluated every 10 seconds.
 
 ```sql
 select console.my_log_level from dual;
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-function logs (
-  p_log_rows in integer default 50 )
-return t_logs_tab pipelined;
-/**
-
-View the last log entries from the log cache and the log table (if not enough in
-the cache) in descending order.
-
-The entries without a log_id are from the cache, the others from the log table.
-
-EXAMPLE
-
-```sql
---init logging for own session
-exec console.init(
-  p_level          => c_level_debug ,
-  p_duration       => 90            ,
-  p_cache_size     => 10            ,
-  p_check_interval => 30            );
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-{{/}}
-
---view last cache and log entries
-select * from console.logs(50);
 ```
 
 **/
@@ -1412,14 +1374,15 @@ EXAMPLE
 
 ```sql
 --set all sessions to level warning
+exec console.conf(p_level => 2);
+--or
 exec console.conf(p_level => console.c_level_warning);
 
---set all session to level info and two new packages to debug
+--set multiple options at once
 begin
   console.conf(
     p_level             => console.c_level_info,
-    p_check_interval    => 10,
-    p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API'
+    p_check_interval    => 10
   );
 end;
 {{/}}
@@ -1432,8 +1395,7 @@ end;
 procedure init (
   p_client_identifier in varchar2                                  , -- The client identifier provided by the application or console itself.
   p_level             in integer  default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        in integer  default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_check_interval    in integer  default c_check_interval_default , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack        in boolean  default false                    , -- Should the call stack be included.
   p_user_env          in boolean  default false                    , -- Should the user environment be included.
@@ -1485,8 +1447,7 @@ end;
 
 procedure init (
   p_level          in integer default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size     in integer default c_cache_size_min         , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
+  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
   p_check_interval in integer default c_check_interval_default , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
   p_call_stack     in boolean default false                    , -- Should the call stack be included.
   p_user_env       in boolean default false                    , -- Should the user environment be included.
@@ -2095,61 +2056,6 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function cache return t_logs_tab pipelined;
-/**
-
-View the content of the log cache.
-
-EXAMPLE
-
-```sql
---init logging for own session
-exec console.init(
-  p_level          => c_level_debug ,
-  p_duration       => 90            ,
-  p_cache_size     => 1000          ,
-  p_check_interval => 30            );
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-{{/}}
-
---check current cache entries
-select * from console.cache();
-```
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure flush;
-/**
-
-Flushes the log cache and writes down the entries to the log table.
-
-**/
-
---------------------------------------------------------------------------------
-
-procedure clear;
-/**
-
-Clears the cached log entries (if any).
-
-This procedure is useful when you have initialized your own session with a cache
-size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.cache` or
-`console.logs([numRows])` during development. By clearing the cache you can
-avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
-
-**/
-
---------------------------------------------------------------------------------
-
 function status return t_key_value_tab pipelined;
 /**
 
@@ -2319,10 +2225,6 @@ function utl_csv_get_level (
   p_csv varchar2 )
 return integer;
 
-function utl_csv_get_cache_size (
-  p_csv varchar2 )
-return integer;
-
 function utl_csv_get_boolean_options (
   p_csv varchar2 )
 return integer;
@@ -2417,7 +2319,6 @@ type t_saved_stack_tab is table of t_1kb     index by binary_integer;
 g_params         t_key_value_tab_i;
 g_timers         t_timers_tab;
 g_counters       t_counters_tab;
-g_log_cache      t_logs_tab;
 g_saved_stack    t_saved_stack_tab;
 g_prev_error_msg t_1kb;
 
@@ -2426,7 +2327,6 @@ g_conf_exit_sysdate      date;
 g_conf_check_interval    integer;
 g_conf_check_sysdate     date;
 g_conf_level             t_int;
-g_conf_cache_size        integer;
 g_conf_call_stack        boolean;
 g_conf_user_env          boolean;
 g_conf_apex_env          boolean;
@@ -2506,10 +2406,6 @@ function utl_csv_get_level (
   p_csv varchar2 )
 return integer;
 
-function utl_csv_get_cache_size (
-  p_csv varchar2 )
-return integer;
-
 function utl_csv_get_boolean_options (
   p_csv varchar2 )
 return integer;
@@ -2546,30 +2442,6 @@ function my_log_level return integer is
 begin
   return g_conf_level;
 end my_log_level;
-
---------------------------------------------------------------------------------
-
-function logs (
-  p_log_rows in integer default 50 )
-return t_logs_tab pipelined is
-  v_count t_int := 0;
-  v_left  t_int;
-begin
-  for i in reverse 1 .. g_log_cache.count loop
-    exit when v_count > p_log_rows;
-    pipe row(g_log_cache(i));
-    v_count := v_count + 1;
-  end loop;
-  if v_count < p_log_rows then
-    v_left := p_log_rows - v_count;
-    for i in (select * from console_logs
-              order by log_time desc
-              fetch first v_left rows only)
-    loop
-          pipe row(i);
-    end loop;
-  end if;
-end logs;
 
 --------------------------------------------------------------------------------
 
@@ -3842,10 +3714,10 @@ begin
   v_conf.check_interval   := coalesce(p_check_interval, v_conf.check_interval);
   v_conf.enable_ascii_art := to_yn(coalesce(p_enable_ascii_art, to_bool(v_conf.enable_ascii_art)));
   assert (
-    p_level between c_level_error and c_level_trace,
+    v_conf.level_id between c_level_error and c_level_trace,
     'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
   assertf (
-    p_check_interval between c_check_interval_default and c_check_interval_max,
+    v_conf.check_interval between c_check_interval_default and c_check_interval_max,
     'Check interval needs to be between %s and %s (seconds). ' ||
     'Values between %s and %s seconds can only be set per session with the procedure init.',
     c_check_interval_default,
@@ -3862,7 +3734,6 @@ procedure init (
   p_client_identifier in varchar2                                  ,
   p_level             in integer  default c_level_info             ,
   p_duration          in integer  default c_duration_default       ,
-  p_cache_size        in integer  default c_cache_size_min         ,
   p_check_interval    in integer  default c_check_interval_default ,
   p_call_stack        in boolean  default false                    ,
   p_user_env          in boolean  default false                    ,
@@ -3886,11 +3757,7 @@ begin
     c_duration_min,
     c_duration_max);
   assertf (
-    p_cache_size between c_cache_size_min and c_cache_size_max,
-    'Cache size needs to be between %s and %s (log entries).',
-    c_cache_size_min,
-    c_cache_size_max);
-  assertf ( p_check_interval between c_check_interval_min and c_check_interval_max,
+    p_check_interval between c_check_interval_min and c_check_interval_max,
     'Check interval needs to be between %s and %s (seconds).',
     c_check_interval_min,
     c_check_interval_max);
@@ -3903,7 +3770,6 @@ begin
   v_prefs.client_identifier := p_client_identifier;
   v_prefs.level_id          := p_level;
   v_prefs.level_name        := level_name(p_level);
-  v_prefs.cache_size        := p_cache_size;
   v_prefs.call_stack        := to_yn(p_call_stack);
   v_prefs.user_env          := to_yn(p_user_env);
   v_prefs.apex_env          := to_yn(p_apex_env);
@@ -3930,7 +3796,6 @@ end init;
 procedure init (
   p_level          in integer default c_level_info             ,
   p_duration       in integer default c_duration_default       ,
-  p_cache_size     in integer default c_cache_size_min         ,
   p_check_interval in integer default c_check_interval_default ,
   p_call_stack     in boolean default false                    ,
   p_user_env       in boolean default false                    ,
@@ -3944,7 +3809,6 @@ begin
     p_level             => p_level                  ,
     p_duration          => p_duration               ,
     p_check_interval    => p_check_interval         ,
-    p_cache_size        => p_cache_size             ,
     p_user_env          => p_user_env               ,
     p_apex_env          => p_apex_env               ,
     p_cgi_env           => p_cgi_env                ,
@@ -3974,7 +3838,6 @@ begin
   -- or table on next call of a public logging method.
   if p_client_identifier = g_conf_client_identifier then
     utl_set_session_conf;
-    flush;
   end if;
 end exit_;
 
@@ -3993,7 +3856,6 @@ procedure exit_all is
 begin
   utl_set_client_prefs(null);
   utl_set_session_conf;
-  flush;
 end exit_all;
 
 --------------------------------------------------------------------------------
@@ -4636,7 +4498,6 @@ begin
   append_row('level_name(g_conf_level)',     level_name( g_conf_level                           ));
   append_row('g_conf_check_interval',           to_char( g_conf_check_interval                  ));
   append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                ));
-  append_row('g_conf_cache_size',               to_char( g_conf_cache_size                      ));
   append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                      ));
   append_row('g_conf_user_env',                   to_yn( g_conf_user_env                        ));
   append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                        ));
@@ -4644,7 +4505,6 @@ begin
   append_row('g_conf_console_env',                to_yn( g_conf_console_env                     ));
   append_row('g_counters.count',                to_char( g_counters.count                       ));
   append_row('g_timers.count',                  to_char( g_timers.count                         ));
-  append_row('g_log_cache.count',               to_char( g_log_cache.count                      ));
   append_row('g_saved_stack.count',             to_char( g_saved_stack.count                    ));
   append_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       ));
 
@@ -4842,36 +4702,6 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
-function cache return t_logs_tab pipelined is
-begin
-  for i in reverse 1 .. g_log_cache.count loop
-    pipe row(g_log_cache(i));
-  end loop;
-end cache;
-
---------------------------------------------------------------------------------
-
-procedure flush is
-  pragma autonomous_transaction;
-begin
-  if g_log_cache.count > 0 then
-    forall i in 1 .. g_log_cache.count
-      insert into console_logs values g_log_cache(i);
-    commit;
-    g_log_cache.delete;
-  end if;
-end flush;
-
---------------------------------------------------------------------------------
-
-procedure clear
-is
-begin
-  g_log_cache.delete;
-end clear;
-
---------------------------------------------------------------------------------
-
 function status return t_key_value_tab pipelined is
   v_row t_key_value_row;
 begin
@@ -4888,7 +4718,6 @@ begin
   pipe row(new t_key_value_row('level_name(g_conf_level)',     level_name( g_conf_level                           )));
   pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                  )));
   pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                )));
-  pipe row(new t_key_value_row('g_conf_cache_size',               to_char( g_conf_cache_size                      )));
   pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                      )));
   pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                        )));
   pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                        )));
@@ -4896,7 +4725,6 @@ begin
   pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                     )));
   pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                       )));
   pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                         )));
-  pipe row(new t_key_value_row('g_log_cache.count',               to_char( g_log_cache.count                      )));
   pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                    )));
   pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       )));
 end status;
@@ -4908,13 +4736,13 @@ return t_key_value_tab pipelined is
   v_conf console_conf%rowtype;
 begin
   v_conf := utl_get_conf;
-  pipe row(new t_key_value_row('conf_sysdate',     to_char(v_conf.conf_sysdate, c_date_format )) );
-  pipe row(new t_key_value_row('conf_user',        v_conf.conf_user                            ) );
-  pipe row(new t_key_value_row('level_id',         to_char(v_conf.level_id                    )) );
-  pipe row(new t_key_value_row('level_name',       v_conf.level_name                           ) );
-  pipe row(new t_key_value_row('check_interval',   to_char(v_conf.check_interval              )) );
-  pipe row(new t_key_value_row('enable_ascii_art', v_conf.enable_ascii_art                     ) );
-  pipe row(new t_key_value_row('client_prefs',     v_conf.client_prefs                         ) );
+  pipe row(new t_key_value_row('conf_sysdate',     to_char( v_conf.conf_sysdate, c_date_format )));
+  pipe row(new t_key_value_row('conf_user',                 v_conf.conf_user                    ));
+  pipe row(new t_key_value_row('level_id',         to_char( v_conf.level_id                    )));
+  pipe row(new t_key_value_row('level_name',                v_conf.level_name                   ));
+  pipe row(new t_key_value_row('check_interval',   to_char( v_conf.check_interval              )));
+  pipe row(new t_key_value_row('enable_ascii_art',          v_conf.enable_ascii_art             ));
+  pipe row(new t_key_value_row('client_prefs',              v_conf.client_prefs                 ));
 end conf;
 
 --------------------------------------------------------------------------------
@@ -5174,15 +5002,7 @@ procedure utl_set_conf (
 is
   pragma autonomous_transaction;
 begin
-  update console_conf set
-    conf_sysdate     = p_conf.conf_sysdate     ,
-    conf_user        = p_conf.conf_user        ,
-    level_id         = p_conf.level_id         ,
-    level_name       = p_conf.level_name       ,
-    check_interval   = p_conf.check_interval   ,
-    enable_ascii_art = p_conf.enable_ascii_art
-  where
-    conf_id = c_conf_id;
+  update console_conf set row = p_conf where conf_id = c_conf_id;
   if sql%rowcount = 0 then
     insert into console_conf values p_conf;
   end if;
@@ -5237,7 +5057,6 @@ begin
         --v_prefs.client_identifier := utl_csv_get_client_identifier ( v_csv );
         v_boolean_options         := utl_csv_get_boolean_options   ( v_csv );
         v_prefs.level_id          := utl_csv_get_level             ( v_csv );
-        v_prefs.cache_size        := utl_csv_get_cache_size        ( v_csv );
         v_prefs.check_interval    := utl_csv_get_check_interval    ( v_csv );
         v_prefs.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
         v_prefs.user_env          := to_yn ( v_boolean_options, c_user_env    );
@@ -5293,7 +5112,6 @@ begin
     --filter out invalid client pefs
     if  v_tab(i).client_identifier is not null
     and v_tab(i).level_id is not null
-    and v_tab(i).cache_size is not null
     and v_tab(i).call_stack is not null
     and v_tab(i).user_env is not null
     and v_tab(i).cgi_env is not null
@@ -5331,8 +5149,8 @@ function utl_csv_get_client_identifier (
 return varchar2 is
   v_stop t_int;
 begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
-  v_stop := instr(p_csv, ',', -1, 5) - 1;
+  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+  v_stop := instr(p_csv, ',', -1, 4) - 1;
   return substrb(substr(p_csv, 1, v_stop), 1, 64);
 end;
 
@@ -5343,7 +5161,7 @@ function utl_csv_get_exit_sysdate (
 return date is
   v_return date;
 begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
   v_return := nvl(to_date(
     substr(
       p_csv,
@@ -5363,7 +5181,7 @@ return integer is
   v_start  t_int;
   v_stop   t_int;
 begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
   v_start := instr(p_csv, ',', -1, 2) + 1;
   v_stop  := instr(p_csv, ',', -1, 1);
   v_return := to_number(
@@ -5384,7 +5202,7 @@ return integer is
   v_start t_int;
   v_stop  t_int;
 begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
   v_start := instr(p_csv, ',', -1, 3) + 1;
   v_stop  := instr(p_csv, ',', -1, 2);
   return to_number (
@@ -5398,28 +5216,6 @@ end utl_csv_get_boolean_options;
 
 --------------------------------------------------------------------------------
 
-function utl_csv_get_cache_size (
-  p_csv in varchar2 )
-return integer is
-  v_return t_int;
-  v_start  t_int;
-  v_stop   t_int;
-begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
-  v_start := instr(p_csv, ',', -1, 4) + 1;
-  v_stop  := instr(p_csv, ',', -1, 3);
-  v_return := to_number(
-    substr(
-      p_csv,
-      v_start,
-      v_stop - v_start
-    ) default 0 on conversion error
-  );
-  return case when v_return not between 0 and 1000 then 0 else v_return end;
-end utl_csv_get_cache_size;
-
---------------------------------------------------------------------------------
-
 function utl_csv_get_level (
   p_csv in varchar2 )
 return integer is
@@ -5427,9 +5223,9 @@ return integer is
   v_start  t_int;
   v_stop   t_int;
 begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
-  v_start := instr(p_csv, ',', -1, 5) + 1;
-  v_stop  := instr(p_csv, ',', -1, 4);
+  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+  v_start := instr(p_csv, ',', -1, 4) + 1;
+  v_stop  := instr(p_csv, ',', -1, 3);
   v_return := to_number(
     substr(
       p_csv,
@@ -5448,12 +5244,11 @@ return t_client_prefs_row is
   v_return          t_client_prefs_row;
   v_boolean_options t_int;
 begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
   v_boolean_options          := utl_csv_get_boolean_options   ( p_csv );
   v_return.exit_sysdate      := utl_csv_get_exit_sysdate      ( p_csv );
   v_return.client_identifier := utl_csv_get_client_identifier ( p_csv );
   v_return.level_id          := utl_csv_get_level             ( p_csv );
-  v_return.cache_size        := utl_csv_get_cache_size        ( p_csv );
   v_return.check_interval    := utl_csv_get_check_interval    ( p_csv );
   v_return.call_stack        := to_yn ( v_boolean_options, c_call_stack  );
   v_return.user_env          := to_yn ( v_boolean_options, c_user_env    );
@@ -5471,11 +5266,10 @@ function utl_client_prefs_to_csv (
 return varchar2 is
   v_return t_32kb;
 begin
-  --csv format: client_identifier,level,cache_size,boolean_options,check_interval,exit_sysdate
+  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
   return
     p_client_prefs.client_identifier                                             || ',' ||
     to_char(p_client_prefs.level_id)                                             || ',' ||
-    to_char(p_client_prefs.cache_size)                                           || ',' ||
     to_char(
       case when p_client_prefs.call_stack  = 'Y' then c_call_stack  else 0 end +
       case when p_client_prefs.user_env    = 'Y' then c_user_env    else 0 end +
@@ -5511,7 +5305,6 @@ begin
   g_conf_exit_sysdate     := coalesce ( v_prefs.exit_sysdate         , sysdate + 1           );
   g_conf_check_interval   := coalesce ( v_prefs.check_interval       , v_conf.check_interval );
   g_conf_level            := coalesce ( v_prefs.level_id             , v_conf.level_id       );
-  g_conf_cache_size       := coalesce ( v_prefs.cache_size           , 0                     );
   --
   g_conf_call_stack       := coalesce ( to_bool(v_prefs.call_stack)  , false                 );
   g_conf_user_env         := coalesce ( to_bool(v_prefs.user_env)    , false                 );
@@ -5627,16 +5420,8 @@ begin
   v_row.os_user           := substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 );
   v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
 
-  if g_conf_cache_size > 0 and p_level > c_level_error and sqlcode = 0 then
-    g_log_cache.extend;
-    g_log_cache(g_log_cache.count) := v_row;
-  else
-    if g_conf_cache_size > 0 then
-      flush;
-    end if;
-    insert into console_logs values v_row returning log_id into v_row.log_id;
-    commit;
-  end if;
+  insert into console_logs values v_row returning log_id into v_row.log_id;
+  commit;
 
   return v_row.log_id;
 end utl_create_log_entry;
@@ -5645,7 +5430,6 @@ end utl_create_log_entry;
 
 --package inizialization
 begin
-  g_log_cache := new t_logs_tab();
   utl_set_client_identifier;
   utl_set_session_conf;
 end console;

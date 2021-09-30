@@ -114,7 +114,6 @@ begin
   console.init(
     p_level          => console.c_level_info ,
     p_duration       => 90                   ,
-    p_cache_size     => 0                    ,
     p_check_interval => 30                   );
   for i in 1 .. 10 loop
     logger.log ('warm up ' || to_char(i));
@@ -131,7 +130,6 @@ begin
   for i in 1 .. v_iterator loop
     console.log('test ' || to_char(i));
   end loop;
-  console.flush;
   v_rt_console := console.runtime_seconds(v_start);
   -- print results
   console.printf( '- logger.log     : %s seconds' , trim(to_char(v_rt_logger,  '0.000000'))         );
@@ -203,10 +201,10 @@ declare
   v_needle     console.t_64b := '{o,o} 88217AE40002';
 begin
   -- build the haystack of around 4000 byte
-  select listagg('{o,o} '||lpad(level,2,'0')||'217AE40002,3,0,0,10,210927083239', chr(10))
+  select listagg('{o,o} '||lpad(level,2,'0')||'217AE40002,3,0,10,210927083239', chr(10))
     into v_haystack
     from dual
-    connect by level <= 95; --try also smaller sizes like 5 or 10
+    connect by level <= 100; --try also smaller sizes like 5 or 10
 
   v_start := localtimestamp;
   for i in 1 .. v_iterator loop
@@ -239,11 +237,9 @@ end;
 --  v_start      timestamp;
 --  v_rt         number;
 --  v_result     varchar2(100);
---  v_log_cache  console.t_logs_tab;
 --begin
 --  v_start := localtimestamp;
 --  for i in 1 .. v_iterator loop
---    v_log_cache := new console.t_logs_tab();
 --    console.utl_set_client_identifier;
 --    console.utl_set_session_conf;
 --  end loop;

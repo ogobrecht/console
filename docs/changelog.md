@@ -12,13 +12,16 @@
 
 # Changelog
 
-## v1.0-beta9 (2021-09-xx)
+## v1.0-rc1 (2021-10-xx)
 
 - Remove context - we work now with a single record conf table with result cache
   enabled to simplify the configuration and minify the overhead introduced by
   console
   - Rename conf table from `CONSOLE_GLOBAL_CONF` to `CONSOLE_CONF`
   - Rename purge job from `CONSOLE_CLEANUP` to `CONSOLE_PURGE`
+- Remove the possibility to cache log entries because you can potentially loose
+  log entries - this impacts the possibility to extend the logs with own tables
+  by using the overloaded log functions (which are returning the log_id)
 - Streamline API method names:
   - Rename `view_client_prefs` to `client_prefs`
   - Rename `view_last` to `logs`

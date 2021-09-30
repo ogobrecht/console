@@ -20,12 +20,12 @@ The console API is inspired by the [JavaScript Console
 API](https://developers.google.com/web/tools/chrome-devtools/console/api). This
 means, we have mostly the same log levels and method names. The parameters
 differs a little bit to fit our needs in PL/SQL. Not all methods making sense in
-a PL/SQL instrumentation tool (we have no direct screen) and therefore these six
-are not implemented: dir, dirxml, group, groupCollapsed, groupEnd and countReset
-(instead we have count_end and we ignore the line number, where the count
-occurred). For the two \*_end methods we use snake case instead of camel case
-for readability. As table is a keyword in SQL we named our method table#. The
-log level verbose is splitted into debug and trace.
+a PL/SQL instrumentation tool (we have no direct screen) and therefore these
+seven are not implemented: clear, dir, dirxml, group, groupCollapsed, groupEnd
+and countReset (instead we have count_end and we ignore the line number, where
+the count occurred). For the two \*_end methods we use snake case instead of
+camel case for readability. As table is a keyword in SQL we named our method
+table#. The log level verbose is splitted into debug and trace.
 
 We have five log levels:
 
@@ -35,14 +35,7 @@ We have five log levels:
 - Level 4: Debug (instead of verbose in JS console)
 - Level 5: Trace (not existing in JS console)
 
-A pipelined function for viewing the log entries:
-
-- [console.logs](package-console.md#function-logs) - for me this is the standard
-  way: `select * from console.logs()` is showing the last 50 entries in
-  descending order from the cache AND the log table (if not enough in the cache
-  or cache is disabled). You can adjust the number of entries shown:
-  `select * from console.logs(100)`. Of course, you can select direct from the
-  log table and do your own filtering and ordering: `select * from console_logs`
+Log entries are saved in a table: `select * from console_logs`
 
 The main instrumentation methods:
 
@@ -110,9 +103,6 @@ status of the package console:
   [level_is_trace_yn](package-console.md#function-level_is_trace_yn)
 - [console.version](package-console.md#function-version)
 - [console.status](package-console.md#function-status)
-- [console.cache](package-console.md#function-cache) &
-  [flush](package-console.md#procedure-flush) &
-  [clear](package-console.md#procedure-clear)
 
 Additional housekeeping methods:
 
