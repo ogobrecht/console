@@ -958,11 +958,11 @@ This will result in something like the following output:
 
 ```
 Processing step one...
-Elapsed time: 00:00:00.000079
+Elapsed time: 00:00:00.105398
 Processing step two...
-Elapsed time: 00:00:00.000145
+Elapsed time: 00:00:00.209267
 Processing step three...
-Elapsed time: 00:00:00.000158
+Elapsed time: 00:00:00.313301
 ```
 
 **/
