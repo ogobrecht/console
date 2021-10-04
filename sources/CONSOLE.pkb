@@ -64,7 +64,7 @@ type t_timers_tab      is table of timestamp index by t_128b;
 type t_counters_tab    is table of t_int     index by t_128b;
 type t_saved_stack_tab is table of t_1kb     index by binary_integer;
 
-g_params         t_key_value_tab_i;
+g_params         t_attribute_value_tab_i;
 g_timers         t_timers_tab;
 g_counters       t_counters_tab;
 g_saved_stack    t_saved_stack_tab;
@@ -946,10 +946,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in varchar2 )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := substr(p_value, 1, c_param_value_max_length);
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := substr(p_value, 1, c_param_value_max_length);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -959,10 +959,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in number   )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := to_char(p_value);
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := to_char(p_value);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -972,10 +972,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in date     )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ss');
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ss');
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -985,10 +985,10 @@ procedure add_param (
   p_name  in varchar2  ,
   p_value in timestamp )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff');
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff');
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -998,10 +998,10 @@ procedure add_param (
   p_name  in varchar2                 ,
   p_value in timestamp with time zone )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -1011,10 +1011,10 @@ procedure add_param (
   p_name  in varchar2                       ,
   p_value in timestamp with local time zone )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -1024,10 +1024,10 @@ procedure add_param (
   p_name  in varchar2               ,
   p_value in interval year to month )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := substr(to_char(p_value), 1, c_param_value_max_length);
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := substr(to_char(p_value), 1, c_param_value_max_length);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -1037,10 +1037,10 @@ procedure add_param (
   p_name  in varchar2               ,
   p_value in interval day to second )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := substr(to_char(p_value), 1, c_param_value_max_length);
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := substr(to_char(p_value), 1, c_param_value_max_length);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -1050,10 +1050,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in boolean  )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := to_string(p_value);
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := to_string(p_value);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -1063,10 +1063,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in clob     )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := substr(p_value, 1, c_param_value_max_length);
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := substr(p_value, 1, c_param_value_max_length);
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -1076,10 +1076,10 @@ procedure add_param (
   p_name  in varchar2 ,
   p_value in xmltype  )
 is
-  v_param t_key_value_row;
+  v_param t_attribute_value_row;
 begin
-  v_param.key   := substr(p_name, 1, 128);
-  v_param.value := case when p_value is not null then substr(p_value.getclobval(), 1, c_param_value_max_length) else null end;
+  v_param.attribute := substr(p_name, 1, 128);
+  v_param.value     := case when p_value is not null then substr(p_value.getclobval(), 1, c_param_value_max_length) else null end;
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
@@ -1460,7 +1460,7 @@ begin
   v_conf.level_id         := coalesce(p_level, v_conf.level_id);
   v_conf.level_name       := level_name(v_conf.level_id);
   v_conf.check_interval   := coalesce(p_check_interval, v_conf.check_interval);
-  v_conf.enable_ascii_art := to_yn(coalesce(p_enable_ascii_art, to_bool(v_conf.enable_ascii_art)));
+  v_conf.enable_ascii_art := to_string(coalesce(p_enable_ascii_art, to_bool(v_conf.enable_ascii_art)));
   assert (
     v_conf.level_id between c_level_error and c_level_trace,
     'Level needs to be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).');
@@ -1518,11 +1518,11 @@ begin
   v_prefs.client_identifier := p_client_identifier;
   v_prefs.level_id          := p_level;
   v_prefs.level_name        := level_name(p_level);
-  v_prefs.call_stack        := to_yn(p_call_stack);
-  v_prefs.user_env          := to_yn(p_user_env);
-  v_prefs.apex_env          := to_yn(p_apex_env);
-  v_prefs.cgi_env           := to_yn(p_cgi_env);
-  v_prefs.console_env       := to_yn(p_console_env);
+  v_prefs.call_stack        := to_string(p_call_stack);
+  v_prefs.user_env          := to_string(p_user_env);
+  v_prefs.apex_env          := to_string(p_apex_env);
+  v_prefs.cgi_env           := to_string(p_cgi_env);
+  v_prefs.console_env       := to_string(p_console_env);
   v_prefs.check_interval    := p_check_interval;
   v_prefs.exit_sysdate      := sysdate + 1/24/60 * p_duration;
   utl_set_client_prefs(
@@ -1703,9 +1703,12 @@ function to_bool (
 return boolean is
 begin
   return
-    case when upper(trim(p_string)) in ('Y', 'YES', '1', 'TRUE')
-      then true
-      else false
+    case
+      when upper(trim(p_string)) in ('TRUE', 'Y', 'YES', '1')
+        then true
+      when upper(trim(p_string)) in ('FALSE', 'N', 'NO', '0')
+        then false
+      else null
     end;
 end to_bool;
 
@@ -2235,12 +2238,12 @@ begin
   append_row('g_conf_level',                    to_char( g_conf_level                           ));
   append_row('level_name(g_conf_level)',     level_name( g_conf_level                           ));
   append_row('g_conf_check_interval',           to_char( g_conf_check_interval                  ));
-  append_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                ));
-  append_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                      ));
-  append_row('g_conf_user_env',                   to_yn( g_conf_user_env                        ));
-  append_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                        ));
-  append_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                         ));
-  append_row('g_conf_console_env',                to_yn( g_conf_console_env                     ));
+  append_row('g_conf_enable_ascii_art',       to_string( g_conf_enable_ascii_art                ));
+  append_row('g_conf_call_stack',             to_string( g_conf_call_stack                      ));
+  append_row('g_conf_user_env',               to_string( g_conf_user_env                        ));
+  append_row('g_conf_apex_env',               to_string( g_conf_apex_env                        ));
+  append_row('g_conf_cgi_env',                to_string( g_conf_cgi_env                         ));
+  append_row('g_conf_console_env',            to_string( g_conf_console_env                     ));
   append_row('g_counters.count',                to_char( g_counters.count                       ));
   append_row('g_timers.count',                  to_char( g_timers.count                         ));
   append_row('g_saved_stack.count',             to_char( g_saved_stack.count                    ));
@@ -2440,47 +2443,47 @@ end clob_flush_cache;
 
 --------------------------------------------------------------------------------
 
-function status return t_key_value_tab pipelined is
-  v_row t_key_value_row;
+function status return t_attribute_value_tab pipelined is
+  v_row t_attribute_value_row;
 begin
   if g_conf_check_sysdate < sysdate then
     utl_set_session_conf;
   end if;
-  pipe row(new t_key_value_row('c_version',                       to_char( c_version                              )));
-  pipe row(new t_key_value_row('localtimestamp',                  to_char( localtimestamp,          c_date_format )));
-  pipe row(new t_key_value_row('sysdate',                         to_char( sysdate,                 c_date_format )));
-  pipe row(new t_key_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,    c_date_format )));
-  pipe row(new t_key_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,     c_date_format )));
-  pipe row(new t_key_value_row('g_conf_client_identifier',                 g_conf_client_identifier                ));
-  pipe row(new t_key_value_row('g_conf_level',                    to_char( g_conf_level                           )));
-  pipe row(new t_key_value_row('level_name(g_conf_level)',     level_name( g_conf_level                           )));
-  pipe row(new t_key_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                  )));
-  pipe row(new t_key_value_row('g_conf_enable_ascii_art',           to_yn( g_conf_enable_ascii_art                )));
-  pipe row(new t_key_value_row('g_conf_call_stack',                 to_yn( g_conf_call_stack                      )));
-  pipe row(new t_key_value_row('g_conf_user_env',                   to_yn( g_conf_user_env                        )));
-  pipe row(new t_key_value_row('g_conf_apex_env',                   to_yn( g_conf_apex_env                        )));
-  pipe row(new t_key_value_row('g_conf_cgi_env',                    to_yn( g_conf_cgi_env                         )));
-  pipe row(new t_key_value_row('g_conf_console_env',                to_yn( g_conf_console_env                     )));
-  pipe row(new t_key_value_row('g_counters.count',                to_char( g_counters.count                       )));
-  pipe row(new t_key_value_row('g_timers.count',                  to_char( g_timers.count                         )));
-  pipe row(new t_key_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                    )));
-  pipe row(new t_key_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       )));
+  pipe row(new t_attribute_value_row('c_version',                       to_char( c_version                              )));
+  pipe row(new t_attribute_value_row('localtimestamp',                  to_char( localtimestamp,          c_date_format )));
+  pipe row(new t_attribute_value_row('sysdate',                         to_char( sysdate,                 c_date_format )));
+  pipe row(new t_attribute_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,    c_date_format )));
+  pipe row(new t_attribute_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,     c_date_format )));
+  pipe row(new t_attribute_value_row('g_conf_client_identifier',                 g_conf_client_identifier                ));
+  pipe row(new t_attribute_value_row('g_conf_level',                    to_char( g_conf_level                           )));
+  pipe row(new t_attribute_value_row('level_name(g_conf_level)',     level_name( g_conf_level                           )));
+  pipe row(new t_attribute_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                  )));
+  pipe row(new t_attribute_value_row('g_conf_enable_ascii_art',       to_string( g_conf_enable_ascii_art                )));
+  pipe row(new t_attribute_value_row('g_conf_call_stack',             to_string( g_conf_call_stack                      )));
+  pipe row(new t_attribute_value_row('g_conf_user_env',               to_string( g_conf_user_env                        )));
+  pipe row(new t_attribute_value_row('g_conf_apex_env',               to_string( g_conf_apex_env                        )));
+  pipe row(new t_attribute_value_row('g_conf_cgi_env',                to_string( g_conf_cgi_env                         )));
+  pipe row(new t_attribute_value_row('g_conf_console_env',            to_string( g_conf_console_env                     )));
+  pipe row(new t_attribute_value_row('g_counters.count',                to_char( g_counters.count                       )));
+  pipe row(new t_attribute_value_row('g_timers.count',                  to_char( g_timers.count                         )));
+  pipe row(new t_attribute_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                    )));
+  pipe row(new t_attribute_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       )));
 end status;
 
 --------------------------------------------------------------------------------
 
 function conf
-return t_key_value_tab pipelined is
+return t_attribute_value_tab pipelined is
   v_conf console_conf%rowtype;
 begin
   v_conf := utl_get_conf;
-  pipe row(new t_key_value_row('conf_sysdate',     to_char( v_conf.conf_sysdate, c_date_format )));
-  pipe row(new t_key_value_row('conf_user',                 v_conf.conf_user                    ));
-  pipe row(new t_key_value_row('level_id',         to_char( v_conf.level_id                    )));
-  pipe row(new t_key_value_row('level_name',                v_conf.level_name                   ));
-  pipe row(new t_key_value_row('check_interval',   to_char( v_conf.check_interval              )));
-  pipe row(new t_key_value_row('enable_ascii_art',          v_conf.enable_ascii_art             ));
-  pipe row(new t_key_value_row('client_prefs',              v_conf.client_prefs                 ));
+  pipe row(new t_attribute_value_row('conf_sysdate',     to_char( v_conf.conf_sysdate, c_date_format )));
+  pipe row(new t_attribute_value_row('conf_user',                 v_conf.conf_user                    ));
+  pipe row(new t_attribute_value_row('level_id',         to_char( v_conf.level_id                    )));
+  pipe row(new t_attribute_value_row('level_name',                v_conf.level_name                   ));
+  pipe row(new t_attribute_value_row('check_interval',   to_char( v_conf.check_interval              )));
+  pipe row(new t_attribute_value_row('enable_ascii_art',          v_conf.enable_ascii_art             ));
+  pipe row(new t_attribute_value_row('client_prefs',              v_conf.client_prefs                 ));
 end conf;
 
 --------------------------------------------------------------------------------
@@ -2729,7 +2732,7 @@ exception
     v_row.level_id         := c_level_error;
     v_row.level_name       := level_name(c_level_error);
     v_row.check_interval   := c_check_interval_default;
-    v_row.enable_ascii_art := to_yn(c_enable_ascii_art);
+    v_row.enable_ascii_art := to_string(c_enable_ascii_art);
     return v_row;
 end utl_get_conf;
 
@@ -2796,11 +2799,11 @@ begin
         v_boolean_options         := utl_csv_get_boolean_options   ( v_csv );
         v_prefs.level_id          := utl_csv_get_level             ( v_csv );
         v_prefs.check_interval    := utl_csv_get_check_interval    ( v_csv );
-        v_prefs.call_stack        := to_yn ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
-        v_prefs.user_env          := to_yn ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
-        v_prefs.apex_env          := to_yn ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
-        v_prefs.cgi_env           := to_yn ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
-        v_prefs.console_env       := to_yn ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
+        v_prefs.call_stack        := to_string ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
+        v_prefs.user_env          := to_string ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
+        v_prefs.apex_env          := to_string ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
+        v_prefs.cgi_env           := to_string ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
+        v_prefs.console_env       := to_string ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
         v_prefs.level_name        := level_name ( v_prefs.level_id );
       end if;
     end if;
@@ -2988,11 +2991,11 @@ begin
   v_return.client_identifier := utl_csv_get_client_identifier ( p_csv );
   v_return.level_id          := utl_csv_get_level             ( p_csv );
   v_return.check_interval    := utl_csv_get_check_interval    ( p_csv );
-  v_return.call_stack        := to_yn ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
-  v_return.user_env          := to_yn ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
-  v_return.apex_env          := to_yn ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
-  v_return.cgi_env           := to_yn ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
-  v_return.console_env       := to_yn ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
+  v_return.call_stack        := to_string ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
+  v_return.user_env          := to_string ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
+  v_return.apex_env          := to_string ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
+  v_return.cgi_env           := to_string ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
+  v_return.console_env       := to_string ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
   v_return.level_name        := level_name ( v_return.level_id );
   return v_return;
 end utl_csv_to_client_prefs;
@@ -3009,11 +3012,11 @@ begin
     p_client_prefs.client_identifier                                             || ',' ||
     to_char(p_client_prefs.level_id)                                             || ',' ||
     to_char(
-      case when p_client_prefs.call_stack  = 'Y' then c_call_stack  else 0 end +
-      case when p_client_prefs.user_env    = 'Y' then c_user_env    else 0 end +
-      case when p_client_prefs.apex_env    = 'Y' then c_apex_env    else 0 end +
-      case when p_client_prefs.cgi_env     = 'Y' then c_cgi_env     else 0 end +
-      case when p_client_prefs.console_env = 'Y' then c_console_env else 0 end ) || ',' ||
+      case when p_client_prefs.call_stack  = 'true' then c_call_stack  else 0 end +
+      case when p_client_prefs.user_env    = 'true' then c_user_env    else 0 end +
+      case when p_client_prefs.apex_env    = 'true' then c_apex_env    else 0 end +
+      case when p_client_prefs.cgi_env     = 'true' then c_cgi_env     else 0 end +
+      case when p_client_prefs.console_env = 'true' then c_console_env else 0 end ) || ',' ||
     to_char(p_client_prefs.check_interval)                                       || ',' ||
     to_char(p_client_prefs.exit_sysdate, c_date_format_short)                    || c_lf;
 end utl_client_prefs_to_csv;
@@ -3096,7 +3099,7 @@ begin
   if g_params.count > 0 then
     clob_append(v_row.message, v_cache, '#### Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
     for i in 1 .. g_params.count loop
-      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).key, g_params(i).value, c_param_value_max_length));
+      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).attribute, g_params(i).value, c_param_value_max_length));
     end loop;
     clob_append(v_row.message, v_cache, c_lf);
     g_params.delete;

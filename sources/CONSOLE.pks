@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.0-rc1'                              ;
+c_version constant varchar2 ( 10 byte ) := '1.0.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -55,20 +55,20 @@ type t_client_prefs_row is record(
   exit_sysdate      date    ,
   level_id          integer ,
   level_name        t_16b   ,
-  call_stack        t_1b    ,
-  user_env          t_1b    ,
-  apex_env          t_1b    ,
-  cgi_env           t_1b    ,
-  console_env       t_1b    );
-type t_key_value_row is record(
-  key   t_128b ,
-  value t_4kb  );
-type t_client_prefs_tab   is table of t_client_prefs_row;
-type t_client_prefs_tab_i is table of t_client_prefs_row index by pls_integer;
-type t_key_value_tab      is table of t_key_value_row;
-type t_key_value_tab_i    is table of t_key_value_row index by pls_integer;
-type t_vc2_tab            is table of t_32kb;
-type t_vc2_tab_i          is table of t_32kb index by pls_integer;
+  call_stack        t_8b    ,
+  user_env          t_8b    ,
+  apex_env          t_8b    ,
+  cgi_env           t_8b    ,
+  console_env       t_8b    );
+type t_attribute_value_row is record(
+  attribute t_128b ,
+  value     t_4kb  );
+type t_client_prefs_tab      is table of t_client_prefs_row;
+type t_client_prefs_tab_i    is table of t_client_prefs_row index by pls_integer;
+type t_attribute_value_tab   is table of t_attribute_value_row;
+type t_attribute_value_tab_i is table of t_attribute_value_row index by pls_integer;
+type t_vc2_tab               is table of t_32kb;
+type t_vc2_tab_i             is table of t_32kb index by pls_integer;
 
 
 --------------------------------------------------------------------------------
@@ -1414,7 +1414,8 @@ function to_yn ( p_bool in boolean ) return varchar2;
 
 Converts a boolean value to a string.
 
-Returns `Y` when the input is true and `N` if the input is false or null.
+Returns `Y` when the input is true, `N` when the input is false and null when
+the input is null.
 
 **/
 
@@ -1425,7 +1426,8 @@ function to_string ( p_bool in boolean ) return varchar2;
 
 Converts a boolean value to a string.
 
-Returns `true` when the input is true and `false` if the input is false or null.
+Returns `true` when the input is true, `false` when the input is false and null
+when the input is null.
 
 **/
 
@@ -1436,8 +1438,9 @@ function to_bool ( p_string in varchar2 ) return boolean;
 
 Converts a string to a boolean value.
 
-Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
-all other cases (also on null) false is returned.
+Returns true when the uppercased, trimmed input is `TRUE`, `Y`, `YES` or `1`.
+When the input is `FALSE`, `N`, `NO` or `0` false is returned. In all other
+cases null is returned.
 
 **/
 
@@ -1853,7 +1856,7 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function status return t_key_value_tab pipelined;
+function status return t_attribute_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
@@ -1869,7 +1872,7 @@ select * from console.status();
 
 --------------------------------------------------------------------------------
 
-function conf return t_key_value_tab pipelined;
+function conf return t_attribute_value_tab pipelined;
 /**
 
 View the global console configuration.

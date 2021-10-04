@@ -12,7 +12,7 @@ begin
         level_id          number   (   1,0)     not null  ,
         level_name        varchar2 (  10 byte)  not null  ,
         check_interval    number   (   2,0)     not null  ,
-        enable_ascii_art  varchar2 (   1 byte)  not null  ,
+        enable_ascii_art  varchar2 (   5 byte)  not null  ,
         client_prefs      varchar2 (4000 byte)            ,
         --
         constraint  console_conf_pk   primary key ( conf_id )                                                                          ,
@@ -20,7 +20,7 @@ begin
         constraint  console_conf_ck2  check ( level_id in (1, 2, 3, 4, 5) )                                                            ,
         constraint  console_conf_ck3  check ( level_name = decode(level_id, 1,'error', 2,'warning', 3,'info', 4,'debug', 5,'trace') )  ,
         constraint  console_conf_ck4  check ( check_interval between 10 and 60 )                                                       ,
-        constraint  console_conf_ck5  check ( enable_ascii_art in ('Y','N') )
+        constraint  console_conf_ck5  check ( enable_ascii_art in ('true','false') )
       )
     }';
   else
