@@ -5,53 +5,48 @@
     /)__)   focused on easy installation and usage
     -"-"-   combined with nice features.
 
-*This is currently version 1.0-beta8. Feedback and help is welcome.*
+*This is currently version 1.0.0. Feedback and help is welcome.*
 
-**A T T E N T I O N: As long as we are in beta state you should always run the
-uninstallation script (`@uninstall/drop_console_objects.sql`) before you install
-a new version. An existing context does not need to be dropped.**
+A T T E N T I O N: If you have one of the beta versions installed you should
+always run the uninstallation script (`@uninstall/drop_console_objects.sql`)
+before you install a new version. If you created a context, you should also
+delete it: `@drop_context.sql` (you may need higher permissions for this...).
 
 ## Easy to Install
 
-- Works with or without a context.
-- Has a single installation script (can be installed in APEX via "SQL
-  Workshop > SQL Scripts").
+- Works without a context.
+- Has a single installation script (can be installed in APEX via "SQL Workshop >
+  SQL Scripts").
 - If you cannot wait to test it out: Open SQLcl, connect to your desired install
-    schema and call
-    `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`.
-    After some seconds you should be ready to go...
+  schema and call
+  `@https://raw.githubusercontent.com/ogobrecht/console/main/install/create_console_objects.sql`.
+  After some seconds you should be ready to go...
 - Docs: [Installation](docs/installation.md),
   [uninstallation](docs/uninstallation.md).
 
 ## Easy to Use
 
-- Save to run in production without configuration
+- Save to run in production without further configuration
   - Errors are always logged.
   - You can change the default log level for all or specfic sessions from
     `error` to `warning`, `info`, `debug` and `trace`. As a best practice the
     last two should not be set for all sessions on production systems.
   - Specific sessions are identified by the client identifier. If a session has
     no client identifier, console is setting one for you.
-  - You can set specific PL/SQL units (packages, functions, procedures) to a
-    different log level, if you want to monitor for example new code in all
-    sessions (see [console.conf](docs/package-console.md#procedure-conf)).
 - Method names are inspired by the [JavaScript Console
   API](https://developers.google.com/web/tools/chrome-devtools/console/api).
-  Also see the [API overview](docs/api-overview.md) and for more details on the
-  methods including examples the [documentation for the package
-  console](docs/package-console.md).
-- Docs: [Getting started](docs/getting-started.md).
+  Also see the [API overview](docs/api-overview.md).
+- Read more in the [introduction](docs/introduction.md).
 
 ## Nice Features
 
-- Can help you to avoid log spoiling by only logging errors in your outermost
-  package methods without loosing context details with the help of
+- Can help you to avoid cluttered error logs by only logging errors in your
+  outermost package methods without loosing context details with the help of
   [console.error_save_stack](docs/package-console.md#procedure-error_save_stack)
   in the nested methods. This might be the most powerful feature for some
   people...
-- No need to provide manually a scope for your log entries - console
-  does this automatically for you. If needed, you can overwrite the default
-  scope.
+- No need to provide manually a scope for your log entries - console does this
+  automatically for you. If needed, you can overwrite the default scope.
 - Has an optional [APEX error handling
   function](docs/package-console.md#function-apex_error_handling) to log also
   internal errors of the APEX engine.
@@ -72,4 +67,4 @@ a new version. An existing context does not need to be dropped.**
 
 ## Dependencies
 
-Oracle DB >= 12.1
+Oracle DB >= 12.2

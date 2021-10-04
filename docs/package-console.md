@@ -2,7 +2,7 @@
 
 [Index](README.md)
 | [Installation](installation.md)
-| [Getting Started](getting-started.md)
+| [Introduction](introduction.md)
 | [API Overview](api-overview.md)
 | [Package Console](package-console.md)
 | [Changelog](changelog.md)
@@ -21,7 +21,6 @@ Oracle Instrumentation Console
 - [Package console](#package-console)
 - [Function my_client_identifier](#function-my_client_identifier)
 - [Function my_log_level](#function-my_log_level)
-- [Function view_last](#function-view_last)
 - [Procedure error_save_stack](#procedure-error_save_stack)
 - [Procedure error](#procedure-error)
 - [Function error](#function-error)
@@ -36,15 +35,20 @@ Oracle Instrumentation Console
 - [Procedure trace](#procedure-trace)
 - [Function trace](#function-trace)
 - [Procedure count](#procedure-count)
-- [Procedure count_log](#procedure-count_log)
+- [Procedure count_reset](#procedure-count_reset)
+- [Procedure count_current](#procedure-count_current)
 - [Procedure count_end](#procedure-count_end)
+- [Function count_current](#function-count_current)
 - [Function count_end](#function-count_end)
 - [Procedure time](#procedure-time)
-- [Procedure time_log](#procedure-time_log)
+- [Procedure time_reset](#procedure-time_reset)
+- [Procedure time_current](#procedure-time_current)
 - [Procedure time_end](#procedure-time_end)
+- [Function time_current](#function-time_current)
 - [Function time_end](#function-time_end)
 - [Procedure table#](#procedure-table)
 - [Procedure assert](#procedure-assert)
+- [Procedure assertf](#procedure-assertf)
 - [Procedure add_param](#procedure-add_param)
 - [Function format](#function-format)
 - [Procedure action](#procedure-action)
@@ -66,16 +70,10 @@ Oracle Instrumentation Console
 - [Function apex_plugin_render](#function-apex_plugin_render)
 - [Function apex_plugin_ajax](#function-apex_plugin_ajax)
 - [Procedure conf](#procedure-conf)
-- [Procedure conf_level](#procedure-conf_level)
-- [Procedure conf_check_interval](#procedure-conf_check_interval)
-- [Procedure conf_units](#procedure-conf_units)
-- [Procedure conf_ascii_art](#procedure-conf_ascii_art)
 - [Procedure init](#procedure-init)
 - [Procedure init](#procedure-init-1)
 - [Procedure exit](#procedure-exit)
-- [Procedure exit_stale](#procedure-exit_stale)
-- [Function context_is_available](#function-context_is_available)
-- [Function context_is_available_yn](#function-context_is_available_yn)
+- [Procedure exit_all](#procedure-exit_all)
 - [Function version](#function-version)
 - [Function split_to_table](#function-split_to_table)
 - [Function split](#function-split)
@@ -95,7 +93,6 @@ Oracle Instrumentation Console
 - [Function runtime_milliseconds](#function-runtime_milliseconds)
 - [Function level_name](#function-level_name)
 - [Function scope](#function-scope)
-- [Function calling_unit](#function-calling_unit)
 - [Function call_stack](#function-call_stack)
 - [Function apex_env](#function-apex_env)
 - [Function cgi_env](#function-cgi_env)
@@ -104,17 +101,16 @@ Oracle Instrumentation Console
 - [Procedure clob_append](#procedure-clob_append)
 - [Procedure clob_append](#procedure-clob_append-1)
 - [Procedure clob_flush_cache](#procedure-clob_flush_cache)
-- [Function view_cache](#function-view_cache)
-- [Procedure flush_cache](#procedure-flush_cache)
-- [Procedure clear](#procedure-clear)
-- [Function view_status](#function-view_status)
+- [Function status](#function-status)
+- [Function conf](#function-conf)
+- [Function client_prefs](#function-client_prefs)
 - [Procedure purge](#procedure-purge)
 - [Procedure purge_all](#procedure-purge_all)
-- [Procedure cleanup_job_create](#procedure-cleanup_job_create)
-- [Procedure cleanup_job_drop](#procedure-cleanup_job_drop)
-- [Procedure cleanup_job_enable](#procedure-cleanup_job_enable)
-- [Procedure cleanup_job_disable](#procedure-cleanup_job_disable)
-- [Procedure cleanup_job_run](#procedure-cleanup_job_run)
+- [Procedure purge_job_create](#procedure-purge_job_create)
+- [Procedure purge_job_drop](#procedure-purge_job_drop)
+- [Procedure purge_job_enable](#procedure-purge_job_enable)
+- [Procedure purge_job_disable](#procedure-purge_job_disable)
+- [Procedure purge_job_run](#procedure-purge_job_run)
 
 
 ## Package console
@@ -132,16 +128,10 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 20 byte ) := '1.0-beta8'                            ;
-c_url     constant varchar2 ( 40 byte ) := 'https://github.com/ogobrecht/console' ;
-c_license constant varchar2 (  5 byte ) := 'MIT'                                  ;
+c_version constant varchar2 ( 10 byte ) := '1.0.0'                                ;
+c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
+c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
-
-c_level_error   constant pls_integer := 1 ;
-c_level_warning constant pls_integer := 2 ;
-c_level_info    constant pls_integer := 3 ;
-c_level_debug   constant pls_integer := 4 ;
-c_level_trace   constant pls_integer := 5 ;
 ```
 
 
@@ -174,42 +164,6 @@ SIGNATURE
 
 ```sql
 function my_log_level return integer;
-```
-
-
-## Function view_last
-
-View the last log entries from the log cache and the log table (if not enough in
-the cache) in descending order.
-
-The entries without a log_id are from the cache, the others from the log table.
-
-EXAMPLE
-
-```sql
---init logging for own session
-exec console.init(
-  p_level          => c_level_debug ,
-  p_duration       => 90            ,
-  p_cache_size     => 10            ,
-  p_check_interval => 30            );
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-/
-
---view last cache and log entries
-select * from console.view_last(50);
-```
-
-SIGNATURE
-
-```sql
-function view_last (p_log_rows in integer default 100) return t_logs_tab pipelined;
 ```
 
 
@@ -364,17 +318,18 @@ SIGNATURE
 
 ```sql
 procedure error (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default true  ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  );
+  p_message         in clob     default null  , -- The log message itself
+  p_permanent       in boolean  default false , -- Should the log entry be permanent (not deleted by purge methods)
+  p_call_stack      in boolean  default true  , -- Include call stack
+  p_apex_env        in boolean  default false , -- Include APEX environment
+  p_cgi_env         in boolean  default false , -- Include CGI environment
+  p_console_env     in boolean  default false , -- Include Console environment
+  p_user_env        in boolean  default false , -- Include user environment
+  p_user_agent      in varchar2 default null  , -- User agent of browser or other client technology
+  p_user_scope      in varchar2 default null  , -- Override PL/SQL scope
+  p_user_error_code in integer  default null  , -- Override PL/SQL error code
+  p_user_call_stack in varchar2 default null    -- Override PL/SQL call stack
+);
 ```
 
 
@@ -498,7 +453,7 @@ Log a message with the level 3 (info).
 SIGNATURE
 
 ```sql
-procedure log(
+procedure log (
   p_message         in clob     default null  ,
   p_permanent       in boolean  default false ,
   p_call_stack      in boolean  default false ,
@@ -520,7 +475,7 @@ Log a message with the level 3 (info). Returns the log ID.
 SIGNATURE
 
 ```sql
-function log(
+function log (
   p_message         in clob     default null  ,
   p_permanent       in boolean  default false ,
   p_call_stack      in boolean  default false ,
@@ -628,10 +583,40 @@ return console_logs.log_id%type;
 
 ## Procedure count
 
-Starts a new counter with a value of one or adds one to an existent counter.
+Creates a new counter with a value of one or adds one to an existing counter.
 
-Call `console.count_end('yourLabel')` to stop the counter and get or log the count
-value.
+Does not depend on a log level, can be used anywhere to count things.
+
+EXAMPLE
+
+```sql
+declare
+  v_counter varchar2(30) := 'Processing xyz';
+begin
+  for i in 1 .. 10 loop
+    console.count(v_counter);
+  end loop;
+  console.count_current(v_counter); -- without optional message
+
+  for i in 1 .. 100 loop
+    console.count(v_counter);
+  end loop;
+  console.count_current(v_counter, 'end of step two');
+
+  for i in 1 .. 1000 loop
+    console.count(v_counter);
+  end loop;
+  console.count_end(v_counter, 'end of step three');
+end;
+/
+```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- Processing xyz: 10
+- Processing xyz: 110 - end of step two
+- Processing xyz: 1110 - end of step three
 
 SIGNATURE
 
@@ -640,94 +625,165 @@ procedure count ( p_label in varchar2 default null );
 ```
 
 
-## Procedure count_log
+## Procedure count_reset
 
-Logs a counter, if current log level >= 3 (info).
+Reset an existing counter or create a new one.
 
-Can be called multiple times - use `console.count_end` to stop a counter and get or
-log the counter value.
+Does not depend on a log level, can be used anywhere to count things.
+
+Also see procedure `count` above.
 
 SIGNATURE
 
 ```sql
-procedure count_log ( p_label in varchar2 default null );
+procedure count_reset ( p_label in varchar2 default null );
+```
+
+
+## Procedure count_current
+
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info).
+
+Also see procedure `count` above.
+
+SIGNATURE
+
+```sql
+procedure count_current (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
 ## Procedure count_end
 
-Stops a counter and logs the result, if current log level >= 3 (info).
+Log the current value of a counter, if the sessions log level is greater or
+equal 3 (info). Delete the counter.
 
-EXAMPLE
-
-```sql
---Set your own session in logging mode (defaults: level 3=info for the next 60 minutes).
-exec console.init;
-
-begin
-  --Do your stuff here.
-  for i in 1 .. 1000 loop
-    if mod(i, 3) = 0 then
-      console.count('myLabel');
-    end if;
-  end loop;
-
-  --Log your count value.
-  console.count_end('myLabel');
-end;
-/
-
---Stop logging mode of your own session.
-exec console.exit;
-```
+Also see procedure `count` above.
 
 SIGNATURE
 
 ```sql
-procedure count_end ( p_label in varchar2 default null );
+procedure count_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
-## Function count_end
+## Function count_current
 
-Stops a counter and returns the result.
+Returns the current counter value or null, if the given label does not exist.
 
 Does not depend on a log level, can be used anywhere to count things.
+
+Also see procedure `count` above. The following example does not use the
+optional label, therefore the implicit label used in the background will be
+`default`. As we get only the value back from the funtion and we need only one
+counter at the same time this is ok for us here and it keeps the code simple.
+
 
 EXAMPLE
 
 ```sql
 set serveroutput on
 
-declare
-  v_my_label constant varchar2(20) := 'My label: ';
 begin
-  --do your stuff here
+  console.print('Counting nonsense...');
   for i in 1 .. 1000 loop
     if mod(i, 3) = 0 then
-      console.count(v_my_label);
+      console.count;
     end if;
   end loop;
+  console.printf('Current value: %s', console.count_current );
 
-  --Return your count value.
-  dbms_output.put_line(v_my_label || console.count_end(v_my_label) );
+  console.count_reset;
+  for i in 1 .. 10 loop
+    console.count;
+  end loop;
+  console.printf('Final value: %s', console.count_end );
 end;
+
 /
+```
+
+This will print something like the following to the server output:
+
+```
+Counting nonsense...
+Current value: 333
+Final value: 10
 ```
 
 SIGNATURE
 
 ```sql
-function count_end ( p_label in varchar2 default null ) return varchar2;
+function count_current (
+  p_label   in varchar2 default null )
+return t_int;
+```
+
+
+## Function count_end
+
+Returns the current counter value or null, if the given label does not exist.
+Deletes the counter.
+
+Does not depend on a log level, can be used anywhere to count things.
+
+Also see function `count_current` above.
+
+SIGNATURE
+
+```sql
+function count_end (
+  p_label   in varchar2 default null )
+return t_int;
 ```
 
 
 ## Procedure time
 
-Starts a new timer.
+Create and a new timer. If the timer is already existing it will start again
+with the current local timestamp.
 
-Call `console.time_end('yourLabel')` to stop the timer and get or log the elapsed
-time.
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+EXAMPLE
+
+```sql
+declare
+  v_timer varchar2(30) := 'Processing xyz';
+begin
+
+  --basic usage
+  console.time;
+  sys.dbms_session.sleep(0.1);
+  console.time_end; -- without optional label and message
+
+  console.time(v_timer);
+
+  sys.dbms_session.sleep(0.1);
+  console.time_current(v_timer); -- without optional message
+
+  sys.dbms_session.sleep(0.1);
+  console.time_current(v_timer, 'end of step two');
+
+  sys.dbms_session.sleep(0.1);
+  console.time_end(v_timer, 'end of step three');
+
+end;
+/
+```
+
+This will produce the following log messages in the table CONSOLE_LOGS when your
+current log level is 3 (info) or higher:
+
+- default: 00:00:00.102508
+- Processing xyz: 00:00:00.108048
+- Processing xyz: 00:00:00.212045 - end of step two
+- Processing xyz: 00:00:00.316084 - end of step three
 
 SIGNATURE
 
@@ -736,110 +792,120 @@ procedure time ( p_label in varchar2 default null );
 ```
 
 
-## Procedure time_log
+## Procedure time_reset
 
-Logs the elapsed time, if current log level >= 3 (info).
+Reset an existing timer or create a new one.
 
-Can be called multiple times - use `console.time_end` to stop a timer and get or
-log the elapsed time.
+Does not depend on a log level, can be used anywhere to measure runtime.
 
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-  --Do other things.
-  --Your code here...
-
-  --Log the elapsed time.
-  console.time_log('myLabel');
-
-end;
-/
-
---Stop logging mode of your own session.
-exec console.exit;
-```
+Also see procedure `time` above.
 
 SIGNATURE
 
 ```sql
-procedure time_log ( p_label in varchar2 default null );
+procedure time_reset ( p_label in varchar2 default null );
+```
+
+
+## Procedure time_current
+
+Log the elapsed time, if the sessions log level is greater or equal 3 (info).
+
+Can be called multiple times - use `console.time_end` to log the elapsed time
+and delete the timer.
+
+Also see procedure `time` above.
+
+SIGNATURE
+
+```sql
+procedure time_current (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
 ## Procedure time_end
 
-Stops a timer and logs the result, if current log level >= 3 (info).
+Log the elapsed time and delete the timer, if the sessions log level is greater
+or equal 3 (info).
 
-EXAMPLE
-
-```sql
---Set you own session in logging mode with the defaults: level 3(info) for the next 60 minutes.
-exec console.init;
-
-begin
-  console.time('myLabel');
-
-  --Do your stuff here.
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
-
-  --Log the time.
-  console.time_end('myLabel');
-end;
-/
-
---Stop logging mode of your own session.
-exec console.exit;
-```
+Also see procedure `time` above.
 
 SIGNATURE
 
 ```sql
-procedure time_end ( p_label in varchar2 default null );
+procedure time_end (
+  p_label   in varchar2 default null ,
+  p_message in varchar2 default null );
 ```
 
 
-## Function time_end
+## Function time_current
 
-Stops a timer and returns the result.
+Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
+the given label does not exist.
 
 Does not depend on a log level, can be used anywhere to measure runtime.
+
+Can be called multiple times - use `console.time_end` to return the elapsed time
+and delete the timer.
+
+Also see procedure `time` above. The following example does not use the optional
+label, therefore the implicit label used in the background will be `default`. As
+we get only the runtime back from the funtion in the format 00:00:00.000000 and
+we need only one timer at the same time this is ok for us here and it keeps the
+code simple.
 
 EXAMPLE
 
 ```sql
 set serveroutput on
 
-declare
-  v_my_label constant varchar2(20) := 'My label: ';
 begin
-  console.time(v_my_label);
+  console.time;
 
-  --do your stuff here
-  for i in 1 .. 100000 loop
-    null;
-  end loop;
+  console.print('Processing step one...');
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_current);
 
-  --Return the runtime.
-  dbms_output.put_line(v_my_label || console.time_end(v_my_label) );
+  console.print('Processing step two...');
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_current);
+
+  console.print('Processing step three...');
+  sys.dbms_session.sleep(0.1);
+  console.printf('Elapsed time: %s', console.time_end);
 end;
 /
 ```
+
+This will result in something like the following output:
+
+```
+Processing step one...
+Elapsed time: 00:00:00.105398
+Processing step two...
+Elapsed time: 00:00:00.209267
+Processing step three...
+Elapsed time: 00:00:00.313301
+```
+
+SIGNATURE
+
+```sql
+function time_current ( p_label in varchar2 default null ) return varchar2;
+```
+
+
+## Function time_end
+
+Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
+the given label does not exist. Deletes the timer.
+
+Does not depend on a log level, can be used anywhere to measure runtime.
+
+Also see function `time_current` above.
 
 SIGNATURE
 
@@ -909,7 +975,7 @@ declare
 begin
   console.assert(
     x < y,
-    'X should be less then Y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
+    'x should be less then y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
   );
 exception
   when others then
@@ -925,6 +991,52 @@ SIGNATURE
 procedure assert (
   p_expression in boolean,
   p_message    in varchar2
+);
+```
+
+
+## Procedure assertf
+
+If the given expression evaluates to false, an error is raised with the given
+formatted message.
+
+EXAMPLE
+
+```sql
+declare
+  x number := 5;
+  y number := 3;
+begin
+  console.assertf(
+    x < y,
+    'x should be less then y (x=%s, y=%s)',
+    to_char(x),
+    to_char(y)
+  );
+exception
+  when others then
+    console.error;
+    raise;
+end;
+/
+```
+
+SIGNATURE
+
+```sql
+procedure assertf (
+  p_expression in boolean               ,
+  p_message    in varchar2              ,
+  p0           in varchar2 default null ,
+  p1           in varchar2 default null ,
+  p2           in varchar2 default null ,
+  p3           in varchar2 default null ,
+  p4           in varchar2 default null ,
+  p5           in varchar2 default null ,
+  p6           in varchar2 default null ,
+  p7           in varchar2 default null ,
+  p8           in varchar2 default null ,
+  p9           in varchar2 default null
 );
 ```
 
@@ -961,17 +1073,17 @@ EXAMPLE
 ```sql
 --create demo procedure
 create or replace procedure demo_proc (
-  p_01  varchar2                       ,
-  p_02  number                         ,
-  p_03  date                           ,
-  p_04  timestamp                      ,
-  p_05  timestamp with time zone       ,
-  p_06  timestamp with local time zone ,
-  p_07  interval year to month         ,
-  p_08  interval day to second         ,
-  p_09  boolean                        ,
-  p_10 clob                            ,
-  p_11 xmltype                         )
+  p_01 varchar2                       ,
+  p_02 number                         ,
+  p_03 date                           ,
+  p_04 timestamp                      ,
+  p_05 timestamp with time zone       ,
+  p_06 timestamp with local time zone ,
+  p_07 interval year to month         ,
+  p_08 interval day to second         ,
+  p_09 boolean                        ,
+  p_10 clob                           ,
+  p_11 xmltype                        )
 is
 begin
   raise_application_error(-20999, 'Test Error.');
@@ -1320,14 +1432,15 @@ EXAMPLE
 
 ```sql
 --set all sessions to level warning
+exec console.conf(p_level => 2);
+--or
 exec console.conf(p_level => console.c_level_warning);
 
---set all session to level info and two new packages to debug
+--set multiple options at once
 begin
   console.conf(
     p_level             => console.c_level_info,
-    p_check_interval    => 10,
-    p_units_level_debug => 'MY_SCHEMA.SOME_API,MY_SCHEMA.ANOTHER_API'
+    p_check_interval    => 10
   );
 end;
 /
@@ -1337,126 +1450,9 @@ SIGNATURE
 
 ```sql
 procedure conf (
-  p_level               in integer  default c_level_error , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval      in integer  default 10            , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_units_level_warning in varchar2 default null          , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null          , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null          , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null          , -- Same as p_units_level_warning for level trace.
-  p_enable_ascii_art    in boolean  default true            -- Currently used to have more fun with the APEX error handling messages. But who knows...
-);
-```
-
-
-## Procedure conf_level
-
-Set the global level.
-
-A shortcut for the procedure `console.conf` to only set the level without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to level warning
-exec console.conf_level(2);
-
---same with using a constant
-exec console.conf_level(console.c_level_warning);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_level (
-  p_level in integer default c_level_error  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-);
-```
-
-
-## Procedure conf_check_interval
-
-Set the global check interval.
-
-A shortcut for the procedure `console.conf` to only set the check interval
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---set all sessions to a check interval of 30 seconds
-exec console.conf_check_interval(30);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_check_interval (
-  p_check_interval in integer default 10 -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-);
-```
-
-
-## Procedure conf_units
-
-Set the global levels for code units under special observation.
-
-A shortcut for the procedure `console.conf` to only set unit levels without
-interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---special observation of two new packages
-exec console.conf_units(p_units_level_debug => 'MY_SCHEMA.NEW_FANCY_API,MY_SCHEMA.ANOTHER_API');
-```
-
-SIGNATURE
-
-```sql
-procedure conf_units (
-  p_units_level_warning in varchar2 default null , -- A comma separated list of unit names which should have log level warning. Example: p_units_level_warning => 'OWNER.UNIT,SCHEMA2.PACKAGE3'
-  p_units_level_info    in varchar2 default null , -- Same as p_units_level_warning for level info.
-  p_units_level_debug   in varchar2 default null , -- Same as p_units_level_warning for level debug.
-  p_units_level_trace   in varchar2 default null   -- Same as p_units_level_warning for level trace.
-);
-```
-
-
-## Procedure conf_ascii_art
-
-Set the global ascii art status.
-
-A shortcut for the procedure `console.conf` to only set the ascii art status
-without interfering other settings.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING GLOBAL PREFERENCES.
-
-EXAMPLE
-
-```sql
---enable the usage of ascii art
-exec console.conf_ascii_art(true);
-
---disable the usage of ascii art
-exec console.conf_ascii_art(false);
-```
-
-SIGNATURE
-
-```sql
-procedure conf_ascii_art (
-  p_enable_ascii_art in boolean  default true -- Currently used to have more fun with the APEX error handling messages. But who knows...
+  p_level            in integer default null , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_check_interval   in integer default null , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_enable_ascii_art in boolean default null   -- Currently used to have more fun with the APEX error handling messages. But who knows...
 );
 ```
 
@@ -1505,16 +1501,15 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_client_identifier in varchar2                      , -- The client identifier provided by the application or console itself.
-  p_level             in integer  default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration          in integer  default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size        in integer  default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval    in integer  default 10           , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack        in boolean  default false        , -- Should the call stack be included.
-  p_user_env          in boolean  default false        , -- Should the user environment be included.
-  p_apex_env          in boolean  default false        , -- Should the APEX environment be included.
-  p_cgi_env           in boolean  default false        , -- Should the CGI environment be included.
-  p_console_env       in boolean  default false          -- Should the console environment be included.
+  p_client_identifier in varchar2                                  , -- The client identifier provided by the application or console itself.
+  p_level             in integer  default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_check_interval    in integer  default c_check_interval_default , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack        in boolean  default false                    , -- Should the call stack be included.
+  p_user_env          in boolean  default false                    , -- Should the user environment be included.
+  p_apex_env          in boolean  default false                    , -- Should the APEX environment be included.
+  p_cgi_env           in boolean  default false                    , -- Should the CGI environment be included.
+  p_console_env       in boolean  default false                      -- Should the console environment be included.
 );
 ```
 
@@ -1528,15 +1523,14 @@ SIGNATURE
 
 ```sql
 procedure init (
-  p_level          in integer default c_level_info , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration       in integer default 60           , -- The number of minutes the session should be in logging mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_cache_size     in integer default 0            , -- The number of log entries to cache before they are written down into the log table. Errors are flushing always the cache. If greater then zero and no errors occur you can loose log entries in shared environments like APEX. Allowed values: 0 to 1000 records.
-  p_check_interval in integer default 10           , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack     in boolean default false        , -- Should the call stack be included.
-  p_user_env       in boolean default false        , -- Should the user environment be included.
-  p_apex_env       in boolean default false        , -- Should the APEX environment be included.
-  p_cgi_env        in boolean default false        , -- Should the CGI environment be included.
-  p_console_env    in boolean default false          -- Should the console environment be included.
+  p_level          in integer default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
+  p_check_interval in integer default c_check_interval_default , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+  p_call_stack     in boolean default false                    , -- Should the call stack be included.
+  p_user_env       in boolean default false                    , -- Should the user environment be included.
+  p_apex_env       in boolean default false                    , -- Should the APEX environment be included.
+  p_cgi_env        in boolean default false                    , -- Should the CGI environment be included.
+  p_console_env    in boolean default false                      -- Should the console environment be included.
 );
 ```
 
@@ -1568,62 +1562,20 @@ procedure exit (
 ```
 
 
-## Procedure exit_stale
+## Procedure exit_all
 
-Exit/unset the preferences for all sessions in the table console_client_prefs
-which have a exit date in the past for at least one hour.
+Exit/unset all client preferences in one go.
 
-This procedure is used by the cleanup job (job name is CONSOLE_CLEANUP) which
-runs per default at 1 o'clock after midnight.
-
-DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
-MANAGING CLIENT PREFERENCES.
-
-SIGNATURE
+EXAMPLE
 
 ```sql
-procedure exit_stale;
-```
-
-
-## Function context_is_available
-
-Checks the availability of the global context. Returns true, if available and
-false if not.
-
-```sql
-begin
-  if not console.context_is_available then
-    dbms_output.put_line('I need to speak with my DBA :-(');
-  end if;
-end;
-/
+exec console.exit_all;
 ```
 
 SIGNATURE
 
 ```sql
-function context_is_available return boolean;
-```
-
-
-## Function context_is_available_yn
-
-Checks the availability of the global context. Returns `Y`, if available and `N`
-if not.
-
-```sql
-select case when console.context_is_available_yn = 'N'
-         then 'I need to speak with my DBA :-('
-         else 'We have a global context :-)'
-       end as "Test context availability"
-  from dual;
-```
-
-SIGNATURE
-
-```sql
-function context_is_available_yn return varchar2;
+procedure exit_all;
 ```
 
 
@@ -1665,8 +1617,8 @@ SIGNATURE
 
 ```sql
 function split_to_table (
-  p_string in varchar2,            -- The string to split into a table.
-  p_sep    in varchar2 default ',' -- The separator.
+  p_string in varchar2             , -- The string to split into a table.
+  p_sep    in varchar2 default ','   -- The separator.
 ) return t_vc2_tab pipelined;
 ```
 
@@ -1700,8 +1652,8 @@ SIGNATURE
 
 ```sql
 function split (
-  p_string in varchar2,            -- The string to split into an array.
-  p_sep    in varchar2 default ',' -- The separator.
+  p_string in varchar2             , -- The string to split into an array.
+  p_sep    in varchar2 default ','   -- The separator.
 ) return t_vc2_tab_i;
 ```
 
@@ -1714,8 +1666,8 @@ SIGNATURE
 
 ```sql
 function join (
-  p_table in t_vc2_tab_i,           -- The PL/SQL array to join into a string.
-  p_sep   in varchar2 default ',' -- The separator.
+  p_table in t_vc2_tab_i          , -- The PL/SQL array to join into a string.
+  p_sep   in varchar2 default ','   -- The separator.
 ) return varchar2;
 ```
 
@@ -1724,7 +1676,8 @@ function join (
 
 Converts a boolean value to a string.
 
-Returns `Y` when the input is true and `N` if the input is false or null.
+Returns `Y` when the input is true, `N` when the input is false and null when
+the input is null.
 
 SIGNATURE
 
@@ -1737,7 +1690,8 @@ function to_yn ( p_bool in boolean ) return varchar2;
 
 Converts a boolean value to a string.
 
-Returns `true` when the input is true and `false` if the input is false or null.
+Returns `true` when the input is true, `false` when the input is false and null
+when the input is null.
 
 SIGNATURE
 
@@ -1750,8 +1704,9 @@ function to_string ( p_bool in boolean ) return varchar2;
 
 Converts a string to a boolean value.
 
-Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
-all other cases (also on null) false is returned.
+Returns true when the uppercased, trimmed input is `TRUE`, `Y`, `YES` or `1`.
+When the input is `FALSE`, `N`, `NO` or `0` false is returned. In all other
+cases null is returned.
 
 SIGNATURE
 
@@ -1887,7 +1842,7 @@ Returns a text bar consisting of unicode block characters.
 You can build simple text based bar charts with it. Not all fonts implement
 clean block characters, so the result depends a little bit on the font. The
 unicode block characters can have eight different widths from 1/8 up to 8/8 -
-together with the default width of a bar char of 25 characters you can show bar
+together with the default width of a bar chart of 25 characters you can show bar
 charts with a precision of 0.5 percent - that is not bad for a text based bar
 chart...
 
@@ -2080,20 +2035,6 @@ function scope return varchar2;
 ```
 
 
-## Function calling_unit
-
-Get the calling unit (OWNER.UNIT) from the call stack.
-
-Is used internally by console to check if unit is configured for current log
-level.
-
-SIGNATURE
-
-```sql
-function calling_unit return varchar2;
-```
-
-
 ## Function call_stack
 
 Get the current call stack (and error stack/backtrace, if available).
@@ -2233,68 +2174,7 @@ procedure clob_flush_cache (
 ```
 
 
-## Function view_cache
-
-View the content of the log cache.
-
-EXAMPLE
-
-```sql
---init logging for own session
-exec console.init(
-  p_level          => c_level_debug ,
-  p_duration       => 90            ,
-  p_cache_size     => 1000          ,
-  p_check_interval => 30            );
-
---test some business logic
-begin
-  --your code here;
-
-  console.log('test', p_user_env => true);
-end;
-/
-
---check current cache entries
-select * from console.view_cache();
-```
-
-SIGNATURE
-
-```sql
-function view_cache return t_logs_tab pipelined;
-```
-
-
-## Procedure flush_cache
-
-Flushes the log cache and writes down the entries to the log table.
-
-SIGNATURE
-
-```sql
-procedure flush_cache;
-```
-
-
-## Procedure clear
-
-Clears the cached log entries (if any).
-
-This procedure is useful when you have initialized your own session with a cache
-size greater then zero (for example 1000) and you take a look at the log entries
-with the pipelined function `console.view_cache` or
-`console.view_last([numRows])` during development. By clearing the cache you can
-avoid spoiling your CONSOLE_LOGS table with entries you do not need anymore.
-
-SIGNATURE
-
-```sql
-procedure clear ( p_client_identifier in varchar2 default my_client_identifier );
-```
-
-
-## Function view_status
+## Function status
 
 View the current package status (config, number entries cache/timer/counter,
 version etc.).
@@ -2302,13 +2182,47 @@ version etc.).
 EXAMPLE
 
 ```sql
-select * from console.view_status();
+select * from console.status();
 ```
 
 SIGNATURE
 
 ```sql
-function view_status return t_key_value_tab pipelined;
+function status return t_attribute_value_tab pipelined;
+```
+
+
+## Function conf
+
+View the global console configuration.
+
+EXAMPLE
+
+```sql
+select * from console.conf();
+```
+
+SIGNATURE
+
+```sql
+function conf return t_attribute_value_tab pipelined;
+```
+
+
+## Function client_prefs
+
+View the client preferences.
+
+EXAMPLE
+
+```sql
+select * from console.client_prefs();
+```
+
+SIGNATURE
+
+```sql
+function client_prefs return t_client_prefs_tab pipelined;
 ```
 
 
@@ -2358,7 +2272,7 @@ procedure purge_all;
 ```
 
 
-## Procedure cleanup_job_create
+## Procedure purge_job_create
 
 Creates a cleanup job which deletes old log entries from console_logs and stale
 debug sessions from console_client_prefs.
@@ -2366,7 +2280,7 @@ debug sessions from console_client_prefs.
 SIGNATURE
 
 ```sql
-procedure cleanup_job_create (
+procedure purge_job_create (
   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
   p_min_level       in integer  default c_level_info           , -- Delete log entries greater or equal the given level.
   p_min_days        in number   default 30                       -- Delete log entries older than the given minimum days.
@@ -2374,47 +2288,47 @@ procedure cleanup_job_create (
 ```
 
 
-## Procedure cleanup_job_drop
+## Procedure purge_job_drop
 
 Drops the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_drop;
+procedure purge_job_drop;
 ```
 
 
-## Procedure cleanup_job_enable
+## Procedure purge_job_enable
 
 Enables the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_enable;
+procedure purge_job_enable;
 ```
 
 
-## Procedure cleanup_job_disable
+## Procedure purge_job_disable
 
 Disables the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_disable;
+procedure purge_job_disable;
 ```
 
 
-## Procedure cleanup_job_run
+## Procedure purge_job_run
 
 Runs the cleanup job (if it exists).
 
 SIGNATURE
 
 ```sql
-procedure cleanup_job_run;
+procedure purge_job_run;
 ```
 
 

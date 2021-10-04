@@ -134,7 +134,7 @@ oic.init = function () {
     */
 
     // FIXME: Should we have an extended error handling when log level is higher
-    // than 1(error) as described and the end of [this
+    // than 1(error) as described at the end of [this
     // article](https://programming.vip/docs/javascript-global-error-handling.html)?
     //
     // - https://developer.mozilla.org/en-US/docs/Web/API/GlobalEventHandlers/onerror

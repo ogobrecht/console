@@ -3,7 +3,7 @@
 <!-- nav -->
 
 - [Installation](installation.md)
-- [Getting Started](getting-started.md)
+- [Introduction](introduction.md)
 - [API Overview](api-overview.md)
 - [Package Console](package-console.md)
 - [Changelog](changelog.md)

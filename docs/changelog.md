@@ -2,7 +2,7 @@
 
 [Index](README.md)
 | [Installation](installation.md)
-| [Getting Started](getting-started.md)
+| [Introduction](introduction.md)
 | [API Overview](api-overview.md)
 | [Package Console](package-console.md)
 | [Changelog](changelog.md)
@@ -12,14 +12,40 @@
 
 # Changelog
 
+## v1.0.0 (2021-10-04)
+
+- Remove context - we work now with a single record conf table with result cache
+  enabled to simplify the configuration and minify the overhead introduced by
+  console
+  - Rename conf table from `CONSOLE_GLOBAL_CONF` to `CONSOLE_CONF`
+  - Rename purge job from `CONSOLE_CLEANUP` to `CONSOLE_PURGE`
+- Remove the possibility to cache log entries because you can potentially loose
+  log entries - this impacts the possibility to extend the logs with own tables
+  by using the overloaded log functions (which are returning the log ID)
+- Streamline API method names:
+  - Rename `view_client_prefs` to `client_prefs`
+  - Rename `view_status` to `status`
+  - Rename `count_log` & `time_log` to `count_current` & `time_current`
+  - New procedures `count_reset` and `time_reset`
+  - New function overloads for the procedures `count_current` and `time_current`
+- New helper method `assertf` which supports formatted messages (a short form of
+  `console.assert([boolean expression], console.format(...))`)
+- New helper method `exit_all` to exit/unset all client preferences in one go
+- New pipelined function `conf` to show the global configuration as an attribute
+  and value list
+- Change helper functions to_yn, to_string and to_bool to return null on invalid
+  input
+- Minimum database version is now 12.2
+
 ## v1.0-beta8 (2021-08-15)
 
 - More overloads to procedure `add_param`
 - Improved docs
-- ASCII art only on error page
+- ASCII art only on APEX error page
 - Aligned header levels in generated Markdown
 - Change sequence cache for table `console_logs` from default 20 to 1000
-- Fix: Only owner of package `console` is allowed to purge entries and change global config
+- Fix: Only owner of package `console` is allowed to purge entries and change
+  global config
 - Fix: Call stack - include line info only if not null
 - Fix: Function `to_md_code_block` - wrap input in fences only if not null
 

@@ -7,7 +7,7 @@ const renderNavigation = function (type) {
     const entries = [
         {top:true, name:"Index",           file:"README.md"},
         {top:true, name:"Installation",    file:"installation.md"},
-        {top:true, name:"Getting Started", file:"getting-started.md"},
+        {top:true, name:"Introduction",    file:"introduction.md"},
         {top:true, name:"API Overview",    file:"api-overview.md"},
         {top:true, name:"Package Console", file:"package-console.md"},
         {top:true, name:"Changelog",       file:"changelog.md"},
