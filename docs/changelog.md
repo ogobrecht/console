@@ -2,7 +2,7 @@
 
 [Index](README.md)
 | [Installation](installation.md)
-| [Getting Started](getting-started.md)
+| [Introduction](introduction.md)
 | [API Overview](api-overview.md)
 | [Package Console](package-console.md)
 | [Changelog](changelog.md)
@@ -21,21 +21,20 @@
   - Rename purge job from `CONSOLE_CLEANUP` to `CONSOLE_PURGE`
 - Remove the possibility to cache log entries because you can potentially loose
   log entries - this impacts the possibility to extend the logs with own tables
-  by using the overloaded log functions (which are returning the log_id)
+  by using the overloaded log functions (which are returning the log ID)
 - Streamline API method names:
   - Rename `view_client_prefs` to `client_prefs`
-  - Rename `view_last` to `logs`
-  - Rename `view_cache` to `cache`
   - Rename `view_status` to `status`
   - Rename `count_log` & `time_log` to `count_current` & `time_current`
-  - Rename `flush_cache` to `flush`
   - New procedures `count_reset` and `time_reset`
   - New function overloads for the procedures `count_current` and `time_current`
 - New helper method `assertf` which supports formatted messages (a short form of
   `console.assert([boolean expression], console.format(...))`)
 - New helper method `exit_all` to exit/unset all client preferences in one go
-- New pipelined function `conf` to show the global configuration as a key /
-  value list
+- New pipelined function `conf` to show the global configuration as a attribute
+  / value list
+- Change helper functions to_yn, to_string and to_bool to return null on invalid
+  input
 - Minimum database version is now 12.2
 
 ## v1.0-beta8 (2021-08-15)

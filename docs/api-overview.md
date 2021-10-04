@@ -2,7 +2,7 @@
 
 [Index](README.md)
 | [Installation](installation.md)
-| [Getting Started](getting-started.md)
+| [Introduction](introduction.md)
 | [API Overview](api-overview.md)
 | [Package Console](package-console.md)
 | [Changelog](changelog.md)
@@ -69,7 +69,7 @@ The main instrumentation methods:
 - [console.add_param](package-console.md#procedure-add_param)
 
 Additional instrumentation methods:
-
+ 
 - [console.action](package-console.md#procedure-action) &
   [module](package-console.md#procedure-module): Aliases for
   dbms_application_info.set_action and set_module to be friendly to the DBA and
