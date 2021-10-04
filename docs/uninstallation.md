@@ -2,7 +2,7 @@
 
 [Index](README.md)
 | [Installation](installation.md)
-| [Getting Started](getting-started.md)
+| [Introduction](introduction.md)
 | [API Overview](api-overview.md)
 | [Package Console](package-console.md)
 | [Changelog](changelog.md)
@@ -19,9 +19,9 @@ As with the installation the uninstallation is splitted into multiple steps:
 1. Drop the CONSOLE objects
     - Start SQL*Plus and connect to your CONSOLE install schema
     - Run `@uninstall/drop_console_objects.sql`
-2. Drop the context (if you have one)
-    - Start SQL*Plus and connect to a privileged user
-    - Run `@uninstall/drop_context.sql "YOUR_CONSOLE_INSTALL_SCHEMA"`
-    - Maybe your DBA needs to do that for you
-3. Drop synonyms in client schemas
+2. Drop synonyms in client schemas
     - You know, if you created synonyms and how they were named...
+
+A T T E N T I O N: If you have installed one of the beta versions and created a
+context, you should also delete it: `@drop_context.sql` (you may need higher
+permissions for this...).

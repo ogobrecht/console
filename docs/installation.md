@@ -2,7 +2,7 @@
 
 [Index](README.md)
 | [Installation](installation.md)
-| [Getting Started](getting-started.md)
+| [Introduction](introduction.md)
 | [API Overview](api-overview.md)
 | [Package Console](package-console.md)
 | [Changelog](changelog.md)
@@ -11,6 +11,11 @@
 <!-- navstop -->
 
 # Installation
+
+A T T E N T I O N: If you have one of the beta versions installed you should
+always run the uninstallation script (`@uninstall/drop_console_objects.sql`)
+before you install a new version. If you created a context, you should also
+delete it: `@drop_context.sql` (you may need higher permissions for this...).
 
 ## One Minute Installation
 
@@ -44,15 +49,3 @@ The installation itself is splitted into one mandatory and three optional steps:
       of `console`
     - As this step is very variable you should create a reusable script by
       yourself...
-
-## Uninstallation
-
-Hopefully you will never need it...
-
-As with the installation the uninstallation is splitted into multiple steps:
-
-1. Drop the CONSOLE objects
-    - Start SQL*Plus and connect to your CONSOLE install schema
-    - Run `@uninstall/drop_console_objects.sql`
-2. Drop synonyms in client schemas
-    - You know, if you created synonyms and how they were named...

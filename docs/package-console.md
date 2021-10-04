@@ -2,7 +2,7 @@
 
 [Index](README.md)
 | [Installation](installation.md)
-| [Getting Started](getting-started.md)
+| [Introduction](introduction.md)
 | [API Overview](api-overview.md)
 | [Package Console](package-console.md)
 | [Changelog](changelog.md)
@@ -128,7 +128,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.0-rc1'                              ;
+c_version constant varchar2 ( 10 byte ) := '1.0.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1676,7 +1676,8 @@ function join (
 
 Converts a boolean value to a string.
 
-Returns `Y` when the input is true and `N` if the input is false or null.
+Returns `Y` when the input is true, `N` when the input is false and null when
+the input is null.
 
 SIGNATURE
 
@@ -1689,7 +1690,8 @@ function to_yn ( p_bool in boolean ) return varchar2;
 
 Converts a boolean value to a string.
 
-Returns `true` when the input is true and `false` if the input is false or null.
+Returns `true` when the input is true, `false` when the input is false and null
+when the input is null.
 
 SIGNATURE
 
@@ -1702,8 +1704,9 @@ function to_string ( p_bool in boolean ) return varchar2;
 
 Converts a string to a boolean value.
 
-Returns true when the uppercased, trimmed input is `Y`, `YES`, `1` or `TRUE`. In
-all other cases (also on null) false is returned.
+Returns true when the uppercased, trimmed input is `TRUE`, `Y`, `YES` or `1`.
+When the input is `FALSE`, `N`, `NO` or `0` false is returned. In all other
+cases null is returned.
 
 SIGNATURE
 
@@ -2185,7 +2188,7 @@ select * from console.status();
 SIGNATURE
 
 ```sql
-function status return t_key_value_tab pipelined;
+function status return t_attribute_value_tab pipelined;
 ```
 
 
@@ -2202,7 +2205,7 @@ select * from console.conf();
 SIGNATURE
 
 ```sql
-function conf return t_key_value_tab pipelined;
+function conf return t_attribute_value_tab pipelined;
 ```
 
 
