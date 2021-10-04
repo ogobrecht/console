@@ -19,14 +19,7 @@ begin
     p_release                => '5.1.4.00.08'     ,
     p_default_workspace_id   => 100000            ,
     p_default_application_id => 100               ,
-    p_default_id_offset      => 34698863762663877 , --FIXME: was this available in APEX 5.1.4?
     p_default_owner          => 'PLAYGROUND_DATA' );
-end;
-/
-
-begin
-  -- replace components
-  wwv_flow_api.g_mode := 'REPLACE'; --FIXME: was this available in APEX 5.1.4?
 end;
 /
 
@@ -37,7 +30,6 @@ begin
     p_plugin_type               => 'DYNAMIC ACTION'                       ,
     p_name                      => 'COM.OGOBRECHT.CONSOLE'                ,
     p_display_name              => 'Oracle Instrumentation Console'       ,
-    p_category                  => 'COMPONENT'                            , --FIXME: was this available in APEX 5.1.4?
     p_supported_ui_types        => 'DESKTOP:JQM_SMARTPHONE'               ,
     p_api_version               => 2                                      ,
     p_render_function           => 'console.apex_plugin_render'           ,
