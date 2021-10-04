@@ -16,7 +16,7 @@ prompt - Package CONSOLE (spec)
 @CONSOLE.pks
 prompt - Package CONSOLE (body)
 @CONSOLE.pkb
-@create_clean_up_job.sql
+@create_purge_job.sql
 @show_errors.sql
 @log_installed_version.sql
 
