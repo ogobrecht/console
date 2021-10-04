@@ -12,7 +12,7 @@
 
 # Changelog
 
-## v1.0-rc1 (2021-10-xx)
+## v1.0.0 (2021-10-04)
 
 - Remove context - we work now with a single record conf table with result cache
   enabled to simplify the configuration and minify the overhead introduced by
@@ -31,8 +31,8 @@
 - New helper method `assertf` which supports formatted messages (a short form of
   `console.assert([boolean expression], console.format(...))`)
 - New helper method `exit_all` to exit/unset all client preferences in one go
-- New pipelined function `conf` to show the global configuration as a attribute
-  / value list
+- New pipelined function `conf` to show the global configuration as an attribute
+  and value list
 - Change helper functions to_yn, to_string and to_bool to return null on invalid
   input
 - Minimum database version is now 12.2
