@@ -4,7 +4,7 @@
   "private": true,
   "repository": {
     "type": "git",
-    "url": "https://github.com/ogobrecht/oracle-instrumentation-console.git"
+    "url": "https://github.com/ogobrecht/console.git"
   },
   "scripts": {
     "watch": "chokidar sources/* --initial --command \"npm run build\"",
@@ -15,8 +15,8 @@
     "install_grant_rights": "echo exit | sqlplus -S /@playground @install/grant_rights.sql \"PUBLIC\"",
     "install_apex_plugin": "echo exit | sqlplus -S /@playground @install/apex_plugin.sql",
     "uninstall_all": "npm-run-all -s uninstall_drop_context uninstall_drop_console_objects",
-    "uninstall_drop_context": "echo exit | sqlplus -S /@playground_admin @uninstall/drop_context.sql \"PLAYGROUND_DATA\"",
     "uninstall_drop_console_objects": "echo exit | sqlplus -S /@playground @uninstall/drop_console_objects.sql",
+    "uninstall_drop_context": "echo exit | sqlplus -S /@playground_admin @uninstall/drop_context.sql \"PLAYGROUND_DATA\"",
     "test_all": "npm-run-all -s test_ccflags test_performance test_console test_trace test_save_stack",
     "test_ccflags": "echo exit | sqlplus -S /@playground @tests/ccflags.sql",
     "test_console": "echo exit | sqlplus -S /@playground @tests/console.sql",
