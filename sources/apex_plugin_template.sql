@@ -42,11 +42,7 @@ begin
 end;
 /
 
-
-begin
-  wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
-#CONSOLE_JS_FILE#end;
-/
+#CONSOLE_JS_FILE#
 
 begin
   wwv_flow_api.create_plugin_file(
@@ -59,11 +55,7 @@ begin
 end;
 /
 
-
-begin
-  wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
-#CONSOLE_JS_FILE_MIN#end;
-/
+#CONSOLE_JS_FILE_MIN#
 
 begin
   wwv_flow_api.create_plugin_file(
@@ -76,11 +68,7 @@ begin
 end;
 /
 
-
-begin
-  wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;
-#CONSOLE_JS_FILE_MIN_MAP#end;
-/
+#CONSOLE_JS_FILE_MIN_MAP#
 
 begin
   wwv_flow_api.create_plugin_file(
@@ -92,7 +80,6 @@ begin
     p_file_content => wwv_flow_api.varchar2_to_blob(wwv_flow_api.g_varchar2_table) );
 end;
 /
-
 
 prompt - application/end_environment
 begin

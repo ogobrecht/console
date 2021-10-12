@@ -1,25 +1,29 @@
 const fs = require('fs');
 const crypto = require('crypto');
-const UglifyJS = require("uglify-js");
+const UglifyJS = require('uglify-js');
 const toMd5Hash = function (string) {
-    return crypto.createHash('md5').update(string).digest("hex")
+    return crypto.createHash('md5').update(string).digest('hex')
 };
-const toChunks = function (str, size) {
-    const numChunks = Math.ceil(str.length / size)
-    const chunks = new Array(numChunks)
-    for (let i = 0, o = 0; i < numChunks; ++i, o += size) {
-        chunks[i] = str.substr(o, size)
+
+const toChunks = function (text, size) {
+    const numChunks = Math.ceil(text.length / size);
+    const chunks = new Array(numChunks);
+    for (let i = 0, start = 0; i < numChunks; ++i, start += size) {
+        chunks[i] = text.substr(start, size);
     }
-    return chunks
+    return chunks;
 };
-const toApexPluginFile = function (code) {
-    const hexString = new Buffer.from(code).toString('hex') // eslint-disable-line no-undef
-    const chunks = toChunks(hexString, 200)
-    let apexLoadFile = '';
+
+const toApexPluginFile = function (text) {
+    const hexString = new Buffer.from(text).toString('hex'); // eslint-disable-line no-undef
+    const chunks = toChunks(hexString, 200);
+    let apexLoadFile = 'begin\n' +
+        '  wwv_flow_api.g_varchar2_table := wwv_flow_api.empty_varchar2_table;\n';
     for (let i = 0; i < chunks.length; ++i) {
-        apexLoadFile += "  wwv_flow_api.g_varchar2_table(" + (i + 1) + ") := '" + chunks[i] + "';\n"
+        apexLoadFile += `  wwv_flow_api.g_varchar2_table(${(i + 1)}) := '${chunks[i]}';\n`;
     }
-    return apexLoadFile
+    apexLoadFile += 'end;\n/';
+    return apexLoadFile;
 };
 
 console.log('ORACLE INSTRUMENTATION CONSOLE: BUILD INSTALL SCRIPTS');
@@ -43,16 +47,14 @@ fs.writeFileSync('install/create_console_objects.sql',
 );
 
 console.log('- build file install/apex_plugin.sql');
-let consoleJsCode = fs.readFileSync('sources/apex_plugin_console.js', 'utf8');
-let version = fs.readFileSync('sources/CONSOLE.pks', 'utf8').match(/c_version\s+constant.*?'(.*?)'/)[1];
-let md5Hash = toMd5Hash(consoleJsCode);
+const consoleJsCode = fs.readFileSync('sources/apex_plugin_console.js', 'utf8');
+const version = fs.readFileSync('sources/CONSOLE.pks', 'utf8').match(/c_version\s+constant.*?'(.*?)'/)[1];
+const md5Hash = toMd5Hash(consoleJsCode);
 let conf = JSON.parse(fs.readFileSync('apexplugin.json', 'utf8'));
 let minified;
 if (conf.version !== version || conf.jsFile.md5Hash !== md5Hash) {
-    // minify JS code
     minified = UglifyJS.minify({ "console.js": consoleJsCode }, { sourceMap: true });
     if (minified.error) throw minified.error;
-    // build plug-in
     conf.version = version;
     conf.jsFile.md5Hash = md5Hash;
     conf.jsFile.version += 1;
