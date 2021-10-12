@@ -2449,41 +2449,43 @@ begin
   if g_conf_check_sysdate < sysdate then
     utl_set_session_conf;
   end if;
-  pipe row(new t_attribute_value_row('c_version',                       to_char( c_version                              )));
-  pipe row(new t_attribute_value_row('localtimestamp',                  to_char( localtimestamp,          c_date_format )));
-  pipe row(new t_attribute_value_row('sysdate',                         to_char( sysdate,                 c_date_format )));
-  pipe row(new t_attribute_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,    c_date_format )));
-  pipe row(new t_attribute_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,     c_date_format )));
-  pipe row(new t_attribute_value_row('g_conf_client_identifier',                 g_conf_client_identifier                ));
-  pipe row(new t_attribute_value_row('g_conf_level',                    to_char( g_conf_level                           )));
-  pipe row(new t_attribute_value_row('level_name(g_conf_level)',     level_name( g_conf_level                           )));
-  pipe row(new t_attribute_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                  )));
-  pipe row(new t_attribute_value_row('g_conf_enable_ascii_art',       to_string( g_conf_enable_ascii_art                )));
-  pipe row(new t_attribute_value_row('g_conf_call_stack',             to_string( g_conf_call_stack                      )));
-  pipe row(new t_attribute_value_row('g_conf_user_env',               to_string( g_conf_user_env                        )));
-  pipe row(new t_attribute_value_row('g_conf_apex_env',               to_string( g_conf_apex_env                        )));
-  pipe row(new t_attribute_value_row('g_conf_cgi_env',                to_string( g_conf_cgi_env                         )));
-  pipe row(new t_attribute_value_row('g_conf_console_env',            to_string( g_conf_console_env                     )));
-  pipe row(new t_attribute_value_row('g_counters.count',                to_char( g_counters.count                       )));
-  pipe row(new t_attribute_value_row('g_timers.count',                  to_char( g_timers.count                         )));
-  pipe row(new t_attribute_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                    )));
-  pipe row(new t_attribute_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       )));
+
+  v_row.attribute := 'c_version'               ; v_row.value :=                to_char( c_version                              ); pipe row(v_row);
+  v_row.attribute := 'localtimestamp'          ; v_row.value :=                to_char( localtimestamp,          c_date_format ); pipe row(v_row);
+  v_row.attribute := 'sysdate'                 ; v_row.value :=                to_char( sysdate,                 c_date_format ); pipe row(v_row);
+  v_row.attribute := 'g_conf_check_sysdate'    ; v_row.value :=                to_char( g_conf_check_sysdate,    c_date_format ); pipe row(v_row);
+  v_row.attribute := 'g_conf_exit_sysdate'     ; v_row.value :=                to_char( g_conf_exit_sysdate,     c_date_format ); pipe row(v_row);
+  v_row.attribute := 'g_conf_client_identifier'; v_row.value :=                         g_conf_client_identifier                ; pipe row(v_row);
+  v_row.attribute := 'g_conf_level'            ; v_row.value :=                to_char( g_conf_level                           ); pipe row(v_row);
+  v_row.attribute := 'level_name(g_conf_level)'; v_row.value :=             level_name( g_conf_level                           ); pipe row(v_row);
+  v_row.attribute := 'g_conf_check_interval'   ; v_row.value :=                to_char( g_conf_check_interval                  ); pipe row(v_row);
+  v_row.attribute := 'g_conf_enable_ascii_art' ; v_row.value :=              to_string( g_conf_enable_ascii_art                ); pipe row(v_row);
+  v_row.attribute := 'g_conf_call_stack'       ; v_row.value :=              to_string( g_conf_call_stack                      ); pipe row(v_row);
+  v_row.attribute := 'g_conf_user_env'         ; v_row.value :=              to_string( g_conf_user_env                        ); pipe row(v_row);
+  v_row.attribute := 'g_conf_apex_env'         ; v_row.value :=              to_string( g_conf_apex_env                        ); pipe row(v_row);
+  v_row.attribute := 'g_conf_cgi_env'          ; v_row.value :=              to_string( g_conf_cgi_env                         ); pipe row(v_row);
+  v_row.attribute := 'g_conf_console_env'      ; v_row.value :=              to_string( g_conf_console_env                     ); pipe row(v_row);
+  v_row.attribute := 'g_counters.count'        ; v_row.value :=                to_char( g_counters.count                       ); pipe row(v_row);
+  v_row.attribute := 'g_timers.count'          ; v_row.value :=                to_char( g_timers.count                         ); pipe row(v_row);
+  v_row.attribute := 'g_saved_stack.count'     ; v_row.value :=                to_char( g_saved_stack.count                    ); pipe row(v_row);
+  v_row.attribute := 'g_prev_error_msg'        ; v_row.value := utl_replace_linebreaks( g_prev_error_msg                       ); pipe row(v_row);
 end status;
 
 --------------------------------------------------------------------------------
 
 function conf
 return t_attribute_value_tab pipelined is
+  v_row  t_attribute_value_row;
   v_conf console_conf%rowtype;
 begin
   v_conf := utl_get_conf;
-  pipe row(new t_attribute_value_row('conf_sysdate',     to_char( v_conf.conf_sysdate, c_date_format )));
-  pipe row(new t_attribute_value_row('conf_user',                 v_conf.conf_user                    ));
-  pipe row(new t_attribute_value_row('level_id',         to_char( v_conf.level_id                    )));
-  pipe row(new t_attribute_value_row('level_name',                v_conf.level_name                   ));
-  pipe row(new t_attribute_value_row('check_interval',   to_char( v_conf.check_interval              )));
-  pipe row(new t_attribute_value_row('enable_ascii_art',          v_conf.enable_ascii_art             ));
-  pipe row(new t_attribute_value_row('client_prefs',              v_conf.client_prefs                 ));
+  v_row.attribute := 'conf_sysdate'    ; v_row.value := to_char( v_conf.conf_sysdate, c_date_format ); pipe row(v_row);
+  v_row.attribute := 'conf_user'       ; v_row.value :=          v_conf.conf_user                    ; pipe row(v_row);
+  v_row.attribute := 'level_id'        ; v_row.value := to_char( v_conf.level_id                    ); pipe row(v_row);
+  v_row.attribute := 'level_name'      ; v_row.value :=          v_conf.level_name                   ; pipe row(v_row);
+  v_row.attribute := 'check_interval'  ; v_row.value := to_char( v_conf.check_interval              ); pipe row(v_row);
+  v_row.attribute := 'enable_ascii_art'; v_row.value :=          v_conf.enable_ascii_art             ; pipe row(v_row);
+  v_row.attribute := 'client_prefs'    ; v_row.value :=          v_conf.client_prefs                 ; pipe row(v_row);
 end conf;
 
 --------------------------------------------------------------------------------

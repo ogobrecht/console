@@ -1,6 +1,6 @@
 {
   "name": "console",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Oracle Instrumentation Console",
   "keywords": [
     "oracle",
@@ -26,7 +26,7 @@
   },
   "oracle": {
     "versions": [
-      "12.1+"
+      "12.2+"
     ],
     "apex": {
       "versions": [
@@ -35,13 +35,13 @@
       "plugin": {
         "internalName": "COM.OGOBRECHT.CONSOLE",
         "type": "dynamic action",
-        "demo": "https://apex.oracle.com/pls/apex/f?p=116612:1",
-        "previewImage": "https://raw.githubusercontent.com/ogobrecht/apex-plugin-dhtmlx-gantt/master/preview.png"
+        "demo": "no demo available",
+        "previewImage": "no preview image available"
       }
     }
   },
   "jsFile": {
-    "md5Hash": "466d4d1438b06974ca8f8a2362ee9d02",
-    "version": 119
+    "md5Hash": "0817bef6ea32215b8493a42c0fa67d7f",
+    "version": 128
   }
 }
