@@ -1,9 +1,8 @@
 const fs = require('fs');
-const crypto = require('crypto');
 const UglifyJS = require('uglify-js');
-const toMd5Hash = function (string) {
-    return crypto.createHash('md5').update(string).digest('hex')
-};
+const crypto = require('crypto');
+const toMd5Hash = function (string) { return crypto.createHash('md5').update(string).digest('hex') };
+let consoleJsCode, minified, version, md5Hash, conf;
 
 const toChunks = function (text, size) {
     const numChunks = Math.ceil(text.length / size);
@@ -47,11 +46,10 @@ fs.writeFileSync('install/create_console_objects.sql',
 );
 
 console.log('- build file install/apex_plugin.sql');
-const consoleJsCode = fs.readFileSync('sources/apex_plugin_console.js', 'utf8');
-const version = fs.readFileSync('sources/CONSOLE.pks', 'utf8').match(/c_version\s+constant.*?'(.*?)'/)[1];
-const md5Hash = toMd5Hash(consoleJsCode);
-let conf = JSON.parse(fs.readFileSync('apexplugin.json', 'utf8'));
-let minified;
+consoleJsCode = fs.readFileSync('sources/apex_plugin_console.js', 'utf8');
+version = fs.readFileSync('sources/CONSOLE.pks', 'utf8').match(/c_version\s+constant.*?'(.*?)'/)[1];
+md5Hash = toMd5Hash(consoleJsCode);
+conf = JSON.parse(fs.readFileSync('apexplugin.json', 'utf8'));
 if (conf.version !== version || conf.jsFile.md5Hash !== md5Hash) {
     minified = UglifyJS.minify({ "console.js": consoleJsCode }, { sourceMap: true });
     if (minified.error) throw minified.error;
