@@ -38,7 +38,8 @@ post](https://ogobrecht.com/posts/2021-10-03-ein-weiteres-oracle-db-logging-tool
 
 It looks like it is a hobby of PL/SQL developers to develop their own logging
 tool. There are already some free tools on the market and probably many that
-have never been released:
+have never been released ([DOAG talk by Sabine Heimsath on the
+topic](https://www.doag.org/formes/pubfiles/10101682/2018-SQLPLSQL-Sabine_Heimsath-PL_SQL__Monitoren__gt__Messen__gt__Optimieren_-_mit_Open_Source-Praesentation.pdf)):
 
 - [Logger](https://github.com/OraOpenSource/Logger)
 - [PIT](https://github.com/j-sieben/PIT/)
