@@ -29,7 +29,7 @@ Open SQLcl, connect to your desired install schema and call
 version](https://github.com/ogobrecht/oracle-instrumentation-console/releases/latest)
 and unzip it.
 
-The installation itself is splitted into one mandatory and three optional steps:
+The installation itself is splitted into one mandatory and two optional steps:
 
 1. Install CONSOLE itself
     - Start SQL*Plus and connect to your desired install schema

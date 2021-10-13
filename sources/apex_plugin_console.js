@@ -1,8 +1,8 @@
 /* global apex:false */
-var oic = {}; // Namespace for "Oracle Instrumentation Console".
-oic.oc  = {}; // Namespace for "Original Console" methods.
-oic.oa  = {}; // Namespace for "Original Apex.debug" methods.
-oic.ln  = {}; // Namespace for "Level Names".
+var oic = {}; // Namespace for "Oracle Instrumentation Console"
+oic.oc  = {}; // Namespace for "Original Console" methods
+oic.oa  = {}; // Namespace for "Original Apex.debug" methods
+oic.ln  = {}; // Namespace for "Level Names"
 oic.ln.error = 1;
 oic.ln.warning = 2;
 oic.ln.info = 3;
@@ -160,4 +160,3 @@ oic.init = function () {
         return false;
     };
 };
-

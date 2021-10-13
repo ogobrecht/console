@@ -69,12 +69,12 @@ end;
 comment on table  console_conf                  is 'Holds the console configuration in a single record.';
 comment on column console_conf.conf_id          is 'The primary key - is secured by a check constraint which allows only one record in the table.';
 comment on column console_conf.conf_user        is 'The user who configured the console the last time.';
-comment on column console_conf.conf_sysdate     is 'The date when the console was configured the last time.';
+comment on column console_conf.conf_sysdate     is 'The date when console was configured the last time.';
 comment on column console_conf.level_id         is 'The defined log level ID.';
-comment on column console_conf.level_name       is 'The defined log level name.';
+comment on column console_conf.level_name       is 'The defined log level name (only for informational purposes).';
 comment on column console_conf.check_interval   is 'The number of seconds a session looks for a changed configuration.';
-comment on column console_conf.client_prefs     is 'Client preferences in CSV format. We save it in this way to have always only one row of configuration data powered by the result cache.';
 comment on column console_conf.enable_ascii_art is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
+comment on column console_conf.client_prefs     is 'Client preferences in CSV format. We save it in this way to have always only one row of configuration data which we read with the result cache.';
 
 
 
@@ -150,22 +150,22 @@ end;
 comment on table  console_logs                   is 'Table for log entries of the package CONSOLE. Column names are mostly driven by the attribute names of SYS_CONTEXT(''USERENV'') and DBMS_SESSION for easier mapping and clearer context.';
 comment on column console_logs.log_id            is 'Primary key based on a sequence.';
 comment on column console_logs.log_time          is 'Log systimestamp.';
-comment on column console_logs.level_id          is 'Level ID. Can be 0 (permanent), 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).';
-comment on column console_logs.level_name        is 'Level name. Can be Permanent, Error, Warning, Info or Verbose.';
-comment on column console_logs.permanent         is 'If Y the log entry will not be deleted when calling CONSOLE.PURGE or CONSOLE.PURGE_ALL.';
+comment on column console_logs.level_id          is 'Level ID. Can be 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).';
+comment on column console_logs.level_name        is 'Level name - for informational purposes only. Indexed columns are only LOG_TIME, LEVEL_ID. If you need more indexes please help yourself.';
+comment on column console_logs.permanent         is 'If ''Y'' the log entry will not be deleted when calling CONSOLE.PURGE or CONSOLE.PURGE_ALL.';
 comment on column console_logs.scope             is 'The current unit/module in which the log was generated (OWNER.PACKAGE.MODULE.SUBMODULE, line number). Couls also be an external scope provided by the user.';
 comment on column console_logs.message           is 'The log message itself.';
-comment on column console_logs.error_code        is 'The error code. Is normally the SQLCODE, but could also be a user error code when log entry was coming from external (user interface, ETL preprocessing, whatever...)';
+comment on column console_logs.error_code        is 'The error code. Is normally the SQLCODE, but could also be a user error code when log entry was coming from an external process (user interface, ETL preprocessing, whatever...)';
 comment on column console_logs.call_stack        is 'The call_stack and in case of an error also the error stack and error backtrace. Could also be an external call stack provided by the user.';
 comment on column console_logs.session_user      is 'The name of the session user (the user who logged on). This may change during the duration of a database session as Real Application Security sessions are attached or detached. For enterprise users, returns the schema. For other users, returns the database user name. If a Real Application Security session is currently attached to the database session, returns user XS$NULL.';
 comment on column console_logs.module            is 'The application name (module). Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
-comment on column console_logs.action            is 'The action/position in the module (application name). Can be set through the DBMS_APPLICATION_INFO package or OCI.';
+comment on column console_logs.action            is 'The action/position in the module. Can be set through the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.client_info       is 'The client information. Can be set by an application using the DBMS_APPLICATION_INFO package or OCI.';
 comment on column console_logs.client_identifier is 'The client identifier. Can be set by an application using the DBMS_SESSION.SET_IDENTIFIER procedure, the OCI attribute OCI_ATTR_CLIENT_IDENTIFIER, or Oracle Dynamic Monitoring Service (DMS). This attribute is used by various database components to identify lightweight application users who authenticate as the same database user.';
 comment on column console_logs.ip_address        is 'IP address of the machine from which the client is connected. If the client and server are on the same machine and the connection uses IPv6 addressing, then it is set to ::1.';
 comment on column console_logs.host              is 'Name of the host machine from which the client is connected.';
 comment on column console_logs.os_user           is 'Operating system user name of the client process that initiated the database session.';
-comment on column console_logs.os_user_agent     is 'Operating system user agent (for example web browser engine). This information will only be available, if actively provided to one of the console log methods. For APEX we will have a plug-in in the future to log client side JavaScript errors - then this attribute will be interesting.';
+comment on column console_logs.os_user_agent     is 'Operating system user agent (for example web browser engine). This information will only be available, if actively provided to one of the console log methods. For APEX we have a plug-in to log client side JavaScript errors, which provides here the user agent of the browser.';
 
 
 
@@ -174,7 +174,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.0.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.0.1'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -4674,41 +4674,43 @@ begin
   if g_conf_check_sysdate < sysdate then
     utl_set_session_conf;
   end if;
-  pipe row(new t_attribute_value_row('c_version',                       to_char( c_version                              )));
-  pipe row(new t_attribute_value_row('localtimestamp',                  to_char( localtimestamp,          c_date_format )));
-  pipe row(new t_attribute_value_row('sysdate',                         to_char( sysdate,                 c_date_format )));
-  pipe row(new t_attribute_value_row('g_conf_check_sysdate',            to_char( g_conf_check_sysdate,    c_date_format )));
-  pipe row(new t_attribute_value_row('g_conf_exit_sysdate',             to_char( g_conf_exit_sysdate,     c_date_format )));
-  pipe row(new t_attribute_value_row('g_conf_client_identifier',                 g_conf_client_identifier                ));
-  pipe row(new t_attribute_value_row('g_conf_level',                    to_char( g_conf_level                           )));
-  pipe row(new t_attribute_value_row('level_name(g_conf_level)',     level_name( g_conf_level                           )));
-  pipe row(new t_attribute_value_row('g_conf_check_interval',           to_char( g_conf_check_interval                  )));
-  pipe row(new t_attribute_value_row('g_conf_enable_ascii_art',       to_string( g_conf_enable_ascii_art                )));
-  pipe row(new t_attribute_value_row('g_conf_call_stack',             to_string( g_conf_call_stack                      )));
-  pipe row(new t_attribute_value_row('g_conf_user_env',               to_string( g_conf_user_env                        )));
-  pipe row(new t_attribute_value_row('g_conf_apex_env',               to_string( g_conf_apex_env                        )));
-  pipe row(new t_attribute_value_row('g_conf_cgi_env',                to_string( g_conf_cgi_env                         )));
-  pipe row(new t_attribute_value_row('g_conf_console_env',            to_string( g_conf_console_env                     )));
-  pipe row(new t_attribute_value_row('g_counters.count',                to_char( g_counters.count                       )));
-  pipe row(new t_attribute_value_row('g_timers.count',                  to_char( g_timers.count                         )));
-  pipe row(new t_attribute_value_row('g_saved_stack.count',             to_char( g_saved_stack.count                    )));
-  pipe row(new t_attribute_value_row('g_prev_error_msg', utl_replace_linebreaks( g_prev_error_msg                       )));
+
+  v_row.attribute := 'c_version'               ; v_row.value :=                to_char( c_version                              ); pipe row(v_row);
+  v_row.attribute := 'localtimestamp'          ; v_row.value :=                to_char( localtimestamp,          c_date_format ); pipe row(v_row);
+  v_row.attribute := 'sysdate'                 ; v_row.value :=                to_char( sysdate,                 c_date_format ); pipe row(v_row);
+  v_row.attribute := 'g_conf_check_sysdate'    ; v_row.value :=                to_char( g_conf_check_sysdate,    c_date_format ); pipe row(v_row);
+  v_row.attribute := 'g_conf_exit_sysdate'     ; v_row.value :=                to_char( g_conf_exit_sysdate,     c_date_format ); pipe row(v_row);
+  v_row.attribute := 'g_conf_client_identifier'; v_row.value :=                         g_conf_client_identifier                ; pipe row(v_row);
+  v_row.attribute := 'g_conf_level'            ; v_row.value :=                to_char( g_conf_level                           ); pipe row(v_row);
+  v_row.attribute := 'level_name(g_conf_level)'; v_row.value :=             level_name( g_conf_level                           ); pipe row(v_row);
+  v_row.attribute := 'g_conf_check_interval'   ; v_row.value :=                to_char( g_conf_check_interval                  ); pipe row(v_row);
+  v_row.attribute := 'g_conf_enable_ascii_art' ; v_row.value :=              to_string( g_conf_enable_ascii_art                ); pipe row(v_row);
+  v_row.attribute := 'g_conf_call_stack'       ; v_row.value :=              to_string( g_conf_call_stack                      ); pipe row(v_row);
+  v_row.attribute := 'g_conf_user_env'         ; v_row.value :=              to_string( g_conf_user_env                        ); pipe row(v_row);
+  v_row.attribute := 'g_conf_apex_env'         ; v_row.value :=              to_string( g_conf_apex_env                        ); pipe row(v_row);
+  v_row.attribute := 'g_conf_cgi_env'          ; v_row.value :=              to_string( g_conf_cgi_env                         ); pipe row(v_row);
+  v_row.attribute := 'g_conf_console_env'      ; v_row.value :=              to_string( g_conf_console_env                     ); pipe row(v_row);
+  v_row.attribute := 'g_counters.count'        ; v_row.value :=                to_char( g_counters.count                       ); pipe row(v_row);
+  v_row.attribute := 'g_timers.count'          ; v_row.value :=                to_char( g_timers.count                         ); pipe row(v_row);
+  v_row.attribute := 'g_saved_stack.count'     ; v_row.value :=                to_char( g_saved_stack.count                    ); pipe row(v_row);
+  v_row.attribute := 'g_prev_error_msg'        ; v_row.value := utl_replace_linebreaks( g_prev_error_msg                       ); pipe row(v_row);
 end status;
 
 --------------------------------------------------------------------------------
 
 function conf
 return t_attribute_value_tab pipelined is
+  v_row  t_attribute_value_row;
   v_conf console_conf%rowtype;
 begin
   v_conf := utl_get_conf;
-  pipe row(new t_attribute_value_row('conf_sysdate',     to_char( v_conf.conf_sysdate, c_date_format )));
-  pipe row(new t_attribute_value_row('conf_user',                 v_conf.conf_user                    ));
-  pipe row(new t_attribute_value_row('level_id',         to_char( v_conf.level_id                    )));
-  pipe row(new t_attribute_value_row('level_name',                v_conf.level_name                   ));
-  pipe row(new t_attribute_value_row('check_interval',   to_char( v_conf.check_interval              )));
-  pipe row(new t_attribute_value_row('enable_ascii_art',          v_conf.enable_ascii_art             ));
-  pipe row(new t_attribute_value_row('client_prefs',              v_conf.client_prefs                 ));
+  v_row.attribute := 'conf_sysdate'    ; v_row.value := to_char( v_conf.conf_sysdate, c_date_format ); pipe row(v_row);
+  v_row.attribute := 'conf_user'       ; v_row.value :=          v_conf.conf_user                    ; pipe row(v_row);
+  v_row.attribute := 'level_id'        ; v_row.value := to_char( v_conf.level_id                    ); pipe row(v_row);
+  v_row.attribute := 'level_name'      ; v_row.value :=          v_conf.level_name                   ; pipe row(v_row);
+  v_row.attribute := 'check_interval'  ; v_row.value := to_char( v_conf.check_interval              ); pipe row(v_row);
+  v_row.attribute := 'enable_ascii_art'; v_row.value :=          v_conf.enable_ascii_art             ; pipe row(v_row);
+  v_row.attribute := 'client_prefs'    ; v_row.value :=          v_conf.client_prefs                 ; pipe row(v_row);
 end conf;
 
 --------------------------------------------------------------------------------

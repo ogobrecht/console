@@ -12,6 +12,10 @@
 
 # Changelog
 
+## v1.0.1 (2021-10-12)
+
+- Fix #11: Package CONSOLE does not compile under 12.2 with error message like "no function t_attribute_value_row..."
+
 ## v1.0.0 (2021-10-04)
 
 - Remove context - we work now with a single record conf table with result cache
