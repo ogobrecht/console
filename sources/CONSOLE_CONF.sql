@@ -33,12 +33,12 @@ end;
 comment on table  console_conf                  is 'Holds the console configuration in a single record.';
 comment on column console_conf.conf_id          is 'The primary key - is secured by a check constraint which allows only one record in the table.';
 comment on column console_conf.conf_user        is 'The user who configured the console the last time.';
-comment on column console_conf.conf_sysdate     is 'The date when the console was configured the last time.';
+comment on column console_conf.conf_sysdate     is 'The date when console was configured the last time.';
 comment on column console_conf.level_id         is 'The defined log level ID.';
-comment on column console_conf.level_name       is 'The defined log level name.';
+comment on column console_conf.level_name       is 'The defined log level name (only for informational purposes).';
 comment on column console_conf.check_interval   is 'The number of seconds a session looks for a changed configuration.';
-comment on column console_conf.client_prefs     is 'Client preferences in CSV format. We save it in this way to have always only one row of configuration data powered by the result cache.';
 comment on column console_conf.enable_ascii_art is 'Currently used to have more fun with the APEX error handling messages. But who knows...';
+comment on column console_conf.client_prefs     is 'Client preferences in CSV format. We save it in this way to have always only one row of configuration data which we read with the result cache.';
 
 
 
