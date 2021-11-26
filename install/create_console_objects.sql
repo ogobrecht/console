@@ -20,7 +20,7 @@ declare
   v_count pls_integer;
 begin
 
-  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027''';
+  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027,disable:7207''';
   execute immediate 'alter session set plscope_settings = ''identifiers:all''';
   execute immediate 'alter session set plsql_optimize_level = 3';
 
@@ -1506,9 +1506,30 @@ function version return varchar2;
 
 Returns the version information from the console package.
 
+Inspired by [Steven's Live SQL example](https://livesql.oracle.com/apex/livesql/file/content_CBXGUSXSVIPRVUPZGJ0HGFQI0.html)
 
 ```sql
 select console.version from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure generate_param_trace (
+  p_program in varchar2           , -- The package and/or program name ('some_api.do_stuff').
+  p_level   in integer  default 3   -- The level you want to use for the parameter tracing.
+);
+/**
+
+Generates parameter tracing code which you can use in your business logic.
+
+Writes to the server output - switch it on to see results. Input for parameter
+`p_pkg_or_prog` will be uppercased and spaces will be replaced by underscores -
+this means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
+
+```sql
+exec console.generate_param_trace;
 ```
 
 **/
@@ -3842,6 +3863,114 @@ function version return varchar2 is
 begin
   return c_version;
 end version;
+
+--------------------------------------------------------------------------------
+
+procedure generate_param_trace (
+  p_program in varchar2          ,
+  p_level   in integer default 3 )
+is
+  v_program      t_512b := substrb(replace(upper(p_program), ' ', '_'), 1, 512);
+  v_object_name  t_128b := substrb(nvl(regexp_substr(v_program, '(.*+\.)?(.*)', 1, 1, 'i', 2), '-'), 1, 128);
+  v_package_name t_128b := substrb(nvl(regexp_substr(v_program, '(.*)\.'      , 1, 1, 'i', 1), '-'), 1, 128);
+  --
+  cursor cur_arguments(
+    p_object_name  in varchar2,
+    p_package_name in varchar2 default null)
+  is
+    select nvl(argument_name, 'RETURN_VALUE') argument_name,
+           data_type,
+           in_out
+      from user_arguments
+     where object_name            = p_object_name
+       and nvl(package_name, '-') = p_package_name
+       and data_level = 0
+     order by position;
+  --
+  type t_arguments_tab is table of cur_arguments%rowtype index by pls_integer;
+  v_arguments_in  t_arguments_tab;
+  v_arguments_out t_arguments_tab;
+  --
+  procedure get_arguments(p_arguments_in  in out nocopy t_arguments_tab,
+                              p_arguments_out in out nocopy t_arguments_tab)
+  is
+    v_arguments t_arguments_tab;
+  begin
+    open cur_arguments(v_object_name, v_package_name);
+    fetch cur_arguments bulk collect into v_arguments;
+    for i in 1..v_arguments.count
+    loop
+      if v_arguments(i).in_out in ('IN', 'IN/OUT') then
+        p_arguments_in(p_arguments_in.count + 1) := v_arguments(i);
+      end if;
+      if v_arguments(i).in_out in ('OUT', 'IN/OUT') then
+        p_arguments_out(p_arguments_out.count + 1) := v_arguments(i);
+      end if;
+    end loop;
+  end get_arguments;
+  --
+  function trace_proc_name(p_arg_type in varchar2) return varchar2 is
+  begin
+    return 'trace_' || p_arg_type || '_arguments';
+  end trace_proc_name;
+  --
+  procedure generate_trace_proc(
+    p_proc_name     in varchar2        ,
+    p_arguments     in t_arguments_tab ,
+    p_comment       in varchar2        )
+  is
+  begin
+    if p_arguments.count > 0 then
+      printf('  %s', p_comment);
+      printf('  procedure %s is', p_proc_name);
+      print ('  begin');
+      for i in 1..p_arguments.count
+      loop
+        printf(q'{    console.add_param('%0', %0);}', lower(p_arguments(i).argument_name));
+      end loop;
+      printf(
+        q'{    console.%s('%s PARAMS');}',
+        case p_level
+          when 1 then 'error'
+          when 2 then 'warn'
+          when 3 then 'info'
+          when 4 then 'debug'
+          when 5 then 'trace'
+        end,
+        case when instr(p_proc_name, 'in') > 0
+          then 'ENTER - IN'
+          else 'LEAVE - OUT'
+        end
+      );
+      printf('  end %s;', p_proc_name);
+    end if;
+  end generate_trace_proc;
+  --
+begin
+  get_arguments(v_arguments_in, v_arguments_out);
+  print('');
+  print('----------------------------------------------------------------------------------------------');
+  print('-- Signature not recoverable with user_arguments - we start with declare for easier formatting');
+  print('-- Program      : ' || v_program);
+  print('-- Object Name  : ' || v_object_name);
+  print('-- Package Name : ' || v_package_name);
+  print('----------------------------------------------------------------------------------------------');
+  print('declare');
+  generate_trace_proc(trace_proc_name('in') , v_arguments_in , '-- AFTER ENTERING - IN and IN OUT argument tracing'  );
+  generate_trace_proc(trace_proc_name('out'), v_arguments_out, '-- BEFORE LEAVING - OUT and IN OUT argument tracing' );
+  print('begin');
+  if v_arguments_in.count > 0 then
+    printf('  %s;', trace_proc_name('in'));
+  end if;
+  print('  ---------------------');
+  print('  -- Your Code Here! --');
+  print('  ---------------------');
+  if v_arguments_out.count > 0 then
+    printf('  %s;', trace_proc_name('out'));
+  end if;
+  print('end;');
+  print('/');
+end;
 
 --------------------------------------------------------------------------------
 

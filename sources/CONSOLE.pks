@@ -1329,9 +1329,30 @@ function version return varchar2;
 
 Returns the version information from the console package.
 
+Inspired by [Steven's Live SQL example](https://livesql.oracle.com/apex/livesql/file/content_CBXGUSXSVIPRVUPZGJ0HGFQI0.html)
 
 ```sql
 select console.version from dual;
+```
+
+**/
+
+--------------------------------------------------------------------------------
+
+procedure generate_param_trace (
+  p_program in varchar2           , -- The package and/or program name ('some_api.do_stuff').
+  p_level   in integer  default 3   -- The level you want to use for the parameter tracing.
+);
+/**
+
+Generates parameter tracing code which you can use in your business logic.
+
+Writes to the server output - switch it on to see results. Input for parameter
+`p_pkg_or_prog` will be uppercased and spaces will be replaced by underscores -
+this means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
+
+```sql
+exec console.generate_param_trace;
 ```
 
 **/
