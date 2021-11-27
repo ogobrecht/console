@@ -1150,7 +1150,7 @@ create or replace procedure demo_proc (
   p_11 xmltype                        )
 is
 begin
-  raise_application_error(-20999, 'Test Error.');
+  raise_application_error(-20999, 'Demo Error.');
 exception
   when others then
     console.add_param('p_01', p_01);
@@ -1529,7 +1529,31 @@ Writes to the server output - switch it on to see results. Input for parameter
 this means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
 
 ```sql
-exec console.generate_param_trace;
+create or replace procedure demo_proc (
+  p_01 in     varchar2                       ,
+  p_02 in     number                         ,
+  p_03 in     date                           ,
+  p_04 in     timestamp                      ,
+  p_05 in     timestamp with time zone       ,
+  p_06 in     timestamp with local time zone ,
+  p_07 in     interval year to month         ,
+  p_08 in     interval day to second         ,
+  p_09 in     boolean                        ,
+  p_10 in out clob                           ,
+  p_11 in out xmltype                        ,
+  p_12 in out console.t_client_prefs_row     ,
+  p_13 in out console.t_client_prefs_tab     )
+is
+begin
+  raise_application_error(-20999, 'Demo Error.');
+end demo_proc;
+{{/}}
+
+set serveroutput on
+-- the following three calls are equivalent
+exec console.generate_param_trace('demo proc');
+exec console.generate_param_trace('demo_proc', 3);
+exec console.generate_param_trace('DEMO_PROC', console.c_level_info);
 ```
 
 **/
@@ -3874,11 +3898,14 @@ is
   v_object_name  t_128b := substrb(nvl(regexp_substr(v_program, '(.*+\.)?(.*)', 1, 1, 'i', 2), '-'), 1, 128);
   v_package_name t_128b := substrb(nvl(regexp_substr(v_program, '(.*)\.'      , 1, 1, 'i', 1), '-'), 1, 128);
   --
-  cursor cur_arguments(
+  c_return_value constant t_16b  := 'RETURN_VALUE';
+  v_object_is_a_function boolean := false;
+  --
+  cursor cur_args(
     p_object_name  in varchar2,
     p_package_name in varchar2 default null)
   is
-    select nvl(argument_name, 'RETURN_VALUE') argument_name,
+    select nvl(argument_name, c_return_value) argument_name,
            data_type,
            in_out
       from user_arguments
@@ -3887,90 +3914,131 @@ is
        and data_level = 0
      order by position;
   --
-  type t_arguments_tab is table of cur_arguments%rowtype index by pls_integer;
-  v_arguments_in  t_arguments_tab;
-  v_arguments_out t_arguments_tab;
+  type t_args_tab is table of cur_args%rowtype index by pls_integer;
+  v_args_in  t_args_tab;
+  v_args_out t_args_tab;
   --
-  procedure get_arguments(p_arguments_in  in out nocopy t_arguments_tab,
-                              p_arguments_out in out nocopy t_arguments_tab)
+  procedure get_args
   is
-    v_arguments t_arguments_tab;
+    v_args t_args_tab;
   begin
-    open cur_arguments(v_object_name, v_package_name);
-    fetch cur_arguments bulk collect into v_arguments;
-    for i in 1..v_arguments.count
+    open cur_args(v_object_name, v_package_name);
+    fetch cur_args bulk collect into v_args;
+    for i in 1..v_args.count
     loop
-      if v_arguments(i).in_out in ('IN', 'IN/OUT') then
-        p_arguments_in(p_arguments_in.count + 1) := v_arguments(i);
+      if v_args(i).in_out in ('IN', 'IN/OUT') then
+        v_args_in(v_args_in.count + 1) := v_args(i);
       end if;
-      if v_arguments(i).in_out in ('OUT', 'IN/OUT') then
-        p_arguments_out(p_arguments_out.count + 1) := v_arguments(i);
+      if v_args(i).in_out in ('OUT', 'IN/OUT') then
+        v_args_out(v_args_out.count + 1) := v_args(i);
+      end if;
+      if v_args(i).argument_name = c_return_value then
+        v_object_is_a_function := true;
       end if;
     end loop;
-  end get_arguments;
+  end get_args;
   --
-  function trace_proc_name(p_arg_type in varchar2) return varchar2 is
+  function add_params_name(p_arg_type in varchar2) return varchar2 is
   begin
-    return 'trace_' || p_arg_type || '_arguments';
-  end trace_proc_name;
+    return 'console_add_' || p_arg_type || '_params';
+  end add_params_name;
   --
-  procedure generate_trace_proc(
-    p_proc_name     in varchar2        ,
-    p_arguments     in t_arguments_tab ,
-    p_comment       in varchar2        )
+  procedure gen_add_params (
+    p_proc_name in varchar2   ,
+    p_args      in t_args_tab )
   is
   begin
-    if p_arguments.count > 0 then
-      printf('  %s', p_comment);
+    if p_args.count > 0 then
       printf('  procedure %s is', p_proc_name);
       print ('  begin');
-      for i in 1..p_arguments.count
+      for i in 1..p_args.count
       loop
-        printf(q'{    console.add_param('%0', %0);}', lower(p_arguments(i).argument_name));
+        printf(
+          q'{    %0console.add_param('%1', %1);}',
+          case when p_args(i).data_type in (
+            'VARCHAR2',
+            'NUMBER',
+            'DATE',
+            'TIMESTAMP',
+            'TIMESTAMP WITH TIME ZONE',
+            'TIMESTAMP WITH LOCAL TIME ZONE',
+            'INTERVAL YEAR TO MONTH',
+            'INTERVAL DAY TO SECOND',
+            'PL/SQL BOOLEAN',
+            'CLOB',
+            'OPAQUE/XMLTYPE')
+            then null
+            else format('--unsupported data type %s ', p_args(i).data_type )
+          end,
+          lower(p_args(i).argument_name)
+        );
       end loop;
-      printf(
-        q'{    console.%s('%s PARAMS');}',
-        case p_level
-          when 1 then 'error'
-          when 2 then 'warn'
-          when 3 then 'info'
-          when 4 then 'debug'
-          when 5 then 'trace'
-        end,
-        case when instr(p_proc_name, 'in') > 0
-          then 'ENTER - IN'
-          else 'LEAVE - OUT'
-        end
-      );
       printf('  end %s;', p_proc_name);
     end if;
-  end generate_trace_proc;
+  end gen_add_params;
+  --
+  procedure gen_add_params_call (
+    p_proc_name    in varchar2              ,
+    p_level        in integer               ,
+    p_is_exception in boolean default false )
+  is
+  begin
+    printf(
+      '  %0%1;'                              ,
+      case when p_is_exception then '  ' end ,
+      p_proc_name                            );
+    printf(
+      q'{  %0console.%1('%2');}',
+      case when p_is_exception then '  ' end,
+      case p_level
+        when 1 then 'error'
+        when 2 then 'warn'
+        when 3 then 'info'
+        when 4 then 'debug'
+        when 5 then 'trace'
+      end,
+      case when instr(p_proc_name, 'in') > 0
+        then 'ENTER - IN PARAMETERS'
+        else case when p_is_exception then 'Unhandled Exception' else 'LEAVE - OUT PARAMETERS' end
+      end
+    );
+  end gen_add_params_call;
   --
 begin
-  get_arguments(v_arguments_in, v_arguments_out);
+  get_args;
   print('');
-  print('----------------------------------------------------------------------------------------------');
-  print('-- Signature not recoverable with user_arguments - we start with declare for easier formatting');
+  print('--------------------------------------------------------------------------------');
+  print('-- Signature not recoverable with user_arguments');
+  print('-- We start with declare for easier formatting');
   print('-- Program      : ' || v_program);
   print('-- Object Name  : ' || v_object_name);
   print('-- Package Name : ' || v_package_name);
-  print('----------------------------------------------------------------------------------------------');
+  print('--------------------------------------------------------------------------------');
   print('declare');
-  generate_trace_proc(trace_proc_name('in') , v_arguments_in , '-- AFTER ENTERING - IN and IN OUT argument tracing'  );
-  generate_trace_proc(trace_proc_name('out'), v_arguments_out, '-- BEFORE LEAVING - OUT and IN OUT argument tracing' );
+  gen_add_params(add_params_name('in') , v_args_in );
+  gen_add_params(add_params_name('out'), v_args_out);
   print('begin');
-  if v_arguments_in.count > 0 then
-    printf('  %s;', trace_proc_name('in'));
+  if v_args_in.count > 0 then
+    gen_add_params_call(add_params_name('in'), p_level);
   end if;
   print('  ---------------------');
-  print('  -- Your Code Here! --');
+  print('  -- Your Code Here!'   );
   print('  ---------------------');
-  if v_arguments_out.count > 0 then
-    printf('  %s;', trace_proc_name('out'));
+  if v_args_out.count > 0 then
+    gen_add_params_call(add_params_name('out'), p_level);
   end if;
-  print('end;');
-  print('/');
-end;
+  if v_object_is_a_function then
+    print('  -----------------------');
+    print('  -- Your Return Here!' );
+    print('  -----------------------');
+  end if;
+  print ('exception');
+  print ('  when others then');
+  gen_add_params_call(add_params_name('out'), c_level_error, true);
+  print ('    raise;');
+  print ('end;');
+  print ('/');
+end generate_param_trace;
 
 --------------------------------------------------------------------------------
 

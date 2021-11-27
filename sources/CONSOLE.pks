@@ -973,7 +973,7 @@ create or replace procedure demo_proc (
   p_11 xmltype                        )
 is
 begin
-  raise_application_error(-20999, 'Test Error.');
+  raise_application_error(-20999, 'Demo Error.');
 exception
   when others then
     console.add_param('p_01', p_01);
@@ -1352,7 +1352,31 @@ Writes to the server output - switch it on to see results. Input for parameter
 this means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
 
 ```sql
-exec console.generate_param_trace;
+create or replace procedure demo_proc (
+  p_01 in     varchar2                       ,
+  p_02 in     number                         ,
+  p_03 in     date                           ,
+  p_04 in     timestamp                      ,
+  p_05 in     timestamp with time zone       ,
+  p_06 in     timestamp with local time zone ,
+  p_07 in     interval year to month         ,
+  p_08 in     interval day to second         ,
+  p_09 in     boolean                        ,
+  p_10 in out clob                           ,
+  p_11 in out xmltype                        ,
+  p_12 in out console.t_client_prefs_row     ,
+  p_13 in out console.t_client_prefs_tab     )
+is
+begin
+  raise_application_error(-20999, 'Demo Error.');
+end demo_proc;
+{{/}}
+
+set serveroutput on
+-- the following three calls are equivalent
+exec console.generate_param_trace('demo proc');
+exec console.generate_param_trace('demo_proc', 3);
+exec console.generate_param_trace('DEMO_PROC', console.c_level_info);
 ```
 
 **/
