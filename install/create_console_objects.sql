@@ -1517,16 +1517,79 @@ select console.version from dual;
 --------------------------------------------------------------------------------
 
 procedure generate_param_trace (
-  p_program in varchar2           , -- The package and/or program name ('some_api.do_stuff').
-  p_level   in integer  default 3   -- The level you want to use for the parameter tracing.
+  p_program in varchar2              , -- The package and/or program name ('some_api.do_stuff').
+  p_level   in pls_integer default 3   -- The level you want to use for the parameter tracing.
 );
 /**
 
-Generates parameter tracing code which you can use in your business logic.
+Generates parameter tracing code for you.
 
 Writes to the server output - switch it on to see results. Input for parameter
-`p_pkg_or_prog` will be uppercased and spaces will be replaced by underscores -
-this means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
+`p_program` will be uppercased and spaces will be replaced by underscores - this
+means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
+
+EXAMPLE 1
+
+```sql
+create or replace function demo_func (
+  p_01 in     varchar2 ,
+  p_02 in     number   ,
+  p_03 in     date     )
+return varchar2 is
+begin
+  null; --YOUR CODE HERE
+end demo_func;
+{{/}}
+set serveroutput on
+exec console.generate_param_trace('demo func');
+```
+
+This will output something like:
+
+```sql
+--------------------------------------------------------
+-- Signature not recoverable with user_arguments
+-- We start with declare for easier formatting
+-- Your Program : DEMO_FUNC
+-- Package Name : -
+-- Object Name  : DEMO_FUNC
+--------------------------------------------------------
+declare
+  procedure console_add_in_params is
+  begin
+    console.add_param('p_01', p_01);
+    console.add_param('p_02', p_02);
+    console.add_param('p_03', p_03);
+  end console_add_in_params;
+  procedure console_add_out_params is
+  begin
+    console.add_param('your_return_value', your_return_value);
+  end console_add_out_params;
+begin
+  console_add_in_params;
+  console.info('ENTER');
+  --------------------
+  -- YOUR CODE HERE
+  --------------------
+  console_add_out_params;
+  console.info('LEAVE');
+  ----------------------
+  -- YOUR RETURN HERE
+  ----------------------
+exception
+  when others then
+    console_add_out_params;
+    console.error;
+    raise;
+end;
+{{/}}
+```
+
+As you can see in the procedure `console_add_out_params` you have to align the
+name of your return variable (`console.add_param('your_return_value',
+your_return_value)`).
+
+EXAMPLE 2
 
 ```sql
 create or replace procedure demo_proc (
@@ -1545,16 +1608,66 @@ create or replace procedure demo_proc (
   p_13 in out console.t_client_prefs_tab     )
 is
 begin
-  raise_application_error(-20999, 'Demo Error.');
+  null; --YOUR CODE HERE
 end demo_proc;
 {{/}}
-
 set serveroutput on
--- the following three calls are equivalent
 exec console.generate_param_trace('demo proc');
-exec console.generate_param_trace('demo_proc', 3);
-exec console.generate_param_trace('DEMO_PROC', console.c_level_info);
 ```
+
+This will output something like:
+
+```sql
+--------------------------------------------------------
+-- Signature not recoverable with user_arguments
+-- We start with declare for easier formatting
+-- Your Program : DEMO_PROC
+-- Package Name : -
+-- Object Name  : DEMO_PROC
+--------------------------------------------------------
+declare
+  procedure console_add_in_params is
+  begin
+    console.add_param('p_01', p_01);
+    console.add_param('p_02', p_02);
+    console.add_param('p_03', p_03);
+    console.add_param('p_04', p_04);
+    console.add_param('p_05', p_05);
+    console.add_param('p_06', p_06);
+    console.add_param('p_07', p_07);
+    console.add_param('p_08', p_08);
+    console.add_param('p_09', p_09);
+    console.add_param('p_10', p_10);
+    console.add_param('p_11', p_11);
+    --unsupported data type PL/SQL RECORD: console.add_param('p_12', p_12);
+    --unsupported data type TABLE: console.add_param('p_13', p_13);
+  end console_add_in_params;
+  procedure console_add_out_params is
+  begin
+    console.add_param('p_10', p_10);
+    console.add_param('p_11', p_11);
+    --unsupported data type PL/SQL RECORD: console.add_param('p_12', p_12);
+    --unsupported data type TABLE: console.add_param('p_13', p_13);
+  end console_add_out_params;
+begin
+  console_add_in_params;
+  console.info('ENTER');
+  --------------------
+  -- YOUR CODE HERE
+  --------------------
+  console_add_out_params;
+  console.info('LEAVE');
+exception
+  when others then
+    console_add_out_params;
+    console.error;
+    raise;
+end;
+{{/}}
+```
+
+As you can see in the output, unsupported data types for `console.add_param`
+will be commented out.
 
 **/
 
@@ -3891,19 +4004,19 @@ end version;
 --------------------------------------------------------------------------------
 
 procedure generate_param_trace (
-  p_program in varchar2          ,
-  p_level   in integer default 3 )
+  p_program in varchar2              ,
+  p_level   in pls_integer default 3 )
 is
   v_program      t_512b := substrb(replace(upper(p_program), ' ', '_'), 1, 512);
   v_object_name  t_128b := substrb(nvl(regexp_substr(v_program, '(.*+\.)?(.*)', 1, 1, 'i', 2), '-'), 1, 128);
   v_package_name t_128b := substrb(nvl(regexp_substr(v_program, '(.*)\.'      , 1, 1, 'i', 1), '-'), 1, 128);
   --
-  c_return_value constant t_16b  := 'RETURN_VALUE';
+  c_return_value constant t_32b  := 'YOUR_RETURN_VALUE';
   v_object_is_a_function boolean := false;
   --
   cursor cur_args(
-    p_object_name  in varchar2,
-    p_package_name in varchar2 default null)
+    p_object_name  in t_128b,
+    p_package_name in t_128b default null)
   is
     select nvl(argument_name, c_return_value) argument_name,
            data_type,
@@ -3918,7 +4031,7 @@ is
   v_args_in  t_args_tab;
   v_args_out t_args_tab;
   --
-  procedure get_args
+  procedure get_arguments
   is
     v_args t_args_tab;
   begin
@@ -3936,25 +4049,36 @@ is
         v_object_is_a_function := true;
       end if;
     end loop;
-  end get_args;
+  end get_arguments;
   --
-  function add_params_name(p_arg_type in varchar2) return varchar2 is
+  function params_proc_name(p_arg_type in varchar2) return varchar2 is
   begin
     return 'console_add_' || p_arg_type || '_params';
-  end add_params_name;
+  end params_proc_name;
   --
-  procedure gen_add_params (
-    p_proc_name in varchar2   ,
-    p_args      in t_args_tab )
+  function params_proc_call (p_in_out in t_4b) return t_128b is
+    v_return t_128b;
+  begin
+    if p_in_out = 'in'  and v_args_in.count  = 0
+    or p_in_out = 'out' and v_args_out.count = 0 then
+      v_return := format('--there are no %s parameters: ', upper(p_in_out));
+    end if;
+    v_return := v_return || params_proc_name(p_in_out);
+    return v_return;
+  end params_proc_call;
+  --
+  procedure gen_params_proc (
+    p_in_out in t_4b       ,
+    p_args   in t_args_tab )
   is
   begin
     if p_args.count > 0 then
-      printf('  procedure %s is', p_proc_name);
+      printf('  procedure %s is', params_proc_name(p_in_out));
       print ('  begin');
       for i in 1..p_args.count
       loop
         printf(
-          q'{    %0console.add_param('%1', %1);}',
+          q'[    %0console.add_param('%1', %1);]',
           case when p_args(i).data_type in (
             'VARCHAR2',
             'NUMBER',
@@ -3968,76 +4092,65 @@ is
             'CLOB',
             'OPAQUE/XMLTYPE')
             then null
-            else format('--unsupported data type %s ', p_args(i).data_type )
+            else format('--unsupported data type %s: ', p_args(i).data_type )
           end,
           lower(p_args(i).argument_name)
         );
       end loop;
-      printf('  end %s;', p_proc_name);
+      printf('  end %s;', params_proc_name(p_in_out));
     end if;
-  end gen_add_params;
+  end gen_params_proc;
   --
-  procedure gen_add_params_call (
-    p_proc_name    in varchar2              ,
-    p_level        in integer               ,
-    p_is_exception in boolean default false )
-  is
+  function console_log_method(p_level in pls_integer) return varchar2 is
   begin
-    printf(
-      '  %0%1;'                              ,
-      case when p_is_exception then '  ' end ,
-      p_proc_name                            );
-    printf(
-      q'{  %0console.%1('%2');}',
-      case when p_is_exception then '  ' end,
-      case p_level
-        when 1 then 'error'
-        when 2 then 'warn'
-        when 3 then 'info'
-        when 4 then 'debug'
-        when 5 then 'trace'
-      end,
-      case when instr(p_proc_name, 'in') > 0
-        then 'ENTER - IN PARAMETERS'
-        else case when p_is_exception then 'Unhandled Exception' else 'LEAVE - OUT PARAMETERS' end
-      end
-    );
-  end gen_add_params_call;
+    return case p_level
+             when 1 then 'error'
+             when 2 then 'warn'
+             when 3 then 'info'
+             when 4 then 'debug'
+             when 5 then 'trace'
+           end;
+  end console_log_method;
   --
 begin
-  get_args;
-  print('');
-  print('--------------------------------------------------------------------------------');
-  print('-- Signature not recoverable with user_arguments');
-  print('-- We start with declare for easier formatting');
-  print('-- Program      : ' || v_program);
-  print('-- Object Name  : ' || v_object_name);
-  print('-- Package Name : ' || v_package_name);
-  print('--------------------------------------------------------------------------------');
-  print('declare');
-  gen_add_params(add_params_name('in') , v_args_in );
-  gen_add_params(add_params_name('out'), v_args_out);
-  print('begin');
-  if v_args_in.count > 0 then
-    gen_add_params_call(add_params_name('in'), p_level);
-  end if;
-  print('  ---------------------');
-  print('  -- Your Code Here!'   );
-  print('  ---------------------');
-  if v_args_out.count > 0 then
-    gen_add_params_call(add_params_name('out'), p_level);
-  end if;
+  get_arguments;
+
+  print   ('');
+  print   ('--------------------------------------------------------');
+  print   ('-- Signature not recoverable with user_arguments'        );
+  print   ('-- We start with declare for easier formatting'          );
+  printf  ('-- Your Program : %s'      , v_program                   );
+  printf  ('-- Package Name : %s'      , v_package_name              );
+  printf  ('-- Object Name  : %s'      , v_object_name               );
+  print   ('--------------------------------------------------------');
+  print   ('declare'                                                 );
+
+  gen_params_proc('in' , v_args_in );
+  gen_params_proc('out', v_args_out);
+
+  print   ('begin'                                                   );
+  printf  ('  %s;'                     , params_proc_call('in')  );
+  printf  ('  console.%s(''ENTER'');'  , console_log_method(p_level) );
+  print   ('  --------------------'                                  );
+  print   ('  -- YOUR CODE HERE'                                     );
+  print   ('  --------------------'                                  );
+  printf  ('  %s;'                     , params_proc_call('out') );
+  printf  ('  console.%s(''LEAVE'');'  , console_log_method(p_level) );
+
   if v_object_is_a_function then
-    print('  -----------------------');
-    print('  -- Your Return Here!' );
-    print('  -----------------------');
+    print ('  ----------------------'                                );
+    print ('  -- YOUR RETURN HERE'                                   );
+    print ('  ----------------------'                                );
   end if;
-  print ('exception');
-  print ('  when others then');
-  gen_add_params_call(add_params_name('out'), c_level_error, true);
-  print ('    raise;');
-  print ('end;');
-  print ('/');
+
+  print   ('exception'                                               );
+  print   ('  when others then'                                      );
+  printf  ('    %s;'                   , params_proc_call('out') );
+  print   ('    console.error;'                                      );
+  print   ('    raise;'                                              );
+  print   ('end;'                                                    );
+  print   ('/'                                                       );
+
 end generate_param_trace;
 
 --------------------------------------------------------------------------------
