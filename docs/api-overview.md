@@ -66,10 +66,10 @@ The main instrumentation methods:
 - [console.assert](package-console.md#procedure-assert) &
   [assertf](package-console.md#procedure-assertf)
 - [console.format](package-console.md#function-format)
-- [console.add_param](package-console.md#procedure-add_param)
+- [console.add_param](package-console.md#procedure-add_param) (also see [generate_param_trace](package-console.md#procedure-generate_param_trace) for code generation)
 
 Additional instrumentation methods:
- 
+
 - [console.action](package-console.md#procedure-action) &
   [module](package-console.md#procedure-module): Aliases for
   dbms_application_info.set_action and set_module to be friendly to the DBA and
