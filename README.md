@@ -5,12 +5,12 @@
     /)__)   focused on easy installation and usage
     -"-"-   combined with nice features.
 
-*This is currently version 1.0.1. Feedback and help is welcome.*
+*This is currently version 1.1.0. Feedback and help is welcome.*
 
 A T T E N T I O N: If you have one of the beta versions installed you should
 always run the uninstallation script (`@uninstall/drop_console_objects.sql`)
 before you install a new version. If you created a context, you should also
-delete it: `@drop_context.sql` (you may need higher permissions for this...).
+delete it: `@uninstall/drop_context.sql` (you may need higher permissions for this...).
 
 ## Easy to Install
 

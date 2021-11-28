@@ -34,15 +34,15 @@ begin
     raise_application_error(
       -20000,
       chr(10) || 'Target schema cannot be NULL - use it like so:' || chr(10)
-      || '@drop_context.sql "my_target_schema"');
+      || '@uninstall/drop_context.sql "my_target_schema"');
   elsif v_schema like 'EXIT %' then
     raise_application_error(
       -20000,
       chr(10) || 'Seems that you forgot to provide the target schema as the first' || chr(10)
       || 'parameter to the script by calling something like this:' || chr(10)
-      || 'echo exit | sqlplus ... @drop_context.sql' || chr(10)
+      || 'echo exit | sqlplus ... @uninstall/drop_context.sql' || chr(10)
       || 'Please call the script with a parameter like this:' || chr(10)
-      || '... @drop_context.sql "my_target_schema"'
+      || '... @uninstall/drop_context.sql "my_target_schema"'
       );
   end if;
 

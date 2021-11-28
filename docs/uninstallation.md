@@ -23,5 +23,5 @@ As with the installation the uninstallation is splitted into multiple steps:
     - You know, if you created synonyms and how they were named...
 
 A T T E N T I O N: If you have installed one of the beta versions and created a
-context, you should also delete it: `@drop_context.sql` (you may need higher
+context, you should also delete it: `@uninstall/drop_context.sql` (you may need higher
 permissions for this...).

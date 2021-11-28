@@ -75,6 +75,7 @@ Oracle Instrumentation Console
 - [Procedure exit](#procedure-exit)
 - [Procedure exit_all](#procedure-exit_all)
 - [Function version](#function-version)
+- [Procedure generate_param_trace](#procedure-generate_param_trace)
 - [Function split_to_table](#function-split_to_table)
 - [Function split](#function-split)
 - [Function join](#function-join)
@@ -128,7 +129,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.0.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.1.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1086,7 +1087,7 @@ create or replace procedure demo_proc (
   p_11 xmltype                        )
 is
 begin
-  raise_application_error(-20999, 'Test Error.');
+  raise_application_error(-20999, 'Demo Error.');
 exception
   when others then
     console.add_param('p_01', p_01);
@@ -1583,6 +1584,7 @@ procedure exit_all;
 
 Returns the version information from the console package.
 
+Inspired by [Steven's Live SQL example](https://livesql.oracle.com/apex/livesql/file/content_CBXGUSXSVIPRVUPZGJ0HGFQI0.html)
 
 ```sql
 select console.version from dual;
@@ -1592,6 +1594,165 @@ SIGNATURE
 
 ```sql
 function version return varchar2;
+```
+
+
+## Procedure generate_param_trace
+
+Generates parameter tracing code for you.
+
+Writes to the server output - switch it on to see results. Input for parameter
+`p_program` will be uppercased and spaces will be replaced by underscores - this
+means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
+
+EXAMPLE 1
+
+```sql
+create or replace function demo_func (
+  p_01 in     varchar2 ,
+  p_02 in     number   ,
+  p_03 in     date     )
+return varchar2 is
+begin
+  null; --YOUR CODE HERE
+end demo_func;
+/
+set serveroutput on
+exec console.generate_param_trace('demo func');
+```
+
+This will output something like:
+
+```sql
+--------------------------------------------------------
+-- Signature not recoverable with user_arguments
+-- We start with declare for easier formatting
+-- Your Program : DEMO_FUNC
+-- Package Name : -
+-- Object Name  : DEMO_FUNC
+--------------------------------------------------------
+declare
+  procedure console_add_in_params is
+  begin
+    console.add_param('p_01', p_01);
+    console.add_param('p_02', p_02);
+    console.add_param('p_03', p_03);
+  end console_add_in_params;
+  procedure console_add_out_params is
+  begin
+    console.add_param('your_return_value', your_return_value);
+  end console_add_out_params;
+begin
+  console_add_in_params;
+  console.info('ENTER');
+  --------------------
+  -- YOUR CODE HERE
+  --------------------
+  console_add_out_params;
+  console.info('LEAVE');
+  ----------------------
+  -- YOUR RETURN HERE
+  ----------------------
+exception
+  when others then
+    console_add_out_params;
+    console.error;
+    raise;
+end;
+/
+```
+
+As you can see in the procedure `console_add_out_params` you have to align the
+name of your return variable (`console.add_param('your_return_value',
+your_return_value)`).
+
+EXAMPLE 2
+
+```sql
+create or replace procedure demo_proc (
+  p_01 in     varchar2                       ,
+  p_02 in     number                         ,
+  p_03 in     date                           ,
+  p_04 in     timestamp                      ,
+  p_05 in     timestamp with time zone       ,
+  p_06 in     timestamp with local time zone ,
+  p_07 in     interval year to month         ,
+  p_08 in     interval day to second         ,
+  p_09 in     boolean                        ,
+  p_10 in out clob                           ,
+  p_11 in out xmltype                        ,
+  p_12 in out console.t_client_prefs_row     ,
+  p_13 in out console.t_client_prefs_tab     )
+is
+begin
+  null; --YOUR CODE HERE
+end demo_proc;
+/
+set serveroutput on
+exec console.generate_param_trace('demo proc');
+```
+
+This will output something like:
+
+```sql
+--------------------------------------------------------
+-- Signature not recoverable with user_arguments
+-- We start with declare for easier formatting
+-- Your Program : DEMO_PROC
+-- Package Name : -
+-- Object Name  : DEMO_PROC
+--------------------------------------------------------
+declare
+  procedure console_add_in_params is
+  begin
+    console.add_param('p_01', p_01);
+    console.add_param('p_02', p_02);
+    console.add_param('p_03', p_03);
+    console.add_param('p_04', p_04);
+    console.add_param('p_05', p_05);
+    console.add_param('p_06', p_06);
+    console.add_param('p_07', p_07);
+    console.add_param('p_08', p_08);
+    console.add_param('p_09', p_09);
+    console.add_param('p_10', p_10);
+    console.add_param('p_11', p_11);
+    --unsupported data type PL/SQL RECORD: console.add_param('p_12', p_12);
+    --unsupported data type TABLE: console.add_param('p_13', p_13);
+  end console_add_in_params;
+  procedure console_add_out_params is
+  begin
+    console.add_param('p_10', p_10);
+    console.add_param('p_11', p_11);
+    --unsupported data type PL/SQL RECORD: console.add_param('p_12', p_12);
+    --unsupported data type TABLE: console.add_param('p_13', p_13);
+  end console_add_out_params;
+begin
+  console_add_in_params;
+  console.info('ENTER');
+  --------------------
+  -- YOUR CODE HERE
+  --------------------
+  console_add_out_params;
+  console.info('LEAVE');
+exception
+  when others then
+    console_add_out_params;
+    console.error;
+    raise;
+end;
+/
+```
+
+As you can see in the output, unsupported data types for `console.add_param`
+will be commented out.
+
+SIGNATURE
+
+```sql
+procedure generate_param_trace (
+  p_program in varchar2              , -- The package and/or program name ('some_api.do_stuff').
+  p_level   in pls_integer default 3   -- The level you want to use for the parameter tracing.
+);
 ```
 
 

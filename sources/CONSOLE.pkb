@@ -1616,6 +1616,158 @@ end version;
 
 --------------------------------------------------------------------------------
 
+procedure generate_param_trace (
+  p_program in varchar2              ,
+  p_level   in pls_integer default 3 )
+is
+  v_program      t_512b := substrb(replace(upper(p_program), ' ', '_'), 1, 512);
+  v_object_name  t_128b := substrb(nvl(regexp_substr(v_program, '(.*+\.)?(.*)', 1, 1, 'i', 2), '-'), 1, 128);
+  v_package_name t_128b := substrb(nvl(regexp_substr(v_program, '(.*)\.'      , 1, 1, 'i', 1), '-'), 1, 128);
+  --
+  c_return_value constant t_32b  := 'YOUR_RETURN_VALUE';
+  v_object_is_a_function boolean := false;
+  --
+  cursor cur_args(
+    p_object_name  in t_128b,
+    p_package_name in t_128b default null)
+  is
+    select nvl(argument_name, c_return_value) argument_name,
+           data_type,
+           in_out
+      from user_arguments
+     where object_name            = p_object_name
+       and nvl(package_name, '-') = p_package_name
+       and data_level = 0
+     order by position;
+  --
+  type t_args_tab is table of cur_args%rowtype index by pls_integer;
+  v_args_in  t_args_tab;
+  v_args_out t_args_tab;
+  --
+  procedure get_arguments
+  is
+    v_args t_args_tab;
+  begin
+    open cur_args(v_object_name, v_package_name);
+    fetch cur_args bulk collect into v_args;
+    for i in 1..v_args.count
+    loop
+      if v_args(i).in_out in ('IN', 'IN/OUT') then
+        v_args_in(v_args_in.count + 1) := v_args(i);
+      end if;
+      if v_args(i).in_out in ('OUT', 'IN/OUT') then
+        v_args_out(v_args_out.count + 1) := v_args(i);
+      end if;
+      if v_args(i).argument_name = c_return_value then
+        v_object_is_a_function := true;
+      end if;
+    end loop;
+  end get_arguments;
+  --
+  function params_proc_name(p_arg_type in varchar2) return varchar2 is
+  begin
+    return 'console_add_' || p_arg_type || '_params';
+  end params_proc_name;
+  --
+  function params_proc_call (p_in_out in t_4b) return t_128b is
+    v_return t_128b;
+  begin
+    if p_in_out = 'in'  and v_args_in.count  = 0
+    or p_in_out = 'out' and v_args_out.count = 0 then
+      v_return := format('--there are no %s parameters: ', upper(p_in_out));
+    end if;
+    v_return := v_return || params_proc_name(p_in_out);
+    return v_return;
+  end params_proc_call;
+  --
+  procedure gen_params_proc (
+    p_in_out in t_4b       ,
+    p_args   in t_args_tab )
+  is
+  begin
+    if p_args.count > 0 then
+      printf('  procedure %s is', params_proc_name(p_in_out));
+      print ('  begin');
+      for i in 1..p_args.count
+      loop
+        printf(
+          q'[    %0console.add_param('%1', %1);]',
+          case when p_args(i).data_type in (
+            'VARCHAR2',
+            'NUMBER',
+            'DATE',
+            'TIMESTAMP',
+            'TIMESTAMP WITH TIME ZONE',
+            'TIMESTAMP WITH LOCAL TIME ZONE',
+            'INTERVAL YEAR TO MONTH',
+            'INTERVAL DAY TO SECOND',
+            'PL/SQL BOOLEAN',
+            'CLOB',
+            'OPAQUE/XMLTYPE')
+            then null
+            else format('--unsupported data type %s: ', p_args(i).data_type )
+          end,
+          lower(p_args(i).argument_name)
+        );
+      end loop;
+      printf('  end %s;', params_proc_name(p_in_out));
+    end if;
+  end gen_params_proc;
+  --
+  function console_log_method(p_level in pls_integer) return varchar2 is
+  begin
+    return case p_level
+             when 1 then 'error'
+             when 2 then 'warn'
+             when 3 then 'info'
+             when 4 then 'debug'
+             when 5 then 'trace'
+           end;
+  end console_log_method;
+  --
+begin
+  get_arguments;
+
+  print   ('');
+  print   ('--------------------------------------------------------');
+  print   ('-- Signature not recoverable with user_arguments'        );
+  print   ('-- We start with declare for easier formatting'          );
+  printf  ('-- Your Program : %s'      , v_program                   );
+  printf  ('-- Package Name : %s'      , v_package_name              );
+  printf  ('-- Object Name  : %s'      , v_object_name               );
+  print   ('--------------------------------------------------------');
+  print   ('declare'                                                 );
+
+  gen_params_proc('in' , v_args_in );
+  gen_params_proc('out', v_args_out);
+
+  print   ('begin'                                                   );
+  printf  ('  %s;'                     , params_proc_call('in')  );
+  printf  ('  console.%s(''ENTER'');'  , console_log_method(p_level) );
+  print   ('  --------------------'                                  );
+  print   ('  -- YOUR CODE HERE'                                     );
+  print   ('  --------------------'                                  );
+  printf  ('  %s;'                     , params_proc_call('out') );
+  printf  ('  console.%s(''LEAVE'');'  , console_log_method(p_level) );
+
+  if v_object_is_a_function then
+    print ('  ----------------------'                                );
+    print ('  -- YOUR RETURN HERE'                                   );
+    print ('  ----------------------'                                );
+  end if;
+
+  print   ('exception'                                               );
+  print   ('  when others then'                                      );
+  printf  ('    %s;'                   , params_proc_call('out') );
+  print   ('    console.error;'                                      );
+  print   ('    raise;'                                              );
+  print   ('end;'                                                    );
+  print   ('/'                                                       );
+
+end generate_param_trace;
+
+--------------------------------------------------------------------------------
+
 function split_to_table (
   p_string in varchar2,
   p_sep    in varchar2 default ','

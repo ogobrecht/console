@@ -12,6 +12,10 @@
 
 # Changelog
 
+## v1.1.0 (2021-11-28)
+
+- New helper `generate_param_trace` to generate code for tracing parameters - thanks to github.com/vincimaroda for the idea
+
 ## v1.0.1 (2021-10-12)
 
 - Fix #11: Package CONSOLE does not compile under 12.2 with error message like "no function t_attribute_value_row..."

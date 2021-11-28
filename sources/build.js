@@ -49,6 +49,7 @@ console.log('- build file install/apex_plugin.sql');
 consoleJsCode = fs.readFileSync('sources/apex_plugin_console.js', 'utf8');
 version = fs.readFileSync('sources/CONSOLE.pks', 'utf8').match(/c_version\s+constant.*?'(.*?)'/)[1];
 md5Hash = toMd5Hash(consoleJsCode);
+// reading the last saved version and md5Hash values as a reference for the comparison
 conf = JSON.parse(fs.readFileSync('apexplugin.json', 'utf8'));
 if (conf.version !== version || conf.jsFile.md5Hash !== md5Hash) {
     minified = UglifyJS.minify({ "console.js": consoleJsCode }, { sourceMap: true });

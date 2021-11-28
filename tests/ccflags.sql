@@ -5,7 +5,7 @@ set linesize 240
 whenever sqlerror exit sql.sqlcode rollback
 
 prompt TEST COMPILER FLAGS
-alter session set plsql_warnings = 'enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027';
+alter session set plsql_warnings = 'enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027,disable:7207';
 alter session set plscope_settings = 'identifiers:all';
 alter session set plsql_optimize_level = 3;
 
