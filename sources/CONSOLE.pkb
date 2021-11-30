@@ -1742,12 +1742,12 @@ begin
   gen_params_proc('out', v_args_out);
 
   print   ('begin'                                                   );
-  printf  ('  %s;'                     , params_proc_call('in')  );
+  printf  ('  %s;'                     , params_proc_call('in')      );
   printf  ('  console.%s(''ENTER'');'  , console_log_method(p_level) );
   print   ('  --------------------'                                  );
   print   ('  -- YOUR CODE HERE'                                     );
   print   ('  --------------------'                                  );
-  printf  ('  %s;'                     , params_proc_call('out') );
+  printf  ('  %s;'                     , params_proc_call('out')     );
   printf  ('  console.%s(''LEAVE'');'  , console_log_method(p_level) );
 
   if v_object_is_a_function then
@@ -1758,10 +1758,10 @@ begin
 
   print   ('exception'                                               );
   print   ('  when others then'                                      );
-  printf  ('    %s;'                   , params_proc_call('out') );
+  printf  ('    %s;'                   , params_proc_call('out')     );
   print   ('    console.error;'                                      );
   print   ('    raise;'                                              );
-  print   ('end;'                                                    );
+  printf  ('end %s;'                   , lower(v_object_name)        );
   print   ('/'                                                       );
 
 end generate_param_trace;

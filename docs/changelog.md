@@ -12,6 +12,10 @@
 
 # Changelog
 
+## v1.1.1 (2021-11-30)
+
+- Helper `generate_param_trace`: append object name to the generated code, improve docs
+
 ## v1.1.0 (2021-11-28)
 
 - New helper `generate_param_trace` to generate code for tracing parameters - thanks to github.com/vincimaroda for the idea
