@@ -178,7 +178,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.1.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.1.1'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1525,8 +1525,22 @@ procedure generate_param_trace (
 Generates parameter tracing code for you.
 
 Writes to the server output - switch it on to see results. Input for parameter
-`p_program` will be uppercased and spaces will be replaced by underscores - this
-means `SOME_API.DO_STUFF` is equivalent to `some api.do stuff`.
+`p_program` will be uppercased and spaces will be replaced by underscores. The
+default for parameter `p_level` is 3 (info). These calls are all equivalent:
+
+```sql
+set serveroutput on
+exec console.generate_param_trace('some api.do stuff');
+exec console.generate_param_trace('Some_API.do_stuff', 3);
+exec console.generate_param_trace('SOME_API.DO_STUFF', console.c_level_info);
+begin
+  console.generate_param_trace(
+    p_program => 'SOME_API.DO_STUFF',
+    p_level   => console.c_level_info
+  );
+end;
+{{/}}
+```
 
 EXAMPLE 1
 
@@ -4129,12 +4143,12 @@ begin
   gen_params_proc('out', v_args_out);
 
   print   ('begin'                                                   );
-  printf  ('  %s;'                     , params_proc_call('in')  );
+  printf  ('  %s;'                     , params_proc_call('in')      );
   printf  ('  console.%s(''ENTER'');'  , console_log_method(p_level) );
   print   ('  --------------------'                                  );
   print   ('  -- YOUR CODE HERE'                                     );
   print   ('  --------------------'                                  );
-  printf  ('  %s;'                     , params_proc_call('out') );
+  printf  ('  %s;'                     , params_proc_call('out')     );
   printf  ('  console.%s(''LEAVE'');'  , console_log_method(p_level) );
 
   if v_object_is_a_function then
@@ -4145,10 +4159,10 @@ begin
 
   print   ('exception'                                               );
   print   ('  when others then'                                      );
-  printf  ('    %s;'                   , params_proc_call('out') );
+  printf  ('    %s;'                   , params_proc_call('out')     );
   print   ('    console.error;'                                      );
   print   ('    raise;'                                              );
-  print   ('end;'                                                    );
+  printf  ('end %s;'                   , lower(v_object_name)        );
   print   ('/'                                                       );
 
 end generate_param_trace;

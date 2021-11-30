@@ -5,7 +5,7 @@
     /)__)   focused on easy installation and usage
     -"-"-   combined with nice features.
 
-*This is currently version 1.1.0. Feedback and help is welcome.*
+*This is currently version 1.1.1. Feedback and help is welcome.*
 
 A T T E N T I O N: If you have one of the beta versions installed you should
 always run the uninstallation script (`@uninstall/drop_console_objects.sql`)
