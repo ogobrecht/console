@@ -2235,7 +2235,7 @@ begin
     v_return := v_return || c_lf;
   end if;
 
-  if sys.utl_call_stack.dynamic_depth > 0 then
+  if sys.utl_call_stack.dynamic_depth > 1 then
     v_return := v_return || '#### Call Stack' || c_lflf;
     --ignore 1, is always this function (call_stack) itself
     for i in 2 .. sys.utl_call_stack.dynamic_depth
