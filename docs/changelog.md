@@ -12,6 +12,12 @@
 
 # Changelog
 
+## v1.1.2 (2022-xx-xx)
+
+- One small condition optimization
+- New APEX plugin-in install helper script for development
+- Update npm dev dependencies
+
 ## v1.1.1 (2021-11-30)
 
 - Helper `generate_param_trace`: append object name to the generated code, improve docs
