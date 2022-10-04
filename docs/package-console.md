@@ -1584,8 +1584,6 @@ procedure exit_all;
 
 Returns the version information from the console package.
 
-Inspired by [Steven's Live SQL example](https://livesql.oracle.com/apex/livesql/file/content_CBXGUSXSVIPRVUPZGJ0HGFQI0.html)
-
 ```sql
 select console.version from dual;
 ```
