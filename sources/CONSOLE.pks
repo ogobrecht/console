@@ -1011,17 +1011,27 @@ end;
 ```
 
 **/
-
+function add_param ( p_name  in varchar2 ,p_value in varchar2      ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in number                         );
+function add_param ( p_name  in varchar2 ,p_value in number        ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in date                           );
+function add_param ( p_name  in varchar2 ,p_value in date          ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
+function add_param ( p_name  in varchar2 ,p_value in timestamp     ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
+function add_param ( p_name  in varchar2 ,p_value in timestamp with time zone ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+function add_param ( p_name  in varchar2 ,p_value in timestamp with local time zone ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in interval year to month         );
+function add_param ( p_name  in varchar2 ,p_value in interval year to month ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in interval day to second         );
+function add_param ( p_name  in varchar2 ,p_value in interval day to second ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
+function add_param ( p_name  in varchar2 ,p_value in boolean       ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in clob                           );
+function add_param ( p_name  in varchar2 ,p_value in clob          ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in xmltype                        );
+function add_param ( p_name  in varchar2 ,p_value in xmltype       ) return t_console;
 
 --------------------------------------------------------------------------------
 
