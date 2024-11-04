@@ -35,6 +35,8 @@ fs.writeFileSync('install/create_console_objects.sql',
         .replace('@CONSOLE_LOGS.sql', function () { return fs.readFileSync('sources/CONSOLE_LOGS.sql', 'utf8') })
         .replace('@CONSOLE.pks', function () { return fs.readFileSync('sources/CONSOLE.pks', 'utf8') })
         .replace('@CONSOLE.pkb', function () { return fs.readFileSync('sources/CONSOLE.pkb', 'utf8') })
+        .replace('@T_CONSOLE_spec.sql', function () { return fs.readFileSync('sources/T_CONSOLE_spec.sql', 'utf8') })
+        .replace('@T_CONSOLE_body.sql', function () { return fs.readFileSync('sources/T_CONSOLE_body.sql', 'utf8') })
         .replace('@create_purge_job.sql', function () { return fs.readFileSync('sources/create_purge_job.sql', 'utf8') })
         .replace('@show_errors.sql', function () { return fs.readFileSync('sources/show_errors.sql', 'utf8') })
         .replace('@log_installed_version.sql', function () { return fs.readFileSync('sources/log_installed_version.sql', 'utf8') })
