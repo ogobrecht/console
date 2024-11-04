@@ -933,7 +933,8 @@ procedure add_param ( p_name in varchar2, p_value in varchar2                   
 Add a parameter to the package internal parameter collection which will be
 included in the next log call (error, warn, info, log, debug or trace)
 
-The procedure is overloaded to support different parameter types.
+The procedure is overloaded to support different parameter types. It is also 
+overloaded to support a Builder-Pattern-Style chaining.
 
 VARCHAR and CLOB parameters are shortened to 2000 characters and additionally
 escaped for Markdown table columns (replacing all line endings with whitespace
@@ -987,6 +988,14 @@ exception
     console.add_param('p_09', p_09);
     console.add_param('p_10', p_10);
     console.add_param('p_11', p_11);
+
+    -- Alternatively, chain the invocations like this:
+    console.add_param('p_12', p_12)
+      .add_param('p_13', p_13)
+      .add_param('p_14', p_14)
+      .add_param('p_15', p_15)
+      .add_param('p_16', p_16);
+
     console.error('Ooops, something went wrong');
     raise;
 end demo_proc;
