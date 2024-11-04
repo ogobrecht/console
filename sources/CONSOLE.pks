@@ -272,6 +272,7 @@ procedure error (
   p_user_env        in boolean  default false , -- Include user environment
   p_user_agent      in varchar2 default null  , -- User agent of browser or other client technology
   p_user_scope      in varchar2 default null  , -- Override PL/SQL scope
+  p_include_line_number in boolean default true, -- Include line number from scope
   p_user_error_code in integer  default null  , -- Override PL/SQL error code
   p_user_call_stack in varchar2 default null    -- Override PL/SQL call stack
 );
@@ -291,6 +292,7 @@ function error (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
@@ -312,6 +314,7 @@ procedure warn (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  );
 /**
@@ -330,6 +333,7 @@ function warn (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
@@ -351,6 +355,7 @@ procedure info (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  );
 /**
@@ -369,6 +374,7 @@ function info (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
@@ -390,6 +396,7 @@ procedure log (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  );
 /**
@@ -408,6 +415,7 @@ function log (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
@@ -429,6 +437,7 @@ procedure debug (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  );
 /**
@@ -447,6 +456,7 @@ function debug (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
@@ -468,6 +478,7 @@ procedure trace (
   p_user_env        in boolean  default true  ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  );
 /**
@@ -486,6 +497,7 @@ function trace (
   p_user_env        in boolean  default true  ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
@@ -1898,7 +1910,7 @@ between 0 and 4.
 
 --------------------------------------------------------------------------------
 
-function scope return varchar2;
+function scope(p_include_line_number boolean default true) return varchar2;
 /**
 
 Get the current scope (method, line number) from the call stack.
@@ -2212,6 +2224,7 @@ function utl_create_log_entry (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;

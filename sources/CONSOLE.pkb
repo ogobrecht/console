@@ -169,6 +169,7 @@ function utl_create_log_entry (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type;
@@ -210,6 +211,7 @@ procedure error (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 is
@@ -226,6 +228,7 @@ begin
     p_user_env        => p_user_env        ,
     p_user_agent      => p_user_agent      ,
     p_user_scope      => p_user_scope      ,
+    p_include_line_number => p_include_line_number,
     p_user_error_code => p_user_error_code ,
     p_user_call_stack => p_user_call_stack );
 end error;
@@ -240,6 +243,7 @@ function error (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
@@ -257,6 +261,7 @@ begin
     p_user_env        => p_user_env        ,
     p_user_agent      => p_user_agent      ,
     p_user_scope      => p_user_scope      ,
+    p_include_line_number => p_include_line_number,
     p_user_error_code => p_user_error_code ,
     p_user_call_stack => p_user_call_stack );
   return v_log_id;
@@ -274,6 +279,7 @@ procedure warn (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 is
@@ -291,6 +297,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -308,6 +315,7 @@ function warn (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
@@ -326,6 +334,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -346,6 +355,7 @@ procedure info (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 is
@@ -363,6 +373,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -380,6 +391,7 @@ function info (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
@@ -398,6 +410,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -418,6 +431,7 @@ procedure log (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 is
@@ -435,6 +449,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -452,6 +467,7 @@ function log (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
@@ -470,6 +486,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -490,6 +507,7 @@ procedure debug (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 is
@@ -507,6 +525,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -524,6 +543,7 @@ function debug (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
@@ -542,6 +562,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -562,6 +583,7 @@ procedure trace (
   p_user_env        in boolean  default true  ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 is
@@ -579,6 +601,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -596,6 +619,7 @@ function trace (
   p_user_env        in boolean  default true  ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
@@ -614,6 +638,7 @@ begin
       p_user_env        => p_user_env        ,
       p_user_agent      => p_user_agent      ,
       p_user_scope      => p_user_scope      ,
+      p_include_line_number => p_include_line_number,
       p_user_error_code => p_user_error_code ,
       p_user_call_stack => p_user_call_stack );
   else
@@ -2196,7 +2221,7 @@ end level_name;
 
 --------------------------------------------------------------------------------
 
-function scope return varchar2 is
+function scope(p_include_line_number boolean default true) return varchar2 is
   v_return     t_32kb;
   v_subprogram t_32kb;
 begin
@@ -2210,7 +2235,7 @@ begin
         v_return := v_return
           || case when sys.utl_call_stack.owner(i) is not null then sys.utl_call_stack.owner(i) || '.' end
           || v_subprogram
-          || case when sys.utl_call_stack.unit_line(i) is not null then ', line ' || sys.utl_call_stack.unit_line(i) end;
+          || case when sys.utl_call_stack.unit_line(i) is not null and p_include_line_number then ', line ' || sys.utl_call_stack.unit_line(i) end;
       end if;
       exit when v_return is not null;
     end loop;
@@ -3226,6 +3251,7 @@ function utl_create_log_entry (
   p_user_env        in boolean  default false ,
   p_user_agent      in varchar2 default null  ,
   p_user_scope      in varchar2 default null  ,
+  p_include_line_number in boolean default true,
   p_user_error_code in integer  default null  ,
   p_user_call_stack in varchar2 default null  )
 return console_logs.log_id%type
@@ -3237,7 +3263,7 @@ begin
   v_row.scope :=
     case
       when p_user_scope is not null then substrb(p_user_scope, 1, 256)
-      else substrb(scope, 1, 256)
+      else substrb(scope(p_include_line_number => p_include_line_number), 1, 256)
     end;
 
   -- This is the very first (possible) assignment to the row.message variable,
