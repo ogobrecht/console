@@ -53,6 +53,30 @@ begin
     v_object_count := v_object_count + 1;
   end loop;
 
+  --type body
+  for i in (
+    select 'drop ' || lower(object_type) || ' ' || object_name as ddl
+      from user_objects
+     where object_type = 'TYPE BODY'
+       and object_name = 'T_CONSOLE'
+  ) loop
+    dbms_output.put_line('- ' || i.ddl || ';');
+    execute immediate i.ddl;
+    v_object_count := v_object_count + 1;
+  end loop;
+
+  --type spec
+  for i in (
+    select 'drop ' || lower(object_type) || ' ' || object_name as ddl
+      from user_objects
+     where object_type = 'TYPE'
+       and object_name = 'T_CONSOLE'
+  ) loop
+    dbms_output.put_line('- ' || i.ddl || ';');
+    execute immediate i.ddl;
+    v_object_count := v_object_count + 1;
+  end loop;
+
   --tables
   for i in (
     select 'drop table ' || table_name || ' cascade constraints' as ddl,
