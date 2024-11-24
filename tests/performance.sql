@@ -15,7 +15,7 @@ end;
 /
 
 prompt
-prompt 100.000 LOG CALLS IN LEVEL ERROR (how many time you loose by do nothing)
+prompt 100.000 LOG CALLS IN LEVEL ERROR (how much time you loose by do nothing)
 declare
   v_iterator   pls_integer := 100000;
   v_start      timestamp;
@@ -49,7 +49,7 @@ end;
 /
 
 prompt
-prompt 100.000 COUNT CALLS IN LEVEL ERROR (how many time you loose by counting)
+prompt 100.000 COUNT CALLS IN LEVEL ERROR (how much time you loose by counting)
 declare
   v_iterator pls_integer := 100000;
   v_start    timestamp;
@@ -75,7 +75,7 @@ end;
 /
 
 prompt
-prompt 100.000 TIME CALLS IN LEVEL ERROR (how many time you loose by measuring time)
+prompt 100.000 TIME CALLS IN LEVEL ERROR (how much time you loose by measuring time)
 declare
   v_iterator pls_integer := 100000;
   v_start    timestamp;
@@ -101,7 +101,7 @@ end;
 /
 
 prompt
-prompt 1.000 LOG CALLS IN LEVEL INFO (how many time you loose by do logging)
+prompt 1.000 LOG CALLS IN LEVEL INFO (how much time you loose by do logging)
 declare
   v_iterator   pls_integer := 1000;
   v_start      timestamp;
@@ -142,7 +142,7 @@ end;
 /
 
 prompt
-prompt 1.000 FORMAT CALLS (how many time you loose by formatting strings)
+prompt 1.000 FORMAT CALLS (how much time you loose by formatting strings)
 declare
   v_iterator   pls_integer := 1000;
   v_start      timestamp;
@@ -170,7 +170,7 @@ end;
 /
 
 prompt
-prompt 1.000 SCOPE CALLS (how many time you loose by fetching the scope from the call stack)
+prompt 1.000 SCOPE CALLS (how much time you loose by fetching the scope from the call stack)
 declare
   v_iterator pls_integer := 1000;
   v_start    timestamp;
