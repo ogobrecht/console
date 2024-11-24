@@ -20,7 +20,7 @@ declare
   v_count pls_integer;
 begin
 
-  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027,disable:7207''';
+  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027,disable:7203,disable:7207''';
   execute immediate 'alter session set plscope_settings = ''identifiers:all''';
   execute immediate 'alter session set plsql_optimize_level = 3';
 
@@ -174,39 +174,37 @@ comment on column console_logs.os_user_agent     is 'Operating system user agent
 
 
 
-create or replace type t_console as object (
-  dummy_attribute number                                                                                                        ,   
+create or replace type t_console authid definer as object (
+  dummy_attribute number                                                                                                        ,
   constructor function t_console return self as result                                                                          ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in varchar2) return t_console                        ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in varchar2)                       return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in varchar2)                                        ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in number) return t_console                          ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in number)                         return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in number)                                          ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in date) return t_console                            ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in date)                           return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in date)                                            ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in timestamp) return t_console                       ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in timestamp)                      return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in timestamp)                                       ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in timestamp with time zone) return t_console        ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in timestamp with time zone)       return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in timestamp with time zone)                        ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in timestamp with local time zone) return t_console  ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in timestamp with local time zone) return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in timestamp with local time zone)                  ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in interval year to month) return t_console          ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in interval year to month)         return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in interval year to month)                          ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in interval day to second) return t_console          ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in interval day to second)         return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in interval day to second)                          ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in boolean) return t_console                         ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in boolean)                        return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in boolean)                                         ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in clob) return t_console                            ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in clob)                           return t_console ,
   member procedure add_param(self in t_console, p_name in varchar2, p_value in clob)                                            ,
-  member function add_param(self in t_console, p_name in varchar2, p_value in xmltype) return t_console                         ,
-  member procedure add_param(self in t_console, p_name in varchar2, p_value in xmltype)
-  
-);
+  member function  add_param(self in t_console, p_name in varchar2, p_value in xmltype)                        return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in xmltype)                                         );
 /
 prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.1.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.2.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1138,7 +1136,7 @@ procedure add_param ( p_name in varchar2, p_value in varchar2                   
 Add a parameter to the package internal parameter collection which will be
 included in the next log call (error, warn, info, log, debug or trace)
 
-The procedure is overloaded to support different parameter types. It is also 
+The procedure is overloaded to support different parameter types. It is also
 overloaded to support a Builder-Pattern-Style chaining.
 
 VARCHAR and CLOB parameters are shortened to 2000 characters and additionally
@@ -6180,30 +6178,36 @@ end;
 
 -- check for errors in package console
 declare
-  v_count                   pls_integer;
+  procedure check_errors (
+    p_object_name in varchar2 )
+  is
+    v_count pls_integer;
+  begin
+    select count(*)
+      into v_count
+      from user_errors
+     where name = p_object_name;
+    if v_count > 0 then
+      dbms_output.put_line('- Type ' || p_object_name || ' has errors :-(');
+      for i in (
+          select name || case when type like '%BODY' then ' body' end || ', ' ||
+                 'line ' || line || ', ' ||
+                 'column ' || position || ', ' ||
+                 attribute  || ': ' ||
+                 text as message
+            from user_errors
+           where name = p_object_name
+           order by name, line, position )
+      loop
+          dbms_output.put_line('- ' || i.message);
+      end loop;
+    end if;
+  end check_errors;
 begin
-  select count(*)
-    into v_count
-    from user_errors
-   where name = 'CONSOLE';
-  if v_count > 0 then
-    dbms_output.put_line('- Package CONSOLE has errors :-(');
-  end if;
+  check_errors ('CONSOLE');
+  check_errors ('T_CONSOLE');
 end;
 /
-
-column "Name"      format a15
-column "Line,Col"  format a10
-column "Type"      format a10
-column "Message"   format a80
-
-select name || case when type like '%BODY' then ' body' end as "Name",
-       line || ',' || position as "Line,Col",
-       attribute               as "Type",
-       text                    as "Message"
-  from user_errors
- where name = 'CONSOLE'
- order by name, line, position;
 
 prompt
 declare
