@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.1.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.2.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -933,7 +933,7 @@ procedure add_param ( p_name in varchar2, p_value in varchar2                   
 Add a parameter to the package internal parameter collection which will be
 included in the next log call (error, warn, info, log, debug or trace)
 
-The procedure is overloaded to support different parameter types. It is also 
+The procedure is overloaded to support different parameter types. It is also
 overloaded to support a Builder-Pattern-Style chaining.
 
 VARCHAR and CLOB parameters are shortened to 2000 characters and additionally
