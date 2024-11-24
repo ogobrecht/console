@@ -8,8 +8,8 @@
   },
   "scripts": {
     "watch": "chokidar sources/* --initial --command \"npm run build\"",
-    "build": "npx eslint sources/*.js && npm run docs && node sources/build.js && npm run install_create_console_objects && npm run install_apex_plugin",
-    "docs": "npx ploc --in sources/CONSOLE.pks --out docs/package-console.md && node docs/build.js",
+    "build": "npx eslint sources/*.js && npm run docs && node sources/build.mjs && npm run install_create_console_objects && npm run install_apex_plugin",
+    "docs": "npx ploc --in sources/CONSOLE.pks --out docs/package-console.md && node docs/build.mjs",
     "install_all": "npm-run-all -s install_create_console_objects install_grant_rights install_apex_plugin",
     "install_create_console_objects": "echo exit | sqlplus -S /@playground @install/create_console_objects.sql",
     "install_apex_plugin": "echo exit | sqlplus -S /@playground @sources/apex_plugin_dev_install.sql",
@@ -27,13 +27,13 @@
   },
   "devDependencies": {
     "chokidar-cli": "^3.0.0",
-    "eslint": "^8.24.0",
-    "glob": "^8.0.3",
+    "eslint": "^9.15.0",
+    "glob": "^11.0.0",
     "markdown-toc": "^1.2.0",
-    "npm-check-updates": "^16.3.7",
+    "npm-check-updates": "^17.1.11",
     "npm-run-all": "^4.1.5",
     "ploc": "^0.8.0",
-    "uglify-js": "^3.17.2"
+    "uglify-js": "^3.19.3"
   },
   "dependencies": {
   }

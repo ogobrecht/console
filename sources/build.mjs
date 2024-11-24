@@ -1,6 +1,6 @@
-const fs = require('fs');
-const UglifyJS = require('uglify-js');
-const crypto = require('crypto');
+import fs from 'fs';
+import UglifyJS from 'uglify-js';
+import crypto from 'crypto';
 const toMd5Hash = function (string) { return crypto.createHash('md5').update(string).digest('hex') };
 let consoleJsCode, minified, version, md5Hash, conf;
 
