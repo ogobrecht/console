@@ -12,11 +12,13 @@ prompt - Project page https://github.com/ogobrecht/console
 @set_ccflags.sql
 @CONSOLE_CONF.sql
 @CONSOLE_LOGS.sql
+prompt - Type T_CONSOLE (spec)
 @T_CONSOLE_spec.sql
 prompt - Package CONSOLE (spec)
 @CONSOLE.pks
 prompt - Package CONSOLE (body)
 @CONSOLE.pkb
+prompt - Type T_CONSOLE (body)
 @T_CONSOLE_body.sql
 @create_purge_job.sql
 @show_errors.sql

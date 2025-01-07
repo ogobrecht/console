@@ -12,8 +12,9 @@
 
 # Changelog
 
-## v1.1.2 (2022-xx-xx)
+## v1.2.0 (2022-xx-xx)
 
+- Enable chaining calls to `console.add_param`
 - One small condition optimization
 - New APEX plugin-in install helper script for development
 - Update npm dev dependencies

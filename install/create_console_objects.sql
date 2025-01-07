@@ -174,6 +174,7 @@ comment on column console_logs.os_user_agent     is 'Operating system user agent
 
 
 
+prompt - Type T_CONSOLE (spec)
 create or replace type t_console authid definer as object (
   dummy_attribute number                                                                                                        ,
   constructor function t_console return self as result                                                                          ,
@@ -5895,6 +5896,7 @@ begin
 end console;
 /
 
+prompt - Type T_CONSOLE (body)
 create or replace type body t_console as
   constructor function t_console 
   return self as result is
