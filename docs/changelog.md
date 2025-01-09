@@ -12,7 +12,7 @@
 
 # Changelog
 
-## v1.2.0 (2022-xx-xx)
+## v1.2.0 (2025-01-10)
 
 - Enable chaining calls to `console.add_param`
 - One small condition optimization
