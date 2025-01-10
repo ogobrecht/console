@@ -1,6 +1,6 @@
-const fs   = require('fs')
-const glob = require('glob');
-const toc  = require('markdown-toc');
+import fs from 'fs';
+import { glob } from 'glob';
+import toc from 'markdown-toc';
 const navRegex = /<!-- *nav *-->[\s\S]*?<!-- *navstop *-->/gi;
 const renderNavigation = function (type) {
     var menu = '';

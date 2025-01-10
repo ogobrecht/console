@@ -20,7 +20,7 @@ declare
   v_count pls_integer;
 begin
 
-  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027,disable:7207''';
+  execute immediate 'alter session set plsql_warnings = ''enable:all,disable:5004,disable:6005,disable:6006,disable:6009,disable:6010,disable:6027,disable:7203,disable:7207''';
   execute immediate 'alter session set plscope_settings = ''identifiers:all''';
   execute immediate 'alter session set plsql_optimize_level = 3';
 
@@ -174,11 +174,38 @@ comment on column console_logs.os_user_agent     is 'Operating system user agent
 
 
 
+prompt - Type T_CONSOLE (spec)
+create or replace type t_console authid definer as object (
+  dummy_attribute number                                                                                                        ,
+  constructor function t_console return self as result                                                                          ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in varchar2)                       return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in varchar2)                                        ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in number)                         return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in number)                                          ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in date)                           return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in date)                                            ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in timestamp)                      return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in timestamp)                                       ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in timestamp with time zone)       return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in timestamp with time zone)                        ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in timestamp with local time zone) return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in timestamp with local time zone)                  ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in interval year to month)         return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in interval year to month)                          ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in interval day to second)         return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in interval day to second)                          ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in boolean)                        return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in boolean)                                         ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in clob)                           return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in clob)                                            ,
+  member function  add_param(self in t_console, p_name in varchar2, p_value in xmltype)                        return t_console ,
+  member procedure add_param(self in t_console, p_name in varchar2, p_value in xmltype)                                         );
+/
 prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.1.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.2.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -1110,7 +1137,8 @@ procedure add_param ( p_name in varchar2, p_value in varchar2                   
 Add a parameter to the package internal parameter collection which will be
 included in the next log call (error, warn, info, log, debug or trace)
 
-The procedure is overloaded to support different parameter types.
+The procedure is overloaded to support different parameter types. It is also
+overloaded to support a Builder-Pattern-Style chaining.
 
 VARCHAR and CLOB parameters are shortened to 2000 characters and additionally
 escaped for Markdown table columns (replacing all line endings with whitespace
@@ -1164,6 +1192,14 @@ exception
     console.add_param('p_09', p_09);
     console.add_param('p_10', p_10);
     console.add_param('p_11', p_11);
+
+    -- Alternatively, chain the invocations like this:
+    console.add_param('p_12', p_12)
+      .add_param('p_13', p_13)
+      .add_param('p_14', p_14)
+      .add_param('p_15', p_15)
+      .add_param('p_16', p_16);
+
     console.error('Ooops, something went wrong');
     raise;
 end demo_proc;
@@ -1188,17 +1224,27 @@ end;
 ```
 
 **/
-
+function add_param ( p_name  in varchar2 ,p_value in varchar2      ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in number                         );
+function add_param ( p_name  in varchar2 ,p_value in number        ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in date                           );
+function add_param ( p_name  in varchar2 ,p_value in date          ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
+function add_param ( p_name  in varchar2 ,p_value in timestamp     ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
+function add_param ( p_name  in varchar2 ,p_value in timestamp with time zone ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
+function add_param ( p_name  in varchar2 ,p_value in timestamp with local time zone ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in interval year to month         );
+function add_param ( p_name  in varchar2 ,p_value in interval year to month ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in interval day to second         );
+function add_param ( p_name  in varchar2 ,p_value in interval day to second ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
+function add_param ( p_name  in varchar2 ,p_value in boolean       ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in clob                           );
+function add_param ( p_name  in varchar2 ,p_value in clob          ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in xmltype                        );
+function add_param ( p_name  in varchar2 ,p_value in xmltype       ) return t_console;
 
 --------------------------------------------------------------------------------
 
@@ -1505,8 +1551,6 @@ function version return varchar2;
 /**
 
 Returns the version information from the console package.
-
-Inspired by [Steven's Live SQL example](https://livesql.oracle.com/apex/livesql/file/content_CBXGUSXSVIPRVUPZGJ0HGFQI0.html)
 
 ```sql
 select console.version from dual;
@@ -3354,6 +3398,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in varchar2 ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -3365,6 +3420,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := to_char(p_value);
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in number   )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -3380,6 +3446,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in date     )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -3391,6 +3468,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff');
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2  ,
+  p_value in timestamp ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -3406,6 +3494,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2                 ,
+  p_value in timestamp with time zone )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -3417,6 +3516,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2                       ,
+  p_value in timestamp with local time zone )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -3432,6 +3542,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2               ,
+  p_value in interval year to month )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -3443,6 +3564,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := substr(to_char(p_value), 1, c_param_value_max_length);
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2               ,
+  p_value in interval day to second ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -3458,6 +3590,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in boolean  ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -3471,6 +3614,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in clob     ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -3482,6 +3636,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := case when p_value is not null then substr(p_value.getclobval(), 1, c_param_value_max_length) else null end;
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in xmltype  ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -4636,7 +4801,7 @@ begin
     v_return := v_return || c_lf;
   end if;
 
-  if sys.utl_call_stack.dynamic_depth > 0 then
+  if sys.utl_call_stack.dynamic_depth > 1 then
     v_return := v_return || '#### Call Stack' || c_lflf;
     --ignore 1, is always this function (call_stack) itself
     for i in 2 .. sys.utl_call_stack.dynamic_depth
@@ -5731,6 +5896,259 @@ begin
 end console;
 /
 
+prompt - Type T_CONSOLE (body)
+create or replace type body t_console as
+  constructor function t_console 
+  return self as result is
+  begin
+    self.dummy_attribute := 1;
+    return;
+  end;
+
+
+  member function add_param(
+    self in t_console  , 
+    p_name in varchar2 , 
+    p_value in varchar2) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console  , 
+    p_name in varchar2 , 
+    p_value in varchar2) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+
+
+  member function add_param(
+    self in t_console  , 
+    p_name in varchar2 , 
+    p_value in number  ) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console  , 
+    p_name in varchar2 , 
+    p_value in number  ) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in date   ) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in date   ) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console   , 
+    p_name in varchar2  , 
+    p_value in timestamp) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console   , 
+    p_name in varchar2  , 
+    p_value in timestamp) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console                  , 
+    p_name in varchar2                 , 
+    p_value in timestamp with time zone) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console                  ,
+    p_name in varchar2                 , 
+    p_value in timestamp with time zone) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console                        , 
+    p_name in varchar2                       , 
+    p_value in timestamp with local time zone) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console                        , 
+    p_name in varchar2                       , 
+    p_value in timestamp with local time zone) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console                , 
+    p_name in varchar2               , 
+    p_value in interval year to month) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console                , 
+    p_name in varchar2               , 
+    p_value in interval year to month) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console                , 
+    p_name in varchar2               , 
+    p_value in interval day to second) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console                , 
+    p_name in varchar2               , 
+    p_value in interval day to second) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in boolean) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in boolean) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in clob   ) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in clob   ) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+
+  member function add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in xmltype) 
+  return t_console is
+  begin
+    console.add_param(p_name, p_value);
+
+    return t_console();
+  end add_param;
+
+
+  member procedure add_param(
+    self in t_console , 
+    p_name in varchar2, 
+    p_value in xmltype) 
+  is
+  begin
+    console.add_param(p_name, p_value);
+  end add_param;
+  
+end;
+/
 declare
   v_count pls_integer;
 begin
@@ -5762,30 +6180,36 @@ end;
 
 -- check for errors in package console
 declare
-  v_count                   pls_integer;
+  procedure check_errors (
+    p_object_name in varchar2 )
+  is
+    v_count pls_integer;
+  begin
+    select count(*)
+      into v_count
+      from user_errors
+     where name = p_object_name;
+    if v_count > 0 then
+      dbms_output.put_line('- Type ' || p_object_name || ' has errors :-(');
+      for i in (
+          select name || case when type like '%BODY' then ' body' end || ', ' ||
+                 'line ' || line || ', ' ||
+                 'column ' || position || ', ' ||
+                 attribute  || ': ' ||
+                 text as message
+            from user_errors
+           where name = p_object_name
+           order by name, line, position )
+      loop
+          dbms_output.put_line('- ' || i.message);
+      end loop;
+    end if;
+  end check_errors;
 begin
-  select count(*)
-    into v_count
-    from user_errors
-   where name = 'CONSOLE';
-  if v_count > 0 then
-    dbms_output.put_line('- Package CONSOLE has errors :-(');
-  end if;
+  check_errors ('CONSOLE');
+  check_errors ('T_CONSOLE');
 end;
 /
-
-column "Name"      format a15
-column "Line,Col"  format a10
-column "Type"      format a10
-column "Message"   format a80
-
-select name || case when type like '%BODY' then ' body' end as "Name",
-       line || ',' || position as "Line,Col",
-       attribute               as "Type",
-       text                    as "Message"
-  from user_errors
- where name = 'CONSOLE'
- order by name, line, position;
 
 prompt
 declare

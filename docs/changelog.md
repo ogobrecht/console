@@ -12,6 +12,13 @@
 
 # Changelog
 
+## v1.2.0 (2025-01-10)
+
+- Enable chaining calls to `console.add_param`
+- One small condition optimization
+- New APEX plugin-in install helper script for development
+- Update npm dev dependencies
+
 ## v1.1.1 (2021-11-30)
 
 - Helper `generate_param_trace`: append object name to the generated code, improve docs

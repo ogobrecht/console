@@ -356,7 +356,7 @@ are cached in an array in the console package (shortened to a maximum of 2000
 characters) and taken over with the next call of a log method (error, warn,
 info, log, debug or trace). If you don't want the parameters to be truncated,
 you are free to write the parameter directly into the log message - this is of
-type clob and is therefore not subject to any size restrictions.
+type `clob` and is therefore not subject to any size restrictions.
 
 Here an example call of the above procedure:
 
@@ -381,6 +381,48 @@ end;
 This call then writes the following log message - see the MESSAGE column:
 
 ![example log entry](console_logs-single-record.png)
+
+Parameters can also be included in the log message by chaining `.add_param` calls.
+The above example would look like this:
+
+```sql
+--demo procedure with add_param chaining
+create or replace procedure demo_proc (
+  p_01 varchar2                       ,
+  p_02 number                         ,
+  p_03 date                           ,
+  p_04 timestamp                      ,
+  p_05 timestamp with time zone       ,
+  p_06 timestamp with local time zone ,
+  p_07 interval year to month         ,
+  p_08 interval day to second         ,
+  p_09 boolean                        ,
+  p_10 clob                           ,
+  p_11 xmltype                        )
+is
+begin
+  raise_application_error(-20999, 'Test Error.');
+exception
+  when others then
+    console.add_param('p_01', p_01)
+      .add_param('p_02', p_02)
+      .add_param('p_03', p_03)
+      .add_param('p_04', p_04)
+      .add_param('p_05', p_05)
+      .add_param('p_06', p_06)
+      .add_param('p_07', p_07)
+      .add_param('p_08', p_08)
+      .add_param('p_09', p_09)
+      .add_param('p_10', p_10)
+      .add_param('p_11', p_11);
+    console.error('Ooops, something went wrong');
+    raise;
+end demo_proc;
+/
+```
+
+This not only saves typing but also is faster than making individual calls
+to `console.add_param` for every parameter.
 
 ## Markdown format for automatically determined metadata
 

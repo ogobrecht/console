@@ -953,6 +953,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in varchar2 ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -964,6 +975,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := to_char(p_value);
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in number   )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -979,6 +1001,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in date     )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -990,6 +1023,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff');
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2  ,
+  p_value in timestamp ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -1005,6 +1049,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2                 ,
+  p_value in timestamp with time zone )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -1016,6 +1071,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := to_char(p_value, 'yyyy-mm-dd hh24:mi:ssxff tzr');
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2                       ,
+  p_value in timestamp with local time zone )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -1031,6 +1097,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2               ,
+  p_value in interval year to month )
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -1042,6 +1119,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := substr(to_char(p_value), 1, c_param_value_max_length);
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2               ,
+  p_value in interval day to second ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -1057,6 +1145,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in boolean  ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -1070,6 +1169,17 @@ begin
   g_params(g_params.count + 1) := v_param;
 end add_param;
 
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in clob     ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
+end add_param;
+
 --------------------------------------------------------------------------------
 
 procedure add_param (
@@ -1081,6 +1191,17 @@ begin
   v_param.attribute := substr(p_name, 1, 128);
   v_param.value     := case when p_value is not null then substr(p_value.getclobval(), 1, c_param_value_max_length) else null end;
   g_params(g_params.count + 1) := v_param;
+end add_param;
+
+
+function add_param (
+  p_name  in varchar2 ,
+  p_value in xmltype  ) 
+return t_console is
+begin
+  add_param(p_name, p_value);
+
+  return t_console();
 end add_param;
 
 --------------------------------------------------------------------------------
@@ -2235,7 +2356,7 @@ begin
     v_return := v_return || c_lf;
   end if;
 
-  if sys.utl_call_stack.dynamic_depth > 0 then
+  if sys.utl_call_stack.dynamic_depth > 1 then
     v_return := v_return || '#### Call Stack' || c_lflf;
     --ignore 1, is always this function (call_stack) itself
     for i in 2 .. sys.utl_call_stack.dynamic_depth
