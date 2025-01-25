@@ -38,9 +38,9 @@ begin
     p_ajax_function             => 'console.apex_plugin_ajax'             ,
     p_substitute_attributes     => true                                   ,
     p_subscribe_plugin_settings => true                                   ,
-    p_version_identifier        => '1.2.0'                    ,
+    p_version_identifier        => '1.2.1'                    ,
     p_about_url                 => 'https://github.com/ogobrecht/console' ,
-    p_files_version             => 134                         );
+    p_files_version             => 135                         );
 end;
 /
 

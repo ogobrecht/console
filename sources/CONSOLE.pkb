@@ -956,7 +956,7 @@ end add_param;
 
 function add_param (
   p_name  in varchar2 ,
-  p_value in varchar2 ) 
+  p_value in varchar2 )
 return t_console is
 begin
   add_param(p_name, p_value);
@@ -1028,7 +1028,7 @@ end add_param;
 
 function add_param (
   p_name  in varchar2  ,
-  p_value in timestamp ) 
+  p_value in timestamp )
 return t_console is
 begin
   add_param(p_name, p_value);
@@ -1124,7 +1124,7 @@ end add_param;
 
 function add_param (
   p_name  in varchar2               ,
-  p_value in interval day to second ) 
+  p_value in interval day to second )
 return t_console is
 begin
   add_param(p_name, p_value);
@@ -1148,7 +1148,7 @@ end add_param;
 
 function add_param (
   p_name  in varchar2 ,
-  p_value in boolean  ) 
+  p_value in boolean  )
 return t_console is
 begin
   add_param(p_name, p_value);
@@ -1172,7 +1172,7 @@ end add_param;
 
 function add_param (
   p_name  in varchar2 ,
-  p_value in clob     ) 
+  p_value in clob     )
 return t_console is
 begin
   add_param(p_name, p_value);
@@ -1196,7 +1196,7 @@ end add_param;
 
 function add_param (
   p_name  in varchar2 ,
-  p_value in xmltype  ) 
+  p_value in xmltype  )
 return t_console is
 begin
   add_param(p_name, p_value);
@@ -2409,9 +2409,9 @@ is
   v_clob        clob;
   v_cache       t_32kb;
   v_value       t_32kb;
-  v_app_id      t_int;
-  v_app_page_id t_int;
-  v_app_session t_int;
+  v_app_id      t_num;
+  v_app_page_id t_num;
+  v_app_session t_64b;
   --
 begin
   $if not $$apex_installed $then
@@ -2422,31 +2422,36 @@ begin
   --https://joelkallman.blogspot.com/2016/09/correlating-apex-sessions-to-database.html
   --sys_context('APEX$SESSION','APP_USER')
   --sys_context('APEX$SESSION','WORKSPACE_ID')
-  v_app_id      :=           v(                 'APP_ID'      );
-  v_app_page_id :=           v(                 'APP_PAGE_ID' );
-  v_app_session := sys_context( 'APEX$SESSION', 'APP_SESSION' );
+  v_app_id      := to_number(v(                   'APP_ID'      ));
+  v_app_page_id := to_number(v(                   'APP_PAGE_ID' ));
+  v_app_session := sys_context(  'APEX$SESSION' , 'APP_SESSION' );
 
   clob_append(v_clob, v_cache, '#### APEX Environment' || c_lflf);
 
-  clob_append(v_clob, v_cache,
-    '##### Application Items' ||
-    case when v_app_id is not null then ' - APP_ID ' || v_app_id end ||
-    c_lflf || to_md_tab_header('Item Name'));
+  clob_append(v_clob, v_cache, 'APEX Session: ' || v_app_session || c_lflf);
+
+  clob_append(v_clob, v_cache, '##### Application Items' ||
+    case when v_app_id is not null then ' - APP_ID ' || to_char(v_app_id) end || c_lflf ||
+    to_md_tab_header('Item Name'));
+
   for i in (
     select item_name
       from apex_application_items
-    where application_id = v_app_id )
+     where application_id = v_app_id )
   loop
     v_value := v(i.item_name);
     clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
   end loop;
+
   clob_append(v_clob, v_cache, c_lf);
 
   --Only page items from current page when level < debug, otherwise all page items.
-  clob_append(v_clob, v_cache,
-    '##### Page Items' ||
-    case when g_conf_level < c_level_debug and v_app_page_id is not null then ' - APP_PAGE_ID ' || v_app_page_id end ||
-    c_lflf || to_md_tab_header('Item Name'));
+  clob_append(v_clob, v_cache, '##### Page Items' ||
+    case when g_conf_level < c_level_debug and v_app_page_id is not null then
+      ' - APP_PAGE_ID ' || to_char(v_app_page_id)
+    end || c_lflf ||
+    to_md_tab_header('Item Name'));
+
   for i in (
     select item_name
       from apex_application_page_items
@@ -2459,6 +2464,7 @@ begin
     v_value := v(i.item_name);
     clob_append(v_clob, v_cache, to_md_tab_data(i.item_name, v_value));
   end loop;
+
   clob_append(v_clob, v_cache, c_lf);
 
   clob_flush_cache(v_clob, v_cache);
