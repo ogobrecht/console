@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.2.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.2.1'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -26,6 +26,7 @@ GitHub](https://github.com/ogobrecht/console).
 -- PUBLIC SIMPLE TYPES
 --------------------------------------------------------------------------------
 
+subtype t_num  is number;
 subtype t_int  is pls_integer;
 subtype t_1b   is varchar2 (    1 byte);
 subtype t_2b   is varchar2 (    2 byte);

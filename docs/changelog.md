@@ -12,6 +12,10 @@
 
 # Changelog
 
+## v1.2.1 (2025-01-25)
+
+- Fix wrong data type integer used for APEX session ID - thanks to github.com/moeremanskarel to report this issue
+
 ## v1.2.0 (2025-01-10)
 
 - Enable chaining calls to `console.add_param`

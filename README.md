@@ -5,7 +5,7 @@
     /)__)   focused on easy installation and usage
     -"-"-   combined with nice features.
 
-*This is currently version 1.2.0. Feedback and help is welcome.*
+*This is currently version 1.2.1. Feedback and help is welcome.*
 
 ## Easy to Install
 
