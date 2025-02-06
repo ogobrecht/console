@@ -40,6 +40,9 @@ create or replace package console_test as
     --%test(Custom User Error Code)
     procedure custom_user_error_code;
 
+    --%test(Custom User Call Stack)
+    procedure custom_user_call_stack;
+
     --%endcontext
 
 end console_test;

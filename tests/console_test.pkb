@@ -271,5 +271,31 @@ create or replace package body console_test as
     end custom_user_error_code;
 
 
+    procedure custom_user_call_stack as
+        l_log_message clob := 'Custom User Agent';
+        l_user_call_stack varchar2(300) := 'Some call stack';
+
+        l_actual_logs sys_refcursor;
+        l_expected_logs sys_refcursor;
+    begin
+
+        console.info(
+            l_log_message
+            ,p_user_call_stack => l_user_call_stack
+        );
+        l_actual_logs := fetch_logs();
+        open l_expected_logs for
+            select
+                console.level_info() as level_id,
+                console.level_name(p_level => console.level_info()) as level_name,
+                l_user_call_stack as call_stack
+            from
+                dual;
+
+        ut.expect(l_actual_logs).to_equal(l_expected_logs).include('LEVEL_ID,LEVEL_NAME,CALL_STACK');
+        
+    end custom_user_call_stack;
+
+
 end console_test;
 /
