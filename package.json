@@ -21,7 +21,8 @@
     "test_trace": "sqlplus -S /nolog @tests/run tests/trace",
     "test_save_stack": "sqlplus -S /nolog @tests/run tests/save_stack",
     "test_performance": "sqlplus -S /nolog @tests/run tests/performance",
-    "install_logger": "sqlplus -S /nolog @tests/run ../logger/logger_install"
+    "install_logger": "sqlplus -S /nolog @tests/run ../logger/logger_install",
+    "unit_tests": "sqlplus -S /nolog @tests/run tests/compile_and_run_unit_tests.sql"
   },
   "devDependencies": {
     "chokidar-cli": "^3.0.0",
