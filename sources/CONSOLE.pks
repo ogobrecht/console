@@ -50,20 +50,20 @@ subtype t_32kb is varchar2 (32767 byte);
 -- PUBLIC COMPLEX TYPES
 --------------------------------------------------------------------------------
 
-type t_client_prefs_row is record(
-  client_identifier t_64b   ,
-  check_interval    integer ,
-  exit_sysdate      date    ,
-  level_id          integer ,
-  level_name        t_16b   ,
-  call_stack        t_8b    ,
-  user_env          t_8b    ,
-  apex_env          t_8b    ,
-  cgi_env           t_8b    ,
-  console_env       t_8b    );
-type t_attribute_value_row is record(
-  attribute t_128b ,
-  value     t_4kb  );
+type t_client_prefs_row is record (
+   client_identifier t_64b   ,
+   check_interval    integer ,
+   exit_sysdate      date    ,
+   level_id          integer ,
+   level_name        t_16b   ,
+   call_stack        t_8b    ,
+   user_env          t_8b    ,
+   apex_env          t_8b    ,
+   cgi_env           t_8b    ,
+   console_env       t_8b    );
+type t_attribute_value_row is record (
+   attribute t_128b ,
+   value     t_4kb  );
 type t_client_prefs_tab      is table of t_client_prefs_row;
 type t_client_prefs_tab_i    is table of t_client_prefs_row index by pls_integer;
 type t_attribute_value_tab   is table of t_attribute_value_row;
@@ -94,7 +94,8 @@ c_enable_ascii_art       constant boolean :=   true ;
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 
-function my_client_identifier return varchar2;
+function my_client_identifier
+   return varchar2;
 /**
 
 Returns the current session identifier of the own session. This information is cached in a
@@ -108,7 +109,8 @@ select console.my_client_identifier from dual;
 
 --------------------------------------------------------------------------------
 
-function my_log_level return integer;
+function my_log_level
+   return integer;
 /**
 
 Returns the current log level of the own session. This information is cached in a
@@ -148,62 +150,62 @@ prompt TEST ERROR_SAVE_STACK
 
 prompt - compile package spec
 create or replace package some_api is
-  procedure do_stuff;
+   procedure do_stuff;
 end;
 {{/}}
 
 prompt - compile package body
 create or replace package body some_api is
 ------------------------------------------------------------------------------
-    procedure do_stuff is
-    --------------------------------------
-        procedure sub1 is
-        --------------------------------------
-            procedure sub2 is
-            --------------------------------------
-                procedure sub3 is
-                begin
-                  console.assert(1 = 2, 'Demo');
-                exception --sub3
-                  when others then
-                    console.error_save_stack;
-                    raise;
-                end;
-            --------------------------------------
+   procedure do_stuff is
+   --------------------------------------
+      procedure sub1 is
+      --------------------------------------
+         procedure sub2 is
+         --------------------------------------
+            procedure sub3 is
             begin
-              sub3;
-            exception --sub2
-              when others then
-                console.error_save_stack;
-                raise;
+               console.assert(1 = 2, 'Demo');
+            exception --sub3
+               when others then
+                  console.error_save_stack;
+                  raise;
             end;
-        --------------------------------------
-        begin
-          sub2;
-        exception --sub1
-          when others then
+         --------------------------------------
+         begin
+            sub3;
+         exception --sub2
+            when others then
+               console.error_save_stack;
+               raise;
+         end;
+      --------------------------------------
+      begin
+         sub2;
+      exception --sub1
+         when others then
             console.error_save_stack;
             raise no_data_found;
-        end;
-    --------------------------------------
-    begin
+      end;
+   --------------------------------------
+   begin
       sub1;
-    exception --do_stuff
+   exception --do_stuff
       when others then
-        console.error;
-        raise;
-    end;
+         console.error;
+         raise;
+   end;
 ------------------------------------------------------------------------------
 end;
 {{/}}
 
 prompt - call the package
 begin
-  some_api.do_stuff;
+   some_api.do_stuff;
 exception
-  when others then
-    null; --> I know, I know, never do that without a final raise...
-          --> But we want only test our logging without killing the script run...
+   when others then
+      null; --> I know, I know, never do that without a final raise...
+            --> But we want only test our logging without killing the script run...
 end;
 {{/}}
 
@@ -264,17 +266,17 @@ Call Stack
 --------------------------------------------------------------------------------
 
 procedure error (
-  p_message         in clob     default null  , -- The log message itself
-  p_permanent       in boolean  default false , -- Should the log entry be permanent (not deleted by purge methods)
-  p_call_stack      in boolean  default true  , -- Include call stack
-  p_apex_env        in boolean  default false , -- Include APEX environment
-  p_cgi_env         in boolean  default false , -- Include CGI environment
-  p_console_env     in boolean  default false , -- Include Console environment
-  p_user_env        in boolean  default false , -- Include user environment
-  p_user_agent      in varchar2 default null  , -- User agent of browser or other client technology
-  p_user_scope      in varchar2 default null  , -- Override PL/SQL scope
-  p_user_error_code in integer  default null  , -- Override PL/SQL error code
-  p_user_call_stack in varchar2 default null    -- Override PL/SQL call stack
+   p_message         in clob     default null  , -- The log message itself
+   p_permanent       in boolean  default false , -- Should the log entry be permanent (not deleted by purge methods)
+   p_call_stack      in boolean  default true  , -- Include call stack
+   p_apex_env        in boolean  default false , -- Include APEX environment
+   p_cgi_env         in boolean  default false , -- Include CGI environment
+   p_console_env     in boolean  default false , -- Include Console environment
+   p_user_env        in boolean  default false , -- Include user environment
+   p_user_agent      in varchar2 default null  , -- User agent of browser or other client technology
+   p_user_scope      in varchar2 default null  , -- Override PL/SQL scope
+   p_user_error_code in integer  default null  , -- Override PL/SQL error code
+   p_user_call_stack in varchar2 default null    -- Override PL/SQL call stack
 );
 /**
 
@@ -283,18 +285,18 @@ Log a message with the level 1 (error).
 **/
 
 function error (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default true  ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type;
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default true  ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type;
 /**
 
 Log a message with the level 1 (error). Returns the log ID.
@@ -304,17 +306,17 @@ Log a message with the level 1 (error). Returns the log ID.
 --------------------------------------------------------------------------------
 
 procedure warn (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  );
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  );
 /**
 
 Log a message with the level 2 (warning).
@@ -322,18 +324,18 @@ Log a message with the level 2 (warning).
 **/
 
 function warn (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type;
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type;
 /**
 
 Log a message with the level 2 (warning). Returns the log ID.
@@ -343,17 +345,17 @@ Log a message with the level 2 (warning). Returns the log ID.
 --------------------------------------------------------------------------------
 
 procedure info (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  );
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -361,18 +363,18 @@ Log a message with the level 3 (info).
 **/
 
 function info (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type;
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type;
 /**
 
 Log a message with the level 3 (info). Returns the log ID.
@@ -382,17 +384,17 @@ Log a message with the level 3 (info). Returns the log ID.
 --------------------------------------------------------------------------------
 
 procedure log (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  );
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  );
 /**
 
 Log a message with the level 3 (info).
@@ -400,18 +402,18 @@ Log a message with the level 3 (info).
 **/
 
 function log (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type;
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type;
 /**
 
 Log a message with the level 3 (info). Returns the log ID.
@@ -421,17 +423,17 @@ Log a message with the level 3 (info). Returns the log ID.
 --------------------------------------------------------------------------------
 
 procedure debug (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  );
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  );
 /**
 
 Log a message with the level 4 (debug).
@@ -439,18 +441,18 @@ Log a message with the level 4 (debug).
 **/
 
 function debug (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type;
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type;
 /**
 
 Log a message with the level 4 (debug). Returns the log ID.
@@ -460,17 +462,17 @@ Log a message with the level 4 (debug). Returns the log ID.
 --------------------------------------------------------------------------------
 
 procedure trace (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default true  ,
-  p_apex_env        in boolean  default true  ,
-  p_cgi_env         in boolean  default true  ,
-  p_console_env     in boolean  default true  ,
-  p_user_env        in boolean  default true  ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  );
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default true  ,
+   p_apex_env        in boolean  default true  ,
+   p_cgi_env         in boolean  default true  ,
+   p_console_env     in boolean  default true  ,
+   p_user_env        in boolean  default true  ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  );
 /**
 
 Log a message with the level 5 (trace).
@@ -478,18 +480,18 @@ Log a message with the level 5 (trace).
 **/
 
 function trace (
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default true  ,
-  p_apex_env        in boolean  default true  ,
-  p_cgi_env         in boolean  default true  ,
-  p_console_env     in boolean  default true  ,
-  p_user_env        in boolean  default true  ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type;
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default true  ,
+   p_apex_env        in boolean  default true  ,
+   p_cgi_env         in boolean  default true  ,
+   p_console_env     in boolean  default true  ,
+   p_user_env        in boolean  default true  ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type;
 /**
 
 Log a message with the level 5 (trace). Returns the log ID.
@@ -498,7 +500,8 @@ Log a message with the level 5 (trace). Returns the log ID.
 
 --------------------------------------------------------------------------------
 
-procedure count ( p_label in varchar2 default null );
+procedure count (
+   p_label in varchar2 default null );
 /**
 
 Creates a new counter with a value of one or adds one to an existing counter.
@@ -509,22 +512,22 @@ EXAMPLE
 
 ```sql
 declare
-  v_counter varchar2(30) := 'Processing xyz';
+   v_counter varchar2(30) := 'Processing xyz';
 begin
-  for i in 1 .. 10 loop
-    console.count(v_counter);
-  end loop;
-  console.count_current(v_counter); -- without optional message
+   for i in 1 .. 10 loop
+      console.count(v_counter);
+   end loop;
+   console.count_current(v_counter); -- without optional message
 
-  for i in 1 .. 100 loop
-    console.count(v_counter);
-  end loop;
-  console.count_current(v_counter, 'end of step two');
+   for i in 1 .. 100 loop
+      console.count(v_counter);
+   end loop;
+   console.count_current(v_counter, 'end of step two');
 
-  for i in 1 .. 1000 loop
-    console.count(v_counter);
-  end loop;
-  console.count_end(v_counter, 'end of step three');
+   for i in 1 .. 1000 loop
+      console.count(v_counter);
+   end loop;
+   console.count_end(v_counter, 'end of step three');
 end;
 {{/}}
 ```
@@ -540,7 +543,8 @@ current log level is 3 (info) or higher:
 
 --------------------------------------------------------------------------------
 
-procedure count_reset ( p_label in varchar2 default null );
+procedure count_reset (
+   p_label in varchar2 default null );
 /**
 
 Reset an existing counter or create a new one.
@@ -568,8 +572,8 @@ Also see procedure `count` above.
 --------------------------------------------------------------------------------
 
 procedure count_end (
-  p_label   in varchar2 default null ,
-  p_message in varchar2 default null );
+   p_label   in varchar2 default null ,
+   p_message in varchar2 default null );
 /**
 
 Log the current value of a counter, if the sessions log level is greater or
@@ -582,7 +586,7 @@ Also see procedure `count` above.
 --------------------------------------------------------------------------------
 
 function count_current (
-  p_label   in varchar2 default null )
+   p_label in varchar2 default null )
 return t_int;
 /**
 
@@ -602,21 +606,20 @@ EXAMPLE
 set serveroutput on
 
 begin
-  console.print('Counting nonsense...');
-  for i in 1 .. 1000 loop
-    if mod(i, 3) = 0 then
+   console.print('Counting nonsense...');
+   for i in 1 .. 1000 loop
+      if mod(i, 3) = 0 then
+         console.count;
+      end if;
+   end loop;
+   console.printf('Current value: %s', console.count_current );
+
+   console.count_reset;
+   for i in 1 .. 10 loop
       console.count;
-    end if;
-  end loop;
-  console.printf('Current value: %s', console.count_current );
-
-  console.count_reset;
-  for i in 1 .. 10 loop
-    console.count;
-  end loop;
-  console.printf('Final value: %s', console.count_end );
+   end loop;
+   console.printf('Final value: %s', console.count_end );
 end;
-
 {{/}}
 ```
 
@@ -633,7 +636,7 @@ Final value: 10
 --------------------------------------------------------------------------------
 
 function count_end (
-  p_label   in varchar2 default null )
+   p_label in varchar2 default null )
 return t_int;
 /**
 
@@ -648,7 +651,8 @@ Also see function `count_current` above.
 
 --------------------------------------------------------------------------------
 
-procedure time ( p_label in varchar2 default null );
+procedure time (
+   p_label in varchar2 default null );
 /**
 
 Create and a new timer. If the timer is already existing it will start again
@@ -660,25 +664,23 @@ EXAMPLE
 
 ```sql
 declare
-  v_timer varchar2(30) := 'Processing xyz';
+   v_timer varchar2(30) := 'Processing xyz';
 begin
+   --basic usage
+   console.time;
+   sys.dbms_session.sleep(0.1);
+   console.time_end; -- without optional label and message
 
-  --basic usage
-  console.time;
-  sys.dbms_session.sleep(0.1);
-  console.time_end; -- without optional label and message
+   console.time(v_timer);
 
-  console.time(v_timer);
+   sys.dbms_session.sleep(0.1);
+   console.time_current(v_timer); -- without optional message
 
-  sys.dbms_session.sleep(0.1);
-  console.time_current(v_timer); -- without optional message
+   sys.dbms_session.sleep(0.1);
+   console.time_current(v_timer, 'end of step two');
 
-  sys.dbms_session.sleep(0.1);
-  console.time_current(v_timer, 'end of step two');
-
-  sys.dbms_session.sleep(0.1);
-  console.time_end(v_timer, 'end of step three');
-
+   sys.dbms_session.sleep(0.1);
+   console.time_end(v_timer, 'end of step three');
 end;
 {{/}}
 ```
@@ -695,7 +697,8 @@ current log level is 3 (info) or higher:
 
 --------------------------------------------------------------------------------
 
-procedure time_reset ( p_label in varchar2 default null );
+procedure time_reset (
+   p_label in varchar2 default null );
 /**
 
 Reset an existing timer or create a new one.
@@ -725,8 +728,8 @@ Also see procedure `time` above.
 --------------------------------------------------------------------------------
 
 procedure time_end (
-  p_label   in varchar2 default null ,
-  p_message in varchar2 default null );
+   p_label   in varchar2 default null ,
+   p_message in varchar2 default null );
 /**
 
 Log the elapsed time and delete the timer, if the sessions log level is greater
@@ -738,7 +741,9 @@ Also see procedure `time` above.
 
 --------------------------------------------------------------------------------
 
-function time_current ( p_label in varchar2 default null ) return varchar2;
+function time_current (
+   p_label in varchar2 default null )
+   return varchar2;
 /**
 
 Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
@@ -761,19 +766,19 @@ EXAMPLE
 set serveroutput on
 
 begin
-  console.time;
+   console.time;
 
-  console.print('Processing step one...');
-  sys.dbms_session.sleep(0.1);
-  console.printf('Elapsed time: %s', console.time_current);
+   console.print('Processing step one...');
+   sys.dbms_session.sleep(0.1);
+   console.printf('Elapsed time: %s', console.time_current);
 
-  console.print('Processing step two...');
-  sys.dbms_session.sleep(0.1);
-  console.printf('Elapsed time: %s', console.time_current);
+   console.print('Processing step two...');
+   sys.dbms_session.sleep(0.1);
+   console.printf('Elapsed time: %s', console.time_current);
 
-  console.print('Processing step three...');
-  sys.dbms_session.sleep(0.1);
-  console.printf('Elapsed time: %s', console.time_end);
+   console.print('Processing step three...');
+   sys.dbms_session.sleep(0.1);
+   console.printf('Elapsed time: %s', console.time_end);
 end;
 {{/}}
 ```
@@ -793,7 +798,9 @@ Elapsed time: 00:00:00.313301
 
 --------------------------------------------------------------------------------
 
-function time_end ( p_label in varchar2 default null ) return varchar2;
+function time_end (
+   p_label in varchar2 default null )
+   return varchar2;
 /**
 
 Returns the elapsed time as varchar in the format 00:00:00.000000 or null, if
@@ -808,11 +815,11 @@ Also see function `time_current` above.
 --------------------------------------------------------------------------------
 
 procedure table# (
-  p_data_cursor       in sys_refcursor         ,
-  p_comment           in varchar2 default null ,
-  p_include_row_num   in boolean  default true ,
-  p_max_rows          in integer  default 100  ,
-  p_max_column_length in integer  default 1000 );
+   p_data_cursor       in sys_refcursor         ,
+   p_comment           in varchar2 default null ,
+   p_include_row_num   in boolean  default true ,
+   p_max_rows          in integer  default 100  ,
+   p_max_column_length in integer  default 1000 );
 /**
 
 Logs a cursor as a HTML table with the level 3 (info).
@@ -825,23 +832,23 @@ EXAMPLE
 
 ```sql
 declare
-  v_dataset sys_refcursor;
+   v_dataset sys_refcursor;
 begin
   -- Your business logic here...
 
   -- Debug code
-  if console.level_is_info then
-    open v_dataset for
-      select table_name,
-             tablespace_name,
-             logging,
-             num_rows,
-             last_analyzed,
-             partitioned,
-             has_identity
-        from user_tables;
-    console.table#(v_dataset);
-  end if;
+   if console.level_is_info then
+      open v_dataset for
+         select table_name,
+                tablespace_name,
+                logging,
+                num_rows,
+                last_analyzed,
+                partitioned,
+                has_identity
+           from user_tables;
+      console.table#(v_dataset);
+   end if;
 
   -- Your business logic here...
 end;
@@ -853,9 +860,8 @@ end;
 --------------------------------------------------------------------------------
 
 procedure assert (
-  p_expression in boolean,
-  p_message    in varchar2
-);
+   p_expression in boolean,
+   p_message    in varchar2 );
 /**
 
 If the given expression evaluates to false, an error is raised with the given
@@ -865,17 +871,16 @@ EXAMPLE
 
 ```sql
 declare
-  x number := 5;
-  y number := 3;
+   x number := 5;
+   y number := 3;
 begin
-  console.assert(
-    x < y,
-    'x should be less then y (x=' || to_char(x) || ', y=' || to_char(y) || ')'
-  );
+   console.assert (
+      x < y,
+      'x should be less then y (x=' || to_char(x) || ', y=' || to_char(y) || ')' );
 exception
-  when others then
-    console.error;
-    raise;
+   when others then
+      console.error;
+      raise;
 end;
 {{/}}
 ```
@@ -885,19 +890,18 @@ end;
 --------------------------------------------------------------------------------
 
 procedure assertf (
-  p_expression in boolean               ,
-  p_message    in varchar2              ,
-  p0           in varchar2 default null ,
-  p1           in varchar2 default null ,
-  p2           in varchar2 default null ,
-  p3           in varchar2 default null ,
-  p4           in varchar2 default null ,
-  p5           in varchar2 default null ,
-  p6           in varchar2 default null ,
-  p7           in varchar2 default null ,
-  p8           in varchar2 default null ,
-  p9           in varchar2 default null
-);
+   p_expression in boolean               ,
+   p_message    in varchar2              ,
+   p0           in varchar2 default null ,
+   p1           in varchar2 default null ,
+   p2           in varchar2 default null ,
+   p3           in varchar2 default null ,
+   p4           in varchar2 default null ,
+   p5           in varchar2 default null ,
+   p6           in varchar2 default null ,
+   p7           in varchar2 default null ,
+   p8           in varchar2 default null ,
+   p9           in varchar2 default null );
 /**
 
 If the given expression evaluates to false, an error is raised with the given
@@ -907,19 +911,18 @@ EXAMPLE
 
 ```sql
 declare
-  x number := 5;
-  y number := 3;
+   x number := 5;
+   y number := 3;
 begin
-  console.assertf(
-    x < y,
-    'x should be less then y (x=%s, y=%s)',
-    to_char(x),
-    to_char(y)
-  );
+   console.assertf (
+      x < y                                  ,
+      'x should be less then y (x=%s, y=%s)' ,
+      to_char(x)                             ,
+      to_char(y)                             );
 exception
-  when others then
-    console.error;
-    raise;
+   when others then
+      console.error;
+      raise;
 end;
 {{/}}
 ```
@@ -928,7 +931,9 @@ end;
 
 --------------------------------------------------------------------------------
 
-procedure add_param ( p_name in varchar2, p_value in varchar2                       );
+procedure add_param (
+   p_name  in varchar2,
+   p_value in varchar2 );
 /**
 
 Add a parameter to the package internal parameter collection which will be
@@ -962,102 +967,98 @@ EXAMPLE
 ```sql
 --create demo procedure
 create or replace procedure demo_proc (
-  p_01 varchar2                       ,
-  p_02 number                         ,
-  p_03 date                           ,
-  p_04 timestamp                      ,
-  p_05 timestamp with time zone       ,
-  p_06 timestamp with local time zone ,
-  p_07 interval year to month         ,
-  p_08 interval day to second         ,
-  p_09 boolean                        ,
-  p_10 clob                           ,
-  p_11 xmltype                        )
+   p_01 varchar2                       ,
+   p_02 number                         ,
+   p_03 date                           ,
+   p_04 timestamp                      ,
+   p_05 timestamp with time zone       ,
+   p_06 timestamp with local time zone ,
+   p_07 interval year to month         ,
+   p_08 interval day to second         ,
+   p_09 boolean                        ,
+   p_10 clob                           ,
+   p_11 xmltype                        )
 is
 begin
-  raise_application_error(-20999, 'Demo Error.');
+   raise_application_error(-20999, 'Demo Error.');
 exception
-  when others then
-    console.add_param('p_01', p_01);
-    console.add_param('p_02', p_02);
-    console.add_param('p_03', p_03);
-    console.add_param('p_04', p_04);
-    console.add_param('p_05', p_05);
-    console.add_param('p_06', p_06);
-    console.add_param('p_07', p_07);
-    console.add_param('p_08', p_08);
-    console.add_param('p_09', p_09);
-    console.add_param('p_10', p_10);
-    console.add_param('p_11', p_11);
+   when others then
+      console.add_param('p_01', p_01);
+      console.add_param('p_02', p_02);
+      console.add_param('p_03', p_03);
+      console.add_param('p_04', p_04);
+      console.add_param('p_05', p_05);
+      console.add_param('p_06', p_06);
 
-    -- Alternatively, chain the invocations like this:
-    console.add_param('p_12', p_12)
-      .add_param('p_13', p_13)
-      .add_param('p_14', p_14)
-      .add_param('p_15', p_15)
-      .add_param('p_16', p_16);
+      -- Alternatively, chain the invocations like this:
+      console
+         .add_param('p_07', p_07)
+         .add_param('p_08', p_08)
+         .add_param('p_09', p_09)
+         .add_param('p_10', p_10)
+         .add_param('p_11', p_11);
 
-    console.error('Ooops, something went wrong');
-    raise;
+      console.error('Ooops, something went wrong');
+      raise;
 end demo_proc;
 {{/}}
 
 --run demo procedure
 begin
-  demo_proc (
-    p_01 => 'test vc2'                             ,
-    p_02 => 1.23                                   ,
-    p_03 => sysdate                                ,
-    p_04 => systimestamp                           ,
-    p_05 => systimestamp                           ,
-    p_06 => localtimestamp                         ,
-    p_07 => interval '4-2' year to month           ,
-    p_08 => interval '7 6:12:42.123' day to second ,
-    p_09 => true                                   ,
-    p_10 => to_clob('test clob')                   ,
-    p_11 => xmltype('<test_xml/>')                 );
+   demo_proc (
+      p_01 => 'test vc2'                             ,
+      p_02 => 1.23                                   ,
+      p_03 => sysdate                                ,
+      p_04 => systimestamp                           ,
+      p_05 => systimestamp                           ,
+      p_06 => localtimestamp                         ,
+      p_07 => interval '4-2' year to month           ,
+      p_08 => interval '7 6:12:42.123' day to second ,
+      p_09 => true                                   ,
+      p_10 => to_clob('test clob')                   ,
+      p_11 => xmltype('<test_xml/>')                 );
 end;
 {{/}}
 ```
 
 **/
-function add_param ( p_name  in varchar2 ,p_value in varchar2      ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in varchar2                       ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in number                         );
-function add_param ( p_name  in varchar2 ,p_value in number        ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in number                         ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in date                           );
-function add_param ( p_name  in varchar2 ,p_value in date          ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in date                           ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp                      );
-function add_param ( p_name  in varchar2 ,p_value in timestamp     ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in timestamp                      ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp with time zone       );
-function add_param ( p_name  in varchar2 ,p_value in timestamp with time zone ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in timestamp with time zone       ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in timestamp with local time zone );
-function add_param ( p_name  in varchar2 ,p_value in timestamp with local time zone ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in timestamp with local time zone ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in interval year to month         );
-function add_param ( p_name  in varchar2 ,p_value in interval year to month ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in interval year to month         ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in interval day to second         );
-function add_param ( p_name  in varchar2 ,p_value in interval day to second ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in interval day to second         ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in boolean                        );
-function add_param ( p_name  in varchar2 ,p_value in boolean       ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in boolean                        ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in clob                           );
-function add_param ( p_name  in varchar2 ,p_value in clob          ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in clob                           ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in xmltype                        );
-function add_param ( p_name  in varchar2 ,p_value in xmltype       ) return t_console;
+function  add_param ( p_name in varchar2 ,p_value in xmltype                        ) return t_console;
 
 --------------------------------------------------------------------------------
 
 function format (
-  p_message in varchar2              ,
-  p0        in varchar2 default null ,
-  p1        in varchar2 default null ,
-  p2        in varchar2 default null ,
-  p3        in varchar2 default null ,
-  p4        in varchar2 default null ,
-  p5        in varchar2 default null ,
-  p6        in varchar2 default null ,
-  p7        in varchar2 default null ,
-  p8        in varchar2 default null ,
-  p9        in varchar2 default null )
-return varchar2;
+   p_message in varchar2              ,
+   p0        in varchar2 default null ,
+   p1        in varchar2 default null ,
+   p2        in varchar2 default null ,
+   p3        in varchar2 default null ,
+   p4        in varchar2 default null ,
+   p5        in varchar2 default null ,
+   p6        in varchar2 default null ,
+   p7        in varchar2 default null ,
+   p8        in varchar2 default null ,
+   p9        in varchar2 default null )
+   return varchar2;
 /**
 
 Formats a message with the following rules:
@@ -1073,7 +1074,8 @@ Formats a message with the following rules:
 
 --------------------------------------------------------------------------------
 
-procedure action ( p_action in varchar2 );
+procedure action (
+   p_action in varchar2 );
 /**
 
 An alias for dbms_application_info.set_action.
@@ -1091,14 +1093,14 @@ EXAMPLE
 
 ```sql
 begin
-  console.action('My process/task');
-  -- do your stuff here...
-  console.action(null);
+   console.action('My process/task');
+   -- do your stuff here...
+   console.action(null);
 exception
-  when others then
-    console.error('something went wrong');
-    console.action(null);
-    raise;
+   when others then
+      console.error('something went wrong');
+      console.action(null);
+      raise;
 end;
 {{/}}
 ```
@@ -1108,9 +1110,8 @@ end;
 --------------------------------------------------------------------------------
 
 procedure module (
-  p_module in varchar2,
-  p_action in varchar2 default null
-);
+   p_module in varchar2,
+   p_action in varchar2 default null );
 /**
 
 An alias for dbms_application_info.set_module.
@@ -1127,21 +1128,57 @@ to only set the action attribute with the `action` (see below).
 
 --------------------------------------------------------------------------------
 
-function level_error     return integer; /** Returns the number code for the level 1 error.     **/
-function level_warning   return integer; /** Returns the number code for the level 2 warning.   **/
-function level_info      return integer; /** Returns the number code for the level 3 info.      **/
-function level_debug     return integer; /** Returns the number code for the level 4 debug.     **/
-function level_trace     return integer; /** Returns the number code for the level 5 trace.     **/
+function level_error
+ return integer;
+/** Returns the number code for the level 1 error. **/
 
-function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
-function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
-function level_is_debug   return boolean; /** Returns true when the level is greater than or equal debug, otherwise false.   **/
-function level_is_trace   return boolean; /** Returns true when the level is greater than or equal trace, otherwise false.   **/
+function level_warning
+   return integer;
+/** Returns the number code for the level 2 warning. **/
 
-function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
-function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
-function level_is_debug_yn   return varchar2; /** Returns 'Y' when the level is greater than or equal debug, otherwise 'N'.   **/
-function level_is_trace_yn   return varchar2; /** Returns 'Y' when the level is greater than or equal trace, otherwise 'N'.   **/
+function level_info
+   return integer;
+/** Returns the number code for the level 3 info. **/
+
+function level_debug
+   return integer;
+/** Returns the number code for the level 4 debug. **/
+
+function level_trace
+   return integer;
+/** Returns the number code for the level 5 trace. **/
+
+function level_is_warning
+   return boolean;
+/** Returns true when the level is greater than or equal warning, otherwise false. **/
+
+function level_is_info
+   return boolean;
+/** Returns true when the level is greater than or equal info, otherwise false. **/
+
+function level_is_debug
+   return boolean;
+/** Returns true when the level is greater than or equal debug, otherwise false. **/
+
+function level_is_trace
+   return boolean;
+/** Returns true when the level is greater than or equal trace, otherwise false. **/
+
+function level_is_warning_yn
+   return varchar2;
+/** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
+
+function level_is_info_yn
+   return varchar2;
+/** Returns 'Y' when the level is greater than or equal info, otherwise 'N'. **/
+
+function level_is_debug_yn
+   return varchar2;
+/** Returns 'Y' when the level is greater than or equal debug, otherwise 'N'. **/
+
+function level_is_trace_yn
+   return varchar2;
+/** Returns 'Y' when the level is greater than or equal trace, otherwise 'N'. **/
 
 
 --------------------------------------------------------------------------------
@@ -1150,8 +1187,9 @@ function level_is_trace_yn   return varchar2; /** Returns 'Y' when the level is 
 
 $if $$apex_installed $then
 
-function apex_error_handling ( p_error in apex_error.t_error )
-return apex_error.t_error_result;
+function apex_error_handling (
+   p_error in apex_error.t_error )
+   return apex_error.t_error_result;
 /**
 
 You can register this example APEX error handler function to log APEX internal
@@ -1171,9 +1209,9 @@ reimplement an own function and use that instead.
 **/
 
 function apex_plugin_render (
-  p_dynamic_action in apex_plugin.t_dynamic_action ,
-  p_plugin         in apex_plugin.t_plugin         )
-return apex_plugin.t_dynamic_action_render_result;
+   p_dynamic_action in apex_plugin.t_dynamic_action ,
+   p_plugin         in apex_plugin.t_plugin         )
+   return apex_plugin.t_dynamic_action_render_result;
 /**
 
 Used for the APEX plugin to capture frontend JavaScript errors.
@@ -1184,9 +1222,9 @@ referenced in the plug-in as a callback to `console.apex_plugin_render`.
 
 **/
 function apex_plugin_ajax (
-  p_dynamic_action in apex_plugin.t_dynamic_action ,
-  p_plugin         in apex_plugin.t_plugin         )
-return apex_plugin.t_dynamic_action_ajax_result;
+   p_dynamic_action in apex_plugin.t_dynamic_action ,
+   p_plugin         in apex_plugin.t_plugin         )
+   return apex_plugin.t_dynamic_action_ajax_result;
 /**
 
 Used for the APEX plugin to capture frontend JavaScript errors.
@@ -1202,10 +1240,9 @@ $end
 --------------------------------------------------------------------------------
 
 procedure conf (
-  p_level            in integer default null , -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_check_interval   in integer default null , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_enable_ascii_art in boolean default null   -- Currently used to have more fun with the APEX error handling messages. But who knows...
-);
+   p_level            in integer default null ,  -- Level 1 (error), 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+   p_check_interval   in integer default null ,  -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+   p_enable_ascii_art in boolean default null ); -- Currently used to have more fun with the APEX error handling messages. But who knows...
 /**
 
 Set the global console configuration.
@@ -1223,10 +1260,9 @@ exec console.conf(p_level => console.c_level_warning);
 
 --set multiple options at once
 begin
-  console.conf(
-    p_level             => console.c_level_info,
-    p_check_interval    => 10
-  );
+   console.conf (
+      p_level          => console.c_level_info,
+      p_check_interval => 10 );
 end;
 {{/}}
 ```
@@ -1236,16 +1272,15 @@ end;
 --------------------------------------------------------------------------------
 
 procedure init (
-  p_client_identifier in varchar2                                  , -- The client identifier provided by the application or console itself.
-  p_level             in integer  default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration          in integer  default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_check_interval    in integer  default c_check_interval_default , -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack        in boolean  default false                    , -- Should the call stack be included.
-  p_user_env          in boolean  default false                    , -- Should the user environment be included.
-  p_apex_env          in boolean  default false                    , -- Should the APEX environment be included.
-  p_cgi_env           in boolean  default false                    , -- Should the CGI environment be included.
-  p_console_env       in boolean  default false                      -- Should the console environment be included.
-);
+   p_client_identifier in varchar2                                  ,  -- The client identifier provided by the application or console itself.
+   p_level             in integer  default c_level_info             ,  -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+   p_duration          in integer  default c_duration_default       ,  -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
+   p_check_interval    in integer  default c_check_interval_default ,  -- The number of seconds a session looks for a changed configuration. Allowed values: 1 to 60 seconds.
+   p_call_stack        in boolean  default false                    ,  -- Should the call stack be included.
+   p_user_env          in boolean  default false                    ,  -- Should the user environment be included.
+   p_apex_env          in boolean  default false                    ,  -- Should the APEX environment be included.
+   p_cgi_env           in boolean  default false                    ,  -- Should the CGI environment be included.
+   p_console_env       in boolean  default false                    ); -- Should the console environment be included.
 /**
 
 Init/set the preferences for a specific session/client_identifier and duration.
@@ -1277,11 +1312,10 @@ exec console.init('OGOBRECHT:8805903776765', 4, 90);
 
 -- ...with named parameters
 begin
-  console.init(
-    p_client_identifier => 'OGOBRECHT:8805903776765',
-    p_level             => console.c_level_debug,
-    p_duration          => 15
-  );
+   console.init(
+      p_client_identifier => 'OGOBRECHT:8805903776765',
+      p_level             => console.c_level_debug,
+      p_duration          => 15 );
 end;
 {{/}}
 ```
@@ -1289,15 +1323,14 @@ end;
 **/
 
 procedure init (
-  p_level          in integer default c_level_info             , -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
-  p_duration       in integer default c_duration_default       , -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
-  p_check_interval in integer default c_check_interval_default , -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
-  p_call_stack     in boolean default false                    , -- Should the call stack be included.
-  p_user_env       in boolean default false                    , -- Should the user environment be included.
-  p_apex_env       in boolean default false                    , -- Should the APEX environment be included.
-  p_cgi_env        in boolean default false                    , -- Should the CGI environment be included.
-  p_console_env    in boolean default false                      -- Should the console environment be included.
-);
+   p_level          in integer default c_level_info             ,  -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
+   p_duration       in integer default c_duration_default       ,  -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
+   p_check_interval in integer default c_check_interval_default ,  -- The number of seconds a session in logging mode looks for a changed configuration. Allowed values: 1 to 60 seconds.
+   p_call_stack     in boolean default false                    ,  -- Should the call stack be included.
+   p_user_env       in boolean default false                    ,  -- Should the user environment be included.
+   p_apex_env       in boolean default false                    ,  -- Should the APEX environment be included.
+   p_cgi_env        in boolean default false                    ,  -- Should the CGI environment be included.
+   p_console_env    in boolean default false                    ); -- Should the console environment be included.
 /**
 
 An overloaded procedure for easier initialization of the own
@@ -1306,8 +1339,7 @@ session/client_identifier in an development IDE.
 **/
 
 procedure exit (
-  p_client_identifier in varchar2 default my_client_identifier -- The client identifier provided by the application or console itself.
-);
+   p_client_identifier in varchar2 default my_client_identifier ); -- The client identifier provided by the application or console itself.
 /**
 
 Exit/unset the preferences for a specific session/client_identifier.
@@ -1344,7 +1376,8 @@ exec console.exit_all;
 
 --------------------------------------------------------------------------------
 
-function version return varchar2;
+function version
+   return varchar2;
 /**
 
 Returns the version information from the console package.
@@ -1358,9 +1391,8 @@ select console.version from dual;
 --------------------------------------------------------------------------------
 
 procedure generate_param_trace (
-  p_program in varchar2              , -- The package and/or program name ('some_api.do_stuff').
-  p_level   in pls_integer default 3   -- The level you want to use for the parameter tracing.
-);
+   p_program in varchar2              ,  -- The package and/or program name ('some_api.do_stuff').
+   p_level   in pls_integer default 3 ); -- The level you want to use for the parameter tracing.
 /**
 
 Generates parameter tracing code for you.
@@ -1375,10 +1407,9 @@ exec console.generate_param_trace('some api.do stuff');
 exec console.generate_param_trace('Some_API.do_stuff', 3);
 exec console.generate_param_trace('SOME_API.DO_STUFF', console.c_level_info);
 begin
-  console.generate_param_trace(
-    p_program => 'SOME_API.DO_STUFF',
-    p_level   => console.c_level_info
-  );
+   console.generate_param_trace (
+      p_program => 'SOME_API.DO_STUFF',
+      p_level   => console.c_level_info );
 end;
 {{/}}
 ```
@@ -1387,12 +1418,12 @@ EXAMPLE 1
 
 ```sql
 create or replace function demo_func (
-  p_01 in     varchar2 ,
-  p_02 in     number   ,
-  p_03 in     date     )
-return varchar2 is
+   p_01 in     varchar2 ,
+   p_02 in     number   ,
+   p_03 in     date     )
+   return varchar2 is
 begin
-  null; --YOUR CODE HERE
+   null; --YOUR CODE HERE
 end demo_func;
 {{/}}
 set serveroutput on
@@ -1410,32 +1441,32 @@ This will output something like:
 -- Object Name  : DEMO_FUNC
 --------------------------------------------------------
 declare
-  procedure console_add_in_params is
-  begin
-    console.add_param('p_01', p_01);
-    console.add_param('p_02', p_02);
-    console.add_param('p_03', p_03);
-  end console_add_in_params;
-  procedure console_add_out_params is
-  begin
-    console.add_param('your_return_value', your_return_value);
-  end console_add_out_params;
+   procedure console_add_in_params is
+   begin
+      console.add_param('p_01', p_01);
+      console.add_param('p_02', p_02);
+      console.add_param('p_03', p_03);
+   end console_add_in_params;
+   procedure console_add_out_params is
+   begin
+      console.add_param('your_return_value', your_return_value);
+   end console_add_out_params;
 begin
-  console_add_in_params;
-  console.info('ENTER');
-  --------------------
-  -- YOUR CODE HERE
-  --------------------
-  console_add_out_params;
-  console.info('LEAVE');
-  ----------------------
-  -- YOUR RETURN HERE
-  ----------------------
+   console_add_in_params;
+   console.info('ENTER');
+   --------------------
+   -- YOUR CODE HERE
+   --------------------
+   console_add_out_params;
+   console.info('LEAVE');
+   ----------------------
+   -- YOUR RETURN HERE
+   ----------------------
 exception
-  when others then
-    console_add_out_params;
-    console.error;
-    raise;
+   when others then
+      console_add_out_params;
+      console.error;
+      raise;
 end;
 {{/}}
 ```
@@ -1448,22 +1479,22 @@ EXAMPLE 2
 
 ```sql
 create or replace procedure demo_proc (
-  p_01 in     varchar2                       ,
-  p_02 in     number                         ,
-  p_03 in     date                           ,
-  p_04 in     timestamp                      ,
-  p_05 in     timestamp with time zone       ,
-  p_06 in     timestamp with local time zone ,
-  p_07 in     interval year to month         ,
-  p_08 in     interval day to second         ,
-  p_09 in     boolean                        ,
-  p_10 in out clob                           ,
-  p_11 in out xmltype                        ,
-  p_12 in out console.t_client_prefs_row     ,
-  p_13 in out console.t_client_prefs_tab     )
+   p_01 in     varchar2                       ,
+   p_02 in     number                         ,
+   p_03 in     date                           ,
+   p_04 in     timestamp                      ,
+   p_05 in     timestamp with time zone       ,
+   p_06 in     timestamp with local time zone ,
+   p_07 in     interval year to month         ,
+   p_08 in     interval day to second         ,
+   p_09 in     boolean                        ,
+   p_10 in out clob                           ,
+   p_11 in out xmltype                        ,
+   p_12 in out console.t_client_prefs_row     ,
+   p_13 in out console.t_client_prefs_tab     )
 is
 begin
-  null; --YOUR CODE HERE
+   null; --YOUR CODE HERE
 end demo_proc;
 {{/}}
 set serveroutput on
@@ -1481,42 +1512,46 @@ This will output something like:
 -- Object Name  : DEMO_PROC
 --------------------------------------------------------
 declare
-  procedure console_add_in_params is
-  begin
-    console.add_param('p_01', p_01);
-    console.add_param('p_02', p_02);
-    console.add_param('p_03', p_03);
-    console.add_param('p_04', p_04);
-    console.add_param('p_05', p_05);
-    console.add_param('p_06', p_06);
-    console.add_param('p_07', p_07);
-    console.add_param('p_08', p_08);
-    console.add_param('p_09', p_09);
-    console.add_param('p_10', p_10);
-    console.add_param('p_11', p_11);
-    --unsupported data type PL/SQL RECORD: console.add_param('p_12', p_12);
-    --unsupported data type TABLE: console.add_param('p_13', p_13);
-  end console_add_in_params;
-  procedure console_add_out_params is
-  begin
-    console.add_param('p_10', p_10);
-    console.add_param('p_11', p_11);
-    --unsupported data type PL/SQL RECORD: console.add_param('p_12', p_12);
-    --unsupported data type TABLE: console.add_param('p_13', p_13);
-  end console_add_out_params;
+   procedure console_add_in_params
+   is
+   begin
+      console
+         .add_param('p_01', p_01);
+         .add_param('p_02', p_02);
+         .add_param('p_03', p_03);
+         .add_param('p_04', p_04);
+         .add_param('p_05', p_05);
+         .add_param('p_06', p_06);
+         .add_param('p_07', p_07);
+         .add_param('p_08', p_08);
+         .add_param('p_09', p_09);
+         .add_param('p_10', p_10);
+         .add_param('p_11', p_11);
+         --unsupported data type PL/SQL RECORD: .add_param('p_12', p_12);
+         --unsupported data type TABLE: .add_param('p_13', p_13);
+   end console_add_in_params;
+   procedure console_add_out_params
+   is
+   begin
+      console
+         .add_param('p_10', p_10);
+         .add_param('p_11', p_11);
+         --unsupported data type PL/SQL RECORD: .add_param('p_12', p_12);
+         --unsupported data type TABLE: .add_param('p_13', p_13);
+   end console_add_out_params;
 begin
-  console_add_in_params;
-  console.info('ENTER');
-  --------------------
-  -- YOUR CODE HERE
-  --------------------
-  console_add_out_params;
-  console.info('LEAVE');
+   console_add_in_params;
+   console.info('ENTER');
+   --------------------
+   -- YOUR CODE HERE
+   --------------------
+   console_add_out_params;
+   console.info('LEAVE');
 exception
-  when others then
-    console_add_out_params;
-    console.error;
-    raise;
+   when others then
+      console_add_out_params;
+      console.error;
+      raise;
 end;
 {{/}}
 ```
@@ -1529,9 +1564,9 @@ will be commented out.
 --------------------------------------------------------------------------------
 
 function split_to_table (
-  p_string in varchar2             , -- The string to split into a table.
-  p_sep    in varchar2 default ','   -- The separator.
-) return t_vc2_tab pipelined;
+   p_string in varchar2             , -- The string to split into a table.
+   p_sep    in varchar2 default ',' ) -- The separator.
+   return t_vc2_tab pipelined;
 /**
 
 Splits a string into a (pipelined) SQL table of varchar2.
@@ -1555,9 +1590,9 @@ select * from console.split_to_table('1,2,3');
 --------------------------------------------------------------------------------
 
 function split (
-  p_string in varchar2             , -- The string to split into an array.
-  p_sep    in varchar2 default ','   -- The separator.
-) return t_vc2_tab_i;
+   p_string in varchar2             , -- The string to split into an array.
+   p_sep    in varchar2 default ',' ) -- The separator.
+   return t_vc2_tab_i;
 /**
 
 Splits a string into a PL/SQL associative array.
@@ -1569,12 +1604,12 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_array console.t_vc2_tab_i;
+   v_array console.t_vc2_tab_i;
 begin
-  v_array := console.split('A,B,C');
-  for i in 1 .. v_array.count loop
-    console.print(i||': '||v_array(i));
-  end loop;
+   v_array := console.split('A,B,C');
+   for i in 1 .. v_array.count loop
+      console.print(i||': '||v_array(i));
+   end loop;
 end;
 {{/}}
 
@@ -1588,9 +1623,9 @@ end;
 --------------------------------------------------------------------------------
 
 function join (
-  p_table in t_vc2_tab_i          , -- The PL/SQL array to join into a string.
-  p_sep   in varchar2 default ','   -- The separator.
-) return varchar2;
+   p_table in t_vc2_tab_i          , -- The PL/SQL array to join into a string.
+   p_sep   in varchar2 default ',' ) -- The separator.
+   return varchar2;
 /**
 
 Joins a PL/SQL associative array into a string.
@@ -1599,7 +1634,9 @@ Joins a PL/SQL associative array into a string.
 
 --------------------------------------------------------------------------------
 
-function to_yn ( p_bool in boolean ) return varchar2;
+function to_yn (
+   p_bool in boolean )
+   return varchar2;
 /**
 
 Converts a boolean value to a string.
@@ -1611,7 +1648,9 @@ the input is null.
 
 --------------------------------------------------------------------------------
 
-function to_string ( p_bool in boolean ) return varchar2;
+function to_string (
+   p_bool in boolean )
+   return varchar2;
 /**
 
 Converts a boolean value to a string.
@@ -1623,7 +1662,9 @@ when the input is null.
 
 --------------------------------------------------------------------------------
 
-function to_bool ( p_string in varchar2 ) return boolean;
+function to_bool (
+   p_string in varchar2 )
+   return boolean;
 /**
 
 Converts a string to a boolean value.
@@ -1637,12 +1678,12 @@ cases null is returned.
 --------------------------------------------------------------------------------
 
 function to_html_table (
-  p_data_cursor       in sys_refcursor         ,
-  p_comment           in varchar2 default null ,
-  p_include_row_num   in boolean  default true ,
-  p_max_rows          in integer  default 100  ,
-  p_max_column_length in integer  default 1000 )
-return clob;
+   p_data_cursor       in sys_refcursor         ,
+   p_comment           in varchar2 default null ,
+   p_include_row_num   in boolean  default true ,
+   p_max_rows          in integer  default 100  ,
+   p_max_column_length in integer  default 1000 )
+   return clob;
 /**
 
 Helper to convert a cursor to a HTML table.
@@ -1657,15 +1698,15 @@ EXAMPLES 1 - Open cursor in advance
 
 ```sql
 declare
-  v_dataset sys_refcursor;
+   v_dataset sys_refcursor;
 begin
-  -- Your business logic here.
+   -- Your business logic here.
 
-  -- Debug code
-  if console.level_is_info then
-    open v_dataset for select * from user_tables;
-    console.info(console.to_html_table(v_dataset));
-  end if;
+   -- Debug code
+   if console.level_is_info then
+      open v_dataset for select * from user_tables;
+      console.info(console.to_html_table(v_dataset));
+   end if;
 end;
 {{/}}
 ```
@@ -1674,17 +1715,17 @@ EXAMPLES 2 - Open cursor in for loop
 
 ```sql
 begin
-  -- Your business logic here.
+   -- Your business logic here.
 
-  -- Debug code
-  if console.my_log_level >= console.c_level_info then
-    for i in (
-      select console.to_html_table(cursor(select * from user_tables)) as html
-        from dual )
-    loop
-      console.info(i.html);
-    end loop;
-  end if;
+   -- Debug code
+   if console.my_log_level >= console.c_level_info then
+      for i in (
+         select console.to_html_table(cursor(select * from user_tables)) as html
+         from dual )
+      loop
+         console.info(i.html);
+      end loop;
+   end if;
 end;
 {{/}}
 ```
@@ -1694,8 +1735,8 @@ end;
 --------------------------------------------------------------------------------
 
 function to_md_code_block (
-  p_text in varchar2 )
-return varchar2;
+   p_text in varchar2 )
+   return varchar2;
 /**
 
 Converts the given text to a Markdown code block by indent each line with four
@@ -1706,9 +1747,9 @@ spaces.
 --------------------------------------------------------------------------------
 
 function to_md_tab_header (
-  p_key   in varchar2 default 'Attribute' ,
-  p_value in varchar2 default 'Value'     )
-return varchar2;
+   p_key   in varchar2 default 'Attribute' ,
+   p_value in varchar2 default 'Value'     )
+   return varchar2;
 /**
 
 Converts the given key and value strings to a Markdown table header.
@@ -1723,11 +1764,11 @@ Converts the given key and value strings to a Markdown table header.
 **/
 
 function to_md_tab_data (
-  p_key              in varchar2               ,
-  p_value            in varchar2               ,
-  p_value_max_length in integer  default 1000  ,
-  p_show_null_values in boolean  default false )
-return varchar2;
+   p_key              in varchar2               ,
+   p_value            in varchar2               ,
+   p_value_max_length in integer  default 1000  ,
+   p_show_null_values in boolean  default false )
+   return varchar2;
 /**
 
 Converts the given key and value strings to a Markdown table data row.
@@ -1745,11 +1786,11 @@ following Markdown table row:
 **/
 
 function to_unibar (
-  p_value                   in number            ,
-  p_scale                   in number default 1  ,
-  p_width_block_characters  in number default 25 ,
-  p_fill_scale              in number default 0
-) return varchar2 deterministic;
+   p_value                   in number            ,
+   p_scale                   in number default 1  ,
+   p_width_block_characters  in number default 25 ,
+   p_fill_scale              in number default 0  )
+   return varchar2 deterministic;
 /**
 
 Returns a text bar consisting of unicode block characters.
@@ -1785,7 +1826,8 @@ Bla bla bla            .54 █████████████▌
 
 --------------------------------------------------------------------------------
 
-procedure print ( p_message in varchar2 );
+procedure print (
+   p_message in varchar2 );
 /**
 
 An alias for dbms_output.put_line.
@@ -1797,26 +1839,26 @@ Writing dbms_output.put_line is very annoying for me...
 --------------------------------------------------------------------------------
 
 procedure printf (
-  p_message in varchar2              ,
-  p0        in varchar2 default null ,
-  p1        in varchar2 default null ,
-  p2        in varchar2 default null ,
-  p3        in varchar2 default null ,
-  p4        in varchar2 default null ,
-  p5        in varchar2 default null ,
-  p6        in varchar2 default null ,
-  p7        in varchar2 default null ,
-  p8        in varchar2 default null ,
-  p9        in varchar2 default null );
+   p_message in varchar2              ,
+   p0        in varchar2 default null ,
+   p1        in varchar2 default null ,
+   p2        in varchar2 default null ,
+   p3        in varchar2 default null ,
+   p4        in varchar2 default null ,
+   p5        in varchar2 default null ,
+   p6        in varchar2 default null ,
+   p7        in varchar2 default null ,
+   p8        in varchar2 default null ,
+   p9        in varchar2 default null );
 /**
 
 A shorthand for
 
 ```
 begin
-  console.print(console.format('A string with %s %s.', 'dynamic', 'content'));
-  --is equivalent to
-  console.printf('A string with %s %s.', 'dynamic', 'content');
+   console.print(console.format('A string with %s %s.', 'dynamic', 'content'));
+   --is equivalent to
+   console.printf('A string with %s %s.', 'dynamic', 'content');
 end;
 {{/}}
 ```
@@ -1827,7 +1869,9 @@ Also see [console.format](#function-format)
 
 --------------------------------------------------------------------------------
 
-function  runtime ( p_start in timestamp ) return varchar2;
+function  runtime (
+   p_start in timestamp )
+   return varchar2;
 /**
 
 Returns a string in the format hh24:mi:ss.ff6 (for example 00:00:01.123456).
@@ -1854,7 +1898,9 @@ end;
 
 --------------------------------------------------------------------------------
 
-function runtime_seconds ( p_start in timestamp ) return number;
+function runtime_seconds (
+   p_start in timestamp )
+   return number;
 /**
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
@@ -1865,13 +1911,13 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_start timestamp := localtimestamp;
+   v_start timestamp := localtimestamp;
 begin
 
-  --do your stuff here
+   --do your stuff here
 
-  dbms_output.put_line (
-    'Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)) );
+   dbms_output.put_line (
+      'Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)) );
 end;
 {{/}}
 ```
@@ -1880,7 +1926,9 @@ end;
 
 --------------------------------------------------------------------------------
 
-function runtime_milliseconds ( p_start in timestamp ) return number;
+function runtime_milliseconds (
+   p_start in timestamp )
+   return number;
 /**
 
 Subtracts the start `localtimestamp` from the current `localtimestamp` and
@@ -1891,13 +1939,13 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_start timestamp := localtimestamp;
+   v_start timestamp := localtimestamp;
 begin
 
-  --do your stuff here
+   --do your stuff here
 
-  dbms_output.put_line (
-    'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(v_start)) );
+   dbms_output.put_line (
+      'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(v_start)) );
 end;
 {{/}}
 ```
@@ -1906,7 +1954,9 @@ end;
 
 --------------------------------------------------------------------------------
 
-function level_name (p_level in integer) return varchar2 deterministic;
+function level_name (
+   p_level in integer)
+   return varchar2 deterministic;
 /**
 
 Returns the level name for a given level id and null, if the level is not
@@ -1916,7 +1966,8 @@ between 0 and 4.
 
 --------------------------------------------------------------------------------
 
-function scope return varchar2;
+function scope
+   return varchar2;
 /**
 
 Get the current scope (method, line number) from the call stack.
@@ -1928,7 +1979,8 @@ log entry.
 
 --------------------------------------------------------------------------------
 
-function call_stack return varchar2;
+function call_stack
+   return varchar2;
 /**
 
 Get the current call stack (and error stack/backtrace, if available).
@@ -1941,7 +1993,8 @@ trace).
 
 --------------------------------------------------------------------------------
 
-function apex_env return clob;
+function apex_env
+   return clob;
 /**
 
 Get the current APEX environment.
@@ -1953,7 +2006,8 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function cgi_env return varchar2;
+function cgi_env
+   return varchar2;
 /**
 
 Get the current CGI environment.
@@ -1965,7 +2019,8 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function user_env return varchar2;
+function user_env
+   return varchar2;
 /**
 
 Get the current user environment.
@@ -1977,7 +2032,8 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 
-function console_env return varchar2;
+function console_env
+   return varchar2;
 /**
 
 Get the current console environment.
@@ -1989,9 +2045,9 @@ when requested by one of the logging methods.
 
 --------------------------------------------------------------------------------
 procedure clob_append (
-  p_clob  in out nocopy clob     ,
-  p_cache in out nocopy varchar2 ,
-  p_text  in            varchar2 );
+   p_clob  in out nocopy clob     ,
+   p_cache in out nocopy varchar2 ,
+   p_text  in            varchar2 );
 /**
 
 High performance clob concatenation. Also see clob_flush_cache below.
@@ -2004,16 +2060,16 @@ EXAMPLE
 ```sql
 set serveroutput on feedback off
 declare
-  v_start  timestamp := localtimestamp;
-  v_clob   clob;
-  v_cache  varchar2(32767 char);
+   v_start  timestamp := localtimestamp;
+   v_clob   clob;
+   v_cache  varchar2(32767 char);
 begin
-  for i in 1..100000 loop
-    console.clob_append(v_clob, v_cache, 'a');
-  end loop;
-  console.clob_flush_cache(v_clob, v_cache);
-  dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)));
-  dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
+   for i in 1..100000 loop
+      console.clob_append(v_clob, v_cache, 'a');
+   end loop;
+   console.clob_flush_cache(v_clob, v_cache);
+   dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)));
+   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
 end;
 {{/}}
 ```
@@ -2021,9 +2077,9 @@ end;
 **/
 
 procedure clob_append (
-  p_clob  in out nocopy clob     ,
-  p_cache in out nocopy varchar2 ,
-  p_text  in            clob     );
+   p_clob  in out nocopy clob     ,
+   p_cache in out nocopy varchar2 ,
+   p_text  in            clob     );
 /**
 
 High performance clob concatenation.
@@ -2034,8 +2090,8 @@ beeing a varchar2 parameter and clob_flush_cache below.
 **/
 
 procedure clob_flush_cache (
-  p_clob  in out nocopy clob     ,
-  p_cache in out nocopy varchar2 );
+   p_clob  in out nocopy clob     ,
+   p_cache in out nocopy varchar2 );
 /**
 
 Flushes finally the cache in a high performance clob concatenation.
@@ -2046,7 +2102,8 @@ Also see clob_append above.
 
 --------------------------------------------------------------------------------
 
-function status return t_attribute_value_tab pipelined;
+function status
+   return t_attribute_value_tab pipelined;
 /**
 
 View the current package status (config, number entries cache/timer/counter,
@@ -2062,7 +2119,8 @@ select * from console.status();
 
 --------------------------------------------------------------------------------
 
-function conf return t_attribute_value_tab pipelined;
+function conf
+   return t_attribute_value_tab pipelined;
 /**
 
 View the global console configuration.
@@ -2077,7 +2135,8 @@ select * from console.conf();
 
 --------------------------------------------------------------------------------
 
-function client_prefs return t_client_prefs_tab pipelined;
+function client_prefs
+   return t_client_prefs_tab pipelined;
 /**
 
 View the client preferences.
@@ -2092,8 +2151,8 @@ select * from console.client_prefs();
 
 --------------------------------------------------------------------------------
 procedure purge (
-  p_min_level in integer default c_level_info, -- Delete log entries greater or equal the given level.
-  p_min_days  in number  default 30 );         -- Delete log entries older than the given minimum days.
+   p_min_level in integer default c_level_info ,  -- Delete log entries greater or equal the given level.
+   p_min_days  in number  default 30           ); -- Delete log entries older than the given minimum days.
 /**
 
 Deletes log entries for the given condition.
@@ -2130,10 +2189,10 @@ exec console.purge_all;
 **/
 
 procedure purge_job_create (
-  p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' , -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
-  p_min_level       in integer  default c_level_info           , -- Delete log entries greater or equal the given level.
-  p_min_days        in number   default 30                       -- Delete log entries older than the given minimum days.
-);
+   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,  -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
+   p_min_level       in integer  default c_level_info           ,  -- Delete log entries greater or equal the given level.
+   p_min_days        in number   default 30                     ); -- Delete log entries older than the given minimum days.
+
 /**
 Creates a cleanup job which deletes old log entries from console_logs and stale
 debug sessions from console_client_prefs.
@@ -2154,85 +2213,89 @@ procedure utl_set_client_identifier;
 procedure utl_set_session_conf;
 
 procedure utl_set_conf (
-  p_conf console_conf%rowtype );
+   p_conf console_conf%rowtype );
 
 procedure utl_set_client_prefs (
-  p_prefs varchar2 );
+   p_prefs varchar2 );
 
-function utl_get_conf return console_conf%rowtype result_cache;
+function utl_get_conf
+   return console_conf%rowtype result_cache;
 
 function utl_get_client_prefs (
-  p_all_prefs_csv varchar2     ,
-  p_client_identifier varchar2 )
-return t_client_prefs_row;
+   p_all_prefs_csv varchar2     ,
+   p_client_identifier varchar2 )
+   return t_client_prefs_row;
 
-function utl_get_client_prefs_tab return t_client_prefs_tab_i;
+function utl_get_client_prefs_tab
+   return t_client_prefs_tab_i;
 
 function utl_escape_md_tab_text (
-  p_text varchar2 )
-return varchar2;
+   p_text varchar2 )
+   return varchar2;
 
-function utl_last_error return varchar2;
+function utl_last_error
+   return varchar2;
 
 function utl_logging_is_enabled (
-  p_level integer )
-return boolean;
+   p_level integer )
+   return boolean;
 
 function utl_normalize_label (
-  p_label varchar2 )
-return varchar2;
+   p_label varchar2 )
+   return varchar2;
 
 function utl_replace_linebreaks (
-  p_text varchar2                     ,
-  p_replace_with varchar2 default ' ' )
-return varchar2;
+   p_text varchar2                     ,
+   p_replace_with varchar2 default ' ' )
+   return varchar2;
 
 function utl_get_clean_client_prefs_csv (
-  p_client_identifier_to_remove in varchar2           default null ,
-  p_client_prefs_to_append      in t_client_prefs_row default null )
-return varchar2;
+   p_client_identifier_to_remove in varchar2           default null ,
+   p_client_prefs_to_append      in t_client_prefs_row default null )
+   return varchar2;
 
 function utl_client_prefs_to_csv (
-  p_client_prefs t_client_prefs_row )
-return varchar2;
+   p_client_prefs t_client_prefs_row )
+   return varchar2;
 
 function utl_csv_to_client_prefs (
-  p_csv varchar2 ) return t_client_prefs_row;
+   p_csv varchar2 )
+   return t_client_prefs_row;
 
 function utl_csv_get_client_identifier (
-  p_csv varchar2 )
-return varchar2;
+   p_csv varchar2 )
+   return varchar2;
 
 function utl_csv_get_exit_sysdate (
-  p_csv varchar2 )
-return date;
+   p_csv varchar2 )
+   return date;
 
 function utl_csv_get_check_interval (
-  p_csv varchar2 )
-return integer;
+   p_csv varchar2 )
+   return integer;
 
 function utl_csv_get_level (
-  p_csv varchar2 )
-return integer;
+   p_csv varchar2 )
+   return integer;
 
 function utl_csv_get_boolean_options (
-  p_csv varchar2 )
-return integer;
+   p_csv varchar2 )
+   return integer;
 
 function utl_create_log_entry (
-  p_level           in integer                ,
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type;
+   p_level           in integer                ,
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type;
 
 $end
 

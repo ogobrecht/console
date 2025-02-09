@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD041 -->
+
 <!-- nav -->
 
 [Index](README.md)

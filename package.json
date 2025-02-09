@@ -35,6 +35,5 @@
     "ploc": "^0.8.0",
     "uglify-js": "^3.19.3"
   },
-  "dependencies": {
-  }
+  "dependencies": {}
 }
