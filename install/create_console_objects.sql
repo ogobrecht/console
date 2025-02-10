@@ -5666,110 +5666,114 @@ end purge_all;
 --------------------------------------------------------------------------------
 
 procedure purge_job_create (
-  p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,
-  p_min_level       in integer  default c_level_info           ,
-  p_min_days        in number   default 30                     )
+   p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,
+   p_min_level       in integer  default c_level_info           ,
+   p_min_days        in number   default 30                     )
 is
 begin
-  execute immediate replace(replace(replace(replace(q'[
-    begin
-      for i in (
-        select '#CONSOLE_JOB_NAME#' as job_name from dual
-        minus
-        select job_name from user_scheduler_jobs )
-      loop
-        sys.dbms_scheduler.create_job(
-          job_name        => i.job_name                                                                   ,
-          job_type        => 'PLSQL_BLOCK'                                                                ,
-          job_action      => 'begin console.purge(p_min_level=>#MIN_LEVEL#,p_min_days=>#MIN_DAYS#); end;' ,
-          start_date      => sysdate                                                                      ,
-          repeat_interval => '#REPEAT_INTERVAL#'                                                          ,
-          enabled         => true                                                                         ,
-          auto_drop       => false                                                                        ,
-          comments        => 'Purge CONSOLE log entries.'                                                 );
-      end loop;
-    end;
-  ]',
-  '#CONSOLE_JOB_NAME#', c_console_job_name ),
-  '#REPEAT_INTERVAL#' , p_repeat_interval  ),
-  '#MIN_LEVEL#'       , p_min_level        ),
-  '#MIN_DAYS#'        , p_min_days         );
+   execute immediate replace(replace(replace(replace(q'[
+      begin
+         for i in (
+            select '#CONSOLE_JOB_NAME#' as job_name from dual
+            minus
+            select job_name from user_scheduler_jobs )
+         loop
+            sys.dbms_scheduler.create_job(
+               job_name        => i.job_name                                                                   ,
+               job_type        => 'PLSQL_BLOCK'                                                                ,
+               job_action      => 'begin console.purge(p_min_level=>#MIN_LEVEL#,p_min_days=>#MIN_DAYS#); end;' ,
+               start_date      => sysdate                                                                      ,
+               repeat_interval => '#REPEAT_INTERVAL#'                                                          ,
+               enabled         => true                                                                         ,
+               auto_drop       => false                                                                        ,
+               comments        => 'Purge CONSOLE log entries.'                                                 );
+         end loop;
+      end;
+   ]',
+   '#CONSOLE_JOB_NAME#', c_console_job_name ),
+   '#REPEAT_INTERVAL#' , p_repeat_interval  ),
+   '#MIN_LEVEL#'       , p_min_level        ),
+   '#MIN_DAYS#'        , p_min_days         );
 end purge_job_create;
 
 --------------------------------------------------------------------------------
 
-procedure purge_job_drop is
+procedure purge_job_drop
+is
 begin
-  execute immediate replace(q'[
-    begin
-      for i in (
-        select job_name
-          from user_scheduler_jobs
-         where job_name = '#CONSOLE_JOB_NAME#' )
-      loop
-        sys.dbms_scheduler.drop_job(
-          job_name => i.job_name ,
-          force    => true       );
-      end loop;
-    end;
-  ]',
-  '#CONSOLE_JOB_NAME#', c_console_job_name );
+   execute immediate replace(q'[
+      begin
+         for i in (
+            select job_name
+              from user_scheduler_jobs
+             where job_name = '#CONSOLE_JOB_NAME#' )
+         loop
+            sys.dbms_scheduler.drop_job (
+               job_name => i.job_name,
+               force    => true );
+         end loop;
+      end;
+   ]',
+   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end purge_job_drop;
 
 --------------------------------------------------------------------------------
 
-procedure purge_job_enable is
+procedure purge_job_enable
+is
 begin
   execute immediate replace(q'[
-    begin
-      for i in (
-        select job_name
-          from user_scheduler_jobs
-         where job_name = '#CONSOLE_JOB_NAME#' )
-      loop
-        sys.dbms_scheduler.enable(name => i.job_name);
-      end loop;
-    end;
-  ]',
-  '#CONSOLE_JOB_NAME#', c_console_job_name );
+      begin
+         for i in (
+            select job_name
+              from user_scheduler_jobs
+             where job_name = '#CONSOLE_JOB_NAME#' )
+         loop
+            sys.dbms_scheduler.enable(name => i.job_name);
+         end loop;
+      end;
+   ]',
+   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end purge_job_enable;
 
 --------------------------------------------------------------------------------
 
-procedure purge_job_disable is
+procedure purge_job_disable
+is
 begin
-  execute immediate replace(q'[
-    begin
-      for i in (
-        select job_name
-          from user_scheduler_jobs
-         where job_name = '#CONSOLE_JOB_NAME#' )
-      loop
-        sys.dbms_scheduler.disable(
-          name  => i.job_name ,
-          force => true       );
-      end loop;
-    end;
-  ]',
-  '#CONSOLE_JOB_NAME#', c_console_job_name );
+   execute immediate replace(q'[
+      begin
+         for i in (
+            select job_name
+              from user_scheduler_jobs
+             where job_name = '#CONSOLE_JOB_NAME#' )
+         loop
+            sys.dbms_scheduler.disable (
+               name  => i.job_name,
+               force => true );
+         end loop;
+      end;
+   ]',
+   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end purge_job_disable;
 
 --------------------------------------------------------------------------------
 
-procedure purge_job_run is
+procedure purge_job_run
+is
 begin
   execute immediate replace(q'[
-    begin
-      for i in (
-        select job_name
-          from user_scheduler_jobs
-         where job_name = '#CONSOLE_JOB_NAME#' )
-      loop
-        sys.dbms_scheduler.run_job(job_name => i.job_name);
-      end loop;
-    end;
-  ]',
-  '#CONSOLE_JOB_NAME#', c_console_job_name );
+      begin
+         for i in (
+            select job_name
+              from user_scheduler_jobs
+             where job_name = '#CONSOLE_JOB_NAME#' )
+         loop
+            sys.dbms_scheduler.run_job(job_name => i.job_name);
+         end loop;
+      end;
+   ]',
+   '#CONSOLE_JOB_NAME#', c_console_job_name );
 end purge_job_run;
 
 
@@ -5777,67 +5781,89 @@ end purge_job_run;
 -- PRIVATE HELPER METHODS
 --------------------------------------------------------------------------------
 
-function utl_escape_md_tab_text (p_text in varchar2) return varchar2 is
+function utl_escape_md_tab_text (
+   p_text in varchar2 )
+   return varchar2
+is
 begin
-  return replace(replace(replace(replace(p_text,
-    c_crlf,   ' '),
-    c_lf,     ' '),
-    c_cr,     ' '),
-    '|', '&#124;');
+   return replace(replace(replace(replace(p_text,
+      c_crlf , ' '      ),
+      c_lf   , ' '      ),
+      c_cr   , ' '      ),
+      '|'    , '&#124;' );
 end utl_escape_md_tab_text;
 
 --------------------------------------------------------------------------------
 
-function utl_last_error return varchar2 is
-  v_return t_32kb;
+function utl_last_error
+   return varchar2
+is
+   v_return          t_32kb;
+   l_error_depth     t_int;
+   l_backtrace_depth t_int;
+   l_error_number    t_int;
+   l_error_msg       t_32kb;
+   l_backtrace_line  t_int;
 begin
-  if sys.utl_call_stack.error_depth > 0 and sys.utl_call_stack.backtrace_depth > 0 then
-    if sys.utl_call_stack.error_number(1) != 6512 and sys.utl_call_stack.error_msg(1) != coalesce(g_prev_error_msg, 'null') then
-      --Get the last backtrace line number and also the error message
-      v_return := ' (line ' || to_char(sys.utl_call_stack.backtrace_line(sys.utl_call_stack.backtrace_depth)) ||
-        ', ORA-' || trim(to_char(sys.utl_call_stack.error_number(1), '00009')) || ' ' ||
-        utl_replace_linebreaks(sys.utl_call_stack.error_msg(1)) || ')';
-      --Set the new error message as the last error message.
-      g_prev_error_msg := sys.utl_call_stack.error_msg(1);
-    else
-      --Get only the last backtrace line number
-      v_return := ' (line ' || to_char(sys.utl_call_stack.backtrace_line(sys.utl_call_stack.backtrace_depth)) || ')';
-    end if;
-  end if;
+   l_error_depth     := sys.utl_call_stack.error_depth;
+   l_backtrace_depth := sys.utl_call_stack.backtrace_depth;
+   l_error_number    := sys.utl_call_stack.error_number(1);
+   l_error_msg       := sys.utl_call_stack.error_msg(1);
+   l_backtrace_line  := sys.utl_call_stack.backtrace_line(l_backtrace_depth);
 
-  return v_return;
+   if l_error_depth > 0 and l_backtrace_depth > 0 then
+      if l_error_number != 6512 and l_error_msg != coalesce(g_prev_error_msg, 'null') then
+         --Get the last backtrace line number and also the error message
+         v_return := ' (line ' || to_char(l_backtrace_line) ||
+            ', ORA-' || trim(to_char(l_error_number, '00009')) || ' ' ||
+            utl_replace_linebreaks(l_error_msg) || ')';
+
+         --Set the new error message as the last error message.
+         g_prev_error_msg := l_error_msg;
+      else
+         --Get only the last backtrace line number
+         v_return := ' (line ' || to_char(l_backtrace_line) || ')';
+      end if;
+   end if;
+
+   return v_return;
 end utl_last_error;
 
 --------------------------------------------------------------------------------
 
 function utl_logging_is_enabled (
-  p_level in integer )
-return boolean is
+   p_level in integer )
+   return boolean
+is
 begin
-  if g_conf_check_sysdate < sysdate then
-    utl_set_session_conf;
-  end if;
-  return g_conf_level >= p_level or sqlcode != 0;
+   if g_conf_check_sysdate < sysdate then
+      utl_set_session_conf;
+   end if;
+   return g_conf_level >= p_level or sqlcode != 0;
 end utl_logging_is_enabled;
 
 --------------------------------------------------------------------------------
 
-function utl_normalize_label (p_label in varchar2) return varchar2 is
+function utl_normalize_label (
+   p_label in varchar2 )
+   return varchar2
+is
 begin
-  return coalesce(substr(p_label, 1, 128), c_default_label);
+   return coalesce(substr(p_label, 1, 128), c_default_label);
 end utl_normalize_label;
 
 --------------------------------------------------------------------------------
 
 function utl_replace_linebreaks (
-  p_text         in varchar2             ,
-  p_replace_with in varchar2 default ' ' )
-return varchar2 is
+   p_text         in varchar2             ,
+   p_replace_with in varchar2 default ' ' )
+   return varchar2
+is
 begin
-  return replace(replace(replace(p_text,
-    c_crlf, p_replace_with),
-    c_lf,   p_replace_with),
-    c_cr,   p_replace_with);
+   return replace(replace(replace(p_text,
+      c_crlf , p_replace_with ),
+      c_lf   , p_replace_with ),
+      c_cr   , p_replace_with );
 end utl_replace_linebreaks;
 
 --------------------------------------------------------------------------------
@@ -5849,464 +5875,534 @@ select id, name, cache_id, type, status, invalidations, scan_count
    and status != 'Invalid';
 */
 function utl_get_conf
-return console_conf%rowtype result_cache is
-  v_row console_conf%rowtype;
+   return console_conf%rowtype result_cache
+is
+   v_row console_conf%rowtype;
 begin
-  select *
-    into v_row
-    from console_conf
-   where conf_id = c_conf_id;
-  return v_row;
+   select *
+     into v_row
+     from console_conf
+    where conf_id = c_conf_id;
+   return v_row;
 exception
-  when no_data_found then
-    -- set defaults
-    v_row.conf_id          := c_conf_id;
-    v_row.conf_sysdate     := sysdate;
-    v_row.conf_user        := 'autodefault';
-    v_row.level_id         := c_level_error;
-    v_row.level_name       := level_name(c_level_error);
-    v_row.check_interval   := c_check_interval_default;
-    v_row.enable_ascii_art := to_string(c_enable_ascii_art);
-    return v_row;
+   when no_data_found then
+      -- set defaults
+      v_row.conf_id          := c_conf_id;
+      v_row.conf_sysdate     := sysdate;
+      v_row.conf_user        := 'autodefault';
+      v_row.level_id         := c_level_error;
+      v_row.level_name       := level_name(c_level_error);
+      v_row.check_interval   := c_check_interval_default;
+      v_row.enable_ascii_art := to_string(c_enable_ascii_art);
+      return v_row;
 end utl_get_conf;
 
 --------------------------------------------------------------------------------
 
 procedure utl_set_conf (
-  p_conf in console_conf%rowtype )
+   p_conf in console_conf%rowtype )
 is
-  pragma autonomous_transaction;
+   pragma autonomous_transaction;
 begin
-  update console_conf set row = p_conf where conf_id = c_conf_id;
-  if sql%rowcount = 0 then
-    insert into console_conf values p_conf;
-  end if;
-  commit;
+   update console_conf
+      set row = p_conf
+    where conf_id = c_conf_id;
+
+   if sql%rowcount = 0 then
+      insert into console_conf
+      values p_conf;
+   end if;
+
+   commit;
 end utl_set_conf;
 
 --------------------------------------------------------------------------------
 
 procedure utl_set_client_prefs (
-  p_prefs in varchar2 )
+   p_prefs in varchar2 )
 is
-  pragma autonomous_transaction;
-  procedure update_client_prefs is
-  begin
-    update console_conf set client_prefs = p_prefs where conf_id = c_conf_id;
-  end;
+   pragma autonomous_transaction;
+   --
+   procedure update_client_prefs is
+   begin
+      update console_conf set client_prefs = p_prefs where conf_id = c_conf_id;
+   end;
+   --
 begin
-  assert(lengthb(p_prefs) <= 4000, 'Sorry, we cannot save your client preferencs - seems you have too many session in debug mode.');
-  update_client_prefs;
-  if sql%rowcount = 0 then
-    utl_set_conf(utl_get_conf); -- utl_get_conf handles not existing conf with default values
-    update_client_prefs;
-  end if;
-  commit;
+   assert (
+      lengthb(p_prefs) <= 4000,
+      'Sorry, we cannot save your client preferencs - seems you have too many session in debug mode.' );
+
+   update_client_prefs;
+
+   if sql%rowcount = 0 then
+      utl_set_conf(utl_get_conf); -- utl_get_conf handles not existing conf with default values
+      update_client_prefs;
+   end if;
+
+   commit;
 end utl_set_client_prefs;
 
 --------------------------------------------------------------------------------
 
 function utl_get_client_prefs (
-  p_all_prefs_csv     in varchar2 ,
-  p_client_identifier in varchar2 )
-return t_client_prefs_row is
-  v_all_prefs_csv   t_32kb := p_all_prefs_csv;
-  v_csv             t_32kb;
-  v_prefs           t_client_prefs_row;
-  v_boolean_options t_int;
-  v_start           t_int;
-  v_stop            t_int;
+   p_all_prefs_csv     in varchar2 ,
+   p_client_identifier in varchar2 )
+   return t_client_prefs_row
+is
+   v_all_prefs_csv   t_32kb := p_all_prefs_csv;
+   v_csv             t_32kb;
+   v_prefs           t_client_prefs_row;
+   v_boolean_options t_int;
+   v_start           t_int;
+   v_stop            t_int;
 begin
-  if v_all_prefs_csv is not null then
-    v_all_prefs_csv := replace(v_all_prefs_csv, c_cr, c_lf);
-    v_start := instr(v_all_prefs_csv, p_client_identifier||',');
-    v_stop  := instr(v_all_prefs_csv, c_lf, v_start);
-    v_csv   := substr(v_all_prefs_csv, v_start, v_stop - v_start);
-    --too slow: also see tests/performance.sql
-    --v_csv   := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
-    if v_csv is not null then
-      v_prefs.exit_sysdate := utl_csv_get_exit_sysdate(v_csv);
-      -- For performance reasons we will proceed the other columns only, if needed.
-      -- This function is called every time a session is initializing the package console.
-      if v_prefs.exit_sysdate >= sysdate then
-        --v_prefs.client_identifier := utl_csv_get_client_identifier ( v_csv );
-        v_boolean_options         := utl_csv_get_boolean_options   ( v_csv );
-        v_prefs.level_id          := utl_csv_get_level             ( v_csv );
-        v_prefs.check_interval    := utl_csv_get_check_interval    ( v_csv );
-        v_prefs.call_stack        := to_string ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
-        v_prefs.user_env          := to_string ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
-        v_prefs.apex_env          := to_string ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
-        v_prefs.cgi_env           := to_string ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
-        v_prefs.console_env       := to_string ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
-        v_prefs.level_name        := level_name ( v_prefs.level_id );
+   if v_all_prefs_csv is not null then
+      v_all_prefs_csv := replace(v_all_prefs_csv, c_cr, c_lf);
+      v_start         := instr(v_all_prefs_csv, p_client_identifier || ',');
+      v_stop          := instr(v_all_prefs_csv, c_lf, v_start);
+      v_csv           := substr(v_all_prefs_csv, v_start, v_stop - v_start);
+      -- too slow: also see tests/performance.sql
+      -- l_csv   := regexp_substr(p_all_prefs_csv, '^'||p_client_identifier||',.*$', 1, 1, 'im');
+
+      if v_csv is not null then
+         v_prefs.exit_sysdate := utl_csv_get_exit_sysdate(v_csv);
+
+         -- For performance reasons we will proceed the other columns only, if needed.
+         -- This function is called every time a session is initializing the package console.
+         if v_prefs.exit_sysdate >= sysdate then
+            v_boolean_options      := utl_csv_get_boolean_options ( v_csv );
+            v_prefs.level_id       := utl_csv_get_level           ( v_csv );
+            v_prefs.check_interval := utl_csv_get_check_interval  ( v_csv );
+            v_prefs.call_stack     := to_string ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
+            v_prefs.user_env       := to_string ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
+            v_prefs.apex_env       := to_string ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
+            v_prefs.cgi_env        := to_string ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
+            v_prefs.console_env    := to_string ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
+            v_prefs.level_name     := level_name ( v_prefs.level_id );
+         end if;
       end if;
-    end if;
-  end if;
-  return v_prefs;
+   end if;
+
+   return v_prefs;
 end utl_get_client_prefs;
 
 --------------------------------------------------------------------------------
 
-function utl_get_client_prefs_tab return t_client_prefs_tab_i is
-  v_tab   t_client_prefs_tab_i;
-  v_conf  console_conf%rowtype;
-  v_prefs t_32kb;
-  v_pos   t_int := 1;
-  v_len   t_int;
-  v_lf    t_int;
+function utl_get_client_prefs_tab
+   return t_client_prefs_tab_i
+is
+   v_tab   t_client_prefs_tab_i;
+   v_conf  console_conf%rowtype;
+   v_prefs t_32kb;
+   v_pos   t_int := 1;
+   v_len   t_int;
+   v_lf    t_int;
 begin
-  v_conf := utl_get_conf;
-  v_prefs := replace(replace(replace(replace(v_conf.client_prefs,
-    c_crlf, c_lf),
-    c_cr  , c_lf),
-    c_lflf, c_lf),
-    c_lflf, c_lf);
-  v_len := length(v_prefs);
-  loop
-    v_lf := nvl(instr(v_prefs, c_lf, v_pos), 0);
-    exit when v_lf = 0;
-    if v_lf > v_pos then
-      v_tab(v_tab.count + 1) := utl_csv_to_client_prefs(substr(v_prefs, v_pos, v_lf - v_pos));
-    end if;
-    v_pos := v_lf + 1;
-  end loop;
-  return v_tab;
+   v_conf  := utl_get_conf;
+   v_prefs := replace(replace(replace(replace(v_conf.client_prefs,
+      c_crlf , c_lf ),
+      c_cr   , c_lf ),
+      c_lflf , c_lf ),
+      c_lflf , c_lf );
+   v_len := length(v_prefs);
+
+   loop
+      v_lf := nvl(instr(v_prefs, c_lf, v_pos), 0);
+      exit when v_lf = 0;
+
+      if v_lf > v_pos then
+         v_tab(v_tab.count + 1) := utl_csv_to_client_prefs(substr(v_prefs, v_pos, v_lf - v_pos));
+      end if;
+
+      v_pos := v_lf + 1;
+   end loop;
+
+   return v_tab;
 end utl_get_client_prefs_tab;
 
 --------------------------------------------------------------------------------
 
 function utl_get_clean_client_prefs_csv (
-  p_client_identifier_to_remove in varchar2           default null ,
-  p_client_prefs_to_append      in t_client_prefs_row default null )
-return varchar2 is
-  v_prefs t_32kb;
-  v_tab   t_client_prefs_tab_i;
+   p_client_identifier_to_remove in varchar2           default null ,
+   p_client_prefs_to_append      in t_client_prefs_row default null )
+   return varchar2
+is
+   v_prefs t_32kb;
+   v_tab   t_client_prefs_tab_i;
 begin
-  v_tab := utl_get_client_prefs_tab;
-  for i in 1 .. v_tab.count loop
-    --filter out invalid client pefs
-    if  v_tab(i).client_identifier is not null
-    and v_tab(i).level_id is not null
-    and v_tab(i).call_stack is not null
-    and v_tab(i).user_env is not null
-    and v_tab(i).cgi_env is not null
-    and v_tab(i).user_env is not null
-    and v_tab(i).console_env is not null
-    and v_tab(i).check_interval is not null
-    and v_tab(i).exit_sysdate is not null
-    and v_tab(i).exit_sysdate      >= sysdate
-    and v_tab(i).client_identifier != nvl(p_client_identifier_to_remove, 'NULL_VALUE_DETECTED')
-    then
-      v_prefs := v_prefs || utl_client_prefs_to_csv(v_tab(i));
-    end if;
-  end loop;
-  if p_client_prefs_to_append.client_identifier is not null then
-    v_prefs := v_prefs || utl_client_prefs_to_csv(p_client_prefs_to_append);
-  end if;
-  return v_prefs;
+   v_tab := utl_get_client_prefs_tab;
+
+   for i in 1 .. v_tab.count
+   loop
+      --filter out invalid client pefs
+      if     v_tab(i).client_identifier is not null
+         and v_tab(i).level_id          is not null
+         and v_tab(i).call_stack        is not null
+         and v_tab(i).user_env          is not null
+         and v_tab(i).cgi_env           is not null
+         and v_tab(i).user_env          is not null
+         and v_tab(i).console_env       is not null
+         and v_tab(i).check_interval    is not null
+         and v_tab(i).exit_sysdate      is not null
+         and v_tab(i).exit_sysdate      >= sysdate
+         and v_tab(i).client_identifier != nvl(p_client_identifier_to_remove, 'NULL_VALUE_DETECTED')
+      then
+         v_prefs := v_prefs || utl_client_prefs_to_csv(v_tab(i));
+      end if;
+   end loop;
+
+   if p_client_prefs_to_append.client_identifier is not null then
+      v_prefs := v_prefs || utl_client_prefs_to_csv(p_client_prefs_to_append);
+   end if;
+
+   return v_prefs;
 end utl_get_clean_client_prefs_csv;
 
 --------------------------------------------------------------------------------
 
 function utl_remove_stale_client_prefs (
-  p_all_prefs_csv     in varchar2 ,
-  p_client_identifier in varchar2 )
-return varchar2 is
-  v_return t_32kb := p_all_prefs_csv;
+   p_all_prefs_csv     in varchar2 ,
+   p_client_identifier in varchar2 )
+   return varchar2
+is
+   v_return t_32kb := p_all_prefs_csv;
 begin
-  return v_return;
+   return v_return; -- fixme: are we sure this works? Where is the code?
 end utl_remove_stale_client_prefs;
 
 --------------------------------------------------------------------------------
 
 function utl_csv_get_client_identifier (
-  p_csv in varchar2 )
-return varchar2 is
-  v_stop t_int;
+   p_csv in varchar2 )
+   return varchar2
+is
+   v_stop t_int;
 begin
-  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
-  v_stop := instr(p_csv, ',', -1, 4) - 1;
-  return substrb(substr(p_csv, 1, v_stop), 1, 64);
+   --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+   v_stop := instr(p_csv, ',', -1, 4) - 1;
+   return substrb(substr(p_csv, 1, v_stop), 1, 64);
 end;
 
 --------------------------------------------------------------------------------
 
 function utl_csv_get_exit_sysdate (
-  p_csv in varchar2 )
-return date is
-  v_return date;
+   p_csv in varchar2 )
+   return date
+is
+   v_return date;
 begin
-  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
-  v_return := nvl(to_date(
-    substr(
-      p_csv,
-      instr(p_csv, ',', -1, 1) + 1 -- first comma from the end + 1
-    ) default null on conversion error,
-    c_date_format_short
-  ), sysdate - 1);
-  return v_return;
+   --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+   v_return :=
+      nvl (
+         to_date (
+            substr (
+               p_csv,
+               instr(p_csv, ',', -1, 1) + 1 ) -- first comma from the end + 1
+               default null on conversion error,
+            c_date_format_short ),
+         sysdate - 1 );
+   return v_return;
 end utl_csv_get_exit_sysdate;
 
 --------------------------------------------------------------------------------
 
 function utl_csv_get_check_interval (
-  p_csv in varchar2 )
-return integer is
-  v_return t_int;
-  v_start  t_int;
-  v_stop   t_int;
+   p_csv in varchar2 )
+   return integer
+is
+   v_return t_int;
+   v_start  t_int;
+   v_stop   t_int;
 begin
-  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
-  v_start := instr(p_csv, ',', -1, 2) + 1;
-  v_stop  := instr(p_csv, ',', -1, 1);
-  v_return := to_number(
-    substr(
-      p_csv,
-      v_start,
-      v_stop - v_start
-    ) default c_check_interval_default on conversion error
-  );
-  return case when v_return not between c_check_interval_min and c_check_interval_max then c_check_interval_default else v_return end;
+   --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+   v_start  := instr(p_csv, ',', -1, 2) + 1;
+   v_stop   := instr(p_csv, ',', -1, 1);
+   v_return :=
+      to_number (
+         substr (
+            p_csv,
+            v_start,
+            v_stop - v_start )
+            default c_check_interval_default on conversion error );
+   return
+      case
+         when v_return not between c_check_interval_min and c_check_interval_max
+         then c_check_interval_default
+         else v_return
+      end;
 end utl_csv_get_check_interval;
 
 --------------------------------------------------------------------------------
 
 function utl_csv_get_boolean_options (
-  p_csv in varchar2 )
-return integer is
-  v_start t_int;
-  v_stop  t_int;
+   p_csv in varchar2 )
+   return integer
+is
+   v_start t_int;
+   v_stop  t_int;
 begin
-  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
-  v_start := instr(p_csv, ',', -1, 3) + 1;
-  v_stop  := instr(p_csv, ',', -1, 2);
-  return to_number (
-    substr(
-      p_csv,
-      v_start,
-      v_stop - v_start
-    ) default 0 on conversion error
-  );
+   --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+   v_start := instr(p_csv, ',', -1, 3) + 1;
+   v_stop  := instr(p_csv, ',', -1, 2);
+
+   return
+      to_number (
+         substr (
+            p_csv,
+            v_start,
+            v_stop - v_start )
+            default 0 on conversion error );
 end utl_csv_get_boolean_options;
 
 --------------------------------------------------------------------------------
 
 function utl_csv_get_level (
-  p_csv in varchar2 )
-return integer is
-  v_return t_int;
-  v_start  t_int;
-  v_stop   t_int;
+   p_csv in varchar2 )
+   return integer
+is
+   v_return t_int;
+   v_start  t_int;
+   v_stop   t_int;
 begin
-  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
-  v_start := instr(p_csv, ',', -1, 4) + 1;
-  v_stop  := instr(p_csv, ',', -1, 3);
-  v_return := to_number(
-    substr(
-      p_csv,
-      v_start,
-      v_stop - v_start
-    ) default c_level_error on conversion error
-  );
-  return case when v_return not between c_level_error and c_level_trace then c_level_error else v_return end;
+   --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+   v_start := instr(p_csv, ',', -1, 4) + 1;
+   v_stop  := instr(p_csv, ',', -1, 3);
+   v_return :=
+      to_number (
+         substr (
+            p_csv,
+            v_start,
+            v_stop - v_start )
+            default c_level_error on conversion error );
+
+   return
+      case
+         when v_return not between c_level_error and c_level_trace
+         then c_level_error
+         else v_return
+      end;
 end utl_csv_get_level;
 
 --------------------------------------------------------------------------------
 
 function utl_csv_to_client_prefs (
-  p_csv in varchar2)
-return t_client_prefs_row is
-  v_return          t_client_prefs_row;
-  v_boolean_options t_int;
+   p_csv in varchar2 )
+   return t_client_prefs_row
+is
+   v_return          t_client_prefs_row;
+   v_boolean_options t_int;
 begin
-  --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
-  v_boolean_options          := utl_csv_get_boolean_options   ( p_csv );
-  v_return.exit_sysdate      := utl_csv_get_exit_sysdate      ( p_csv );
-  v_return.client_identifier := utl_csv_get_client_identifier ( p_csv );
-  v_return.level_id          := utl_csv_get_level             ( p_csv );
-  v_return.check_interval    := utl_csv_get_check_interval    ( p_csv );
-  v_return.call_stack        := to_string ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
-  v_return.user_env          := to_string ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
-  v_return.apex_env          := to_string ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
-  v_return.cgi_env           := to_string ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
-  v_return.console_env       := to_string ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
-  v_return.level_name        := level_name ( v_return.level_id );
-  return v_return;
+   --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
+   v_boolean_options          := utl_csv_get_boolean_options   ( p_csv );
+   v_return.exit_sysdate      := utl_csv_get_exit_sysdate      ( p_csv );
+   v_return.client_identifier := utl_csv_get_client_identifier ( p_csv );
+   v_return.level_id          := utl_csv_get_level             ( p_csv );
+   v_return.check_interval    := utl_csv_get_check_interval    ( p_csv );
+   v_return.call_stack        := to_string ( bitand ( v_boolean_options, c_call_stack  ) = c_call_stack  );
+   v_return.user_env          := to_string ( bitand ( v_boolean_options, c_user_env    ) = c_user_env    );
+   v_return.apex_env          := to_string ( bitand ( v_boolean_options, c_apex_env    ) = c_apex_env    );
+   v_return.cgi_env           := to_string ( bitand ( v_boolean_options, c_cgi_env     ) = c_cgi_env     );
+   v_return.console_env       := to_string ( bitand ( v_boolean_options, c_console_env ) = c_console_env );
+   v_return.level_name        := level_name ( v_return.level_id );
+   return v_return;
 end utl_csv_to_client_prefs;
 
 --------------------------------------------------------------------------------
 
 function utl_client_prefs_to_csv (
-  p_client_prefs in t_client_prefs_row )
-return varchar2 is
-  v_return t_32kb;
+   p_client_prefs in t_client_prefs_row )
+   return varchar2
+is
+   v_return t_32kb;
 begin
   --csv format: client_identifier,level,boolean_options,check_interval,exit_sysdate
-  return
-    p_client_prefs.client_identifier                                             || ',' ||
-    to_char(p_client_prefs.level_id)                                             || ',' ||
-    to_char(
-      case when p_client_prefs.call_stack  = 'true' then c_call_stack  else 0 end +
-      case when p_client_prefs.user_env    = 'true' then c_user_env    else 0 end +
-      case when p_client_prefs.apex_env    = 'true' then c_apex_env    else 0 end +
-      case when p_client_prefs.cgi_env     = 'true' then c_cgi_env     else 0 end +
-      case when p_client_prefs.console_env = 'true' then c_console_env else 0 end ) || ',' ||
-    to_char(p_client_prefs.check_interval)                                       || ',' ||
-    to_char(p_client_prefs.exit_sysdate, c_date_format_short)                    || c_lf;
+   return
+      p_client_prefs.client_identifier ||
+      ',' ||
+      to_char(p_client_prefs.level_id) ||
+      ',' ||
+      to_char(
+         case when p_client_prefs.call_stack  = 'true' then c_call_stack  else 0 end +
+         case when p_client_prefs.user_env    = 'true' then c_user_env    else 0 end +
+         case when p_client_prefs.apex_env    = 'true' then c_apex_env    else 0 end +
+         case when p_client_prefs.cgi_env     = 'true' then c_cgi_env     else 0 end +
+         case when p_client_prefs.console_env = 'true' then c_console_env else 0 end ) ||
+      ',' ||
+      to_char(p_client_prefs.check_interval) ||
+      ',' ||
+      to_char(p_client_prefs.exit_sysdate, c_date_format_short) ||
+      c_lf;
 end utl_client_prefs_to_csv;
 
 --------------------------------------------------------------------------------
 
-procedure utl_set_client_identifier is
+procedure utl_set_client_identifier
+is
 begin
-  g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
-  if g_conf_client_identifier is null or g_conf_client_identifier = ':' then
-    g_conf_client_identifier := c_client_id_prefix || sys.dbms_session.unique_session_id;
-    sys.dbms_session.set_identifier(g_conf_client_identifier);
-  end if;
+   g_conf_client_identifier := sys_context('USERENV', 'CLIENT_IDENTIFIER');
+
+   if g_conf_client_identifier is null or g_conf_client_identifier = ':' then
+      g_conf_client_identifier := c_client_id_prefix || sys.dbms_session.unique_session_id;
+      sys.dbms_session.set_identifier(g_conf_client_identifier);
+   end if;
 end utl_set_client_identifier;
 
 --------------------------------------------------------------------------------
 
-procedure utl_set_session_conf is
-  v_conf  console_conf%rowtype;
-  v_prefs t_client_prefs_row;
+procedure utl_set_session_conf
+is
+   v_conf  console_conf%rowtype;
+   v_prefs t_client_prefs_row;
 begin
-  v_conf  := utl_get_conf;
-  v_prefs := utl_get_client_prefs(v_conf.client_prefs, g_conf_client_identifier);
+   v_conf  := utl_get_conf;
+   v_prefs := utl_get_client_prefs(v_conf.client_prefs, g_conf_client_identifier);
 
-  --If we have no real exit sysdate, we set it to 24 hours.
-  --Session conf will be re-evaluated at least every 10 seconds.
-  g_conf_exit_sysdate     := coalesce ( v_prefs.exit_sysdate         , sysdate + 1           );
-  g_conf_check_interval   := coalesce ( v_prefs.check_interval       , v_conf.check_interval );
-  g_conf_level            := coalesce ( v_prefs.level_id             , v_conf.level_id       );
-  --
-  g_conf_call_stack       := coalesce ( to_bool(v_prefs.call_stack)  , false                 );
-  g_conf_user_env         := coalesce ( to_bool(v_prefs.user_env)    , false                 );
-  g_conf_apex_env         := coalesce ( to_bool(v_prefs.apex_env)    , false                 );
-  g_conf_cgi_env          := coalesce ( to_bool(v_prefs.cgi_env)     , false                 );
-  g_conf_console_env      := coalesce ( to_bool(v_prefs.console_env) , false                 );
-  --
-  g_conf_enable_ascii_art := to_bool(v_conf.enable_ascii_art);
-  --
-  g_conf_check_sysdate    := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
-
+   --If we have no real exit sysdate, we set it to 24 hours.
+   --Session conf will be re-evaluated at least every 10 seconds.
+   g_conf_exit_sysdate     := coalesce ( v_prefs.exit_sysdate         , sysdate + 1           );
+   g_conf_check_interval   := coalesce ( v_prefs.check_interval       , v_conf.check_interval );
+   g_conf_level            := coalesce ( v_prefs.level_id             , v_conf.level_id       );
+   --
+   g_conf_call_stack       := coalesce ( to_bool(v_prefs.call_stack)  , false                 );
+   g_conf_user_env         := coalesce ( to_bool(v_prefs.user_env)    , false                 );
+   g_conf_apex_env         := coalesce ( to_bool(v_prefs.apex_env)    , false                 );
+   g_conf_cgi_env          := coalesce ( to_bool(v_prefs.cgi_env)     , false                 );
+   g_conf_console_env      := coalesce ( to_bool(v_prefs.console_env) , false                 );
+   --
+   g_conf_enable_ascii_art := to_bool(v_conf.enable_ascii_art);
+   --
+   g_conf_check_sysdate    := least(g_conf_exit_sysdate, sysdate + 1/24/60/60 * g_conf_check_interval);
 end utl_set_session_conf;
 
 --------------------------------------------------------------------------------
 
 function utl_create_log_entry (
-  p_level           in integer                ,
-  p_message         in clob     default null  ,
-  p_permanent       in boolean  default false ,
-  p_call_stack      in boolean  default false ,
-  p_apex_env        in boolean  default false ,
-  p_cgi_env         in boolean  default false ,
-  p_console_env     in boolean  default false ,
-  p_user_env        in boolean  default false ,
-  p_user_agent      in varchar2 default null  ,
-  p_user_scope      in varchar2 default null  ,
-  p_user_error_code in integer  default null  ,
-  p_user_call_stack in varchar2 default null  )
-return console_logs.log_id%type
+   p_level           in integer                ,
+   p_message         in clob     default null  ,
+   p_permanent       in boolean  default false ,
+   p_call_stack      in boolean  default false ,
+   p_apex_env        in boolean  default false ,
+   p_cgi_env         in boolean  default false ,
+   p_console_env     in boolean  default false ,
+   p_user_env        in boolean  default false ,
+   p_user_agent      in varchar2 default null  ,
+   p_user_scope      in varchar2 default null  ,
+   p_user_error_code in integer  default null  ,
+   p_user_call_stack in varchar2 default null  )
+   return console_logs.log_id%type
 is
-  pragma autonomous_transaction;
-  v_row   console_logs%rowtype;
-  v_cache t_32kb;
+   pragma autonomous_transaction;
+   v_row   console_logs%rowtype;
+   v_cache t_32kb;
 begin
-  v_row.scope :=
-    case
-      when p_user_scope is not null then substrb(p_user_scope, 1, 256)
-      else substrb(scope, 1, 256)
-    end;
+   v_row.scope :=
+      case
+         when p_user_scope is not null
+         then substrb(p_user_scope, 1, 256)
+         else substrb(scope, 1, 256)
+      end;
 
-  -- This is the very first (possible) assignment to the row.message variable,
-  -- so we can do it without our clob_append method.
-  v_row.message :=
-    case
-      when p_message is not null then p_message || c_lflf
-      when sqlcode != 0 then sqlerrm || c_lflf
-      else null
-    end;
+   -- This is the very first (possible) assignment to the row.message variable,
+   -- so we can do it without our clob_append method.
+   v_row.message :=
+      case
+         when p_message is not null then p_message || c_lflf
+         when sqlcode != 0          then sqlerrm || c_lflf
+         else null
+      end;
 
-  -- Add params, if any
-  if g_params.count > 0 then
-    clob_append(v_row.message, v_cache, '#### Parameters' || c_lflf || to_md_tab_header('Parameter Name'));
-    for i in 1 .. g_params.count loop
-      clob_append(v_row.message, v_cache, to_md_tab_data(g_params(i).attribute, g_params(i).value, c_param_value_max_length));
-    end loop;
-    clob_append(v_row.message, v_cache, c_lf);
-    g_params.delete;
+   -- Add params, if any
+   if g_params.count > 0 then
+      clob_append (
+         v_row.message,
+         v_cache,
+         '#### Parameters' || c_lflf || to_md_tab_header('Parameter Name') );
 
-  end if;
+      for i in 1 .. g_params.count
+      loop
+         clob_append(
+            v_row.message,
+            v_cache,
+            to_md_tab_data (
+               g_params(i).attribute,
+               g_params(i).value,
+               c_param_value_max_length ) );
+      end loop;
 
-  v_row.error_code :=
-    case
-      when p_user_error_code is not null then p_user_error_code
-      when sqlcode != 0 then sqlcode
-      else null
-    end;
+      clob_append(v_row.message, v_cache, c_lf);
+      g_params.delete;
+   end if;
 
-  if p_user_call_stack is not null then
-    v_row.call_stack := substrb(p_user_call_stack, 1, 4000);
-  elsif p_call_stack then
-    --Save the last occured error (if any and if we called before
-    --error_save_stack) before we going to log the callstack.
-    if sqlcode != 0 and g_saved_stack.count > 0 then
-      error_save_stack;
-    end if;
-    v_row.call_stack := substrb(call_stack, 1, 4000);
-    if p_level = 1 then
-      --We finally logged the saved stack, so we need to reset it.
-      g_saved_stack.delete;
-      g_prev_error_msg := null;
-    end if;
-  end if;
+   v_row.error_code :=
+      case
+         when p_user_error_code is not null then p_user_error_code
+         when sqlcode != 0                  then sqlcode
+         else null
+      end;
 
-  if p_apex_env or g_conf_apex_env then
-    clob_append(v_row.message, v_cache, apex_env);
-  end if;
+   if p_user_call_stack is not null then
+      v_row.call_stack := substrb(p_user_call_stack, 1, 4000);
+   elsif p_call_stack then
+      --Save the last occured error (if any and if we called before
+      --error_save_stack) before we going to log the callstack.
+      if sqlcode != 0 and g_saved_stack.count > 0 then
+         error_save_stack;
+      end if;
 
-  if p_cgi_env or g_conf_cgi_env then
-    clob_append(v_row.message, v_cache, cgi_env);
-  end if;
+      v_row.call_stack := substrb(call_stack, 1, 4000);
 
-  if p_console_env or g_conf_console_env then
-    clob_append(v_row.message, v_cache, console_env);
-  end if;
+      if p_level = 1 then
+         --We finally logged the saved stack, so we need to reset it.
+         g_saved_stack.delete;
+         g_prev_error_msg := null;
+      end if;
+   end if;
 
-  if p_user_env or g_conf_user_env then
-    clob_append(v_row.message, v_cache, user_env);
-  end if;
+   if p_apex_env or g_conf_apex_env then
+      clob_append(v_row.message, v_cache, apex_env);
+   end if;
 
-  clob_flush_cache(v_row.message, v_cache);
+   if p_cgi_env or g_conf_cgi_env then
+      clob_append(v_row.message, v_cache, cgi_env);
+   end if;
 
-  v_row.log_time          := localtimestamp;
-  v_row.level_id          := p_level;
-  v_row.level_name        := level_name(p_level);
-  v_row.permanent         := to_yn(p_permanent);
-  v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
-  v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
-  v_row.action            := substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 );
-  v_row.client_info       := substrb ( sys_context ( 'USERENV', 'CLIENT_INFO'       ), 1, 64 );
-  v_row.client_identifier := substrb ( sys_context ( 'USERENV', 'CLIENT_IDENTIFIER' ), 1, 64 );
-  v_row.ip_address        := substrb ( sys_context ( 'USERENV', 'IP_ADDRESS'        ), 1, 48 );
-  v_row.host              := substrb ( sys_context ( 'USERENV', 'HOST'              ), 1, 64 );
-  v_row.os_user           := substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 );
-  v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
+   if p_console_env or g_conf_console_env then
+      clob_append(v_row.message, v_cache, console_env);
+   end if;
 
-  insert into console_logs values v_row returning log_id into v_row.log_id;
-  commit;
+   if p_user_env or g_conf_user_env then
+      clob_append(v_row.message, v_cache, user_env);
+   end if;
 
-  return v_row.log_id;
+   clob_flush_cache(v_row.message, v_cache);
+
+   v_row.log_time          := localtimestamp;
+   v_row.level_id          := p_level;
+   v_row.level_name        := level_name(p_level);
+   v_row.permanent         := to_yn(p_permanent);
+   v_row.session_user      := substrb ( sys_context ( 'USERENV', 'SESSION_USER'      ), 1, 32 );
+   v_row.module            := substrb ( sys_context ( 'USERENV', 'MODULE'            ), 1, 48 );
+   v_row.action            := substrb ( sys_context ( 'USERENV', 'ACTION'            ), 1, 32 );
+   v_row.client_info       := substrb ( sys_context ( 'USERENV', 'CLIENT_INFO'       ), 1, 64 );
+   v_row.client_identifier := substrb ( sys_context ( 'USERENV', 'CLIENT_IDENTIFIER' ), 1, 64 );
+   v_row.ip_address        := substrb ( sys_context ( 'USERENV', 'IP_ADDRESS'        ), 1, 48 );
+   v_row.host              := substrb ( sys_context ( 'USERENV', 'HOST'              ), 1, 64 );
+   v_row.os_user           := substrb ( sys_context ( 'USERENV', 'OS_USER'           ), 1, 64 );
+   v_row.os_user_agent     := substrb ( p_user_agent, 1, 200 );
+
+   insert into console_logs values v_row returning log_id into v_row.log_id;
+   commit;
+
+   return v_row.log_id;
 end utl_create_log_entry;
 
 --------------------------------------------------------------------------------
 
 --package inizialization
 begin
-  utl_set_client_identifier;
-  utl_set_session_conf;
+   utl_set_client_identifier;
+   utl_set_session_conf;
 end console;
 /
 
