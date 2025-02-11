@@ -187,7 +187,7 @@ end;
 
 prompt - compile package body
 create or replace package body some_api is
-------------------------------------------------------------------------------
+--------------------------------------
    procedure do_stuff is
    --------------------------------------
       procedure sub1 is
@@ -226,7 +226,7 @@ create or replace package body some_api is
          console.error;
          raise;
    end;
-------------------------------------------------------------------------------
+--------------------------------------
 end;
 /
 
@@ -580,22 +580,22 @@ EXAMPLE
 
 ```sql
 declare
-   v_counter varchar2(30) := 'Processing xyz';
+   l_counter varchar2(30) := 'Processing xyz';
 begin
    for i in 1 .. 10 loop
-      console.count(v_counter);
+      console.count(l_counter);
    end loop;
-   console.count_current(v_counter); -- without optional message
+   console.count_current(l_counter); -- without optional message
 
    for i in 1 .. 100 loop
-      console.count(v_counter);
+      console.count(l_counter);
    end loop;
-   console.count_current(v_counter, 'end of step two');
+   console.count_current(l_counter, 'end of step two');
 
    for i in 1 .. 1000 loop
-      console.count(v_counter);
+      console.count(l_counter);
    end loop;
-   console.count_end(v_counter, 'end of step three');
+   console.count_end(l_counter, 'end of step three');
 end;
 /
 ```
@@ -642,8 +642,8 @@ SIGNATURE
 
 ```sql
 procedure count_current (
-  p_label   in varchar2 default null ,
-  p_message in varchar2 default null );
+   p_label   in varchar2 default null ,
+   p_message in varchar2 default null );
 ```
 
 
@@ -711,7 +711,7 @@ SIGNATURE
 ```sql
 function count_current (
    p_label in varchar2 default null )
-return t_int;
+   return t_int;
 ```
 
 
@@ -729,7 +729,7 @@ SIGNATURE
 ```sql
 function count_end (
    p_label in varchar2 default null )
-return t_int;
+   return t_int;
 ```
 
 
@@ -744,23 +744,23 @@ EXAMPLE
 
 ```sql
 declare
-   v_timer varchar2(30) := 'Processing xyz';
+   l_timer varchar2(30) := 'Processing xyz';
 begin
    --basic usage
    console.time;
    sys.dbms_session.sleep(0.1);
    console.time_end; -- without optional label and message
 
-   console.time(v_timer);
+   console.time(l_timer);
 
    sys.dbms_session.sleep(0.1);
-   console.time_current(v_timer); -- without optional message
+   console.time_current(l_timer); -- without optional message
 
    sys.dbms_session.sleep(0.1);
-   console.time_current(v_timer, 'end of step two');
+   console.time_current(l_timer, 'end of step two');
 
    sys.dbms_session.sleep(0.1);
-   console.time_end(v_timer, 'end of step three');
+   console.time_end(l_timer, 'end of step three');
 end;
 /
 ```
@@ -920,13 +920,13 @@ EXAMPLE
 
 ```sql
 declare
-   v_dataset sys_refcursor;
+   l_dataset sys_refcursor;
 begin
   -- Your business logic here...
 
   -- Debug code
    if console.level_is_info then
-      open v_dataset for
+      open l_dataset for
          select table_name,
                 tablespace_name,
                 logging,
@@ -935,7 +935,7 @@ begin
                 partitioned,
                 has_identity
            from user_tables;
-      console.table#(v_dataset);
+      console.table#(l_dataset);
    end if;
 
   -- Your business logic here...
@@ -1122,7 +1122,7 @@ SIGNATURE
 
 ```sql
 procedure add_param (
-   p_name  in varchar2,
+   p_name  in varchar2 ,
    p_value in varchar2 );
 ```
 
@@ -1210,7 +1210,7 @@ SIGNATURE
 
 ```sql
 procedure module (
-   p_module in varchar2,
+   p_module in varchar2              ,
    p_action in varchar2 default null );
 ```
 
@@ -1223,7 +1223,7 @@ SIGNATURE
 
 ```sql
 function level_error
- return integer;
+   return integer;
 ```
 
 
@@ -1814,11 +1814,11 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-   v_array console.t_vc2_tab_i;
+   l_array console.t_vc2_tab_i;
 begin
-   v_array := console.split('A,B,C');
-   for i in 1 .. v_array.count loop
-      console.print(i||': '||v_array(i));
+   l_array := console.split('A,B,C');
+   for i in 1 .. l_array.count loop
+      console.print(i || ': ' || l_array(i));
    end loop;
 end;
 /
@@ -1915,14 +1915,14 @@ EXAMPLES 1 - Open cursor in advance
 
 ```sql
 declare
-   v_dataset sys_refcursor;
+   l_dataset sys_refcursor;
 begin
    -- Your business logic here.
 
    -- Debug code
    if console.level_is_info then
-      open v_dataset for select * from user_tables;
-      console.info(console.to_html_table(v_dataset));
+      open l_dataset for select * from user_tables;
+      console.info(console.to_html_table(l_dataset));
    end if;
 end;
 /
@@ -2123,12 +2123,12 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_start timestamp := localtimestamp;
+  l_start timestamp := localtimestamp;
 begin
 
   --do your stuff here
 
-  dbms_output.put_line('Runtime: ' || console.runtime(v_start));
+  dbms_output.put_line('Runtime: ' || console.runtime(l_start));
 end;
 /
 ```
@@ -2152,13 +2152,13 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-   v_start timestamp := localtimestamp;
+   l_start timestamp := localtimestamp;
 begin
 
    --do your stuff here
 
    dbms_output.put_line (
-      'Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)) );
+      'Runtime (seconds): ' || to_char(console.runtime_seconds(l_start)) );
 end;
 /
 ```
@@ -2182,13 +2182,13 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-   v_start timestamp := localtimestamp;
+   l_start timestamp := localtimestamp;
 begin
 
    --do your stuff here
 
    dbms_output.put_line (
-      'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(v_start)) );
+      'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(l_start)) );
 end;
 /
 ```
@@ -2319,16 +2319,16 @@ EXAMPLE
 ```sql
 set serveroutput on feedback off
 declare
-   v_start  timestamp := localtimestamp;
-   v_clob   clob;
-   v_cache  varchar2(32767 char);
+   l_start  timestamp := localtimestamp;
+   l_clob   clob;
+   l_cache  varchar2(32767 char);
 begin
    for i in 1..100000 loop
-      console.clob_append(v_clob, v_cache, 'a');
+      console.clob_append(l_clob, l_cache, 'a');
    end loop;
-   console.clob_flush_cache(v_clob, v_cache);
-   dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)));
-   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
+   console.clob_flush_cache(l_clob, l_cache);
+   dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(l_start)));
+   dbms_output.put_line('Lenght CLOB      : ' || length(l_clob));
 end;
 /
 ```

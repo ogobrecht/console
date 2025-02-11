@@ -156,7 +156,7 @@ end;
 
 prompt - compile package body
 create or replace package body some_api is
-------------------------------------------------------------------------------
+--------------------------------------
    procedure do_stuff is
    --------------------------------------
       procedure sub1 is
@@ -195,7 +195,7 @@ create or replace package body some_api is
          console.error;
          raise;
    end;
-------------------------------------------------------------------------------
+--------------------------------------
 end;
 {{/}}
 
@@ -284,6 +284,8 @@ Log a message with the level 1 (error).
 
 **/
 
+--------------------------------------------------------------------------------
+
 function error (
    p_message         in clob     default null  ,
    p_permanent       in boolean  default false ,
@@ -322,6 +324,8 @@ procedure warn (
 Log a message with the level 2 (warning).
 
 **/
+
+--------------------------------------------------------------------------------
 
 function warn (
    p_message         in clob     default null  ,
@@ -362,6 +366,8 @@ Log a message with the level 3 (info).
 
 **/
 
+--------------------------------------------------------------------------------
+
 function info (
    p_message         in clob     default null  ,
    p_permanent       in boolean  default false ,
@@ -400,6 +406,8 @@ procedure log (
 Log a message with the level 3 (info).
 
 **/
+
+--------------------------------------------------------------------------------
 
 function log (
    p_message         in clob     default null  ,
@@ -440,6 +448,8 @@ Log a message with the level 4 (debug).
 
 **/
 
+--------------------------------------------------------------------------------
+
 function debug (
    p_message         in clob     default null  ,
    p_permanent       in boolean  default false ,
@@ -479,6 +489,8 @@ Log a message with the level 5 (trace).
 
 **/
 
+--------------------------------------------------------------------------------
+
 function trace (
    p_message         in clob     default null  ,
    p_permanent       in boolean  default false ,
@@ -512,22 +524,22 @@ EXAMPLE
 
 ```sql
 declare
-   v_counter varchar2(30) := 'Processing xyz';
+   l_counter varchar2(30) := 'Processing xyz';
 begin
    for i in 1 .. 10 loop
-      console.count(v_counter);
+      console.count(l_counter);
    end loop;
-   console.count_current(v_counter); -- without optional message
+   console.count_current(l_counter); -- without optional message
 
    for i in 1 .. 100 loop
-      console.count(v_counter);
+      console.count(l_counter);
    end loop;
-   console.count_current(v_counter, 'end of step two');
+   console.count_current(l_counter, 'end of step two');
 
    for i in 1 .. 1000 loop
-      console.count(v_counter);
+      console.count(l_counter);
    end loop;
-   console.count_end(v_counter, 'end of step three');
+   console.count_end(l_counter, 'end of step three');
 end;
 {{/}}
 ```
@@ -558,8 +570,8 @@ Also see procedure `count` above.
 --------------------------------------------------------------------------------
 
 procedure count_current (
-  p_label   in varchar2 default null ,
-  p_message in varchar2 default null );
+   p_label   in varchar2 default null ,
+   p_message in varchar2 default null );
 /**
 
 Log the current value of a counter, if the sessions log level is greater or
@@ -587,7 +599,7 @@ Also see procedure `count` above.
 
 function count_current (
    p_label in varchar2 default null )
-return t_int;
+   return t_int;
 /**
 
 Returns the current counter value or null, if the given label does not exist.
@@ -637,7 +649,7 @@ Final value: 10
 
 function count_end (
    p_label in varchar2 default null )
-return t_int;
+   return t_int;
 /**
 
 Returns the current counter value or null, if the given label does not exist.
@@ -664,23 +676,23 @@ EXAMPLE
 
 ```sql
 declare
-   v_timer varchar2(30) := 'Processing xyz';
+   l_timer varchar2(30) := 'Processing xyz';
 begin
    --basic usage
    console.time;
    sys.dbms_session.sleep(0.1);
    console.time_end; -- without optional label and message
 
-   console.time(v_timer);
+   console.time(l_timer);
 
    sys.dbms_session.sleep(0.1);
-   console.time_current(v_timer); -- without optional message
+   console.time_current(l_timer); -- without optional message
 
    sys.dbms_session.sleep(0.1);
-   console.time_current(v_timer, 'end of step two');
+   console.time_current(l_timer, 'end of step two');
 
    sys.dbms_session.sleep(0.1);
-   console.time_end(v_timer, 'end of step three');
+   console.time_end(l_timer, 'end of step three');
 end;
 {{/}}
 ```
@@ -832,13 +844,13 @@ EXAMPLE
 
 ```sql
 declare
-   v_dataset sys_refcursor;
+   l_dataset sys_refcursor;
 begin
   -- Your business logic here...
 
   -- Debug code
    if console.level_is_info then
-      open v_dataset for
+      open l_dataset for
          select table_name,
                 tablespace_name,
                 logging,
@@ -847,7 +859,7 @@ begin
                 partitioned,
                 has_identity
            from user_tables;
-      console.table#(v_dataset);
+      console.table#(l_dataset);
    end if;
 
   -- Your business logic here...
@@ -932,7 +944,7 @@ end;
 --------------------------------------------------------------------------------
 
 procedure add_param (
-   p_name  in varchar2,
+   p_name  in varchar2 ,
    p_value in varchar2 );
 /**
 
@@ -1022,6 +1034,9 @@ end;
 ```
 
 **/
+
+--------------------------------------------------------------------------------
+
 function  add_param ( p_name in varchar2 ,p_value in varchar2                       ) return t_console;
 procedure add_param ( p_name in varchar2, p_value in number                         );
 function  add_param ( p_name in varchar2 ,p_value in number                         ) return t_console;
@@ -1110,7 +1125,7 @@ end;
 --------------------------------------------------------------------------------
 
 procedure module (
-   p_module in varchar2,
+   p_module in varchar2              ,
    p_action in varchar2 default null );
 /**
 
@@ -1129,7 +1144,7 @@ to only set the action attribute with the `action` (see below).
 --------------------------------------------------------------------------------
 
 function level_error
- return integer;
+   return integer;
 /** Returns the number code for the level 1 error. **/
 
 function level_warning
@@ -1148,6 +1163,8 @@ function level_trace
    return integer;
 /** Returns the number code for the level 5 trace. **/
 
+--------------------------------------------------------------------------------
+
 function level_is_warning
    return boolean;
 /** Returns true when the level is greater than or equal warning, otherwise false. **/
@@ -1163,6 +1180,8 @@ function level_is_debug
 function level_is_trace
    return boolean;
 /** Returns true when the level is greater than or equal trace, otherwise false. **/
+
+--------------------------------------------------------------------------------
 
 function level_is_warning_yn
    return varchar2;
@@ -1187,6 +1206,8 @@ function level_is_trace_yn
 
 $if $$apex_installed $then
 
+--------------------------------------------------------------------------------
+
 function apex_error_handling (
    p_error in apex_error.t_error )
    return apex_error.t_error_result;
@@ -1208,6 +1229,8 @@ reimplement an own function and use that instead.
 
 **/
 
+--------------------------------------------------------------------------------
+
 function apex_plugin_render (
    p_dynamic_action in apex_plugin.t_dynamic_action ,
    p_plugin         in apex_plugin.t_plugin         )
@@ -1221,6 +1244,9 @@ your APEX parsing schema or a synonym named `console` for it as this function is
 referenced in the plug-in as a callback to `console.apex_plugin_render`.
 
 **/
+
+--------------------------------------------------------------------------------
+
 function apex_plugin_ajax (
    p_dynamic_action in apex_plugin.t_dynamic_action ,
    p_plugin         in apex_plugin.t_plugin         )
@@ -1234,6 +1260,8 @@ your APEX parsing schema or a synonym named `console` for it as this function is
 referenced in the plug-in as a callback to `console.apex_plugin_ajax`.
 
 **/
+
+--------------------------------------------------------------------------------
 
 $end
 
@@ -1322,6 +1350,8 @@ end;
 
 **/
 
+--------------------------------------------------------------------------------
+
 procedure init (
    p_level          in integer default c_level_info             ,  -- Level 2 (warning), 3 (info), 4 (debug) or 5 (trace).
    p_duration       in integer default c_duration_default       ,  -- The number of minutes the session should be in client preferences mode. Allowed values: 1 to 1440 minutes (24 hours).
@@ -1337,6 +1367,8 @@ An overloaded procedure for easier initialization of the own
 session/client_identifier in an development IDE.
 
 **/
+
+--------------------------------------------------------------------------------
 
 procedure exit (
    p_client_identifier in varchar2 default my_client_identifier ); -- The client identifier provided by the application or console itself.
@@ -1359,6 +1391,8 @@ DO NOT USE THIS PROCEDURE IN YOUR BUSINESS LOGIC. IT IS INTENDED ONLY FOR
 MANAGING CLIENT PREFERENCES.
 
 **/
+
+--------------------------------------------------------------------------------
 
 procedure exit_all;
 /**
@@ -1604,11 +1638,11 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-   v_array console.t_vc2_tab_i;
+   l_array console.t_vc2_tab_i;
 begin
-   v_array := console.split('A,B,C');
-   for i in 1 .. v_array.count loop
-      console.print(i||': '||v_array(i));
+   l_array := console.split('A,B,C');
+   for i in 1 .. l_array.count loop
+      console.print(i || ': ' || l_array(i));
    end loop;
 end;
 {{/}}
@@ -1698,14 +1732,14 @@ EXAMPLES 1 - Open cursor in advance
 
 ```sql
 declare
-   v_dataset sys_refcursor;
+   l_dataset sys_refcursor;
 begin
    -- Your business logic here.
 
    -- Debug code
    if console.level_is_info then
-      open v_dataset for select * from user_tables;
-      console.info(console.to_html_table(v_dataset));
+      open l_dataset for select * from user_tables;
+      console.info(console.to_html_table(l_dataset));
    end if;
 end;
 {{/}}
@@ -1763,6 +1797,8 @@ Converts the given key and value strings to a Markdown table header.
 
 **/
 
+--------------------------------------------------------------------------------
+
 function to_md_tab_data (
    p_key              in varchar2               ,
    p_value            in varchar2               ,
@@ -1784,6 +1820,8 @@ following Markdown table row:
 ```
 
 **/
+
+--------------------------------------------------------------------------------
 
 function to_unibar (
    p_value                   in number            ,
@@ -1884,12 +1922,12 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-  v_start timestamp := localtimestamp;
+  l_start timestamp := localtimestamp;
 begin
 
   --do your stuff here
 
-  dbms_output.put_line('Runtime: ' || console.runtime(v_start));
+  dbms_output.put_line('Runtime: ' || console.runtime(l_start));
 end;
 {{/}}
 ```
@@ -1911,13 +1949,13 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-   v_start timestamp := localtimestamp;
+   l_start timestamp := localtimestamp;
 begin
 
    --do your stuff here
 
    dbms_output.put_line (
-      'Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)) );
+      'Runtime (seconds): ' || to_char(console.runtime_seconds(l_start)) );
 end;
 {{/}}
 ```
@@ -1939,13 +1977,13 @@ EXAMPLE
 ```sql
 set serveroutput on
 declare
-   v_start timestamp := localtimestamp;
+   l_start timestamp := localtimestamp;
 begin
 
    --do your stuff here
 
    dbms_output.put_line (
-      'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(v_start)) );
+      'Runtime (milliseconds): ' || to_char(console.runtime_milliseconds(l_start)) );
 end;
 {{/}}
 ```
@@ -2044,6 +2082,7 @@ when requested by one of the logging methods.
 **/
 
 --------------------------------------------------------------------------------
+
 procedure clob_append (
    p_clob  in out nocopy clob     ,
    p_cache in out nocopy varchar2 ,
@@ -2060,21 +2099,23 @@ EXAMPLE
 ```sql
 set serveroutput on feedback off
 declare
-   v_start  timestamp := localtimestamp;
-   v_clob   clob;
-   v_cache  varchar2(32767 char);
+   l_start  timestamp := localtimestamp;
+   l_clob   clob;
+   l_cache  varchar2(32767 char);
 begin
    for i in 1..100000 loop
-      console.clob_append(v_clob, v_cache, 'a');
+      console.clob_append(l_clob, l_cache, 'a');
    end loop;
-   console.clob_flush_cache(v_clob, v_cache);
-   dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(v_start)));
-   dbms_output.put_line('Lenght CLOB      : ' || length(v_clob));
+   console.clob_flush_cache(l_clob, l_cache);
+   dbms_output.put_line('Runtime (seconds): ' || to_char(console.runtime_seconds(l_start)));
+   dbms_output.put_line('Lenght CLOB      : ' || length(l_clob));
 end;
 {{/}}
 ```
 
 **/
+
+--------------------------------------------------------------------------------
 
 procedure clob_append (
    p_clob  in out nocopy clob     ,
@@ -2088,6 +2129,8 @@ Overloaded method for appending a clob. Also see clob_append above with p_text
 beeing a varchar2 parameter and clob_flush_cache below.
 
 **/
+
+--------------------------------------------------------------------------------
 
 procedure clob_flush_cache (
    p_clob  in out nocopy clob     ,
@@ -2150,6 +2193,7 @@ select * from console.client_prefs();
 **/
 
 --------------------------------------------------------------------------------
+
 procedure purge (
    p_min_level in integer default c_level_info ,  -- Delete log entries greater or equal the given level.
    p_min_days  in number  default 30           ); -- Delete log entries older than the given minimum days.
@@ -2173,6 +2217,8 @@ exec console.purge(p_min_level => console.c_level_info, p_min_days => 0.25);
 
 **/
 
+--------------------------------------------------------------------------------
+
 procedure purge_all;
 /**
 
@@ -2188,6 +2234,8 @@ exec console.purge_all;
 
 **/
 
+--------------------------------------------------------------------------------
+
 procedure purge_job_create (
    p_repeat_interval in varchar2 default 'FREQ=DAILY;BYHOUR=1;' ,  -- See the Oracle docs: https://docs.oracle.com/en/database/oracle/oracle-database/19/admin/scheduling-jobs-with-oracle-scheduler.html#GUID-10B1E444-8330-4EC9-85F8-9428D749F7D5
    p_min_level       in integer  default c_level_info           ,  -- Delete log entries greater or equal the given level.
@@ -2201,6 +2249,7 @@ procedure purge_job_drop;    /** Drops the cleanup job (if it exists).    **/
 procedure purge_job_enable;  /** Enables the cleanup job (if it exists).  **/
 procedure purge_job_disable; /** Disables the cleanup job (if it exists). **/
 procedure purge_job_run;     /** Runs the cleanup job (if it exists).     **/
+
 
 --------------------------------------------------------------------------------
 -- PRIVATE HELPER METHODS (only visible when ccflag `utils_public` is set to true)

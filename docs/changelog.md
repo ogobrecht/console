@@ -14,6 +14,11 @@
 
 # Changelog
 
+## v1.3.x (2025-xx-xx)
+
+- reformat code for readability
+- unit tests
+
 ## v1.2.1 (2025-01-25)
 
 - Fix wrong data type integer used for APEX session ID - thanks to github.com/moeremanskarel to report this issue

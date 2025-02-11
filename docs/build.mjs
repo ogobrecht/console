@@ -22,7 +22,7 @@ const renderNavigation = function (type) {
         }
     });
     if (type === 'top') {
-        menu = menu.substr(2); //delete first pipe character and space
+        menu = menu.slice(2); //delete first pipe character and space
     }
     return '<!-- nav -->\n\n' + menu + '\n<!-- navstop -->';
 };
@@ -48,5 +48,3 @@ glob('docs/*.md', function (err, files) {
         fs.writeFileSync(file, content);
     });
 });
-
-
