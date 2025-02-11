@@ -1222,8 +1222,7 @@ Returns the number code for the level 1 error.
 SIGNATURE
 
 ```sql
-function level_error
-   return integer;
+function level_error   return integer;
 ```
 
 
@@ -1234,8 +1233,7 @@ Returns the number code for the level 2 warning.
 SIGNATURE
 
 ```sql
-function level_warning
-   return integer;
+function level_warning return integer;
 ```
 
 
@@ -1246,8 +1244,7 @@ Returns the number code for the level 3 info.
 SIGNATURE
 
 ```sql
-function level_info
-   return integer;
+function level_info    return integer;
 ```
 
 
@@ -1258,8 +1255,7 @@ Returns the number code for the level 4 debug.
 SIGNATURE
 
 ```sql
-function level_debug
-   return integer;
+function level_debug   return integer;
 ```
 
 
@@ -1270,8 +1266,7 @@ Returns the number code for the level 5 trace.
 SIGNATURE
 
 ```sql
-function level_trace
-   return integer;
+function level_trace   return integer;
 ```
 
 
@@ -1282,8 +1277,7 @@ Returns true when the level is greater than or equal warning, otherwise false.
 SIGNATURE
 
 ```sql
-function level_is_warning
-   return boolean;
+function level_is_warning return boolean;
 ```
 
 
@@ -1294,8 +1288,7 @@ Returns true when the level is greater than or equal info, otherwise false.
 SIGNATURE
 
 ```sql
-function level_is_info
-   return boolean;
+function level_is_info    return boolean;
 ```
 
 
@@ -1306,8 +1299,7 @@ Returns true when the level is greater than or equal debug, otherwise false.
 SIGNATURE
 
 ```sql
-function level_is_debug
-   return boolean;
+function level_is_debug   return boolean;
 ```
 
 
@@ -1318,8 +1310,7 @@ Returns true when the level is greater than or equal trace, otherwise false.
 SIGNATURE
 
 ```sql
-function level_is_trace
-   return boolean;
+function level_is_trace   return boolean;
 ```
 
 
@@ -1330,8 +1321,7 @@ Returns 'Y' when the level is greater than or equal warning, otherwise 'N'.
 SIGNATURE
 
 ```sql
-function level_is_warning_yn
-   return varchar2;
+function level_is_warning_yn return varchar2;
 ```
 
 
@@ -1342,8 +1332,7 @@ Returns 'Y' when the level is greater than or equal info, otherwise 'N'.
 SIGNATURE
 
 ```sql
-function level_is_info_yn
-   return varchar2;
+function level_is_info_yn    return varchar2;
 ```
 
 
@@ -1354,8 +1343,7 @@ Returns 'Y' when the level is greater than or equal debug, otherwise 'N'.
 SIGNATURE
 
 ```sql
-function level_is_debug_yn
-   return varchar2;
+function level_is_debug_yn   return varchar2;
 ```
 
 
@@ -1366,8 +1354,7 @@ Returns 'Y' when the level is greater than or equal trace, otherwise 'N'.
 SIGNATURE
 
 ```sql
-function level_is_trace_yn
-   return varchar2;
+function level_is_trace_yn   return varchar2;
 ```
 
 

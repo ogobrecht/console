@@ -1143,62 +1143,25 @@ to only set the action attribute with the `action` (see below).
 
 --------------------------------------------------------------------------------
 
-function level_error
-   return integer;
-/** Returns the number code for the level 1 error. **/
-
-function level_warning
-   return integer;
-/** Returns the number code for the level 2 warning. **/
-
-function level_info
-   return integer;
-/** Returns the number code for the level 3 info. **/
-
-function level_debug
-   return integer;
-/** Returns the number code for the level 4 debug. **/
-
-function level_trace
-   return integer;
-/** Returns the number code for the level 5 trace. **/
+function level_error   return integer; /** Returns the number code for the level 1 error.   **/
+function level_warning return integer; /** Returns the number code for the level 2 warning. **/
+function level_info    return integer; /** Returns the number code for the level 3 info.    **/
+function level_debug   return integer; /** Returns the number code for the level 4 debug.   **/
+function level_trace   return integer; /** Returns the number code for the level 5 trace.   **/
 
 --------------------------------------------------------------------------------
 
-function level_is_warning
-   return boolean;
-/** Returns true when the level is greater than or equal warning, otherwise false. **/
-
-function level_is_info
-   return boolean;
-/** Returns true when the level is greater than or equal info, otherwise false. **/
-
-function level_is_debug
-   return boolean;
-/** Returns true when the level is greater than or equal debug, otherwise false. **/
-
-function level_is_trace
-   return boolean;
-/** Returns true when the level is greater than or equal trace, otherwise false. **/
+function level_is_warning return boolean; /** Returns true when the level is greater than or equal warning, otherwise false. **/
+function level_is_info    return boolean; /** Returns true when the level is greater than or equal info, otherwise false.    **/
+function level_is_debug   return boolean; /** Returns true when the level is greater than or equal debug, otherwise false.   **/
+function level_is_trace   return boolean; /** Returns true when the level is greater than or equal trace, otherwise false.   **/
 
 --------------------------------------------------------------------------------
 
-function level_is_warning_yn
-   return varchar2;
-/** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
-
-function level_is_info_yn
-   return varchar2;
-/** Returns 'Y' when the level is greater than or equal info, otherwise 'N'. **/
-
-function level_is_debug_yn
-   return varchar2;
-/** Returns 'Y' when the level is greater than or equal debug, otherwise 'N'. **/
-
-function level_is_trace_yn
-   return varchar2;
-/** Returns 'Y' when the level is greater than or equal trace, otherwise 'N'. **/
-
+function level_is_warning_yn return varchar2; /** Returns 'Y' when the level is greater than or equal warning, otherwise 'N'. **/
+function level_is_info_yn    return varchar2; /** Returns 'Y' when the level is greater than or equal info, otherwise 'N'.    **/
+function level_is_debug_yn   return varchar2; /** Returns 'Y' when the level is greater than or equal debug, otherwise 'N'.   **/
+function level_is_trace_yn   return varchar2; /** Returns 'Y' when the level is greater than or equal trace, otherwise 'N'.   **/
 
 --------------------------------------------------------------------------------
 -- PUBLIC HELPER METHODS

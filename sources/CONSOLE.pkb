@@ -3242,12 +3242,11 @@ begin
                auto_drop       => false                                                                        ,
                comments        => 'Purge CONSOLE log entries.'                                                 );
          end loop;
-      end;
-   ]',
-   '#CONSOLE_JOB_NAME#', c_console_job_name ),
-   '#REPEAT_INTERVAL#' , p_repeat_interval  ),
-   '#MIN_LEVEL#'       , p_min_level        ),
-   '#MIN_DAYS#'        , p_min_days         );
+      end;]',
+      '#CONSOLE_JOB_NAME#', c_console_job_name ),
+      '#REPEAT_INTERVAL#' , p_repeat_interval  ),
+      '#MIN_LEVEL#'       , p_min_level        ),
+      '#MIN_DAYS#'        , p_min_days         );
 end purge_job_create;
 
 --------------------------------------------------------------------------------
