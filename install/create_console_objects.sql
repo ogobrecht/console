@@ -841,7 +841,7 @@ end;
 
 This will print something like the following to the server output:
 
-```
+```txt
 Counting nonsense...
 Current value: 333
 Final value: 10
@@ -1001,7 +1001,7 @@ end;
 
 This will result in something like the following output:
 
-```
+```txt
 Processing step one...
 Elapsed time: 00:00:00.105398
 Processing step two...
@@ -2056,7 +2056,7 @@ select 'Bla bla bla'     as description, 0.54 as value, console.to_unibar(0.54) 
 
 RESULT
 
-```
+```txt
 DESCRIPTION          VALUE TEXTBAR
 --------------- ---------- ------------------------------
 Some text              .84 █████████████████████
@@ -2096,7 +2096,7 @@ procedure printf (
 
 A shorthand for
 
-```
+```sql
 begin
    console.print(console.format('A string with %s %s.', 'dynamic', 'content'));
    --is equivalent to
