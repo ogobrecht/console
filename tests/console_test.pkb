@@ -1,5 +1,10 @@
 create or replace package body console_test as
 
+    procedure enable_all_logging as
+    begin
+        console.conf(p_level => 4);
+    end enable_all_logging;
+
     procedure truncate_console_logs as
     begin
 
@@ -37,7 +42,7 @@ create or replace package body console_test as
                 console.level_debug() as level_id,
                 console.level_name(p_level => console.level_debug()) as level_name,
                 'N' as permanent,
-                user || '.CONSOLE_TEST.BASIC_LOGGING_DEBUG, line 33' as scope,
+                user || '.CONSOLE_TEST.BASIC_LOGGING_DEBUG, line 38' as scope,
                 l_log_message || chr(10) || chr(10) as message,
                 to_number(null) as error_code,
                 null as call_stack,
@@ -70,7 +75,7 @@ create or replace package body console_test as
                 console.level_info() as level_id,
                 console.level_name(p_level => console.level_info()) as level_name,
                 'N' as permanent,
-                user || '.CONSOLE_TEST.BASIC_LOGGING_INFO, line 66' as scope,
+                user || '.CONSOLE_TEST.BASIC_LOGGING_INFO, line 71' as scope,
                 l_log_message || chr(10) || chr(10) as message,
                 to_number(null) as error_code,
                 null as call_stack,
@@ -102,7 +107,7 @@ create or replace package body console_test as
                 console.level_warning() as level_id,
                 console.level_name(p_level => console.level_warning()) as level_name,
                 'N' as permanent,
-                user || '.CONSOLE_TEST.BASIC_LOGGING_WARNING, line 98' as scope,
+                user || '.CONSOLE_TEST.BASIC_LOGGING_WARNING, line 103' as scope,
                 l_log_message || chr(10) || chr(10) as message,
                 to_number(null) as error_code,
                 null as call_stack,
@@ -134,7 +139,7 @@ create or replace package body console_test as
                 console.level_error() as level_id,
                 console.level_name(p_level => console.level_error()) as level_name,
                 'N' as permanent,
-                user || '.CONSOLE_TEST.BASIC_LOGGING_ERROR, line 130' as scope,
+                user || '.CONSOLE_TEST.BASIC_LOGGING_ERROR, line 135' as scope,
                 l_log_message || chr(10) || chr(10) as message,
                 to_number(null) as error_code,
                 'console_test' as action,
@@ -220,7 +225,7 @@ create or replace package body console_test as
 
 
     procedure custom_user_scope as
-        l_log_message clob := 'Custom User Agent';
+        l_log_message clob := 'Custom User Scope';
         l_user_scope varchar2(200) := 'myuserscope';
 
         l_actual_logs sys_refcursor;
@@ -246,7 +251,7 @@ create or replace package body console_test as
 
 
     procedure custom_user_error_code as
-        l_log_message clob := 'Custom User Agent';
+        l_log_message clob := 'Custom User Error Code';
         l_user_error_code integer := 988;
 
         l_actual_logs sys_refcursor;
@@ -272,7 +277,7 @@ create or replace package body console_test as
 
 
     procedure custom_user_call_stack as
-        l_log_message clob := 'Custom User Agent';
+        l_log_message clob := 'Custom User Call STack';
         l_user_call_stack varchar2(300) := 'Some call stack';
 
         l_actual_logs sys_refcursor;

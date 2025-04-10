@@ -2,6 +2,9 @@ create or replace package console_test as
     --%suite(Console package)
     --%rollback(manual)
 
+    --%beforeall
+    procedure enable_all_logging;
+
     --%beforeeach
     procedure truncate_console_logs;
 
