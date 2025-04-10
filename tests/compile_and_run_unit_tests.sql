@@ -1,4 +1,4 @@
-@@console_test.pkg
+@@console_test.pks
 @@console_test.pkb
 
 set serverout on
