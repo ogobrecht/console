@@ -1,4 +1,5 @@
 *.log
 *.zip
+config.sql
 node_modules
 temp
