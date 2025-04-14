@@ -277,7 +277,7 @@ end custom_user_error_code;
 
 
 procedure custom_user_call_stack as
-   l_log_message clob := 'Custom User Call STack';
+   l_log_message clob := 'Custom User Call Stack';
    l_user_call_stack varchar2(300) := 'Some call stack';
 
    l_actual_logs sys_refcursor;
@@ -300,6 +300,27 @@ begin
    ut.expect(l_actual_logs).to_equal(l_expected_logs).include('LEVEL_ID,LEVEL_NAME,CALL_STACK');
 
 end custom_user_call_stack;
+
+
+procedure varchar2_parameter as
+
+   l_parameter_name varchar2(100) := 'Some name';
+   l_parameter_value varchar2(100) := 'Some test';
+   l_expected_logging_message_pattern console_logs.message%type := '.*#### Parameters\s*\| Parameter Name\s*\| Value\s*\|\s\| -* \| -* \|\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
+begin
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
+end varchar2_parameter;
 
 
 end console_test;

@@ -26,7 +26,7 @@ create or replace package console_test as
    --%endcontext
 
 
-   --%context(Logging parameters)
+   --%context(Console Parameters)
 
    --%test(Permanent logging)
    procedure permanent_logging;
@@ -45,6 +45,14 @@ create or replace package console_test as
 
    --%test(Custom User Call Stack)
    procedure custom_user_call_stack;
+
+   --%endcontext
+
+
+   --%context(Parameter Logging)
+
+   --%test(varchar2 parameter)
+   procedure varchar2_parameter;
 
    --%endcontext
 
