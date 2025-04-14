@@ -1,5 +1,7 @@
 create or replace package body console_test as
 
+c_parameters_heading constant varchar2(100) := '#### Parameters\s*\| Parameter Name\s*\| Value\s*\|\s\| -* \| -* \|';
+
 procedure enable_all_logging as
 begin
    console.conf(p_level => 4);
@@ -42,7 +44,7 @@ begin
          console.level_debug() as level_id,
          console.level_name(p_level => console.level_debug()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_DEBUG, line 38' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_DEBUG, line 40' as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          null as call_stack,
@@ -75,7 +77,7 @@ begin
          console.level_info() as level_id,
          console.level_name(p_level => console.level_info()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_INFO, line 71' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_INFO, line 73' as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          null as call_stack,
@@ -107,7 +109,7 @@ begin
          console.level_warning() as level_id,
          console.level_name(p_level => console.level_warning()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_WARNING, line 103' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_WARNING, line 105' as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          null as call_stack,
@@ -139,7 +141,7 @@ begin
          console.level_error() as level_id,
          console.level_name(p_level => console.level_error()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_ERROR, line 135' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_ERROR, line 137' as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          'console_test' as action,
@@ -306,7 +308,7 @@ procedure varchar2_parameter as
 
    l_parameter_name varchar2(100) := 'Some name';
    l_parameter_value varchar2(100) := 'Some test';
-   l_expected_logging_message_pattern console_logs.message%type := '.*#### Parameters\s*\| Parameter Name\s*\| Value\s*\|\s\| -* \| -* \|\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value || '\s*\|\s*';
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value || '\s*\|\s*';
    l_actual_logging_message console_logs.message%type;
 
 begin
