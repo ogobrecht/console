@@ -325,5 +325,65 @@ begin
 end varchar2_parameter;
 
 
+procedure number_parameter as
+begin
+   ut.fail('Not implemented yet');
+end number_parameter;
+
+
+procedure date_parameter as
+begin
+   ut.fail('Not implemented yet');
+end date_parameter;
+
+
+procedure timestamp_parameter as
+begin
+   ut.fail('Not implemented yet');
+end timestamp_parameter;
+
+
+procedure timestamp_with_time_zone_parameter as
+begin
+   ut.fail('Not implemented yet');
+end timestamp_with_time_zone_parameter;
+
+
+procedure timestamp_with_local_time_zone_parameter as
+begin
+   ut.fail('Not implemented yet');
+end timestamp_with_local_time_zone_parameter;
+
+
+procedure interval_ym_parameter as
+begin
+   ut.fail('Not implemented yet');
+end interval_ym_parameter;
+
+
+procedure interval_ds_parameter as
+begin
+   ut.fail('Not implemented yet');
+end interval_ds_parameter;
+
+
+procedure boolean_parameter as
+begin
+   ut.fail('Not implemented yet');
+end boolean_parameter;
+
+
+procedure clob_parameter as
+begin
+   ut.fail('Not implemented yet');
+end clob_parameter;
+
+
+procedure xmltype_parameter as
+begin
+   ut.fail('Not implemented yet');
+end xmltype_parameter;
+
+
 end console_test;
 /

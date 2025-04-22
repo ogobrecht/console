@@ -54,6 +54,36 @@ create or replace package console_test as
    --%test(varchar2 parameter)
    procedure varchar2_parameter;
 
+   --%test(number parameter)
+   procedure number_parameter;
+
+   --%test(date parameter)
+   procedure date_parameter;
+
+   --%test(timestamp parameter)
+   procedure timestamp_parameter;
+
+   --%test(timestamp with time zone parameter)
+   procedure timestamp_with_time_zone_parameter;
+
+   --%test(timestamp with local time zone parameter)
+   procedure timestamp_with_local_time_zone_parameter;
+
+   --%test(interval year to month parameter)
+   procedure interval_ym_parameter;
+
+   --%test(interval day to second parameter)
+   procedure interval_ds_parameter;
+
+   --%test(boolean parameter)
+   procedure boolean_parameter;
+
+   --%test(clob parameter)
+   procedure clob_parameter;
+
+   --%test(xmltype parameter)
+   procedure xmltype_parameter;
+
    --%endcontext
 
 end console_test;
