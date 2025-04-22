@@ -326,8 +326,23 @@ end varchar2_parameter;
 
 
 procedure number_parameter as
+
+   l_parameter_name varchar2(100) := 'Some name';
+   l_parameter_value number := 1855;
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end number_parameter;
 
 
