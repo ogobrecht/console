@@ -306,7 +306,7 @@ end custom_user_call_stack;
 
 procedure varchar2_parameter as
 
-   l_parameter_name varchar2(100) := 'Some name';
+   l_parameter_name varchar2(100) := 'Test varchar2_parameter';
    l_parameter_value varchar2(100) := 'Some test';
    l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value || '\s*\|\s*';
    l_actual_logging_message console_logs.message%type;
@@ -327,7 +327,7 @@ end varchar2_parameter;
 
 procedure number_parameter as
 
-   l_parameter_name varchar2(100) := 'Some name';
+   l_parameter_name varchar2(100) := 'Test number_parameter';
    l_parameter_value number := 1855;
    l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value || '\s*\|\s*';
    l_actual_logging_message console_logs.message%type;
@@ -348,7 +348,7 @@ end number_parameter;
 
 procedure date_parameter as
 
-   l_parameter_name varchar2(100) := 'Some name';
+   l_parameter_name varchar2(100) := 'Test date_parameter';
    l_parameter_value date := to_date('29.02.2024', 'dd.mm.yyyy');
    l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || to_char(l_parameter_value, 'yyyy-mm-dd hh24:mi:ss') || '\s*\|\s*';
    l_actual_logging_message console_logs.message%type;
@@ -368,50 +368,171 @@ end date_parameter;
 
 
 procedure timestamp_parameter as
+
+   l_parameter_name varchar2(100) := 'Test timestamp_parameter';
+   l_parameter_value timestamp := to_timestamp('29.02.2024 12:31:56.126988774', 'dd.mm.yyyy hh24:mi:ss.ff9');
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || to_char(l_parameter_value, 'yyyy-mm-dd hh24:mi:ss.ff9') || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end timestamp_parameter;
 
 
 procedure timestamp_with_time_zone_parameter as
+
+   l_parameter_name varchar2(100) := 'Test timestamp_with_time_zone_parameter';
+   l_parameter_value timestamp with time zone := to_timestamp_tz('29.02.2024 15:37:56.166988794 UTC', 'dd.mm.yyyy hh24:mi:ssxFF tzr');
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || to_char(l_parameter_value, 'yyyy-mm-dd hh24:mi:ss.ff9 tzr') || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end timestamp_with_time_zone_parameter;
 
 
 procedure timestamp_with_local_time_zone_parameter as
+
+   l_parameter_name varchar2(100) := 'Test timestamp_with_local_time_zone_parameter';
+   l_parameter_value timestamp with local time zone := to_timestamp_tz('29.02.2024 15:37:56.166988794 UTC', 'dd.mm.yyyy hh24:mi:ssxFF tzr');
+   l_hours_offset number := 12;
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || to_char(l_parameter_value + numtodsinterval(12, 'HOUR'), 'yyyy-mm-dd hh24:mi:ss.ff9') || ' \+' || to_char(l_hours_offset) || ':00' || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+   execute immediate q'[ALTER SESSION SET TIME_ZONE = '+]' || to_char(l_hours_offset) || q'[:00']';
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end timestamp_with_local_time_zone_parameter;
 
 
 procedure interval_ym_parameter as
+
+   l_parameter_name varchar2(100) := 'Test interval_ym_parameter';
+   l_parameter_value interval year to month := interval '1-2' year to month;
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || '\+01-02' || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end interval_ym_parameter;
 
 
 procedure interval_ds_parameter as
+
+   l_parameter_name varchar2(100) := 'Test interval_ds_parameter';
+   l_parameter_value interval day to second := interval '10 18:30:15.12' day to second;
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || '\+10 18:30:15.120000' || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end interval_ds_parameter;
 
 
 procedure boolean_parameter as
+
+   l_parameter_name varchar2(100) := 'Test boolean_parameter';
+   l_parameter_value boolean := true;
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || 'true' || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end boolean_parameter;
 
 
 procedure clob_parameter as
+
+   l_parameter_name varchar2(100) := 'Test clob_parameter';
+   l_parameter_value clob := 'Some large value';
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end clob_parameter;
 
 
 procedure xmltype_parameter as
+
+   l_parameter_name varchar2(100) := 'Test xmltype_parameter';
+   l_parameter_value xmltype := xmltype.createxml('<test>Test value</test>');
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || l_parameter_value.getclobval() || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
 begin
-   ut.fail('Not implemented yet');
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
 end xmltype_parameter;
 
 
