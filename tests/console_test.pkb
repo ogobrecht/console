@@ -444,7 +444,7 @@ procedure timestamp_with_local_time_zone_parameter as
 begin
    execute immediate q'[ALTER SESSION SET TIME_ZONE = 'UTC']';
    l_parameter_value := to_timestamp_tz('29.02.2024 15:37:56.166988794 UTC', 'dd.mm.yyyy hh24:mi:ss.FF9 tzr');
-   l_expected_logging_message_pattern := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || to_char(l_parameter_value + numtodsinterval(12, 'HOUR'), 'yyyy-mm-dd hh24:mi:ss.ff9') || ' \+' || to_char(l_hours_offset) || ':00' || '\s*\|\s*';
+   l_expected_logging_message_pattern := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || to_char(l_parameter_value + numtodsinterval(l_hours_offset, 'HOUR'), 'yyyy-mm-dd hh24:mi:ss.ff9') || ' \+' || to_char(l_hours_offset) || ':00' || '\s*\|\s*';
    execute immediate q'[ALTER SESSION SET TIME_ZONE = '+]' || to_char(l_hours_offset) || q'[:00']';
    console.add_param(l_parameter_name, l_parameter_value);
    console.log('Parameter test');
