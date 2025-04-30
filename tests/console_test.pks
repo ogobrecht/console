@@ -96,6 +96,12 @@ create or replace package console_test as
    --%test(parameter name length limit)
    procedure long_parameter_name;
 
+   --%test(Three parameters - classic)
+   procedure three_parameters_classic;
+
+   --%test(Three parameters - builder pattern)
+   procedure three_parameters_builder_pattern;
+
    --%endcontext
 
 end console_test;

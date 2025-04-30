@@ -632,5 +632,65 @@ begin
    ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
 end long_parameter_name;
 
+
+procedure three_parameters_classic as
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value varchar2(100) := 'Some random value';
+   l_parameter_2_value number := 478465;
+   l_parameter_3_value date := to_date('29.03.2025 13:45:08', 'dd.mm.yyyy hh24:mi:ss');
+
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s' ||
+   '\| ' || l_parameter_1_name || '\s*\| ' || l_parameter_1_value || '\s*\|\s' ||
+   '\| ' || l_parameter_2_name || '\s*\| ' || l_parameter_2_value || '\s*\|\s' ||
+   '\| ' || l_parameter_3_name || '\s*\| ' || to_char(l_parameter_3_value, 'yyyy-mm-dd hh24:mi:ss') || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+begin
+
+   console.add_param(l_parameter_1_name, l_parameter_1_value);
+   console.add_param(l_parameter_2_name, l_parameter_2_value);
+   console.add_param(l_parameter_3_name, l_parameter_3_value);
+   console.log('Parameters test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
+end three_parameters_classic;
+
+
+procedure three_parameters_builder_pattern as
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value varchar2(100) := 'Some random value again';
+   l_parameter_2_value number := 4784645;
+   l_parameter_3_value date := to_date('26.04.2025 11:42:08', 'dd.mm.yyyy hh24:mi:ss');
+
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s' ||
+   '\| ' || l_parameter_1_name || '\s*\| ' || l_parameter_1_value || '\s*\|\s' ||
+   '\| ' || l_parameter_2_name || '\s*\| ' || l_parameter_2_value || '\s*\|\s' ||
+   '\| ' || l_parameter_3_name || '\s*\| ' || to_char(l_parameter_3_value, 'yyyy-mm-dd hh24:mi:ss') || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+begin
+
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+   console.log('Parameters test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
+end three_parameters_builder_pattern;
+
 end console_test;
 /
