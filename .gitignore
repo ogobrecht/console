@@ -4,3 +4,4 @@ config.sql
 node_modules
 temp
 ?/
+utPLSQL-cli/

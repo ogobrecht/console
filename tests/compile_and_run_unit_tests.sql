@@ -3,4 +3,4 @@
 
 set serverout on
 
-exec ut.run();
+exec ut.run(a_color_console=>true);
