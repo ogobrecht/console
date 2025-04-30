@@ -325,6 +325,30 @@ begin
 end varchar2_parameter;
 
 
+procedure truncated_varchar2_parameter as
+
+   l_parameter_name varchar2(100) := 'truncated_varchar2_parameter';
+   l_parameter_value varchar2(4000) := 'Some test';
+   l_expected_logging_message_pattern console_logs.message%type;
+   l_actual_logging_message console_logs.message%type;
+
+begin
+
+   l_parameter_value := rpad('test', 3004, 'u');
+   l_expected_logging_message_pattern := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || 'test(u){1996}' || '\s*\|\s*';
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
+end truncated_varchar2_parameter;
+
+
 procedure number_parameter as
 
    l_parameter_name varchar2(100) := 'Test number_parameter';
@@ -515,6 +539,30 @@ begin
 end clob_parameter;
 
 
+procedure truncated_clob_parameter as
+
+   l_parameter_name varchar2(100) := 'truncated_clob_parameter';
+   l_parameter_value clob := 'Some test';
+   l_expected_logging_message_pattern console_logs.message%type;
+   l_actual_logging_message console_logs.message%type;
+
+begin
+
+   l_parameter_value := rpad('test', 3004, 'u');
+   l_expected_logging_message_pattern := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || 'test(u){1996}' || '\s*\|\s*';
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
+end truncated_clob_parameter;
+
+
 procedure xmltype_parameter as
 
    l_parameter_name varchar2(100) := 'Test xmltype_parameter';
@@ -535,6 +583,51 @@ begin
 
 end xmltype_parameter;
 
+
+procedure truncated_xmltype_parameter as
+
+   l_parameter_name varchar2(100) := 'truncated_xmltype_parameter';
+   l_parameter_value xmltype;
+   l_expected_logging_message_pattern console_logs.message%type;
+   l_actual_logging_message console_logs.message%type;
+   l_xml_filler varchar2(10) := '<test/>';
+
+begin
+
+   l_parameter_value := xmltype.createxml('<root>' || rpad(l_xml_filler, length(l_xml_filler) * 500, l_xml_filler) || '</root>');
+
+   l_expected_logging_message_pattern := '.*' || c_parameters_heading || '\s\| ' || l_parameter_name || '\s*\| ' || '<root>(' || l_xml_filler || '){284}' || substr(l_xml_filler, 1, 6) || '\s*\|\s*';
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+
+end truncated_xmltype_parameter;
+
+
+procedure long_parameter_name as
+
+   l_parameter_name varchar2(200) := 'very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_very_long_parameter_name';
+   l_parameter_value varchar2(100) := 'Small value';
+   l_expected_logging_message_pattern console_logs.message%type := '.*' || c_parameters_heading || '\s\| ' || substr(l_parameter_name, 1, 128) || '\s*\| ' || l_parameter_value || '\s*\|\s*';
+   l_actual_logging_message console_logs.message%type;
+
+begin
+
+   console.add_param(l_parameter_name, l_parameter_value);
+   console.log('Parameter test');
+
+   select message
+   into l_actual_logging_message
+   from console_logs;
+
+   ut.expect(l_actual_logging_message).to_match(l_expected_logging_message_pattern);
+end long_parameter_name;
 
 end console_test;
 /

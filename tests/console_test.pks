@@ -54,6 +54,9 @@ create or replace package console_test as
    --%test(varchar2 parameter)
    procedure varchar2_parameter;
 
+   --%test(truncated varchar2 parameter)
+   procedure truncated_varchar2_parameter;
+
    --%test(number parameter)
    procedure number_parameter;
 
@@ -81,8 +84,17 @@ create or replace package console_test as
    --%test(clob parameter)
    procedure clob_parameter;
 
+   --%test(truncated clob parameter)
+   procedure truncated_clob_parameter;
+
    --%test(xmltype parameter)
    procedure xmltype_parameter;
+
+   --%test(truncated xmltype parameter)
+   procedure truncated_xmltype_parameter;
+
+   --%test(parameter name length limit)
+   procedure long_parameter_name;
 
    --%endcontext
 
