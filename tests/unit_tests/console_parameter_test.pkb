@@ -538,13 +538,258 @@ procedure parameter_builder_pattern_function_number is
       '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
+         .add_param(l_parameter_2_name, l_parameter_2_value)
+         .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_number;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_date is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value date := to_date('01.01.2024', 'dd.mm.yyyy');
+   l_parameter_2_value date := to_date('02.02.2024', 'dd.mm.yyyy');
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || to_char(l_parameter_1_value, 'yyyy-mm-dd hh24:mi:ss') || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value, 'yyyy-mm-dd hh24:mi:ss') || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
       .add_param(l_parameter_2_name, l_parameter_2_value)
       .add_param(l_parameter_3_name, l_parameter_3_value);
 
    console.log('Parameters test with string');
 
    ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
-end parameter_builder_pattern_function_number;
+end parameter_builder_pattern_function_date;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_timestamp is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value timestamp := to_timestamp('01.01.2024 10:20:30.123456', 'dd.mm.yyyy hh24:mi:ss.ff9');
+   l_parameter_2_value timestamp := to_timestamp('02.02.2024 10:20:30.123456', 'dd.mm.yyyy hh24:mi:ss.ff9');
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || to_char(l_parameter_1_value, 'yyyy-mm-dd hh24:mi:ss.ff9') || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value, 'yyyy-mm-dd hh24:mi:ss.ff9') || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_timestamp;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_timestamp_tz is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value timestamp with time zone := to_timestamp_tz('2024-01-01 10:20:30 +01:00', 'yyyy-mm-dd hh24:mi:ss tzh:tzm');
+   l_parameter_2_value timestamp with time zone := to_timestamp_tz('2024-02-02 20:30:40 +02:00', 'yyyy-mm-dd hh24:mi:ss tzh:tzm');
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || to_char(l_parameter_1_value, 'yyyy-mm-dd hh24:mi:ss.ff9 \tzh:tzm') || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value, 'yyyy-mm-dd hh24:mi:ss.ff9 \tzh:tzm') || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_timestamp_tz;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_timestamp_ltz is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value timestamp with local time zone;
+   l_parameter_2_value timestamp with local time zone;
+   l_parameter_3_value varchar2(100) := 'string_param';
+   l_hours_offset number := 12;
+
+   l_expected_logging_message_pattern console_logs.message%type;
+begin
+   execute immediate q'[ALTER SESSION SET TIME_ZONE = 'UTC']';
+
+   l_parameter_1_value := to_timestamp_tz('2024-01-01 10:20:30 UTC', 'yyyy-mm-dd hh24:mi:ss tzr');
+   l_parameter_2_value := to_timestamp_tz('2024-02-02 20:30:40 UTC', 'yyyy-mm-dd hh24:mi:ss tzr');
+   l_expected_logging_message_pattern :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || to_char(l_parameter_1_value + numtodsinterval(l_hours_offset, 'HOUR'), 'yyyy-mm-dd hh24:mi:ss.ff9') ||
+      ' \+' || to_char(l_hours_offset) || ':00' || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value + numtodsinterval(l_hours_offset, 'HOUR'), 'yyyy-mm-dd hh24:mi:ss.ff9') ||
+      ' \+' || to_char(l_hours_offset) || ':00' || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+
+   execute immediate q'[ALTER SESSION SET TIME_ZONE = '+]' || to_char(l_hours_offset) || q'[:00']';
+
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_timestamp_ltz;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_interval_ym is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value interval year to month := interval '1-2' year to month;
+   l_parameter_2_value interval year to month := interval '3-4' year to month;
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || '\+01-02' || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || '\+03-04' || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_interval_ym;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_interval_ds is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value interval day to second := interval '1 2:3:4' day to second;
+   l_parameter_2_value interval day to second := interval '5 6:7:8' day to second;
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || '\+01 02:03:04.000000' || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || '\+05 06:07:08.000000' || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_interval_ds;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_boolean is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value boolean := true;
+   l_parameter_2_value boolean := false;
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| true\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| false\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_boolean;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_clob is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value clob := to_clob('Clob test content 1');
+   l_parameter_2_value clob := to_clob('Clob test content 2');
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| Clob test content 1\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| Clob test content 2\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_clob;
+
+---------------------------------------------------------------------------
+
+procedure parameter_builder_pattern_function_xmltype is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value xmltype := xmltype('<test>value1</test>');
+   l_parameter_2_value xmltype := xmltype('<test>value2</test>');
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || l_parameter_1_value.getclobval() || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || l_parameter_2_value.getclobval() || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_xmltype;
 
 end console_parameter_test;
 /

@@ -99,6 +99,33 @@ create or replace package console_parameter_test as
    --%test(Parameter builder pattern function number)
    procedure parameter_builder_pattern_function_number;
 
+   --%test(Parameter builder pattern function date)
+   procedure parameter_builder_pattern_function_date;
+
+   --%test(Parameter builder pattern function timestamp)
+   procedure parameter_builder_pattern_function_timestamp;
+
+   --%test(Parameter builder pattern function timestamp_tz)
+   procedure parameter_builder_pattern_function_timestamp_tz;
+
+   --%test(Parameter builder pattern function timestamp_ltz)
+   procedure parameter_builder_pattern_function_timestamp_ltz;
+
+   --%test(Parameter builder pattern function interval_ym)
+   procedure parameter_builder_pattern_function_interval_ym;
+
+   --%test(Parameter builder pattern function interval_ds)
+   procedure parameter_builder_pattern_function_interval_ds;
+
+   --%test(Parameter builder pattern function boolean)
+   procedure parameter_builder_pattern_function_boolean;
+
+   --%test(Parameter builder pattern function clob)
+   procedure parameter_builder_pattern_function_clob;
+
+   --%test(Parameter builder pattern function xmltype)
+   procedure parameter_builder_pattern_function_xmltype;
+
    --%endcontext
 end console_parameter_test;
 /
