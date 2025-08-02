@@ -139,6 +139,37 @@ begin
 end basic_logging_error;
 
 
+procedure dont_log_debug as
+   l_actual_logs sys_refcursor;
+   l_expected_logs sys_refcursor;
+begin
+   console.conf(p_level => console.c_level_info);
+   console.debug('debug');
+   console.log('info');
+   console.warn('warning');
+   console.error('error');
+
+   l_actual_logs := fetch_logs();
+
+   open l_expected_logs for
+      select console.level_info() as level_id
+      from dual
+
+      union
+
+      select console.level_warning() as level_id
+      from dual
+
+      union
+
+      select console.level_error() as level_id
+      from dual;
+
+   ut.expect(l_actual_logs).to_equal(l_expected_logs).include('LEVEL_ID').unordered();
+
+end dont_log_debug;
+
+
 procedure permanent_logging as
    l_log_message clob := 'Permanent Log';
 

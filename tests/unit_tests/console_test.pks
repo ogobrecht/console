@@ -2,9 +2,7 @@ create or replace package console_test as
    --%suite(Console package)
    --%rollback(manual)
 
-   --%beforeall(console_test_helpers.enable_all_logging)
-
-   --%beforeeach(console_test_helpers.truncate_console_logs)
+   --%beforeeach(console_test_helpers.truncate_console_logs, console_test_helpers.enable_all_logging)
 
 
    --%context(Basic logging)
@@ -20,6 +18,9 @@ create or replace package console_test as
 
    --%test(Basic logging (ERROR))
    procedure basic_logging_error;
+
+   --%test(Don't log DEBUG)
+   procedure dont_log_debug;
 
    --%endcontext
 
