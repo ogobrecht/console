@@ -96,6 +96,9 @@ create or replace package console_parameter_test as
    --%test(Parameter builder pattern procedure xmltype)
    procedure parameter_builder_pattern_procedure_xmltype;
 
+   --%test(Parameter builder pattern function number)
+   procedure parameter_builder_pattern_function_number;
+
    --%endcontext
 end console_parameter_test;
 /

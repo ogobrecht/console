@@ -292,7 +292,7 @@ procedure parameter_builder_pattern_procedure_varchar2 is
       '\| ' || l_parameter_2_name || '\s*\| ' || l_parameter_2_value || '\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -313,7 +313,7 @@ procedure parameter_builder_pattern_procedure_number is
       '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value) || '\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -334,7 +334,7 @@ procedure parameter_builder_pattern_procedure_date is
       '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value, 'yyyy-mm-dd hh24:mi:ss') || '\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -355,7 +355,7 @@ procedure parameter_builder_pattern_procedure_timestamp is
       '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value, 'yyyy-mm-dd hh24:mi:ss.ff9') || '\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -376,7 +376,7 @@ procedure parameter_builder_pattern_procedure_timestamp_tz is
       '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value, 'yyyy-mm-dd hh24:mi:ss.ff9 \tzh:tzm') || '\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -408,7 +408,7 @@ begin
    execute immediate q'[ALTER SESSION SET TIME_ZONE = '+]' || to_char(l_hours_offset) || q'[:00']';
 
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -430,7 +430,7 @@ procedure parameter_builder_pattern_procedure_interval_ym is
       '\| ' || l_parameter_2_name || '\s*\| ' || '\+03-04' || '\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -472,7 +472,7 @@ procedure parameter_builder_pattern_procedure_boolean is
       '\| ' || l_parameter_2_name || '\s*\| false\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -493,7 +493,7 @@ procedure parameter_builder_pattern_procedure_clob is
       '\| ' || l_parameter_2_name || '\s*\| Clob test content 2\s*\|\s*';
 begin
    console.add_param(l_parameter_1_name, l_parameter_1_value)
-         .add_param(l_parameter_2_name, l_parameter_2_value);
+      .add_param(l_parameter_2_name, l_parameter_2_value);
 
    console.log('Parameters test');
 
@@ -520,6 +520,31 @@ begin
 
    ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
 end parameter_builder_pattern_procedure_xmltype;
+
+
+procedure parameter_builder_pattern_function_number is
+   l_parameter_1_name varchar2(100) := 'param_1';
+   l_parameter_2_name varchar2(100) := 'param_2';
+   l_parameter_3_name varchar2(100) := 'param_3';
+
+   l_parameter_1_value number := 12345;
+   l_parameter_2_value number := 67890;
+   l_parameter_3_value varchar2(100) := 'string_param';
+
+   l_expected_logging_message_pattern console_logs.message%type :=
+      '.*' || console_test_helpers.c_parameters_heading || '\s' ||
+      '\| ' || l_parameter_1_name || '\s*\| ' || to_char(l_parameter_1_value) || '\s*\|\s' ||
+      '\| ' || l_parameter_2_name || '\s*\| ' || to_char(l_parameter_2_value) || '\s*\|\s' ||
+      '\| ' || l_parameter_3_name || '\s*\| ' || l_parameter_3_value || '\s*\|\s*';
+begin
+   console.add_param(l_parameter_1_name, l_parameter_1_value)
+      .add_param(l_parameter_2_name, l_parameter_2_value)
+      .add_param(l_parameter_3_name, l_parameter_3_value);
+
+   console.log('Parameters test with string');
+
+   ut.expect(actual_log_message()).to_match(l_expected_logging_message_pattern);
+end parameter_builder_pattern_function_number;
 
 end console_parameter_test;
 /
