@@ -22,6 +22,12 @@ create or replace package console_test as
    --%test(Don't log DEBUG)
    procedure dont_log_debug;
 
+   --%test(Don't log INFO)
+   procedure dont_log_info;
+
+   --%test(Don't log WARNING)
+   procedure dont_log_warning;
+
    --%endcontext
 
 
