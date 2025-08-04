@@ -208,6 +208,24 @@ begin
 end dont_log_warning;
 
 
+procedure purge_old_logs as
+   l_actual_logs_count number;
+begin
+   console_test_helpers.log_all_levels();
+   commit;
+   console.purge(
+      p_min_level => console.c_level_error,
+      p_min_days => -1
+   );
+
+   select count(1)
+   into l_actual_logs_count
+   from console_logs;
+
+   ut.expect(l_actual_logs_count).to_equal(0);
+end purge_old_logs;
+
+
 procedure permanent_logging as
    l_log_message clob := 'Permanent Log';
 

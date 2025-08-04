@@ -31,6 +31,15 @@ create or replace package console_test as
    --%endcontext
 
 
+   --%context(Housekeeping)
+
+   --%test(Purge logs)
+   --%rollback(manual)
+   procedure purge_old_logs;
+
+   --%endcontext
+
+
    --%context(Console Parameters)
 
    --%test(Permanent logging)
