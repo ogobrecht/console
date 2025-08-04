@@ -13,5 +13,14 @@ begin
 
 end truncate_console_logs;
 
+
+procedure log_all_levels as
+begin
+   console.debug('debug');
+   console.log('info');
+   console.warn('warning');
+   console.error('error');
+end log_all_levels;
+
 end console_test_helpers;
 /

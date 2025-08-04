@@ -6,5 +6,7 @@ procedure enable_all_logging;
 
 procedure truncate_console_logs;
 
+procedure log_all_levels;
+
 end console_test_helpers;
 /

@@ -144,10 +144,7 @@ procedure dont_log_debug as
    l_expected_logs sys_refcursor;
 begin
    console.conf(p_level => console.c_level_info);
-   console.debug('debug');
-   console.log('info');
-   console.warn('warning');
-   console.error('error');
+   console_test_helpers.log_all_levels();
 
    l_actual_logs := fetch_logs();
 
