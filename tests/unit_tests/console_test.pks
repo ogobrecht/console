@@ -37,6 +37,10 @@ create or replace package console_test as
    --%rollback(manual)
    procedure purge_old_logs;
 
+   --%test(Purge logs but keep permanent entries)
+   --%rollback(manual)
+   procedure keep_permanent_logging;
+
    --%endcontext
 
 
