@@ -8,8 +8,8 @@ end enable_all_logging;
 procedure truncate_console_logs as
 begin
 
-   -- execute immediate 'truncate table console_logs';
    delete from console_logs;
+   commit;
 
 end truncate_console_logs;
 

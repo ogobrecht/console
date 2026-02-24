@@ -208,6 +208,26 @@ begin
 end dont_log_warning;
 
 
+procedure logging_is_autonomous_transaction as
+   l_actual_logs sys_refcursor;
+   l_expected_logs sys_refcursor;
+
+   l_log_message constant varchar2(20) := 'fk4jq5i943ertfkl5';
+begin
+   console.log(l_log_message);
+   rollback;
+
+   l_actual_logs := fetch_logs();
+
+   open l_expected_logs for
+      select console.level_info as level_id
+      from dual;
+
+   ut.expect(l_actual_logs).to_equal(l_expected_logs).include('LEVEL_ID').unordered();
+
+end logging_is_autonomous_transaction;
+
+
 procedure purge_old_logs as
    l_actual_logs_count number;
 begin

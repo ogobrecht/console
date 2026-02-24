@@ -28,6 +28,9 @@ create or replace package console_test as
    --%test(Don't log WARNING)
    procedure dont_log_warning;
 
+   --%test(Logging as autonomous transaction)
+   procedure logging_is_autonomous_transaction;
+
    --%endcontext
 
 
