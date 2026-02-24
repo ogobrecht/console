@@ -6,6 +6,8 @@ procedure enable_all_logging;
 
 procedure truncate_console_logs;
 
+procedure clear_client_prefs;
+
 procedure log_all_levels;
 
 end console_test_helpers;

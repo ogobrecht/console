@@ -14,6 +14,15 @@ begin
 end truncate_console_logs;
 
 
+procedure clear_client_prefs as
+begin
+   update console_conf
+      set client_prefs = null
+    where conf_id = 'CONF';
+   commit;
+end clear_client_prefs;
+
+
 procedure log_all_levels as
 begin
    console.debug('debug');

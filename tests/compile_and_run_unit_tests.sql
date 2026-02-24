@@ -1,3 +1,9 @@
+alter session set plsql_ccflags = 'apex_installed:false, utils_public:true';
+prompt - Compile package console (spec)
+@sources/CONSOLE.pks
+prompt - Compile package console (body)
+@sources/CONSOLE.pkb
+
 @@unit_tests/console_test_helpers.pks
 @@unit_tests/console_test_helpers.pkb
 @@unit_tests/console_test.pks

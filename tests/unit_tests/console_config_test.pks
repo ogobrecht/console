@@ -4,7 +4,7 @@ create or replace package console_config_test as
 
 --%beforeall(console_test_helpers.enable_all_logging)
 
---%beforeeach(console.exit_all, console_test_helpers.truncate_console_logs)
+--%beforeeach(console_test_helpers.clear_client_prefs, console.exit_all, console_test_helpers.truncate_console_logs)
 
 --%context(Init)
 
@@ -56,6 +56,22 @@ procedure init_sets_session_conf_for_own_client;
 
 --%test(Init sets prefs for other client)
 procedure init_sets_prefs_for_other_client;
+
+--%test(Init deduplicates client preferences)
+procedure init_deduplicates_client_identifier;
+
+--%endcontext
+
+--%context(Client preferences)
+
+--%test(Client prefs clean filters stale entries)
+procedure clean_client_prefs_filters_stale_entries;
+
+--%test(Client prefs clean appends new entry)
+procedure clean_client_prefs_appends_new_entry;
+
+--%test(Client prefs CSV format)
+procedure client_prefs_csv_format;
 
 --%endcontext
 
