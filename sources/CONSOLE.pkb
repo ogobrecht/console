@@ -1856,7 +1856,7 @@ begin
          p_client_identifier_to_remove => l_prefs.client_identifier,
          p_client_prefs_to_append      => l_prefs ) );
 
-   -- If we want to monitor our own session, wee need to load the configuration
+   -- If we want to monitor our own session, we need to load the configuration
    -- data from the context or table into the cache (package variables).
    -- Otherwise we need to wait until the cache duration is over (which defaults
    -- to 10 seconds) and the package reloads the configuration from the context
