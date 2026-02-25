@@ -149,5 +149,28 @@ procedure conf_sets_conf_user_correctly;
 
 --%endcontext
 
+--%context(Exit - Session Management)
+
+--%test(Exit all on empty client preferences)
+procedure exit_all_on_empty_client_prefs;
+
+--%test(Exit all on multiple client preferences)
+procedure exit_all_on_multiple_client_prefs;
+
+--%test(Exit on empty client preferences)
+procedure exit_on_empty_client_prefs;
+
+--%test(Exit single client when multiple are active)
+procedure exit_single_client_when_multiple_active;
+
+--%test(Exit with default parameter uses own session)
+procedure exit_with_default_parameter;
+
+--%test(Exit rejects null client identifier)
+--%throws(-20777)
+procedure exit_rejects_null_client_identifier;
+
+--%endcontext
+
 end console_config_test;
 /

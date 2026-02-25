@@ -742,5 +742,128 @@ begin
    ut.expect(length(l_conf_user)).to_be_greater_than(0);
 end conf_sets_conf_user_correctly;
 
+
+procedure exit_all_on_empty_client_prefs as
+   l_count number;
+begin
+   select count(*)
+     into l_count
+     from table(console.client_prefs);
+
+   ut.expect(l_count).to_equal(0);
+
+   console.exit_all();
+
+   select count(*)
+     into l_count
+     from table(console.client_prefs);
+
+   ut.expect(l_count).to_equal(0);
+end exit_all_on_empty_client_prefs;
+
+
+procedure exit_all_on_multiple_client_prefs as
+   l_count number;
+begin
+   console.init('CLIENT_A', p_level => console.c_level_info, p_call_stack => true, p_user_env => true, p_apex_env => true, p_cgi_env => true, p_console_env => true);
+   console.init('CLIENT_B', p_level => console.c_level_debug, p_call_stack => true, p_user_env => true, p_apex_env => true, p_cgi_env => true, p_console_env => true);
+   console.init('CLIENT_C', p_level => console.c_level_trace, p_call_stack => true, p_user_env => true, p_apex_env => true, p_cgi_env => true, p_console_env => true);
+
+   select count(*)
+     into l_count
+     from table(console.client_prefs);
+
+   ut.expect(l_count).to_equal(3);
+
+   console.exit_all();
+
+   select count(*)
+     into l_count
+     from table(console.client_prefs);
+
+   ut.expect(l_count).to_equal(0);
+end exit_all_on_multiple_client_prefs;
+
+
+procedure exit_on_empty_client_prefs as
+   l_count number;
+begin
+   select count(*)
+     into l_count
+     from table(console.client_prefs);
+
+   ut.expect(l_count).to_equal(0);
+
+   console.exit('NON_EXISTENT_CLIENT');
+
+   select count(*)
+     into l_count
+     from table(console.client_prefs);
+
+   ut.expect(l_count).to_equal(0);
+end exit_on_empty_client_prefs;
+
+
+procedure exit_single_client_when_multiple_active as
+   l_count number;
+   l_exists_a number;
+   l_exists_b number;
+begin
+   console.init('EXIT_TEST_A', p_level => console.c_level_info, p_call_stack => true, p_user_env => true, p_apex_env => true, p_cgi_env => true, p_console_env => true);
+   console.init('EXIT_TEST_B', p_level => console.c_level_debug, p_call_stack => true, p_user_env => true, p_apex_env => true, p_cgi_env => true, p_console_env => true);
+
+   select count(*)
+     into l_count
+     from table(console.client_prefs);
+
+   ut.expect(l_count).to_equal(2);
+
+   console.exit('EXIT_TEST_A');
+
+   select count(*)
+     into l_exists_b
+     from table(console.client_prefs)
+    where client_identifier = 'EXIT_TEST_B';
+
+   ut.expect(l_exists_b).to_equal(1);
+end exit_single_client_when_multiple_active;
+
+
+procedure exit_with_default_parameter as
+   l_my_client_id console.t_64b := console.my_client_identifier;
+   l_exists number;
+begin
+   console.init(
+      p_client_identifier => l_my_client_id,
+      p_level             => console.c_level_debug,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   select count(*)
+     into l_exists
+     from table(console.client_prefs)
+    where client_identifier = l_my_client_id;
+
+   ut.expect(l_exists).to_equal(1);
+
+   console.exit();
+
+   select count(*)
+     into l_exists
+     from table(console.client_prefs)
+    where client_identifier = l_my_client_id;
+
+   ut.expect(l_exists).to_equal(0);
+end exit_with_default_parameter;
+
+
+procedure exit_rejects_null_client_identifier as
+begin
+   console.exit(null);
+end exit_rejects_null_client_identifier;
+
 end console_config_test;
 /
