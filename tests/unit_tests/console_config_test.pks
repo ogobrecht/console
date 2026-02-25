@@ -10,7 +10,11 @@ create or replace package console_config_test as
 
 --%test(Init rejects invalid level)
 --%throws(-20777)
-procedure init_rejects_invalid_level;
+procedure init_rejects_level_too_low;
+
+--%test(Init rejects level too high)
+--%throws(-20777)
+procedure init_rejects_level_too_high;
 
 --%test(Init rejects null client identifier)
 --%throws(-20777)
@@ -59,6 +63,32 @@ procedure init_sets_prefs_for_other_client;
 
 --%test(Init deduplicates client preferences)
 procedure init_deduplicates_client_identifier;
+
+--%test(Init handles multiple clients independently)
+procedure init_handles_multiple_clients_independently;
+
+--%test(Init rejects duration below minimum)
+--%throws(-20777)
+procedure init_rejects_duration_below_min;
+
+--%test(Init rejects check interval below minimum)
+--%throws(-20777)
+procedure init_rejects_check_interval_below_min;
+
+--%test(Init accepts minimum and maximum duration)
+procedure init_accepts_min_and_max_duration;
+
+--%test(Init accepts minimum and maximum check interval)
+procedure init_accepts_min_and_max_check_interval;
+
+--%test(Init updates level for existing client)
+procedure init_updates_level_for_existing_client;
+
+--%test(Init without client identifier uses own session)
+procedure init_without_client_identifier_uses_own_session;
+
+--%test(Init sets correct exit sysdate)
+procedure init_sets_correct_exit_sysdate;
 
 --%endcontext
 

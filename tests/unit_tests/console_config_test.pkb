@@ -1,11 +1,19 @@
 create or replace package body console_config_test as
 
-procedure init_rejects_invalid_level as
+procedure init_rejects_level_too_low as
 begin
    console.init(
       p_client_identifier => 'TEST_INIT_INVALID_LEVEL',
       p_level             => 0);
-end init_rejects_invalid_level;
+end init_rejects_level_too_low;
+
+
+procedure init_rejects_level_too_high as
+begin
+   console.init(
+      p_client_identifier => 'TEST_INIT_LEVEL_TOO_HIGH',
+      p_level             => 5);
+end init_rejects_level_too_high;
 
 
 procedure init_rejects_null_client_identifier as
@@ -193,8 +201,6 @@ begin
    ut.expect(l_pref.cgi_env).to_equal('false');
    ut.expect(l_pref.console_env).to_equal('true');
    ut.expect(l_pref.exit_sysdate).to_be_greater_or_equal(sysdate);
-
-   console.exit(l_other_client_id);
 end init_sets_prefs_for_other_client;
 
 
@@ -261,6 +267,223 @@ begin
 
   ut.expect(l_count).to_equal(1);
 end init_deduplicates_client_identifier;
+
+
+procedure init_handles_multiple_clients_independently as
+   l_client_a varchar2(64) := 'TEST_MULTI_CLIENT_A';
+   l_client_b varchar2(64) := 'TEST_MULTI_CLIENT_B';
+   l_pref_a console.t_client_prefs_row;
+   l_pref_b console.t_client_prefs_row;
+begin
+   console.init(
+      p_client_identifier => l_client_a,
+      p_level             => console.c_level_warning,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   console.init(
+      p_client_identifier => l_client_b,
+      p_level             => console.c_level_trace,
+      p_call_stack        => false,
+      p_user_env          => false,
+      p_apex_env          => false,
+      p_cgi_env           => false,
+      p_console_env       => false);
+
+   select *
+     into l_pref_a
+     from table(console.client_prefs)
+    where client_identifier = l_client_a;
+
+   select *
+     into l_pref_b
+     from table(console.client_prefs)
+    where client_identifier = l_client_b;
+
+   ut.expect(l_pref_a.level_id).to_equal(console.c_level_warning);
+   ut.expect(l_pref_a.call_stack).to_equal('true');
+
+   ut.expect(l_pref_b.level_id).to_equal(console.c_level_trace);
+   ut.expect(l_pref_b.call_stack).to_equal('false');
+
+end init_handles_multiple_clients_independently;
+
+
+procedure init_rejects_duration_below_min as
+begin
+   console.init(
+      p_client_identifier => 'TEST_INIT_DURATION_MIN',
+      p_level             => console.c_level_info,
+      p_duration          => console.c_duration_min - 1);
+end init_rejects_duration_below_min;
+
+
+procedure init_rejects_check_interval_below_min as
+begin
+   console.init(
+      p_client_identifier => 'TEST_INIT_CHECK_INTERVAL_MIN',
+      p_level             => console.c_level_info,
+      p_check_interval    => console.c_check_interval_min - 1);
+end init_rejects_check_interval_below_min;
+
+
+procedure init_accepts_min_and_max_duration as
+   l_client_min varchar2(64) := 'TEST_INIT_DURATION_MIN_OK';
+   l_client_max varchar2(64) := 'TEST_INIT_DURATION_MAX_OK';
+   l_count      number;
+begin
+   console.init(
+      p_client_identifier => l_client_min,
+      p_level             => console.c_level_info,
+      p_duration          => console.c_duration_min,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   console.init(
+      p_client_identifier => l_client_max,
+      p_level             => console.c_level_info,
+      p_duration          => console.c_duration_max,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   select count(*) into l_count
+     from table(console.client_prefs)
+    where client_identifier in (l_client_min, l_client_max);
+
+   ut.expect(l_count).to_equal(2);
+end init_accepts_min_and_max_duration;
+
+
+procedure init_accepts_min_and_max_check_interval as
+   l_client_min varchar2(64) := 'TEST_INIT_CKINT_MIN_OK';
+   l_client_max varchar2(64) := 'TEST_INIT_CKINT_MAX_OK';
+   l_count      number;
+begin
+   console.init(
+      p_client_identifier => l_client_min,
+      p_level             => console.c_level_info,
+      p_check_interval    => console.c_check_interval_min,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   console.init(
+      p_client_identifier => l_client_max,
+      p_level             => console.c_level_info,
+      p_check_interval    => console.c_check_interval_max,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   select count(*) into l_count
+     from table(console.client_prefs)
+    where client_identifier in (l_client_min, l_client_max);
+
+   ut.expect(l_count).to_equal(2);
+end init_accepts_min_and_max_check_interval;
+
+
+procedure init_updates_level_for_existing_client as
+   l_client_id varchar2(64) := 'TEST_UPDATE_LEVEL';
+   l_pref console.t_client_prefs_row;
+begin
+   -- Initial init with level info
+   console.init(
+      p_client_identifier => l_client_id,
+      p_level             => console.c_level_info,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   -- Update with level debug
+   console.init(
+      p_client_identifier => l_client_id,
+      p_level             => console.c_level_debug,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   select *
+     into l_pref
+     from table(console.client_prefs)
+    where client_identifier = l_client_id;
+
+   ut.expect(l_pref.level_id).to_equal(console.c_level_debug);
+   ut.expect(l_pref.level_name).to_equal('debug');
+end init_updates_level_for_existing_client;
+
+
+procedure init_without_client_identifier_uses_own_session as
+   l_my_client_id console.t_64b := console.my_client_identifier;
+   l_level        varchar2(100);
+begin
+   -- Call overloaded init without p_client_identifier
+   console.init(
+      p_level             => console.c_level_debug,
+      p_duration          => 10,
+      p_check_interval    => console.c_check_interval_min,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => false,
+      p_cgi_env           => false,
+      p_console_env       => true);
+
+   select value into l_level
+     from table(console.status)
+    where attribute = 'g_conf_level';
+
+   ut.expect(l_level).to_equal(to_char(console.c_level_debug));
+end init_without_client_identifier_uses_own_session;
+
+
+procedure init_sets_correct_exit_sysdate as
+   l_other_client_id console.t_64b := 'TEST_EXIT_DATE';
+   l_pref console.t_client_prefs_row;
+   l_before timestamp(6);
+   l_after timestamp(6);
+begin
+   l_before := systimestamp;
+
+   console.init(
+      p_client_identifier => l_other_client_id,
+      p_level             => console.c_level_info,
+      p_duration          => 10,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => true,
+      p_cgi_env           => true,
+      p_console_env       => true);
+
+   l_after := systimestamp;
+
+   select *
+     into l_pref
+     from table(console.client_prefs)
+    where client_identifier = l_other_client_id;
+
+   -- exit_sysdate should be approximately 10 minutes from now
+   -- Check that it's between (now + 9 minutes) and (now + 11 minutes)
+   ut.expect(l_pref.exit_sysdate).to_be_between(
+      l_before + 9/1440,
+      l_after  + 11/1440);
+end init_sets_correct_exit_sysdate;
 
 
 procedure clean_client_prefs_filters_stale_entries as
