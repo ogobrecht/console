@@ -12,7 +12,7 @@ procedure init_rejects_level_too_high as
 begin
    console.init(
       p_client_identifier => 'TEST_INIT_LEVEL_TOO_HIGH',
-      p_level             => 5);
+      p_level             => 6);
 end init_rejects_level_too_high;
 
 
