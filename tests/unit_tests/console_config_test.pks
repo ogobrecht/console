@@ -108,5 +108,46 @@ procedure client_prefs_csv_format;
 
 --%endcontext
 
+--%context(Conf - Global Configuration)
+
+--%test(Conf rejects level too low)
+--%throws(-20777)
+procedure conf_rejects_level_too_low;
+
+--%test(Conf rejects level too high)
+--%throws(-20777)
+procedure conf_rejects_level_too_high;
+
+--%test(Conf rejects check interval too low)
+--%throws(-20777)
+procedure conf_rejects_check_interval_too_low;
+
+--%test(Conf rejects check interval too high)
+--%throws(-20777)
+procedure conf_rejects_check_interval_too_high;
+
+--%test(Conf accepts minimum level)
+procedure conf_accepts_min_level;
+
+--%test(Conf accepts maximum level)
+procedure conf_accepts_max_level;
+
+--%test(Conf accepts minimum check interval)
+procedure conf_accepts_min_check_interval;
+
+--%test(Conf accepts maximum check interval)
+procedure conf_accepts_max_check_interval;
+
+--%test(Conf sets default values when none exist)
+procedure conf_sets_default_values_when_none_exist;
+
+--%test(Conf partial update preserves other values)
+procedure conf_partial_update_preserves_other_values;
+
+--%test(Conf sets conf user correctly)
+procedure conf_sets_conf_user_correctly;
+
+--%endcontext
+
 end console_config_test;
 /

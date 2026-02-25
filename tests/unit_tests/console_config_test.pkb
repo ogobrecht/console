@@ -599,5 +599,148 @@ begin
    ut.expect(l_cleaned).to_be_null;
 end clean_client_prefs_skips_null_client_identifier;
 
+
+procedure conf_rejects_level_too_low as
+begin
+   console.conf(p_level => 0);
+end conf_rejects_level_too_low;
+
+
+procedure conf_rejects_level_too_high as
+begin
+   console.conf(p_level => 6);
+end conf_rejects_level_too_high;
+
+
+procedure conf_rejects_check_interval_too_low as
+begin
+   console.conf(p_check_interval => 9);
+end conf_rejects_check_interval_too_low;
+
+
+procedure conf_rejects_check_interval_too_high as
+begin
+   console.conf(p_check_interval => 61);
+end conf_rejects_check_interval_too_high;
+
+
+procedure conf_accepts_min_level as
+   l_level varchar2(100);
+begin
+   console.conf(p_level => console.c_level_error);
+
+   select value into l_level
+     from table(console.conf)
+    where attribute = 'level_id';
+
+   ut.expect(l_level).to_equal(to_char(console.c_level_error));
+end conf_accepts_min_level;
+
+
+procedure conf_accepts_max_level as
+   l_level varchar2(100);
+begin
+   console.conf(p_level => console.c_level_trace);
+
+   select value into l_level
+     from table(console.conf)
+    where attribute = 'level_id';
+
+   ut.expect(l_level).to_equal(to_char(console.c_level_trace));
+end conf_accepts_max_level;
+
+
+procedure conf_accepts_min_check_interval as
+   l_check_int varchar2(100);
+begin
+   console.conf(p_check_interval => console.c_check_interval_default);
+
+   select value into l_check_int
+     from table(console.conf)
+    where attribute = 'check_interval';
+
+   ut.expect(l_check_int).to_equal(to_char(console.c_check_interval_default));
+end conf_accepts_min_check_interval;
+
+
+procedure conf_accepts_max_check_interval as
+   l_check_int varchar2(100);
+begin
+   console.conf(p_check_interval => console.c_check_interval_max);
+
+   select value into l_check_int
+     from table(console.conf)
+    where attribute = 'check_interval';
+
+   ut.expect(l_check_int).to_equal(to_char(console.c_check_interval_max));
+end conf_accepts_max_check_interval;
+
+
+procedure conf_sets_default_values_when_none_exist as
+   l_count      number;
+   l_level      varchar2(100);
+   l_check_int  varchar2(100);
+begin
+   delete from console_conf;
+   commit;
+   console.conf();
+
+   -- Verify defaults are set
+   select value into l_level
+     from table(console.conf)
+    where attribute = 'level_id';
+
+   select value into l_check_int
+     from table(console.conf)
+    where attribute = 'check_interval';
+
+   -- Defaults should be set
+   ut.expect(l_level).not_to_be_null;
+   ut.expect(l_check_int).not_to_be_null;
+   -- Check_interval default is c_check_interval_default (10)
+   ut.expect(l_check_int).to_equal(to_char(console.c_check_interval_default));
+end conf_sets_default_values_when_none_exist;
+
+
+procedure conf_partial_update_preserves_other_values as
+   l_level      varchar2(100);
+   l_check_int  varchar2(100);
+begin
+   -- Set initial values
+   console.conf(
+      p_level           => console.c_level_warning,
+      p_check_interval  => 15);
+
+   -- Update only level, check_interval should remain
+   console.conf(p_level => console.c_level_debug);
+
+   select value into l_level
+     from table(console.conf)
+    where attribute = 'level_id';
+
+   select value into l_check_int
+     from table(console.conf)
+    where attribute = 'check_interval';
+
+   ut.expect(l_level).to_equal(to_char(console.c_level_debug));
+   ut.expect(l_check_int).to_equal('15');
+end conf_partial_update_preserves_other_values;
+
+
+procedure conf_sets_conf_user_correctly as
+   l_conf_user varchar2(100);
+   l_session_user varchar2(100);
+begin
+   console.conf(p_level => console.c_level_info);
+
+   select value into l_conf_user
+     from table(console.conf)
+    where attribute = 'conf_user';
+
+   -- Verify conf_user is set (should be OS_USER or SESSION_USER)
+   ut.expect(l_conf_user).not_to_be_null;
+   ut.expect(length(l_conf_user)).to_be_greater_than(0);
+end conf_sets_conf_user_correctly;
+
 end console_config_test;
 /
