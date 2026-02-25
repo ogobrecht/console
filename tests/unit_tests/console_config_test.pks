@@ -70,6 +70,9 @@ procedure clean_client_prefs_filters_stale_entries;
 --%test(Client prefs clean appends new entry)
 procedure clean_client_prefs_appends_new_entry;
 
+--%test(Client prefs clean skips null client identifier)
+procedure clean_client_prefs_skips_null_client_identifier;
+
 --%test(Client prefs CSV format)
 procedure client_prefs_csv_format;
 

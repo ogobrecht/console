@@ -354,5 +354,27 @@ begin
    ut.expect(l_csv).to_equal(l_expected);
 end client_prefs_csv_format;
 
+
+procedure clean_client_prefs_skips_null_client_identifier as
+   l_pref console.t_client_prefs_row;
+   l_cleaned varchar2(4000);
+begin
+   l_pref.client_identifier := null;
+   l_pref.level_id          := console.c_level_info;
+   l_pref.level_name        := 'info';
+   l_pref.call_stack        := 'true';
+   l_pref.user_env          := 'true';
+   l_pref.apex_env          := 'true';
+   l_pref.cgi_env           := 'true';
+   l_pref.console_env       := 'true';
+   l_pref.check_interval    := console.c_check_interval_default;
+   l_pref.exit_sysdate      := sysdate + 1;
+
+   l_cleaned := console.utl_get_clean_client_prefs_csv(
+      p_client_prefs_to_append => l_pref);
+
+   ut.expect(l_cleaned).to_be_null;
+end clean_client_prefs_skips_null_client_identifier;
+
 end console_config_test;
 /
