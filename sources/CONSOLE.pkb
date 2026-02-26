@@ -2519,6 +2519,9 @@ is
    l_return              t_1kb;
    l_value_one_character number;
 begin
+   assert(p_scale != 0, 'Scale cannot be 0');
+   assert(p_width_block_characters > 0, 'The width of block characters must be greater than 0');
+
    if p_value is not null then
    -- calculate the value of one character
       l_value_one_character := p_scale / p_width_block_characters;
