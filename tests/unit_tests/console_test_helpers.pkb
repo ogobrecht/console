@@ -15,7 +15,7 @@ end time_string_to_seconds;
 
 procedure enable_all_logging as
 begin
-   console.conf(p_level => 4);
+   console.conf(p_level => console.c_level_trace);
 end enable_all_logging;
 
 procedure truncate_console_logs as
@@ -38,8 +38,9 @@ end clear_client_prefs;
 
 procedure log_all_levels as
 begin
+   console.trace('trace');
    console.debug('debug');
-   console.log('info');
+   console.info('info');
    console.warn('warning');
    console.error('error');
 end log_all_levels;

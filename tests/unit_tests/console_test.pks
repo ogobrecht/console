@@ -19,6 +19,9 @@ procedure basic_logging_warning;
 --%test(Basic logging (ERROR))
 procedure basic_logging_error;
 
+--%test(Basic logging (TRACE))
+procedure basic_logging_trace;
+
 --%test(Don't log DEBUG)
 procedure dont_log_debug;
 
@@ -28,8 +31,33 @@ procedure dont_log_info;
 --%test(Don't log WARNING)
 procedure dont_log_warning;
 
+--%test(Don't log TRACE)
+procedure dont_log_trace;
+
 --%test(Logging as autonomous transaction)
 procedure logging_is_autonomous_transaction;
+
+--%endcontext
+
+--%context(Logging functions returning log_id)
+
+--%test(Error function returns log_id)
+procedure error_function_returns_log_id;
+
+--%test(Warn function returns log_id)
+procedure warn_function_returns_log_id;
+
+--%test(Info function returns log_id)
+procedure info_function_returns_log_id;
+
+--%test(Log function returns log_id)
+procedure log_function_returns_log_id;
+
+--%test(Debug function returns log_id)
+procedure debug_function_returns_log_id;
+
+--%test(Trace function returns log_id)
+procedure trace_function_returns_log_id;
 
 --%endcontext
 

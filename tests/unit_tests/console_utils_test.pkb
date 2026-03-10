@@ -212,10 +212,10 @@ begin
 end to_yn_false_returns_n;
 
 
-procedure to_yn_null_returns_null as
+procedure to_yn_null_returns_n as
 begin
    ut.expect(console.to_yn(null)).to_equal('N');
-end to_yn_null_returns_null;
+end to_yn_null_returns_n;
 
 
 procedure to_string_true_returns_true as
@@ -230,10 +230,10 @@ begin
 end to_string_false_returns_false;
 
 
-procedure to_string_null_returns_null as
+procedure to_string_null_returns_false as
 begin
    ut.expect(console.to_string(null)).to_equal('false');
-end to_string_null_returns_null;
+end to_string_null_returns_false;
 
 
 procedure to_bool_accepts_uppercase_true as
@@ -278,6 +278,62 @@ begin
    ut.expect(console.to_bool('  TRUE  ')).to_be_true;
    ut.expect(console.to_bool('  false  ')).to_be_false;
 end to_bool_handles_whitespace;
+
+
+procedure assert_true_does_nothing as
+begin
+   console.assert(true, 'this should not fail');
+
+   ut.expect(1).to_equal(1);
+end assert_true_does_nothing;
+
+
+procedure assert_false_raises_error as
+begin
+   console.assert(false, 'assert failed');
+end assert_false_raises_error;
+
+
+procedure assert_false_includes_message as
+   l_error_message varchar2(4000);
+begin
+   begin
+      console.assert(false, 'my assertion message');
+   exception
+      when others then
+         l_error_message := sqlerrm;
+   end;
+
+   ut.expect(l_error_message).to_be_like('%Assertion failed: my assertion message%');
+end assert_false_includes_message;
+
+
+procedure assert_null_raises_error as
+begin
+   console.assert(null, 'assert with null expression failed');
+end assert_null_raises_error;
+
+
+procedure assertf_true_does_nothing as
+begin
+   console.assertf(true, 'this should not fail: %0', 'ok');
+
+   ut.expect(1).to_equal(1);
+end assertf_true_does_nothing;
+
+
+procedure assertf_false_raises_with_formatted_message as
+   l_error_message varchar2(4000);
+begin
+   begin
+      console.assertf(false, 'expected %0 but got %1', 'A', 'B');
+   exception
+      when others then
+         l_error_message := sqlerrm;
+   end;
+
+   ut.expect(l_error_message).to_be_like('%Assertion failed: expected A but got B%');
+end assertf_false_raises_with_formatted_message;
 
 
 procedure level_error_returns_1 as

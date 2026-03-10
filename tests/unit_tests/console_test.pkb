@@ -11,9 +11,26 @@ begin
 end fetch_logs;
 
 
+procedure verify_log_id_exists(
+   p_log_id in console_logs.log_id%type )
+as
+   l_count number;
+begin
+   ut.expect(p_log_id).not_to_be_null;
+
+   select count(*)
+     into l_count
+     from console_logs
+    where log_id = p_log_id;
+
+   ut.expect(l_count).to_equal(1);
+end verify_log_id_exists;
+
+
 procedure basic_logging_debug as
    l_log_message clob := 'Just a small test (DEBUG)';
    l_client_identifier varchar2(100) := 'TEST_IDENTIFIER';
+   l_log_line number;
 
    l_actual_logs sys_refcursor;
    l_expected_logs sys_refcursor;
@@ -21,6 +38,7 @@ begin
 
    dbms_session.set_identifier(l_client_identifier);
 
+   l_log_line := $$plsql_line + 1;
    console.debug(l_log_message);
    l_actual_logs := fetch_logs();
    open l_expected_logs for
@@ -28,7 +46,7 @@ begin
          console.level_debug() as level_id,
          console.level_name(p_level => console.level_debug()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_DEBUG, line 24' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_DEBUG, line ' || to_char(l_log_line) as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          null as call_stack,
@@ -47,6 +65,7 @@ end basic_logging_debug;
 procedure basic_logging_info as
    l_log_message clob := 'Just a small test (INFO)';
    l_client_identifier varchar2(100) := 'TEST_IDENTIFIER_INFO';
+   l_log_line number;
 
    l_actual_logs sys_refcursor;
    l_expected_logs sys_refcursor;
@@ -54,6 +73,7 @@ begin
 
    dbms_session.set_identifier(l_client_identifier);
 
+   l_log_line := $$plsql_line + 1;
    console.info(l_log_message);
    l_actual_logs := fetch_logs();
    open l_expected_logs for
@@ -61,7 +81,7 @@ begin
          console.level_info() as level_id,
          console.level_name(p_level => console.level_info()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_INFO, line 57' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_INFO, line ' || to_char(l_log_line) as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          null as call_stack,
@@ -79,6 +99,7 @@ end basic_logging_info;
 procedure basic_logging_warning as
    l_log_message clob := 'Just a small test (WARNING)';
    l_client_identifier varchar2(100) := 'TEST_IDENTIFIER_WARNING';
+   l_log_line number;
 
    l_actual_logs sys_refcursor;
    l_expected_logs sys_refcursor;
@@ -86,6 +107,7 @@ begin
 
    dbms_session.set_identifier(l_client_identifier);
 
+   l_log_line := $$plsql_line + 1;
    console.warn(l_log_message);
    l_actual_logs := fetch_logs();
    open l_expected_logs for
@@ -93,7 +115,7 @@ begin
          console.level_warning() as level_id,
          console.level_name(p_level => console.level_warning()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_WARNING, line 89' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_WARNING, line ' || to_char(l_log_line) as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          null as call_stack,
@@ -111,6 +133,7 @@ end basic_logging_warning;
 procedure basic_logging_error as
    l_log_message clob := 'Just a small test (ERROR)';
    l_client_identifier varchar2(100) := 'TEST_IDENTIFIER_ERROR';
+   l_log_line number;
 
    l_actual_logs sys_refcursor;
    l_expected_logs sys_refcursor;
@@ -118,6 +141,7 @@ begin
 
    dbms_session.set_identifier(l_client_identifier);
 
+   l_log_line := $$plsql_line + 1;
    console.error(l_log_message);
    l_actual_logs := fetch_logs();
    open l_expected_logs for
@@ -125,7 +149,7 @@ begin
          console.level_error() as level_id,
          console.level_name(p_level => console.level_error()) as level_name,
          'N' as permanent,
-         user || '.CONSOLE_TEST.BASIC_LOGGING_ERROR, line 121' as scope,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_ERROR, line ' || to_char(l_log_line) as scope,
          l_log_message || chr(10) || chr(10) as message,
          to_number(null) as error_code,
          'console_test' as action,
@@ -137,6 +161,50 @@ begin
    ut.expect(l_actual_logs).to_equal(l_expected_logs).exclude('LOG_ID,LOG_TIME,SESSION_USER,MODULE,IP_ADDRESS,HOST,OS_USER,OS_USER_AGENT,CALL_STACK');
 
 end basic_logging_error;
+
+
+procedure basic_logging_trace as
+   l_log_message clob := 'Just a small test (TRACE)';
+   l_client_identifier varchar2(100) := 'TEST_IDENTIFIER_TRACE';
+   l_log_line number;
+   l_actual_message clob;
+   l_actual_call_stack clob;
+
+   l_actual_logs sys_refcursor;
+   l_expected_logs sys_refcursor;
+begin
+   console.conf(p_level => console.c_level_trace);
+   dbms_session.set_identifier(l_client_identifier);
+
+   l_log_line := $$plsql_line + 1;
+   console.trace(l_log_message);
+   l_actual_logs := fetch_logs();
+   open l_expected_logs for
+      select
+         console.level_trace() as level_id,
+         console.level_name(p_level => console.level_trace()) as level_name,
+         'N' as permanent,
+         user || '.CONSOLE_TEST.BASIC_LOGGING_TRACE, line ' || to_char(l_log_line) as scope,
+         'console_test' as action,
+         'basic_logging_trace' as client_info,
+         l_client_identifier as client_identifier
+      from
+         dual;
+
+   ut.expect(l_actual_logs).to_equal(l_expected_logs).include('LEVEL_ID,LEVEL_NAME,PERMANENT,SCOPE,ACTION,CLIENT_INFO,CLIENT_IDENTIFIER');
+
+   select message, call_stack
+     into l_actual_message, l_actual_call_stack
+     from console_logs
+    where client_identifier = l_client_identifier
+      and level_id = console.level_trace();
+
+   ut.expect(l_actual_message).to_be_like('Just a small test (TRACE)%');
+   ut.expect(l_actual_call_stack).to_be_like('#### Call Stack%BASIC_LOGGING_TRACE, line ' || to_char(l_log_line) || '%');
+   ut.expect(l_actual_message).to_be_like('%#### CGI Environment%');
+   ut.expect(l_actual_message).to_be_like('%#### Console Environment%');
+   ut.expect(l_actual_message).to_be_like('%#### User Environment%');
+end basic_logging_trace;
 
 
 procedure dont_log_debug as
@@ -206,6 +274,75 @@ begin
    ut.expect(l_actual_logs).to_equal(l_expected_logs).include('LEVEL_ID').unordered();
 
 end dont_log_warning;
+
+
+procedure dont_log_trace as
+   l_log_count number;
+begin
+   console.conf(p_level => console.c_level_debug);
+   console.trace('trace should not be logged');
+
+   select count(*)
+     into l_log_count
+     from console_logs;
+
+   ut.expect(l_log_count).to_equal(0);
+end dont_log_trace;
+
+
+procedure error_function_returns_log_id as
+   l_log_id console_logs.log_id%type;
+begin
+   l_log_id := console.error('error function test');
+
+   verify_log_id_exists(l_log_id);
+end error_function_returns_log_id;
+
+
+procedure warn_function_returns_log_id as
+   l_log_id console_logs.log_id%type;
+begin
+   l_log_id := console.warn('warn function test');
+
+   verify_log_id_exists(l_log_id);
+end warn_function_returns_log_id;
+
+
+procedure info_function_returns_log_id as
+   l_log_id console_logs.log_id%type;
+begin
+   l_log_id := console.info('info function test');
+
+   verify_log_id_exists(l_log_id);
+end info_function_returns_log_id;
+
+
+procedure log_function_returns_log_id as
+   l_log_id console_logs.log_id%type;
+begin
+   l_log_id := console.log('log function test');
+
+   verify_log_id_exists(l_log_id);
+end log_function_returns_log_id;
+
+
+procedure debug_function_returns_log_id as
+   l_log_id console_logs.log_id%type;
+begin
+   l_log_id := console.debug('debug function test');
+
+   verify_log_id_exists(l_log_id);
+end debug_function_returns_log_id;
+
+
+procedure trace_function_returns_log_id as
+   l_log_id console_logs.log_id%type;
+begin
+   console.conf(p_level => console.c_level_trace);
+   l_log_id := console.trace('trace function test');
+
+   verify_log_id_exists(l_log_id);
+end trace_function_returns_log_id;
 
 
 procedure logging_is_autonomous_transaction as

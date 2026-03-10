@@ -81,8 +81,8 @@ procedure to_yn_true_returns_y;
 --%test(To yn converts false to N)
 procedure to_yn_false_returns_n;
 
---%test(To yn converts null to null)
-procedure to_yn_null_returns_null;
+--%test(To yn converts null to N)
+procedure to_yn_null_returns_n;
 
 --%test(To string converts true to true)
 procedure to_string_true_returns_true;
@@ -90,8 +90,8 @@ procedure to_string_true_returns_true;
 --%test(To string converts false to false)
 procedure to_string_false_returns_false;
 
---%test(To string converts null to null)
-procedure to_string_null_returns_null;
+--%test(To string converts null to false)
+procedure to_string_null_returns_false;
 
 --%test(To bool accepts uppercase TRUE)
 procedure to_bool_accepts_uppercase_true;
@@ -110,6 +110,30 @@ procedure to_bool_returns_null_for_invalid;
 
 --%test(To bool handles whitespace)
 procedure to_bool_handles_whitespace;
+
+--%endcontext
+
+--%context(Assert Functions)
+
+--%test(Assert true does not raise an error)
+procedure assert_true_does_nothing;
+
+--%test(Assert false raises assertion error)
+--%throws(-20777)
+procedure assert_false_raises_error;
+
+--%test(Assert false includes message)
+procedure assert_false_includes_message;
+
+--%test(Assert null raises assertion error)
+--%throws(-20777)
+procedure assert_null_raises_error;
+
+--%test(Assertf true does not raise an error)
+procedure assertf_true_does_nothing;
+
+--%test(Assertf false includes formatted message)
+procedure assertf_false_raises_with_formatted_message;
 
 --%endcontext
 
