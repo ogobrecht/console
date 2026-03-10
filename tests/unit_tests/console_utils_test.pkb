@@ -127,6 +127,32 @@ begin
 end join_single_element;
 
 
+procedure join_with_null_separator as
+   l_tab console.t_vc2_tab_i;
+   l_result varchar2(100);
+begin
+   l_tab(1) := 'apple';
+   l_tab(2) := 'banana';
+
+   l_result := console.join(l_tab, null);
+
+   ut.expect(l_result).to_equal('applebanana');
+end join_with_null_separator;
+
+
+procedure join_with_content_equals_separator as
+   l_tab console.t_vc2_tab_i;
+   l_result varchar2(100);
+begin
+   l_tab(1) := ',';
+   l_tab(2) := ',';
+
+   l_result := console.join(l_tab, ',');
+
+   ut.expect(l_result).to_equal(',,,');
+end join_with_content_equals_separator;
+
+
 procedure format_with_single_placeholder as
    l_result varchar2(100);
 begin

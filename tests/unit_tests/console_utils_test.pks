@@ -46,6 +46,12 @@ procedure join_empty_array_returns_null;
 --%test(Join single element)
 procedure join_single_element;
 
+--%test(Join with null separator)
+procedure join_with_null_separator;
+
+--%test(Join with content equals separator)
+procedure join_with_content_equals_separator;
+
 --%endcontext
 
 --%context(String Functions - format)

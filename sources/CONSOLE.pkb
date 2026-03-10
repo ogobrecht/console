@@ -2182,7 +2182,7 @@ begin
       l_return := l_return || p_sep || p_table(i);
    end loop;
 
-   return l_return;
+   return substr(l_return, coalesce(length(p_sep), 0) + 1);
 end join;
 
 --------------------------------------------------------------------------------
