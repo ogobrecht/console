@@ -3,7 +3,7 @@ create or replace package console_purge_test as
 --%rollback(manual)
 
 --%beforeall(console_test_helpers.enable_all_logging)
---%beforeeach(console_test_helpers.truncate_console_logs, console.purge_job_drop)
+--%beforeeach(console_test_helpers.truncate_console_logs)
 --%afterall(console.purge_job_drop)
 
 
@@ -45,6 +45,8 @@ procedure purge_accepts_level_trace;
 
 
 --%context(Purge Job Lifecycle)
+
+--%beforeeach(console.purge_job_drop)
 
 --%test(Purge job create creates job)
 procedure purge_job_create_creates_job;
