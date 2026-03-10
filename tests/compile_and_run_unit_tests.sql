@@ -16,6 +16,8 @@ prompt - Compile package console (body)
 @@unit_tests/console_utils_test.pkb
 @@unit_tests/console_timers_counters_test.pks
 @@unit_tests/console_timers_counters_test.pkb
+@@unit_tests/console_purge_test.pks
+@@unit_tests/console_purge_test.pkb
 
 set serverout on
 
