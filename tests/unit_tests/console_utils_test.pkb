@@ -790,6 +790,117 @@ begin
 end table_hash_logs_result;
 
 
+procedure scope_returns_caller_info as
+   l_scope varchar2(4000);
+   l_line_number number;
+begin
+   l_line_number := $$plsql_line + 1;
+   l_scope := upper(console.scope);
+
+   ut.expect(l_scope).to_be_like('%CONSOLE_UTILS_TEST.SCOPE_RETURNS_CALLER_INFO%');
+   ut.expect(l_scope).to_be_like('%, LINE ' || to_char(l_line_number) || '%');
+end scope_returns_caller_info;
+
+
+procedure user_env_returns_markdown as
+   l_user_env varchar2(32767);
+begin
+   l_user_env := console.user_env;
+
+   ut.expect(l_user_env).not_to_be_null;
+   ut.expect(l_user_env).to_be_like('%#### User Environment%');
+   ut.expect(l_user_env).to_be_like('%SESSION_USER%');
+   ut.expect(l_user_env).to_be_like('%CURRENT_SCHEMA%');
+   ut.expect(l_user_env).to_be_like('%DB_NAME%');
+   ut.expect(l_user_env).to_be_like('%SID%');
+end user_env_returns_markdown;
+
+
+procedure console_env_returns_version as
+   l_console_env varchar2(32767);
+   l_version     varchar2(100);
+begin
+   l_version := console.version;
+   l_console_env := console.console_env;
+
+   ut.expect(l_console_env).not_to_be_null;
+   ut.expect(l_console_env).to_be_like('%#### Console Environment%');
+   ut.expect(l_console_env).to_be_like('%' || l_version || '%');
+   ut.expect(l_console_env).to_be_like('%c_version%');
+   ut.expect(l_console_env).to_be_like('%g_conf_level%');
+   ut.expect(l_console_env).to_be_like('%g_conf_check_interval%');
+   ut.expect(l_console_env).to_be_like('%g_counters.count%');
+   ut.expect(l_console_env).to_be_like('%g_timers.count%');
+end console_env_returns_version;
+
+
+procedure console_env_includes_running_timers as
+   l_result varchar2(32767);
+begin
+   console.time('env_test_timer');
+   l_result := console.console_env;
+   console.time_end('env_test_timer');
+
+   ut.expect(l_result).to_be_like('%##### Running Timers%env_test_timer%');
+end console_env_includes_running_timers;
+
+
+procedure clob_append_accumulates_text as
+   l_clob  clob;
+   l_cache varchar2(32767);
+begin
+   console.clob_append(l_clob, l_cache, 'alpha-');
+   console.clob_append(l_clob, l_cache, 'beta-');
+   console.clob_append(l_clob, l_cache, to_clob('gamma'));
+   console.clob_flush_cache(l_clob, l_cache);
+
+   ut.expect(l_clob).to_equal(to_clob('alpha-beta-gamma'));
+end clob_append_accumulates_text;
+
+
+procedure clob_flush_cache_clears_cache as
+   l_clob  clob;
+   l_cache varchar2(32767);
+begin
+   console.clob_append(l_clob, l_cache, 'cache-test');
+   ut.expect(l_cache).to_equal('cache-test');
+
+   console.clob_flush_cache(l_clob, l_cache);
+
+   ut.expect(l_cache).to_be_null;
+   ut.expect(l_clob).to_equal(to_clob('cache-test'));
+end clob_flush_cache_clears_cache;
+
+
+procedure clob_append_handles_overflow as
+   l_clob   clob;
+   l_cache  varchar2(32767);
+   l_text_a varchar2(32767) := rpad('A', 20000, 'A');
+   l_text_b varchar2(32767) := rpad('B', 20000, 'B');
+begin
+   console.clob_append(l_clob, l_cache, l_text_a);
+   console.clob_append(l_clob, l_cache, l_text_b);
+   console.clob_flush_cache(l_clob, l_cache);
+
+   ut.expect(sys.dbms_lob.getlength(l_clob)).to_equal(40000);
+   ut.expect(sys.dbms_lob.substr(l_clob, amount => 1, offset => 1)).to_equal('A');
+   ut.expect(sys.dbms_lob.substr(l_clob, amount => 1, offset => 40000)).to_equal('B');
+end clob_append_handles_overflow;
+
+
+procedure clob_append_ignores_null_values as
+   l_clob  clob;
+   l_cache varchar2(32767);
+begin
+   console.clob_append(l_clob, l_cache, 'start');
+   console.clob_append(l_clob, l_cache, cast(null as varchar2));
+   console.clob_append(l_clob, l_cache, to_clob(null));
+   console.clob_flush_cache(l_clob, l_cache);
+
+   ut.expect(l_clob).to_equal(to_clob('start'));
+end clob_append_ignores_null_values;
+
+
 procedure to_unibar_generates_bar as
    l_result varchar2(100);
 begin

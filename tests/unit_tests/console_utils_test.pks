@@ -261,6 +261,38 @@ procedure table_hash_logs_result;
 
 --%endcontext
 
+--%context(Environment Functions)
+
+--%test(Scope returns caller info)
+procedure scope_returns_caller_info;
+
+--%test(User env returns markdown section)
+procedure user_env_returns_markdown;
+
+--%test(Console env returns version information)
+procedure console_env_returns_version;
+
+--%test(Console env includes running timers)
+procedure console_env_includes_running_timers;
+
+--%endcontext
+
+--%context(CLOB Utility Functions)
+
+--%test(Clob append accumulates text)
+procedure clob_append_accumulates_text;
+
+--%test(Clob flush cache clears cache)
+procedure clob_flush_cache_clears_cache;
+
+--%test(Clob append handles cache overflow)
+procedure clob_append_handles_overflow;
+
+--%test(Clob append ignores null values)
+procedure clob_append_ignores_null_values;
+
+--%endcontext
+
 --%context(Unicode Bar Function)
 
 --%test(To unibar generates bar with default width)
