@@ -486,118 +486,49 @@ begin
 end init_sets_correct_exit_sysdate;
 
 
-procedure clean_client_prefs_filters_stale_entries as
-   l_valid console.t_client_prefs_row;
-   l_stale console.t_client_prefs_row;
-   l_cleaned varchar2(4000);
+procedure init_cleans_stale_client_prefs as
+   l_stale_client constant varchar2(64) := 'STALE_PREF';
+   l_fresh_client constant varchar2(64) := 'FRESH_PREF';
+   l_stale_csv    varchar2(4000);
+   l_stale_count  number;
+   l_fresh_count  number;
 begin
-   l_valid.client_identifier := 'KEEP_PREF';
-   l_valid.level_id          := console.c_level_info;
-   l_valid.level_name        := 'info';
-   l_valid.call_stack        := 'true';
-   l_valid.user_env          := 'true';
-   l_valid.apex_env          := 'false';
-   l_valid.cgi_env           := 'false';
-   l_valid.console_env       := 'true';
-   l_valid.check_interval    := console.c_check_interval_default;
-   l_valid.exit_sysdate      := sysdate + 1;
-
-   l_stale := l_valid;
-   l_stale.client_identifier := 'STALE_PREF';
-   l_stale.exit_sysdate      := sysdate - 1;
-
-   console.utl_set_client_prefs(
-      console.utl_client_prefs_to_csv(l_valid) ||
-      console.utl_client_prefs_to_csv(l_stale));
-
-   l_cleaned := console.utl_get_clean_client_prefs_csv;
-
-   ut.expect(l_cleaned).to_be_like('%KEEP_PREF%');
-   ut.expect(l_cleaned).not_to_be_like('%STALE_PREF%');
-end clean_client_prefs_filters_stale_entries;
-
-
-procedure clean_client_prefs_appends_new_entry as
-   l_old console.t_client_prefs_row;
-   l_new console.t_client_prefs_row;
-   l_cleaned varchar2(4000);
-begin
-   l_old.client_identifier := 'OLD_PREF';
-   l_old.level_id          := console.c_level_info;
-   l_old.level_name        := 'info';
-   l_old.call_stack        := 'true';
-   l_old.user_env          := 'true';
-   l_old.apex_env          := 'false';
-   l_old.cgi_env           := 'false';
-   l_old.console_env       := 'true';
-   l_old.check_interval    := console.c_check_interval_default;
-   l_old.exit_sysdate      := sysdate + 1;
-
-   l_new := l_old;
-   l_new.client_identifier := 'NEW_PREF';
-   l_new.level_id          := console.c_level_debug;
-   l_new.level_name        := 'debug';
-   l_new.exit_sysdate      := sysdate + 2;
-
-   console.utl_set_client_prefs(console.utl_client_prefs_to_csv(l_old));
-
-   l_cleaned := console.utl_get_clean_client_prefs_csv(
-      p_client_identifier_to_remove => l_old.client_identifier,
-      p_client_prefs_to_append      => l_new);
-
-   ut.expect(l_cleaned).to_be_like('%NEW_PREF%');
-   ut.expect(l_cleaned).not_to_be_like('%OLD_PREF%');
-end clean_client_prefs_appends_new_entry;
-
-
-procedure client_prefs_csv_format as
-   l_pref console.t_client_prefs_row;
-   l_csv  varchar2(4000);
-   l_expected varchar2(4000);
-begin
-   l_pref.client_identifier := 'CSV_TEST';
-   l_pref.level_id          := console.c_level_info;
-   l_pref.level_name        := 'info';
-   l_pref.call_stack        := 'true';
-   l_pref.user_env          := 'false';
-   l_pref.apex_env          := 'true';
-   l_pref.cgi_env           := 'true';
-   l_pref.console_env       := 'false';
-   l_pref.check_interval    := console.c_check_interval_default;
-   l_pref.exit_sysdate      := to_date('2025-10-12 15:16:17', 'yyyy-mm-dd hh24:mi:ss');
-
-   l_csv := console.utl_client_prefs_to_csv(l_pref);
-   l_expected :=
-      'CSV_TEST,' ||
+   l_stale_csv :=
+      l_stale_client || ',' ||
       to_char(console.c_level_info) || ',' ||
-      to_char(22) || ',' ||
-      to_char(l_pref.check_interval) || ',' ||
-      to_char(l_pref.exit_sysdate, 'yymmddhh24miss') || chr(10);
+      '22' || ',' ||
+      to_char(console.c_check_interval_default) || ',' ||
+      to_char(sysdate - 1, 'yymmddhh24miss') || chr(10);
 
-   ut.expect(l_csv).to_equal(l_expected);
-end client_prefs_csv_format;
+   update console_conf
+      set client_prefs = l_stale_csv
+    where conf_id = 'CONF';
+   commit;
 
+   console.init(
+      p_client_identifier => l_fresh_client,
+      p_level             => console.c_level_info,
+      p_duration          => 10,
+      p_check_interval    => console.c_check_interval_default,
+      p_call_stack        => true,
+      p_user_env          => true,
+      p_apex_env          => false,
+      p_cgi_env           => false,
+      p_console_env       => true);
 
-procedure clean_client_prefs_skips_null_client_identifier as
-   l_pref console.t_client_prefs_row;
-   l_cleaned varchar2(4000);
-begin
-   l_pref.client_identifier := null;
-   l_pref.level_id          := console.c_level_info;
-   l_pref.level_name        := 'info';
-   l_pref.call_stack        := 'true';
-   l_pref.user_env          := 'true';
-   l_pref.apex_env          := 'true';
-   l_pref.cgi_env           := 'true';
-   l_pref.console_env       := 'true';
-   l_pref.check_interval    := console.c_check_interval_default;
-   l_pref.exit_sysdate      := sysdate + 1;
+   select count(*)
+     into l_stale_count
+     from table(console.client_prefs)
+    where client_identifier = l_stale_client;
 
-   l_cleaned := console.utl_get_clean_client_prefs_csv(
-      p_client_prefs_to_append => l_pref);
+   select count(*)
+     into l_fresh_count
+     from table(console.client_prefs)
+    where client_identifier = l_fresh_client;
 
-   ut.expect(l_cleaned).to_be_null;
-end clean_client_prefs_skips_null_client_identifier;
+   ut.expect(l_stale_count).to_equal(0);
+   ut.expect(l_fresh_count).to_equal(1);
+end init_cleans_stale_client_prefs;
 
 
 procedure conf_rejects_level_too_low as

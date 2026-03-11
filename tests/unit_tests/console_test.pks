@@ -37,6 +37,9 @@ procedure dont_log_trace;
 --%test(Error is always logged regardless of level)
 procedure error_always_logged_regardless_of_level;
 
+--%test(Log null message creates entry)
+procedure log_null_message_creates_entry;
+
 --%test(Log message larger than 4000 chars is stored)
 procedure log_message_larger_than_4000_is_stored;
 

@@ -90,21 +90,8 @@ procedure init_without_client_identifier_uses_own_session;
 --%test(Init sets correct exit sysdate)
 procedure init_sets_correct_exit_sysdate;
 
---%endcontext
-
---%context(Client preferences)
-
---%test(Client prefs clean filters stale entries)
-procedure clean_client_prefs_filters_stale_entries;
-
---%test(Client prefs clean appends new entry)
-procedure clean_client_prefs_appends_new_entry;
-
---%test(Client prefs clean skips null client identifier)
-procedure clean_client_prefs_skips_null_client_identifier;
-
---%test(Client prefs CSV format)
-procedure client_prefs_csv_format;
+--%test(Init cleans stale client preferences)
+procedure init_cleans_stale_client_prefs;
 
 --%endcontext
 

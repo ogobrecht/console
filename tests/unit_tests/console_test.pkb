@@ -316,6 +316,20 @@ begin
 end error_always_logged_regardless_of_level;
 
 
+procedure log_null_message_creates_entry as
+   l_count number;
+begin
+   console.info(null);
+
+   select count(*)
+     into l_count
+     from console_logs
+    where level_id = console.level_info();
+
+   ut.expect(l_count).to_equal(1);
+end log_null_message_creates_entry;
+
+
 procedure log_message_larger_than_4000_is_stored as
    l_log_message   clob;
    l_stored_message clob;
