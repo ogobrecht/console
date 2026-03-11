@@ -215,6 +215,52 @@ procedure to_md_tab_data_shows_null_when_enabled;
 
 --%endcontext
 
+--%context(HTML Table Functions)
+
+--%test(To html table returns table tags)
+procedure to_html_table_returns_table_tags;
+
+--%test(To html table includes column headers)
+procedure to_html_table_includes_column_headers;
+
+--%test(To html table includes comment)
+procedure to_html_table_includes_comment;
+
+--%test(To html table includes row numbers)
+procedure to_html_table_includes_row_numbers;
+
+--%test(To html table excludes row numbers)
+procedure to_html_table_excludes_row_numbers;
+
+--%test(To html table escapes HTML special characters)
+procedure to_html_table_escapes_html_special_chars;
+
+--%test(To html table shows values from multiple cursor rows)
+procedure to_html_table_shows_multiple_rows_values;
+
+--%test(To html table supports number and varchar2 columns)
+procedure to_html_table_supports_number_and_varchar2_columns;
+
+--%test(To html table supports date and timestamp columns)
+procedure to_html_table_supports_date_and_timestamp_columns;
+
+--%test(To html table supports clob and xmltype columns)
+procedure to_html_table_supports_clob_and_xmltype_columns;
+
+--%test(To html table handles binary columns)
+procedure to_html_table_handles_binary_columns;
+
+--%test(To html table has one header per cursor column)
+procedure to_html_table_has_expected_header_count;
+
+--%test(To html table has one row per cursor row)
+procedure to_html_table_has_expected_row_count;
+
+--%test(Table hash logs HTML table output)
+procedure table_hash_logs_result;
+
+--%endcontext
+
 --%context(Unicode Bar Function)
 
 --%test(To unibar generates bar with default width)

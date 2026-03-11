@@ -529,6 +529,267 @@ begin
 end to_md_tab_data_shows_null_when_enabled;
 
 
+procedure to_html_table_returns_table_tags as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select 1 as id
+        from dual;
+
+   l_result := console.to_html_table(l_cursor);
+
+   ut.expect(l_result).to_be_like('<table>%</table>_');
+end to_html_table_returns_table_tags;
+
+
+procedure to_html_table_includes_column_headers as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select 1 as my_col
+        from dual;
+
+   l_result := console.to_html_table(l_cursor);
+
+   ut.expect(l_result).to_be_like('%<th id="my_col">My Col</th>%');
+end to_html_table_includes_column_headers;
+
+
+procedure to_html_table_includes_comment as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select 1 as id
+        from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor => l_cursor,
+      p_comment     => 'My HTML comment');
+
+   ut.expect(l_result).to_be_like('%My HTML comment%<table>%');
+end to_html_table_includes_comment;
+
+
+procedure to_html_table_includes_row_numbers as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select 1 as id from dual
+      union all
+      select 2 as id from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => true);
+
+   ut.expect(l_result).to_be_like('%<th id="row_num">Row#</th>%');
+end to_html_table_includes_row_numbers;
+
+
+procedure to_html_table_excludes_row_numbers as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select 1 as id from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   ut.expect(l_result).not_to_be_like('%<th id="row_num">Row#</th>%');
+end to_html_table_excludes_row_numbers;
+
+
+procedure to_html_table_escapes_html_special_chars as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select '<b>&x></b>' as html_text
+        from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor => l_cursor,
+      p_comment     => 'comment <tag> & value >');
+
+   ut.expect(l_result).to_be_like('%comment &lt;tag&gt; &amp; value &gt;%');
+   ut.expect(l_result).to_be_like('%&lt;b&gt;&amp;x&gt;&lt;/b&gt;%');
+   ut.expect(l_result).not_to_be_like('%<b>&x></b>%');
+end to_html_table_escapes_html_special_chars;
+
+
+procedure to_html_table_shows_multiple_rows_values as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select row_no, text_value
+        from (
+           select 1 as row_no, 'first_row_value' as text_value from dual
+           union all
+           select 2 as row_no, 'second_row_value' as text_value from dual
+        )
+       order by row_no;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   ut.expect(l_result).to_be_like('%<td headers="text_value">first_row_value</td>%');
+   ut.expect(l_result).to_be_like('%<td headers="text_value">second_row_value</td>%');
+   ut.expect(l_result).to_be_like('%first_row_value%second_row_value%');
+end to_html_table_shows_multiple_rows_values;
+
+
+procedure to_html_table_supports_number_and_varchar2_columns as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select
+         42 as num_col,
+         -7.5 as neg_num_col,
+         'txt_value' as vc_col
+      from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   ut.expect(l_result).to_be_like('%<td headers="num_col">42</td>%');
+   ut.expect(l_result).to_be_like('%<td headers="neg_num_col">-7.5</td>%');
+   ut.expect(l_result).to_be_like('%<td headers="vc_col">txt_value</td>%');
+end to_html_table_supports_number_and_varchar2_columns;
+
+
+procedure to_html_table_supports_date_and_timestamp_columns as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select
+         date '2035-12-24' as date_col,
+         timestamp '2035-12-24 13:14:15.123456' as ts_col
+      from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   ut.expect(l_result).to_be_like('%<th id="date_col">Date Col</th>%');
+   ut.expect(l_result).to_be_like('%<th id="ts_col">Ts Col</th>%');
+   ut.expect(l_result).not_to_be_like('%<td headers="date_col"></td>%');
+   ut.expect(l_result).not_to_be_like('%<td headers="ts_col"></td>%');
+   ut.expect(l_result).to_be_like('%1.14.15.123456%PM%');
+   ut.expect(l_result).to_be_like('%>24-DEC-35<%');
+end to_html_table_supports_date_and_timestamp_columns;
+
+
+procedure to_html_table_supports_clob_and_xmltype_columns as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select
+         to_clob('clob_payload_123') as clob_col,
+         xmltype('<root>xml_payload_123</root>') as xml_col
+      from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   ut.expect(l_result).to_be_like('%<td headers="clob_col">clob_payload_123</td>%');
+   ut.expect(l_result).to_be_like('%&lt;root&gt;xml_payload_123&lt;/root&gt;%');
+end to_html_table_supports_clob_and_xmltype_columns;
+
+
+procedure to_html_table_handles_binary_columns as
+   l_cursor sys_refcursor;
+   l_result clob;
+begin
+   open l_cursor for
+      select hextoraw('ABCD') as raw_col
+      from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   ut.expect(l_result).to_be_like('%<th id="raw_col">Raw Col</th>%');
+   ut.expect(l_result).to_be_like('%Binary data type skipped - not supported for HTML%');
+end to_html_table_handles_binary_columns;
+
+
+procedure to_html_table_has_expected_header_count as
+   l_cursor       sys_refcursor;
+   l_result       clob;
+   l_header_count number;
+begin
+   open l_cursor for
+      select 1 as col_a, 'x' as col_b, date '2030-01-01' as col_c from dual
+      union all
+      select 2 as col_a, 'y' as col_b, date '2030-01-02' as col_c from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   l_header_count := regexp_count(l_result, '<th id="');
+
+   ut.expect(l_header_count).to_equal(3);
+end to_html_table_has_expected_header_count;
+
+
+procedure to_html_table_has_expected_row_count as
+   l_cursor    sys_refcursor;
+   l_result    clob;
+   l_row_count number;
+begin
+   open l_cursor for
+      select 1 as col_a, 'x' as col_b, date '2030-01-01' as col_c from dual
+      union all
+      select 2 as col_a, 'y' as col_b, date '2030-01-02' as col_c from dual;
+
+   l_result := console.to_html_table(
+      p_data_cursor     => l_cursor,
+      p_include_row_num => false);
+
+   l_row_count := regexp_count(l_result, '<tr><!--- row ');
+
+   ut.expect(l_row_count).to_equal(2);
+end to_html_table_has_expected_row_count;
+
+
+procedure table_hash_logs_result as
+   l_cursor    sys_refcursor;
+   l_log_count number;
+begin
+   open l_cursor for
+      select 'abcd' as col1
+        from dual;
+
+   console.table#(
+      p_data_cursor => l_cursor,
+      p_comment     => 'table-hash-test');
+
+   select count(*)
+     into l_log_count
+     from console_logs
+    where message like '%table-hash-test%'
+      and message like '%<table>%'
+      and message like '%abcd%'
+      and message like '%</table>%';
+
+   ut.expect(l_log_count).to_equal(1);
+end table_hash_logs_result;
+
+
 procedure to_unibar_generates_bar as
    l_result varchar2(100);
 begin
