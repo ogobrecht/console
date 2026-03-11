@@ -290,6 +290,51 @@ begin
 end dont_log_trace;
 
 
+procedure error_always_logged_regardless_of_level as
+   l_error_count number;
+   l_total_count number;
+begin
+   for l_level in console.c_level_error .. console.c_level_trace
+   loop
+      console.conf(p_level => l_level);
+      console.error('error-level-' || to_char(l_level));
+   end loop;
+
+   select count(*)
+     into l_error_count
+     from console_logs
+    where level_id = console.level_error()
+      and message like 'error-level-%';
+
+   select count(*)
+     into l_total_count
+     from console_logs
+    where message like 'error-level-%';
+
+   ut.expect(l_error_count).to_equal(5);
+   ut.expect(l_total_count).to_equal(5);
+end error_always_logged_regardless_of_level;
+
+
+procedure log_message_larger_than_4000_is_stored as
+   l_log_message   clob;
+   l_stored_message clob;
+begin
+   l_log_message := 'START-' || rpad('X', 4500, 'X') || '-END';
+
+   console.info(l_log_message);
+
+   select message
+     into l_stored_message
+     from console_logs
+    where level_id = console.level_info();
+
+   ut.expect(dbms_lob.getlength(l_stored_message)).to_be_greater_than(4000);
+   ut.expect(l_stored_message).to_be_like('START-%');
+   ut.expect(l_stored_message).to_be_like('%-END%');
+end log_message_larger_than_4000_is_stored;
+
+
 procedure error_function_returns_log_id as
    l_log_id console_logs.log_id%type;
 begin
@@ -357,12 +402,66 @@ begin
    l_actual_logs := fetch_logs();
 
    open l_expected_logs for
-      select console.level_info as level_id
+      select console.level_info() as level_id
       from dual;
 
    ut.expect(l_actual_logs).to_equal(l_expected_logs).include('LEVEL_ID').unordered();
 
 end logging_is_autonomous_transaction;
+
+
+procedure error_save_stack_captures_error as
+   l_call_stack clob;
+begin
+   begin
+      raise_application_error(-20999, 'stack-capture-test');
+   exception
+      when others then
+         console.error_save_stack;
+   end;
+
+   console.error('error save stack captures raised error');
+
+   select call_stack
+     into l_call_stack
+     from console_logs
+    where level_id = console.level_error()
+      and message like 'error save stack captures raised error%';
+
+   ut.expect(l_call_stack).to_be_like('%#### Saved Error Stack%');
+   ut.expect(l_call_stack).to_be_like('%20999%');
+end error_save_stack_captures_error;
+
+
+procedure error_save_stack_multiple_saves as
+   l_call_stack clob;
+begin
+   begin
+      raise_application_error(-20998, 'stack-multiple-1');
+   exception
+      when others then
+         console.error_save_stack;
+   end;
+
+   begin
+      raise_application_error(-20997, 'stack-multiple-2');
+   exception
+      when others then
+         console.error_save_stack;
+   end;
+
+   console.error('error save stack keeps multiple saved errors');
+
+   select call_stack
+     into l_call_stack
+     from console_logs
+    where level_id = console.level_error()
+      and message like 'error save stack keeps multiple saved errors%';
+
+   ut.expect(l_call_stack).to_be_like('%#### Saved Error Stack%');
+   ut.expect(l_call_stack).to_be_like('%20998%');
+   ut.expect(l_call_stack).to_be_like('%20997%');
+end error_save_stack_multiple_saves;
 
 
 procedure permanent_logging as

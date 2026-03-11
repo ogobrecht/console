@@ -215,6 +215,41 @@ procedure to_md_tab_data_shows_null_when_enabled;
 
 --%endcontext
 
+--%context(Output Functions)
+
+--%test(Print outputs to dbms_output)
+procedure print_outputs_to_dbms_output;
+
+--%test(Printf formats and outputs to dbms_output)
+procedure printf_formats_and_outputs;
+
+--%endcontext
+
+--%context(Session Info Functions)
+
+--%test(Action sets session action)
+procedure action_sets_session_action;
+
+--%test(Module sets session module and action)
+procedure module_sets_session_module;
+
+--%test(Action truncates values that are too long)
+procedure action_truncates_too_long_value;
+
+--%test(Module truncates module and action when too long)
+procedure module_truncates_too_long_values;
+
+--%test(Action and module keep exact max lengths)
+procedure action_and_module_keep_exact_max_lengths;
+
+--%test(My client identifier returns current id)
+procedure my_client_identifier_returns_current_id;
+
+--%test(My log level returns current level)
+procedure my_log_level_returns_current_level;
+
+--%endcontext
+
 --%context(HTML Table Functions)
 
 --%test(To html table returns table tags)
@@ -274,6 +309,12 @@ procedure console_env_returns_version;
 
 --%test(Console env includes running timers)
 procedure console_env_includes_running_timers;
+
+--%test(Call stack returns formatted output)
+procedure call_stack_returns_formatted_output;
+
+--%test(CGI env returns heading)
+procedure cgi_env_returns_heading;
 
 --%endcontext
 

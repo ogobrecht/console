@@ -529,6 +529,131 @@ begin
 end to_md_tab_data_shows_null_when_enabled;
 
 
+procedure print_outputs_to_dbms_output as
+   l_line   varchar2(32767);
+   l_status number;
+begin
+   console.print('print test output');
+   dbms_output.get_line(l_line, l_status);
+
+   ut.expect(l_status).to_equal(0);
+   ut.expect(l_line).to_equal('print test output');
+end print_outputs_to_dbms_output;
+
+
+procedure printf_formats_and_outputs as
+   l_line   varchar2(32767);
+   l_status number;
+begin
+   console.printf('Hello %0', 'World');
+   dbms_output.get_line(l_line, l_status);
+
+   ut.expect(l_status).to_equal(0);
+   ut.expect(l_line).to_equal('Hello World');
+end printf_formats_and_outputs;
+
+
+procedure action_sets_session_action as
+   l_action varchar2(64);
+begin
+   console.action('utils_test_action');
+   l_action := sys_context('USERENV', 'ACTION');
+   console.action(null);
+
+   ut.expect(l_action).to_equal('utils_test_action');
+end action_sets_session_action;
+
+
+procedure module_sets_session_module as
+   l_module varchar2(64);
+   l_action varchar2(64);
+begin
+   console.module('utils_test_module', 'utils_test_action');
+   l_module := sys_context('USERENV', 'MODULE');
+   l_action := sys_context('USERENV', 'ACTION');
+   console.module(null);
+
+   ut.expect(l_module).to_equal('utils_test_module');
+   ut.expect(l_action).to_equal('utils_test_action');
+end module_sets_session_module;
+
+
+procedure action_truncates_too_long_value as
+   l_input  varchar2(200) := rpad('A', 80, 'A');
+   l_action varchar2(64);
+begin
+   console.action(l_input);
+   l_action := sys_context('USERENV', 'ACTION');
+   console.action(null);
+
+   ut.expect(lengthb(l_action)).to_equal(64);
+   ut.expect(l_action).to_equal(substr(l_input, 1, 64));
+end action_truncates_too_long_value;
+
+
+procedure module_truncates_too_long_values as
+   l_module_input  varchar2(200) := rpad('M', 80, 'M');
+   l_action_input  varchar2(200) := rpad('X', 80, 'X');
+   l_module_actual varchar2(64);
+   l_action_actual varchar2(64);
+begin
+   console.module(l_module_input, l_action_input);
+   l_module_actual := sys_context('USERENV', 'MODULE');
+   l_action_actual := sys_context('USERENV', 'ACTION');
+   console.module(null);
+
+   ut.expect(lengthb(l_module_actual)).to_equal(64);
+   ut.expect(lengthb(l_action_actual)).to_equal(64);
+   ut.expect(l_module_actual).to_equal(substr(l_module_input, 1, 64));
+   ut.expect(l_action_actual).to_equal(substr(l_action_input, 1, 64));
+end module_truncates_too_long_values;
+
+
+procedure action_and_module_keep_exact_max_lengths as
+   l_action_input  varchar2(64) := rpad('A', 64, 'A');
+   l_module_input  varchar2(64) := rpad('M', 64, 'M');
+   l_action_actual varchar2(64);
+   l_module_actual varchar2(64);
+begin
+   console.action(l_action_input);
+   l_action_actual := sys_context('USERENV', 'ACTION');
+   console.action(null);
+
+   ut.expect(lengthb(l_action_actual)).to_equal(64);
+   ut.expect(l_action_actual).to_equal(l_action_input);
+
+   console.module(l_module_input, l_action_input);
+   l_module_actual := sys_context('USERENV', 'MODULE');
+   l_action_actual := sys_context('USERENV', 'ACTION');
+   console.module(null);
+
+   ut.expect(lengthb(l_module_actual)).to_equal(64);
+   ut.expect(lengthb(l_action_actual)).to_equal(64);
+   ut.expect(l_module_actual).to_equal(l_module_input);
+   ut.expect(l_action_actual).to_equal(l_action_input);
+end action_and_module_keep_exact_max_lengths;
+
+
+procedure my_client_identifier_returns_current_id as
+   l_expected_client_id varchar2(100);
+begin
+   select value
+     into l_expected_client_id
+     from table(console.status)
+    where attribute = 'g_conf_client_identifier';
+
+   ut.expect(nvl(console.my_client_identifier, '<NULL>')).to_equal(nvl(l_expected_client_id, '<NULL>'));
+end my_client_identifier_returns_current_id;
+
+
+procedure my_log_level_returns_current_level as
+begin
+   console.conf(p_level => console.c_level_debug);
+
+   ut.expect(console.my_log_level).to_equal(console.c_level_debug);
+end my_log_level_returns_current_level;
+
+
 procedure to_html_table_returns_table_tags as
    l_cursor sys_refcursor;
    l_result clob;
@@ -843,6 +968,26 @@ begin
 
    ut.expect(l_result).to_be_like('%##### Running Timers%env_test_timer%');
 end console_env_includes_running_timers;
+
+
+procedure call_stack_returns_formatted_output as
+   l_call_stack varchar2(32767);
+begin
+   l_call_stack := console.call_stack;
+
+   ut.expect(l_call_stack).not_to_be_null;
+   ut.expect(l_call_stack).to_be_like('%#### Call Stack%');
+end call_stack_returns_formatted_output;
+
+
+procedure cgi_env_returns_heading as
+   l_cgi_env varchar2(32767);
+begin
+   l_cgi_env := console.cgi_env;
+
+   ut.expect(l_cgi_env).not_to_be_null;
+   ut.expect(l_cgi_env).to_be_like('%#### CGI Environment%');
+end cgi_env_returns_heading;
 
 
 procedure clob_append_accumulates_text as

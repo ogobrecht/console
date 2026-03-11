@@ -34,6 +34,12 @@ procedure dont_log_warning;
 --%test(Don't log TRACE)
 procedure dont_log_trace;
 
+--%test(Error is always logged regardless of level)
+procedure error_always_logged_regardless_of_level;
+
+--%test(Log message larger than 4000 chars is stored)
+procedure log_message_larger_than_4000_is_stored;
+
 --%test(Logging as autonomous transaction)
 procedure logging_is_autonomous_transaction;
 
@@ -58,6 +64,16 @@ procedure debug_function_returns_log_id;
 
 --%test(Trace function returns log_id)
 procedure trace_function_returns_log_id;
+
+--%endcontext
+
+--%context(Error Stack)
+
+--%test(Error save stack captures raised error)
+procedure error_save_stack_captures_error;
+
+--%test(Error save stack keeps multiple saved errors)
+procedure error_save_stack_multiple_saves;
 
 --%endcontext
 
