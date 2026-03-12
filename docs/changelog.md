@@ -14,10 +14,13 @@
 
 # Changelog
 
-## v1.3.x (2025-xx-xx)
+## v1.3.x (2026-xx-xx)
 
+- **Breaking Change**: changed `assert` to fail on `null`-input
 - reformat code for readability
 - unit tests
+- fixed `join` to omit separator at the beginning
+- added assertions for faster failing in `to_unibar`
 
 ## v1.2.1 (2025-01-25)
 
