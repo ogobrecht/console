@@ -957,7 +957,7 @@ procedure table# (
 
 ## Procedure assert
 
-If the given expression evaluates to false, an error is raised with the given
+If the given expression evaluates to false or is null, an error is raised with the given
 message.
 
 EXAMPLE

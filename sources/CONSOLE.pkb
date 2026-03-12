@@ -905,7 +905,7 @@ procedure assert (
    p_message    in varchar2 )
 is
 begin
-   if not p_expression then
+   if not coalesce(p_expression, false) then
       raise_application_error (
          c_assert_error_code,
          c_assert_error_message || p_message,
@@ -3484,7 +3484,7 @@ is
    --
 begin
    assert (
-      lengthb(p_prefs) <= 4000,
+      coalesce(lengthb(p_prefs), 0) <= 4000,
       'Sorry, we cannot save your client preferencs - seems you have too many session in debug mode.' );
 
    update_client_prefs;

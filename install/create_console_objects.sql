@@ -1080,7 +1080,7 @@ procedure assert (
    p_message    in varchar2 );
 /**
 
-If the given expression evaluates to false, an error is raised with the given
+If the given expression evaluates to false or is null, an error is raised with the given
 message.
 
 EXAMPLE
@@ -3426,7 +3426,7 @@ procedure assert (
    p_message    in varchar2 )
 is
 begin
-   if not p_expression then
+   if not coalesce(p_expression, false) then
       raise_application_error (
          c_assert_error_code,
          c_assert_error_message || p_message,
@@ -4377,7 +4377,7 @@ begin
          p_client_identifier_to_remove => l_prefs.client_identifier,
          p_client_prefs_to_append      => l_prefs ) );
 
-   -- If we want to monitor our own session, wee need to load the configuration
+   -- If we want to monitor our own session, we need to load the configuration
    -- data from the context or table into the cache (package variables).
    -- Otherwise we need to wait until the cache duration is over (which defaults
    -- to 10 seconds) and the package reloads the configuration from the context
@@ -4703,7 +4703,7 @@ begin
       l_return := l_return || p_sep || p_table(i);
    end loop;
 
-   return l_return;
+   return substr(l_return, coalesce(length(p_sep), 0) + 1);
 end join;
 
 --------------------------------------------------------------------------------
@@ -5040,6 +5040,9 @@ is
    l_return              t_1kb;
    l_value_one_character number;
 begin
+   assert(p_scale != 0, 'Scale cannot be 0');
+   assert(p_width_block_characters > 0, 'The width of block characters must be greater than 0');
+
    if p_value is not null then
    -- calculate the value of one character
       l_value_one_character := p_scale / p_width_block_characters;
@@ -6002,7 +6005,7 @@ is
    --
 begin
    assert (
-      lengthb(p_prefs) <= 4000,
+      coalesce(lengthb(p_prefs), 0) <= 4000,
       'Sorry, we cannot save your client preferencs - seems you have too many session in debug mode.' );
 
    update_client_prefs;
