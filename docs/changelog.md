@@ -17,10 +17,11 @@
 ## v1.3.0 (2026-xx-xx)
 
 - **Breaking Change**: changed `assert` to fail on `null`-input
-- reformat code for readability
-- unit tests
-- fixed `join` to omit separator at the beginning
-- added assertions for faster failing in `to_unibar`
+- Reformat code for readability
+- Add unit tests
+- Fix `join` to omit separator at the beginning
+- Add assertions for faster failing in `to_unibar`
+- Expose public exception `console.e_assert_error` for assert
 
 ## v1.2.1 (2025-01-25)
 
