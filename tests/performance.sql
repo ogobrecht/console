@@ -1,5 +1,11 @@
 set serveroutput on verify off feedback off
 
+alter session set plsql_ccflags = 'apex_installed:false, utils_public:true';
+prompt - Compile package console (spec)
+@sources/CONSOLE.pks
+prompt - Compile package console (body)
+@sources/CONSOLE.pkb
+
 --configure logger and console
 exec logger.set_level(logger.g_error);
 exec console.conf(p_level => console.c_level_error, p_check_interval => 10);
@@ -173,9 +179,9 @@ end;
 /
 
 prompt
-prompt 1.000 SCOPE CALLS (how much time you loose by fetching the scope from the call stack)
+prompt 10.000 SCOPE CALLS (how much time you loose by fetching the scope from the call stack)
 declare
-   l_iterator pls_integer := 1000;
+   l_iterator pls_integer := 10000;
    l_start    timestamp;
    l_scope    varchar2(1000);
    l_rt       number;
@@ -233,24 +239,24 @@ begin
 end;
 /
 
---prompt
---prompt 1.000 INIT PACKAGE CALLS
---declare
---   l_iterator   pls_integer := 1000;
---   l_start      timestamp;
---   l_rt         number;
---   l_result     varchar2(100);
---begin
---   l_start := localtimestamp;
---   for i in 1 .. l_iterator loop
---      console.utl_set_client_identifier;
---      console.utl_set_session_conf;
---   end loop;
---   l_rt := console.runtime_seconds(l_start);
---   console.printf( '- runtime all    : %s seconds', trim(to_char(l_rt,      '0.000000000')));
---   console.printf( '- per call       : %s seconds', trim(to_char(l_rt/1000, '0.000000000')));
---end;
---/
+prompt
+prompt 10.000 INIT PACKAGE CALLS
+declare
+  l_iterator   pls_integer := 10000;
+  l_start      timestamp;
+  l_rt         number;
+  l_result     varchar2(100);
+begin
+  l_start := localtimestamp;
+  for i in 1 .. l_iterator loop
+     console.utl_set_client_identifier;
+     console.utl_set_session_conf;
+  end loop;
+  l_rt := console.runtime_seconds(l_start);
+  console.printf( '- runtime all    : %s seconds', trim(to_char(l_rt,      '0.000000000')));
+  console.printf( '- per call       : %s seconds', trim(to_char(l_rt/l_iterator, '0.000000000')));
+end;
+/
 --
 --prompt
 --prompt TIMESTAMP > DATE - 100.000 CALLS
