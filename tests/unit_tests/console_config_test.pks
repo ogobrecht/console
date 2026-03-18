@@ -9,43 +9,43 @@ create or replace package console_config_test as
 --%context(Init)
 
 --%test(Init rejects invalid level)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_level_too_low;
 
 --%test(Init rejects level too high)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_level_too_high;
 
 --%test(Init rejects null client identifier)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_null_client_identifier;
 
 --%test(Init rejects duration out of range)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_duration_out_of_range;
 
 --%test(Init rejects check interval out of range)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_check_interval_out_of_range;
 
 --%test(Init rejects null call stack flag)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_null_call_stack_flag;
 
 --%test(Init rejects null user_env flag)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_null_user_env_flag;
 
 --%test(Init rejects null apex_env flag)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_null_apex_env_flag;
 
 --%test(Init rejects null cgi_env flag)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_null_cgi_env_flag;
 
 --%test(Init rejects null console_env flag)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_null_console_env_flag;
 
 --%test(Init accepts maximum client identifier length)
@@ -68,11 +68,11 @@ procedure init_deduplicates_client_identifier;
 procedure init_handles_multiple_clients_independently;
 
 --%test(Init rejects duration below minimum)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_duration_below_min;
 
 --%test(Init rejects check interval below minimum)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure init_rejects_check_interval_below_min;
 
 --%test(Init accepts minimum and maximum duration)
@@ -98,19 +98,19 @@ procedure init_cleans_stale_client_prefs;
 --%context(Conf - Global Configuration)
 
 --%test(Conf rejects level too low)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure conf_rejects_level_too_low;
 
 --%test(Conf rejects level too high)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure conf_rejects_level_too_high;
 
 --%test(Conf rejects check interval too low)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure conf_rejects_check_interval_too_low;
 
 --%test(Conf rejects check interval too high)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure conf_rejects_check_interval_too_high;
 
 --%test(Conf accepts minimum level)
@@ -154,7 +154,7 @@ procedure exit_single_client_when_multiple_active;
 procedure exit_with_default_parameter;
 
 --%test(Exit rejects null client identifier)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure exit_rejects_null_client_identifier;
 
 --%endcontext

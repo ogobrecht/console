@@ -21,7 +21,6 @@ c_client_id_prefix       constant t_8b  := '{o,o} ';
 c_console_owner          constant t_32b := $$plsql_unit_owner;
 c_console_job_name       constant t_16b := 'CONSOLE_PURGE';
 c_param_value_max_length constant t_int :=  2000;
-c_assert_error_code      constant t_int := -20777 ;
 c_assert_error_message   constant t_32b := 'Assertion failed: ';
 
 -- CONSTANTS FOR BITAND OPERATIONS

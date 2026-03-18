@@ -28,11 +28,11 @@ procedure purge_all_deletes_everything;
 procedure purge_all_keeps_permanent;
 
 --%test(Purge rejects invalid minimum level too high)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure purge_rejects_level_too_high;
 
 --%test(Purge rejects invalid minimum level too low)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure purge_rejects_level_too_low;
 
 --%test(Purge accepts level error as boundary)

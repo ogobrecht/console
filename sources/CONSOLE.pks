@@ -91,6 +91,14 @@ c_enable_ascii_art       constant boolean :=   true ;
 
 
 --------------------------------------------------------------------------------
+-- PUBLIC EXCEPTIONS
+--------------------------------------------------------------------------------
+c_assert_error_code      constant t_int   := -20777 ;
+e_assert_error           exception;
+pragma exception_init(e_assert_error, c_assert_error_code);
+
+
+--------------------------------------------------------------------------------
 -- PUBLIC CONSOLE METHODS
 --------------------------------------------------------------------------------
 

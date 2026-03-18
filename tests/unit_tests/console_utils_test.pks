@@ -119,14 +119,14 @@ procedure to_bool_handles_whitespace;
 procedure assert_true_does_nothing;
 
 --%test(Assert false raises assertion error)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure assert_false_raises_error;
 
 --%test(Assert false includes message)
 procedure assert_false_includes_message;
 
 --%test(Assert null raises assertion error)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure assert_null_raises_error;
 
 --%test(Assertf true does not raise an error)
@@ -343,7 +343,7 @@ procedure to_unibar_generates_bar;
 procedure to_unibar_scales_value;
 
 --%test(To unibar scale cannot be 0)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure to_unibar_rejects_zero_scale;
 
 --%test(To unibar handles zero value)
@@ -356,11 +356,11 @@ procedure to_unibar_handles_negative;
 procedure to_unibar_width_affects_length;
 
 --%test(To unibar rejects negative width block characters)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure to_unibar_rejects_negative_width;
 
 --%test(To unibar rejects zero width block characters)
---%throws(-20777)
+--%throws(console.e_assert_error)
 procedure to_unibar_rejects_zero_width;
 
 --%test(To unibar fill scale fills remaining space)
