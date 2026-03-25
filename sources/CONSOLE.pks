@@ -1,7 +1,7 @@
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.2.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.3.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -88,6 +88,14 @@ c_duration_min           constant t_int   :=      1 ; -- minutes
 c_duration_default       constant t_int   :=     60 ; -- minutes
 c_duration_max           constant t_int   :=   1440 ; -- minutes (1 day)
 c_enable_ascii_art       constant boolean :=   true ;
+
+
+--------------------------------------------------------------------------------
+-- PUBLIC EXCEPTIONS
+--------------------------------------------------------------------------------
+c_assert_error_code      constant t_int   := -20777 ;
+e_assert_error           exception;
+pragma exception_init(e_assert_error, c_assert_error_code);
 
 
 --------------------------------------------------------------------------------
@@ -876,7 +884,7 @@ procedure assert (
    p_message    in varchar2 );
 /**
 
-If the given expression evaluates to false, an error is raised with the given
+If the given expression evaluates to false or is null, an error is raised with the given
 message.
 
 EXAMPLE

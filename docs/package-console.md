@@ -115,7 +115,7 @@ SIGNATURE
 package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.2.1'                                ;
+c_version constant varchar2 ( 10 byte ) := '1.3.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -957,7 +957,7 @@ procedure table# (
 
 ## Procedure assert
 
-If the given expression evaluates to false, an error is raised with the given
+If the given expression evaluates to false or is null, an error is raised with the given
 message.
 
 EXAMPLE
