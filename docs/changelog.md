@@ -14,7 +14,7 @@
 
 # Changelog
 
-## v1.3.0 (2026-xx-xx)
+## v1.3.0 (2026-03-26)
 
 - **Breaking Change**: changed `assert` to fail on `null`-input
 - Reformat code for readability
