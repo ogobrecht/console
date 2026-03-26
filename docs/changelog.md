@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD041 -->
+
 <!-- nav -->
 
 [Index](README.md)
@@ -11,6 +13,15 @@
 <!-- navstop -->
 
 # Changelog
+
+## v1.3.0 (2026-03-26)
+
+- **Breaking Change**: changed `assert` to fail on `null`-input
+- Reformat code for readability
+- Add unit tests
+- Fix `join` to omit separator at the beginning
+- Add assertions for faster failing in `to_unibar`
+- Expose public exception `console.e_assert_error` for assert
 
 ## v1.2.1 (2025-01-25)
 

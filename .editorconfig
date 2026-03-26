@@ -6,10 +6,14 @@ root = true
 [*]
 trim_trailing_whitespace = true
 
-[*.{md}]
+[*.md]
 trim_trailing_whitespace = false
 
-[*.{sql,pks,pkb,json}]
+[*.{sql,pks,pkb}]
+indent_style = space
+indent_size = 3
+
+[*.json]
 indent_style = space
 indent_size = 2
 

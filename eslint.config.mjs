@@ -22,7 +22,7 @@ export default [{
         },
 
         ecmaVersion: 12,
-        sourceType: "script",
+        sourceType: "module",
     },
 
     rules: {},

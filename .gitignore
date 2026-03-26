@@ -1,4 +1,8 @@
 *.log
 *.zip
+config.sql
 node_modules
 temp
+?/
+utPLSQL-cli/
+.dbtools
