@@ -14,6 +14,17 @@
 
 # Changelog
 
+## v2.0.0 (2026-03-31)
+
+We decided to bump the major version to reflect the breakig change more clearly. The cotent of v2.0.0 is identical with 1.3.0
+
+- **Breaking Change**: changed `assert` to fail on `null`-input
+- Reformat code for readability
+- Add unit tests
+- Fix `join` to omit separator at the beginning
+- Add assertions for faster failing in `to_unibar`
+- Expose public exception `console.e_assert_error` for assert
+
 ## v1.3.0 (2026-03-26)
 
 - **Breaking Change**: changed `assert` to fail on `null`-input

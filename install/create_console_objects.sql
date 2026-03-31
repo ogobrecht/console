@@ -205,7 +205,7 @@ prompt - Package CONSOLE (spec)
 create or replace package console authid definer is
 
 c_name    constant varchar2 ( 30 byte ) := 'Oracle Instrumentation Console'       ;
-c_version constant varchar2 ( 10 byte ) := '1.3.0'                                ;
+c_version constant varchar2 ( 10 byte ) := '2.0.0'                                ;
 c_url     constant varchar2 ( 36 byte ) := 'https://github.com/ogobrecht/console' ;
 c_license constant varchar2 (  3 byte ) := 'MIT'                                  ;
 c_author  constant varchar2 ( 15 byte ) := 'Ottmar Gobrecht'                      ;
@@ -6866,10 +6866,11 @@ begin
         commit;
       end;]', '#CONSOLE_VERSION#', v_console_version);
     dbms_output.put_line('>           ');
-    dbms_output.put_line('>   .___.   ');
-    dbms_output.put_line('>   {o,o}   ');
-    dbms_output.put_line('>   /)__)   Hopefully you have now sharper debugging eyes with');
-    dbms_output.put_line('>   -"-"-   CONSOLE v' || v_console_version);
+    dbms_output.put_line('>   .___.   Hopefully you have now sharper debugging eyes with');
+    dbms_output.put_line('>   {o,o}   CONSOLE v' || v_console_version);
+    dbms_output.put_line('>   /)__)   ');
+    dbms_output.put_line('>   -"-"-   You can find the release notes at:');
+    dbms_output.put_line('>           https://github.com/ogobrecht/console/blob/main/docs/changelog.md');
     dbms_output.put_line('>           ');
   end if;
 end;
