@@ -25,10 +25,11 @@ begin
         commit;
       end;]', '#CONSOLE_VERSION#', v_console_version);
     dbms_output.put_line('>           ');
-    dbms_output.put_line('>   .___.   ');
-    dbms_output.put_line('>   {o,o}   ');
-    dbms_output.put_line('>   /)__)   Hopefully you have now sharper debugging eyes with');
-    dbms_output.put_line('>   -"-"-   CONSOLE v' || v_console_version);
+    dbms_output.put_line('>   .___.   Hopefully you have now sharper debugging eyes with');
+    dbms_output.put_line('>   {o,o}   CONSOLE v' || v_console_version);
+    dbms_output.put_line('>   /)__)   ');
+    dbms_output.put_line('>   -"-"-   You can find the release notes at:');
+    dbms_output.put_line('>           https://github.com/ogobrecht/console/blob/main/docs/changelog.md');
     dbms_output.put_line('>           ');
   end if;
 end;
