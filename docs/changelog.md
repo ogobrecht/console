@@ -16,7 +16,7 @@
 
 ## v2.0.0 (2026-03-31)
 
-We decided to bump the major version to reflect the breakig change more clearly. The content of v2.0.0 is identical with 1.3.0
+We decided to bump the major version to reflect the breaking change more clearly. The content of v2.0.0 is identical with 1.3.0
 
 - **Breaking Change**: changed `assert` to fail on `null`-input
 - Reformat code for readability
